@@ -670,6 +670,23 @@ public class TvControlManager {
     }
 
     /**
+     * only used for preview.
+     * need set preview mode to true when entering into preview window.
+     * of course, the mode need revert when exiting from preview window.
+     */
+    public int SetPreviewWindowMode(boolean enable) {
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        cmd.writeInt(SET_PREVIEW_WINDOW_MODE);
+        cmd.writeInt(enable ? 1 : 0);
+        sendCmdToTv(cmd, r);
+        int ret = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return ret;
+    }
+
+    /**
      * @Function: GetSourceConnectStatus
      * @Description: Get source connect status
      * @Param: source_input, refer to enum SourceInput
@@ -5537,7 +5554,7 @@ public class TvControlManager {
     /**
      * @description set gpio
      * @param portName name of gpio, e.g "GPIOAO_14"
-     * @param isOut true set gpio as out.
+     * @param isOut true set gpio as out, false gpio is in.
      * @param edge validly when {@param is_out} is true, 1/0 high/low
      */
     public int handleGPIO(String portName, boolean isOut, int edge) {

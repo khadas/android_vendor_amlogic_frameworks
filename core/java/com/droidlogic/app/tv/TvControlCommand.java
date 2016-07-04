@@ -18,7 +18,7 @@ public interface TvControlCommand {
     int IS_VGA_TIMEING_IN_HDMI = 14;
     int GET_VIDEO_PATH_STATUS = 15;
     //int GET_VIDEO_STREAM_STATUS = 16;
-    //int GET_FIRST_START_SWITCH_TYPE = 17;
+    int SET_PREVIEW_WINDOW_MODE = 17;
     int SET_PREVIEW_WINDOW = 18;
     int GET_SOURCE_CONNECT_STATUS = 19;
     int GET_SOURCE_INPUT_LIST = 20;

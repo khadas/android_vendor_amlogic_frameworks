@@ -143,6 +143,8 @@ public class HdmiCecExtend {
     /** Logical address used to indicate it is not initialized or invalid. */
     public static final int ADDR_INVALID = -1;
 
+    public static final int ONE_TOUCH_PLAY_DELAY = 100;
+
     static final int MENU_STATE_ACTIVATED = 0;
     static final int MENU_STATE_DEACTIVATED = 1;
     private static final int OSD_NAME_MAX_LENGTH = 13;
@@ -175,6 +177,9 @@ public class HdmiCecExtend {
                 mPlayback.oneTouchPlay(mOneTouchPlay);
                 mVendorId = nativeGetVendorId();
                 Slog.d(TAG, "vendorId:" + mVendorId);
+                if (!mLanguangeChanged) {
+                    mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
+                }
             }
             mControl.addHotplugEventListener(new HdmiControlManager.HotplugEventListener() {
                     @Override

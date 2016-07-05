@@ -81,6 +81,8 @@ typedef struct {
  *
  */
 
+int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, int* pOutLen);
+
 bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
     const char *srcAicPath, const char *desAicPath, const char *keyPath);
 

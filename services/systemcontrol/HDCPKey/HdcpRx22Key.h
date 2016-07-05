@@ -39,8 +39,10 @@
 
 #define HDCP_RX_OUT_KEY_IMG             "/param/dcp_rx.out"
 #define HDCP_RX_OUT_KEY_LE              "/param/hdcp_keys.le"
-#define HDCP_RX_OUT_FW_LE               "/param/firmware.le"
+#define HDCP_RX_OUT_2080_BYTE           "/param/2080.byte"
 
+#define HDCP_RX_SRC_FW_PATH             "/system/etc/firmware/hdcp_rx22/firmware.le"
+#define HDCP_RX_DES_FW_PATH             "/param/firmware.le"
 #define HDCP_RX_KEY_CRC_PATH            "/param/hdcprx22.crc"
 #define HDCP_RX_KEY_CRC_LEN             4
 
@@ -61,6 +63,7 @@ private:
     int writeSys(const char *path, const char *val);
     int readSys(const char *path, char *buf, int count);
     int saveFile(const char *path, const char *buf, int bufLen);
+    bool combineFirmware();
 };
 
 // ----------------------------------------------------------------------------

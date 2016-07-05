@@ -48,7 +48,8 @@ LOCAL_SRC_FILES:= \
   SysTokenizer.cpp \
   HDCPKey/hdcp22_key.cpp \
   HDCPKey/HdcpRx22Key.cpp \
-  HDCPKey/HdcpKeyDecrypt.cpp
+  HDCPKey/HdcpKeyDecrypt.cpp \
+  HDCPKey/aes.cpp
 
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \

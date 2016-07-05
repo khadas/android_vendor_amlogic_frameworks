@@ -129,8 +129,8 @@ bool HdcpRx22Key::esmSwap() {
 
 bool HdcpRx22Key::aicTool() {
     char cmd[512] = {0};
-    sprintf(cmd, "%s --format=binary-le -o %s -f %s",
-        HDCP_RX_TOOL_AIC, HDCP_RX_OUT_FW_LE, HDCP_RX_CFG_AIC_DES);
+    sprintf(cmd, "%s --format=binary-le --dwb-only -o %s -f %s",
+        HDCP_RX_TOOL_AIC, HDCP_RX_OUT_2080_BYTE, HDCP_RX_CFG_AIC_DES);
 
     SYS_LOGI("aic tool cmd:%s\n", cmd);
     int ret = system (cmd);
@@ -139,13 +139,84 @@ bool HdcpRx22Key::aicTool() {
         return false;
     }
 
-    if (access(HDCP_RX_OUT_FW_LE, F_OK)) {
-        SYS_LOGE("generate %s fail \n", HDCP_RX_OUT_FW_LE);
+    if (access(HDCP_RX_OUT_2080_BYTE, F_OK)) {
+        SYS_LOGE("generate %s fail \n", HDCP_RX_OUT_2080_BYTE);
         return false;
     }
 
-    SYS_LOGI("generate %s success \n", HDCP_RX_OUT_FW_LE);
+    SYS_LOGI("generate %s success \n", HDCP_RX_OUT_2080_BYTE);
     return true;
+}
+
+//insert 2080 byte into origin firware, combine a new firware
+bool HdcpRx22Key::combineFirmware()
+{
+    bool ret = false;
+    int srcFd = -1;
+    int desFd = -1;
+    int insertFd = -1;
+    char *pSrcData = NULL;
+    char *pInsertData = NULL;
+    int srcSize = 0;
+    int insertSize = 0;
+
+    //read origin firmware.le to buffer
+    srcFd = open(HDCP_RX_SRC_FW_PATH, O_RDONLY);
+    srcSize = lseek(srcFd, 0, SEEK_END);
+    lseek(srcFd, 0, SEEK_SET);
+    pSrcData = (char *)malloc(srcSize + 1);
+    if (NULL == pSrcData) {
+        SYS_LOGE("combine firware, can not malloc source fw:%d memory\n", srcSize);
+        goto exit;
+    }
+    memset((void*)pSrcData, 0, srcSize + 1);
+    read(srcFd, (void*)pSrcData, srcSize);
+    close(srcFd);
+    srcFd = -1;
+
+    //read 2080 bytes to buffer
+    insertFd = open(HDCP_RX_OUT_2080_BYTE, O_RDONLY);
+    insertSize = lseek(insertFd, 0, SEEK_END);
+    if (2080 != insertSize)
+        SYS_LOGE("combine firware, key size is not 2080 bytes\n");
+    lseek(insertFd, 0, SEEK_SET);
+    pInsertData = (char *)malloc(insertSize + 1);
+    if (NULL == pInsertData) {
+        SYS_LOGE("combine firware, can not malloc insert:%d memory\n", insertSize);
+        goto exit;
+    }
+    memset((void*)pInsertData, 0, insertSize + 1);
+    read(insertFd, (void*)pInsertData, insertSize);
+    close(insertFd);
+    insertFd = -1;
+
+    //insert 2080 bytes to the origin firmware.le
+    memcpy(pSrcData + 0x2800, pInsertData, insertSize);
+
+    if ((desFd = open(HDCP_RX_DES_FW_PATH, O_CREAT | O_RDWR | O_TRUNC, 0644)) < 0) {
+        SYS_LOGE("combine firware, open %s error(%s)", HDCP_RX_DES_FW_PATH, strerror(errno));
+        goto exit;
+    }
+
+    //write firmware.le buffer to file
+    write(desFd, pSrcData, srcSize);
+    close(desFd);
+    desFd = -1;
+
+    ret= true;
+exit:
+    if (srcFd >= 0)
+        close(srcFd);
+    if (insertFd >= 0)
+        close(insertFd);
+    if (desFd >= 0)
+        close(desFd);
+
+    if (NULL != pSrcData)
+        free(pSrcData);
+    if (NULL != pInsertData)
+        free(pInsertData);
+    return ret;
 }
 
 bool HdcpRx22Key::generateHdcpRxFw()
@@ -200,7 +271,7 @@ bool HdcpRx22Key::generateHdcpRxFw()
     readSys(HDCP_RX_KEY_CRC_PATH, lastCrcData, HDCP_RX_KEY_CRC_LEN);
     lastCrcValue = ((lastCrcData[3]<<24)|(lastCrcData[2]<<16)|(lastCrcData[1]<<8)|(lastCrcData[0]&0xff));
 
-    if (access(HDCP_RX_OUT_FW_LE, F_OK) || keyCrcValue != lastCrcValue) {
+    if (access(HDCP_RX_DES_FW_PATH, F_OK) || keyCrcValue != lastCrcValue) {
         SYS_LOGI("HDCP RX 2.2 firmware don't exist or crc different, need create it, last crc value:0x%x, cur crc value:0x%x\n",
             lastCrcValue, keyCrcValue);
 
@@ -218,10 +289,14 @@ bool HdcpRx22Key::generateHdcpRxFw()
             saveFile(HDCP_RX_KEY_CRC_PATH, keyCrcData, HDCP_RX_KEY_CRC_LEN);
             SYS_LOGI("HDCP RX 2.2 firmware generate success, save crc value:0x%x -> %s\n", keyCrcValue, HDCP_RX_KEY_CRC_PATH);
 
+            combineFirmware();
+
             //remove temporary files
             remove(HDCP_RX_KEY_PATH);
+            remove(HDCP_RX_CFG_AIC_DES);
             remove(HDCP_RX_OUT_KEY_IMG);
             remove(HDCP_RX_OUT_KEY_LE);
+            remove(HDCP_RX_OUT_2080_BYTE);
 
             ret = true;
         }

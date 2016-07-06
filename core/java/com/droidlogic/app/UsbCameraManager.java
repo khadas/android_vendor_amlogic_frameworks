@@ -221,6 +221,8 @@ public class UsbCameraManager {
                     for (int i = 0; i < ACTIVITIES.length; i++) {
                         enableComponent(PACKAGES[i], ACTIVITIES[i]);
                     }
+                    ActivityManager am = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
+                    am.forceStopPackage("com.skype.rover");
                     end = true;
                 }
                 else if (!mIsAttach && (devNum < mCamNum)) {//device path has been deleted by kernel

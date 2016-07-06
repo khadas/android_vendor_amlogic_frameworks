@@ -665,7 +665,7 @@ public class TvDataBaseManager {
     public void updateOrinsertAtvChannel(ChannelInfo channel) {
         int updateRet = updateAtvChannel(channel);
         if (updateRet != UPDATE_SUCCESS) {
-            insertAtvChannel(channel, updateRet);
+            insertAtvChannel(channel, channel.getNumber());
         }
     }
 
@@ -674,7 +674,7 @@ public class TvDataBaseManager {
     public void updateOrinsertAtvChannelFuzzy(ChannelInfo channel) {
         int updateRet = updateAtvChannelFuzzy(channel);
         if (updateRet != UPDATE_SUCCESS) {
-            insertAtvChannel(channel, updateRet);
+            insertAtvChannel(channel, channel.getNumber());
         }
     }
 
@@ -688,7 +688,7 @@ public class TvDataBaseManager {
     public void updateOrinsertAtvChannel(ChannelInfo toBeUpdated, ChannelInfo channel) {
         int updateRet = updateAtvChannel(toBeUpdated, channel);
         if (updateRet != UPDATE_SUCCESS) {
-            insertAtvChannel(channel, updateRet);
+            insertAtvChannel(channel, channel.getNumber());
         }
     }
 

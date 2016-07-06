@@ -163,7 +163,7 @@ public class DroidLogicTvUtils
      * used for TvSettings to switch hdmi source
      * {@link #SOURCE_NAME}
      */
-    public static final String SOURCE_NAME = "source";
+    public static final String SOURCE_INPUT_ID = "id";
 
     /**
      * used for table {@link Settings#System}.

@@ -5390,7 +5390,8 @@ public class TvControlManager {
         USB4K2K(13),
         IPTV(14),
         DUMMY(15),
-        MAX(16);
+        SOURCE_SPDIF(16),
+        MAX(17);
         private int val;
 
         SourceInput(int val) {
@@ -5411,9 +5412,9 @@ public class TvControlManager {
         SOURCE_TYPE_MPEG(5),//only use for vpp, for display ,not a source
         SOURCE_TYPE_DTV(6),
         SOURCE_TYPE_SVIDEO(7),
-        SOURCE_TYPE_HDMI_4K2K(8),
-        SOURCE_TYPE_USB_4K2K(9),
-        SOURCE_TYPE_MAX(7);
+        SOURCE_TYPE_IPTV(8),
+        SOURCE_TYPE_SPDIF(9),
+        SOURCE_TYPE_MAX(10);
 
         private int val;
 

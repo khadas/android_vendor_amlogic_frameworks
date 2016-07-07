@@ -28,15 +28,28 @@
 #include <string.h>
 #include <errno.h>
 #include "common.h"
+
 #include "HdcpRx22Key.h"
 #include "HdcpKeyDecrypt.h"
+#include "aes.h"
 
-#define debugP(fmt...) printf("[Debug]"fmt)
-#define errorP(fmt...) printf("[Error]"fmt)
+#define KEY_MAX_SIZE   (1024 * 2)
+#define AES_KEY_BIT 128
+#define AES_IV_BIT 128
 
-#define _KEY_MAX_SIZE   (1024 * 2)
+const unsigned char default_fixed_aeskey[] = {
+    'h',    'e',    'l',    'l',    'o',    '!' ,
+    'a' ,   'm' ,   'l' ,   'o' ,   'g' ,   'i' ,
+    'c' ,   '!' ,   'y',    'l',
+};
+unsigned char default_fixed_iv[] = {
+    'j' ,   'i' ,   'a' ,   'n' ,   'g' ,   'z' ,
+    'e' ,   'm' ,   'i' ,   'n' ,   'b' ,   't' ,
+    '.' ,   'c' ,   'o' ,   'm' ,
+};
 
-unsigned add_sum(const void* pBuf, const unsigned size)
+
+unsigned addSum(const void* pBuf, const unsigned size)
 {
     unsigned sum		 =	0;
     const unsigned* data = (const unsigned*)pBuf;
@@ -70,116 +83,44 @@ unsigned add_sum(const void* pBuf, const unsigned size)
     return sum;
 }
 
-#if 0
-static int _save_buf_as_files(const u8* data, const unsigned dataLen, const char* filePath)
+int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, int* pOutLen)
 {
-    FILE* pFile = fopen(filePath, "wb");
-    if (!pFile) {
-        errorP("Fail in open (%s) in wb\n", filePath);
-        return __LINE__;
+    int nRet = -1;
+    unsigned char* data = pIn;
+    const int dataLen         = ( ( nInLen + 0xf ) >> 4 ) << 4;
+    unsigned char* transferBuf = NULL;
+
+    if(!pIn || !nInLen || !pOut || !pOutLen) {
+        //_MSG_BOX_ERR(_T("arg nul"));
+        return -__LINE__;
     }
-    fwrite(data, sizeof(char), dataLen / sizeof(char), pFile);
-    fclose(pFile);
-
-    return 0;
-}
-
-/*
- * Return value, 0 if no error
- * */
-static int hdcp22_key_unpack(const char* keyPath, const char* unPackDir)
-{
-    int ret = __LINE__;
-    char* keyBuf = NULL;
-    unsigned nread = 0;
-    AmlResImgHead_t*  packedImgHead = NULL;
-    AmlResItemHead_t* packedImgItem = NULL;
-    unsigned gensum = 0;
-    int i = 0;
-
-    FILE* pHdcpKey = fopen(keyPath, "rb");
-    if (!pHdcpKey) {
-        errorP("Fail in fopen(%s)\n", keyPath);
-        return __LINE__;
-    }
-
-    fseeko(pHdcpKey, 0, SEEK_END);
-    const unsigned keyFileSz = (unsigned)ftell(pHdcpKey);
-    if ( keyFileSz > _KEY_MAX_SIZE ) {
-        errorP("FileSz %zd > max(%d)\n", keyFileSz, _KEY_MAX_SIZE);
-        ret = __LINE__; goto _exit;
-    }
-
-    keyBuf = new char [_KEY_MAX_SIZE / sizeof(char)];
-    if ( !keyBuf ) {
-        errorP("Fail in alloc buf for key read\n");
-        return __LINE__;
-    }
-
-    fseeko(pHdcpKey, 0, SEEK_SET);
-    nread = fread(keyBuf, 1, keyFileSz, pHdcpKey);
-    if ( nread != keyFileSz ) {
-        errorP("Fail in read key to buf, nread=%d\n", nread);
-        ret = __LINE__; goto _exit;
-    }
-
-    packedImgHead = (AmlResImgHead_t*)keyBuf;
-    packedImgItem = (AmlResItemHead_t*)(packedImgHead + 1);
-
-    gensum = add_sum(keyBuf + 4, keyFileSz - 4);
-    if (packedImgHead->crc != gensum) {
-        errorP("crc chcked failed, origsum[%8x] != gensum[%8x]\n", packedImgHead->crc, gensum);
-        ret = __LINE__; goto _exit;
-    }
-
-    for (i = 0; i < packedImgHead->imgItemNum; ++i)
+    if( nInLen & 0xf )
     {
-        const AmlResItemHead_t* pItem = packedImgItem + i;
-        u8*         itembuf         = (u8*)keyBuf + pItem->dataOffset;
-        const int   itemSz          = pItem->dataSz;
-        const char* itemName =      pItem->name;
-        char  fPath[128];
-
-        const int   dirPathLen  = strlen(unPackDir);
-        const int   itemPathLen = strlen(itemName);
-        if ( 128 - 1 < dirPathLen + itemPathLen ) {
-            errorP("dirPathLen(%d) + itemPathLen(%d) > maxLen(%d)\n", dirPathLen, itemPathLen, 127);
-            ret = __LINE__; goto _exit;
-        }
-        memcpy(fPath, unPackDir, dirPathLen);
-        memcpy(fPath + dirPathLen, itemName, itemPathLen);
-        fPath[dirPathLen + itemPathLen] = '\0';
-
-        ret = _save_buf_as_files(itembuf, itemSz, fPath);
-        if (ret) {
-            errorP("Fail in _save_buf_as_files\n");
-            ret = __LINE__; goto _exit;
-        }
+        transferBuf = new unsigned char [dataLen];
+        data = transferBuf;
     }
 
+    struct aes_context ctx;
+    unsigned char iv[16];
+    //memset(iv, 0, sizeof(iv));
+    memcpy(iv, default_fixed_iv, 16);
 
-    ret = 0;
-_exit:
-    delete[] keyBuf;
-    if (pHdcpKey) fclose(pHdcpKey);
-    return ret;
-}
+    unsigned char key[AES_KEY_BIT/8];
+    memcpy(key, default_fixed_aeskey, sizeof(default_fixed_aeskey));
 
-int main(int argc, char* argv[])
-{
-    int ret = 0;
-    if (argc < 3) {
-        errorP("usages: %s keyPath unpackDirPath\n", argv[0]);
-        return __LINE__;
+    if(isEncrypt) {
+        aes_setkey_enc(&ctx, key, AES_KEY_BIT);
     }
-    const char* keyPath     = argv[1];
-    const char* unpackDir   = argv[2];
+    else {
+        aes_setkey_dec(&ctx, key, AES_KEY_BIT);
+    }
 
-    ret = hdcp22_key_unpack(keyPath, unpackDir);
+    nRet = aes_crypt_cbc(&ctx, isEncrypt, dataLen, iv, pIn, pOut);
 
-    return ret;
+    *pOutLen = dataLen;
+    if(transferBuf) delete[] transferBuf;
+    return nRet;
 }
-#endif
 
 /*
  * inBuf: include random number and hdcp key
@@ -187,13 +128,13 @@ int main(int argc, char* argv[])
 bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
     const char *srcAicPath, const char *desAicPath, const char *keyPath)
 {
-    AmlResImgHead_t*  packedImgHead = NULL;
-    AmlResItemHead_t* packedImgItem = NULL;
+    AmlResImgHead_t *packedImgHead = NULL;
+    AmlResItemHead_t *packedImgItem = NULL;
     unsigned gensum = 0;
     int i = 0;
 
-    if ( inBufLen > _KEY_MAX_SIZE ) {
-        SYS_LOGE("key size %d > max(%d)\n", inBufLen, _KEY_MAX_SIZE);
+    if ( inBufLen > KEY_MAX_SIZE ) {
+        SYS_LOGE("key size %d > max(%d)\n", inBufLen, KEY_MAX_SIZE);
         return false;
     }
 
@@ -205,7 +146,7 @@ bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
     packedImgHead = (AmlResImgHead_t*)inBuf;
     packedImgItem = (AmlResItemHead_t*)(packedImgHead + 1);
 
-    gensum = add_sum(inBuf + 4, inBufLen - 4);
+    gensum = addSum(inBuf + 4, inBufLen - 4);
     if (packedImgHead->crc != gensum) {
         SYS_LOGE("crc chcked failed, origsum[%8x] != gensum[%8x]\n", packedImgHead->crc, gensum);
         return false;
@@ -213,10 +154,15 @@ bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
 
     for (i = 0; i < (int)packedImgHead->imgItemNum; ++i) {
         const AmlResItemHead_t* pItem = packedImgItem + i;
-        u8 *itembuf = (u8*)inBuf + pItem->dataOffset;
-        const int itemSz = pItem->dataSz;
         const char* itemName = pItem->name;
-
+    #if 1
+        int itemSz = 0;
+        unsigned char itembuf[KEY_MAX_SIZE] = {0};
+        do_aes(false, (unsigned char *)(inBuf + pItem->dataOffset), pItem->dataSz, itembuf, &itemSz);
+    #else
+        char *itembuf = (char*)inBuf + pItem->dataOffset;
+        const int itemSz = pItem->dataSz;
+    #endif
         //this item is random number
         if (!strcmp(itemName, "firmware")) {
             int desFd;

@@ -1,6 +1,7 @@
 package com.droidlogic;
 
 import android.app.ActivityManager;
+import android.app.ActivityManager.RunningTaskInfo;
 import android.app.Service;
 import android.content.Context;
 import android.content.ComponentName;
@@ -12,6 +13,7 @@ import android.util.Log;
 
 import java.lang.Runnable;
 import java.lang.Thread;
+import java.util.List;
 
 public class Optimization extends Service {
     private static String TAG = "Optimization";
@@ -55,14 +57,17 @@ public class Optimization extends Service {
 
             while (true) {
                 try {
-                    ComponentName cn = am.getRunningTasks (1).get (0).topActivity;
-                    String pkg = cn.getPackageName();
-                    String cls = cn.getClassName();
+                    List< ActivityManager.RunningTaskInfo > task = am.getRunningTasks (1);
+                    if (!task.isEmpty()) {
+                        ComponentName cn = task.get (0).topActivity;
+                        String pkg = cn.getPackageName();
+                        String cls = cn.getClassName();
 
-                    nativeOptimization(pkg, cls);//bench match
+                        nativeOptimization(pkg, cls);//bench match
+                    }
 
                     Thread.sleep(500);
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }

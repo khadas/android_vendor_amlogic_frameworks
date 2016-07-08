@@ -12,7 +12,10 @@ import java.lang.reflect.Method;
 public class HdmiCecManager {
     private static final boolean DEBUG = true;
     private static final String TAG = "HdmiCecManager";
-
+    //switch box cec control
+    public static final String HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED = "hdmi_control_one_touch_play_enabled";
+    public static final String HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED = "hdmi_control_auto_change_language_enabled";
+    //CEC device node
     public static final String CEC_DEVICE_FILE = "/sys/devices/virtual/switch/lang_config/state";
     public static final String CEC_SYS = "/sys/class/amhdmitx/amhdmitx0/cec_config";
     public static final String CEC_SUPPORT = "/sys/class/amhdmitx/amhdmitx0/tv_support_cec";

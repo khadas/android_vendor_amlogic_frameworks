@@ -2,6 +2,9 @@
 package com.droidlogic;
 
 import android.content.Context;
+import android.content.ContentResolver;
+import android.provider.Settings.Global;
+import android.database.ContentObserver;
 import android.hardware.hdmi.HdmiControlManager;
 import android.hardware.hdmi.HdmiPlaybackClient;
 import android.hardware.hdmi.HdmiHotplugEvent;
@@ -11,6 +14,8 @@ import android.hardware.hdmi.HdmiControlManager.VendorCommandListener;
 import android.hardware.hdmi.HdmiPlaybackClient.OneTouchPlayCallback;
 import android.hardware.hdmi.IHdmiControlService;
 import android.util.Slog;
+import android.net.Uri;
+import android.os.UserHandle;
 import android.os.ServiceManager;
 import android.os.RemoteException;
 import android.os.SystemProperties;
@@ -25,9 +30,13 @@ import java.util.List;
 import java.lang.reflect.Method;
 import java.io.UnsupportedEncodingException;
 import android.content.res.Configuration;
+import com.droidlogic.app.HdmiCecManager;
 
 public class HdmiCecExtend {
     private final String TAG = "HdmiCecExtend";
+    private static final int DISABLED = 0;
+    private static final int ENABLED = 1;
+
     static final int MESSAGE_FEATURE_ABORT = 0x00;
     static final int MESSAGE_IMAGE_VIEW_ON = 0x04;
     static final int MESSAGE_TUNER_STEP_INCREMENT = 0x05;
@@ -149,6 +158,7 @@ public class HdmiCecExtend {
     static final int MENU_STATE_DEACTIVATED = 1;
     private static final int OSD_NAME_MAX_LENGTH = 13;
 
+    private final SettingsObserver mSettingsObserver;
     private Context mContext = null;
     private HdmiControlManager mControl = null;
     private HdmiPlaybackClient mPlayback = null;
@@ -169,6 +179,8 @@ public class HdmiCecExtend {
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         mService = IHdmiControlService.Stub.asInterface(ServiceManager.getService(Context.HDMI_CONTROL_SERVICE));
         mHandler = new Handler();
+        mSettingsObserver = new SettingsObserver(mHandler);
+        registerContentObserver();
         if (mControl != null) {
             mPlayback = mControl.getPlaybackClient();
             Slog.d(TAG, "mHasPlaybackDevice:" + mPlayback);
@@ -294,13 +306,15 @@ public class HdmiCecExtend {
                 break;
 
             case MESSAGE_SET_MENU_LANGUAGE:
-                try {
-                    byte lan[] = new byte[3];
-                    System.arraycopy(msg, 2, lan, 0, 3);
-                    String iso3Language = new String(lan, 0, 3, "US-ASCII");
-                    onLanguageChange(iso3Language);
-                } catch (UnsupportedEncodingException e) {
-                    Slog.d(TAG, "process MESSAGE_SET_MENU_LANGUAGE failed");
+                if (isAutoChangeLanguageOn()) {
+                    try {
+                        byte lan[] = new byte[3];
+                        System.arraycopy(msg, 2, lan, 0, 3);
+                        String iso3Language = new String(lan, 0, 3, "US-ASCII");
+                        onLanguageChange(iso3Language);
+                    } catch (UnsupportedEncodingException e) {
+                        Slog.d(TAG, "process MESSAGE_SET_MENU_LANGUAGE failed");
+                    }
                 }
                 break;
 
@@ -384,8 +398,10 @@ public class HdmiCecExtend {
     private final Runnable mDelayedRun = new Runnable() {
         @Override
         public void run() {
-            updatePortInfo();
-            oneTouchPlayExt(0);
+            if (isOneTouchPlayOn()) {
+                updatePortInfo();
+                oneTouchPlayExt(0);
+            }
         }
     };
 
@@ -554,6 +570,48 @@ public class HdmiCecExtend {
             retry--;
         }
         return ret;
+    }
+
+    private class SettingsObserver extends ContentObserver {
+        public SettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            String option = uri.getLastPathSegment();
+            switch (option) {
+                case HdmiCecManager.HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED:
+                    break;
+                case HdmiCecManager.HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED:
+                    if (isAutoChangeLanguageOn()) {
+                        SendGetMenuLanguage(ADDR_TV);
+                    }
+                    break;
+            }
+        }
+    }
+
+    private void registerContentObserver() {
+        ContentResolver resolver = mContext.getContentResolver();
+        String[] settings = new String[] {
+                HdmiCecManager.HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED,
+                HdmiCecManager.HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED
+        };
+        for (String s : settings) {
+            resolver.registerContentObserver(Global.getUriFor(s), false, mSettingsObserver,
+                    UserHandle.USER_ALL);
+        }
+    }
+
+    private boolean isOneTouchPlayOn() {
+        ContentResolver cr = mContext.getContentResolver();
+        return Global.getInt(cr, HdmiCecManager.HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED, ENABLED) == ENABLED;
+    }
+
+    private boolean isAutoChangeLanguageOn() {
+        ContentResolver cr = mContext.getContentResolver();
+        return Global.getInt(cr, HdmiCecManager.HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED, ENABLED) == ENABLED;
     }
 
     /* for native */

@@ -35,6 +35,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     private Context mContext;
     private int mNumber;
+    private int mCurrentNumber;
     private String mInputId;
     private int mDeviceId;
     private Surface mSurface;
@@ -82,7 +83,6 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     public abstract Hardware getHardware();
     public abstract TvStreamConfig[] getConfigs();
-    public abstract int getCurrentSessionNumber();
     public abstract void setCurrentSession();
 
     private int startTvPlay() {
@@ -161,11 +161,12 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             Log.d(TAG, "onSetSurface get invalid surface");
             return;
         } else if (surface != null) {
+            mCurrentNumber = mNumber;
             setCurrentSession();
         }
         mSurface = surface;
 
-        if (mSurface == null && getHardware() != null && mNumber == getCurrentSessionNumber()) {
+        if (mSurface == null && getHardware() != null && mNumber == mCurrentNumber) {
             Log.d(TAG, "surface is null, so stop TV play");
             stopTvPlay();
         }

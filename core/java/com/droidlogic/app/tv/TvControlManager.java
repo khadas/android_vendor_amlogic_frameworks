@@ -5271,6 +5271,7 @@ public class TvControlManager {
     public final static int EVENT_AV_PLAYBACK_RESUME            = 2;
     public final static int EVENT_AV_SCRAMBLED                  = 3;
     public final static int EVENT_AV_UNSUPPORT                  = 4;
+    public final static int EVENT_AV_VIDEO_AVAILABLE            = 5;
 
     public interface AVPlaybackListener {
         void onEvent(int msgType, int programID);

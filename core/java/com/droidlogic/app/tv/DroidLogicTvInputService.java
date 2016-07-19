@@ -174,6 +174,9 @@ public class DroidLogicTvInputService extends TvInputService implements
         case DroidLogicTvUtils.DEVICE_ID_HDMI3:
             label = ChannelInfo.LABEL_HDMI3;
             break;
+        case DroidLogicTvUtils.DEVICE_ID_SPDIF:
+            label = ChannelInfo.LABEL_SPDIF;
+            break;
         default:
             break;
         }

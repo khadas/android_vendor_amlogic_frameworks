@@ -81,13 +81,14 @@ public class DroidLogicTvUtils
     public static final int SIG_INFO_TYPE_DTV    = 1;
     public static final int SIG_INFO_TYPE_HDMI   = 2;
     public static final int SIG_INFO_TYPE_AV     = 3;
-    public static final int SIG_INFO_TYPE_OTHER  = 4;
+    public static final int SIG_INFO_TYPE_SPDIF  = 4;
+    public static final int SIG_INFO_TYPE_OTHER  = 5;
 
     /**
      * source input type need to switch
      */
     private static final int SOURCE_TYPE_START  = 0;
-    private static final int SOURCE_TYPE_END    = 7;
+    private static final int SOURCE_TYPE_END    = 8;
 
     public static final int SOURCE_TYPE_ATV     = SOURCE_TYPE_START;
     public static final int SOURCE_TYPE_DTV     = SOURCE_TYPE_START + 1;
@@ -96,6 +97,7 @@ public class DroidLogicTvUtils
     public static final int SOURCE_TYPE_HDMI1   = SOURCE_TYPE_START + 4;
     public static final int SOURCE_TYPE_HDMI2   = SOURCE_TYPE_START + 5;
     public static final int SOURCE_TYPE_HDMI3   = SOURCE_TYPE_START + 6;
+    public static final int SOURCE_TYPE_SPDIF   = SOURCE_TYPE_START + 7;
     public static final int SOURCE_TYPE_OTHER   = SOURCE_TYPE_END;
 
     /**
@@ -108,6 +110,7 @@ public class DroidLogicTvUtils
     public static final int DEVICE_ID_HDMI2      = 6;
     public static final int DEVICE_ID_HDMI3      = 7;
     public static final int DEVICE_ID_DTV        = 10;
+    public static final int DEVICE_ID_SPDIF      = 14;
 
     public static final int RESULT_OK = 1;
     public static final int RESULT_UPDATE = 2;
@@ -269,6 +272,9 @@ public class DroidLogicTvUtils
             case DEVICE_ID_HDMI3:
                 ret = SOURCE_TYPE_HDMI3;
                 break;
+            case DEVICE_ID_SPDIF:
+                ret = SOURCE_TYPE_SPDIF;
+                break;
             default:
                 break;
         }
@@ -292,6 +298,9 @@ public class DroidLogicTvUtils
             case SOURCE_TYPE_HDMI2:
             case SOURCE_TYPE_HDMI3:
                 ret = SIG_INFO_TYPE_HDMI;
+                break;
+            case SOURCE_TYPE_SPDIF:
+                ret = SIG_INFO_TYPE_SPDIF;
                 break;
             default:
                 ret = SIG_INFO_TYPE_OTHER;

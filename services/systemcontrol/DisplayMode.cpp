@@ -512,7 +512,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
     memset(&data, 0, sizeof(hdmi_data_t));
-
+    pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "1");
     initHdmiData(&data, hpdstate);
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(data.hpd_state, "1")) {
@@ -924,6 +924,9 @@ void DisplayMode::addSuffixForMode(char* mode) {
 #endif
             }
             break;
+      case DISPLAY_MODE_4K2K60HZ422:
+            strcat(mode, SUFFIX_10BIT);
+            break;
     }
 }
 
@@ -1267,6 +1270,9 @@ bool DisplayMode::isEdidChange() {
 
 bool DisplayMode::isBestOutputmode() {
     char isBestMode[MODE_LEN] = {0};
+    if (DISPLAY_TYPE_TV == mDisplayType) {
+        return false;
+    }
     return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
 }
 
@@ -1868,6 +1874,7 @@ void* DisplayMode::hdcpTxThreadLoop(void* data) {
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
 
         pThiz->hdcpTxAuthenticate(hdcp22, hdcp14);
+        pThiz->pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "0");
 
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");

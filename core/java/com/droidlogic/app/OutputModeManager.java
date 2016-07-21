@@ -224,8 +224,7 @@ public class OutputModeManager {
         }
 
         int type = -1;
-        int intMode = -1;
-        int higMode = 0;
+        int intMode = -1, higMode = 0, lenMode = 0;
         String outputMode = null;
         if (supportList != null) {
             for (int i = 0; i < supportList.length; i++) {
@@ -233,17 +232,17 @@ public class OutputModeManager {
                 if (pref != null) {
                     if ((type = supportList[i].indexOf(FORMAT_P)) >= 3) {          //p
                         intMode = Integer.parseInt(pref[0].replace(FORMAT_P, "1"));
-                    } else if (type > 0) {                                          //smpte
-                        outputMode = "smpte24hz";
-                        break;
                     } else if ((type = supportList[i].indexOf(FORMAT_I)) > 0) {    //i
                         intMode = Integer.parseInt(pref[0].replace(FORMAT_I, "0"));
                     } else {                                                        //other
                         continue;
                     }
-                    if (intMode > higMode) {
+                    if (intMode >= higMode) {
+                        int len = supportList[i].length();
+                        if (intMode == higMode && lenMode >= len) continue;
+                        lenMode = len;
                         higMode = intMode;
-                        outputMode = pref[0] + KEY;
+                        outputMode = supportList[i];
                     }
                 }
             }

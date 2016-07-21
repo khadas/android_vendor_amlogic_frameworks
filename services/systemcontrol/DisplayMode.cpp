@@ -803,8 +803,7 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
     const char PMODE = 'p';
     const char IMODE = 'i';
     const char* FREQ = "hz";
-    int intmode, higmode = 0;
-    int keylen = strlen(FREQ);
+    int lenmode = 0, intmode = 0, higmode = 0;
     char value[MODE_LEN] = {0};
     char* type;
     char* start;
@@ -819,22 +818,26 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
         start++;
         int len = pos - start;
         strncpy(value, start, len);
+        pos = strstr(pos, "\n");
 
         if ((type = strchr(value, PMODE)) != NULL && type - value >= 3) {
             value[type - value] = '1';
         } else if ((type = strchr(value, IMODE)) != NULL) {
             value[type - value] = '0';
         } else {
-            pos += keylen;
             continue;
         }
         value[len] = '\0';
 
-        if ((intmode = atoi(value)) > higmode) {
+        if ((intmode = atoi(value)) >= higmode) {
+            len = pos - start;
+            if (intmode == higmode && lenmode >= len) continue;
+            lenmode = len;
             higmode = intmode;
-            strncpy(mode, start, (len + keylen));
+            strncpy(mode, start, len);
+            if (mode[len - 1] == '*')  mode[len - 1] = '\0';
+            else mode[len] = '\0';
         }
-        pos += keylen;
     } while (strlen(pos) > 0);
 
     if (higmode == 0) {

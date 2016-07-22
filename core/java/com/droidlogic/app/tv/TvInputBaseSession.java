@@ -170,8 +170,12 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
             Log.d(TAG, "surface is null, so stop TV play");
             stopTvPlay();
         }
-        if (surface == null)
+        if (surface == null &&
+            mDeviceId != DroidLogicTvUtils.DEVICE_ID_HDMI1 &&
+            mDeviceId != DroidLogicTvUtils.DEVICE_ID_HDMI2 &&
+            mDeviceId != DroidLogicTvUtils.DEVICE_ID_HDMI3) {
             selectHdmiDevice(TV_SOURCE_INTERNAL);
+        }
     }
 
     @Override

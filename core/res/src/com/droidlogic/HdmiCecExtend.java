@@ -3,11 +3,13 @@ package com.droidlogic;
 
 import android.content.Context;
 import android.content.ContentResolver;
+import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.database.ContentObserver;
 import android.hardware.hdmi.HdmiControlManager;
 import android.hardware.hdmi.HdmiPlaybackClient;
 import android.hardware.hdmi.HdmiHotplugEvent;
+import android.hardware.hdmi.HdmiTvClient;
 import android.hardware.hdmi.HdmiPortInfo;
 import android.hardware.hdmi.HdmiDeviceInfo;
 import android.hardware.hdmi.HdmiControlManager.VendorCommandListener;
@@ -31,6 +33,7 @@ import java.lang.reflect.Method;
 import java.io.UnsupportedEncodingException;
 import android.content.res.Configuration;
 import com.droidlogic.app.HdmiCecManager;
+import com.droidlogic.app.tv.DroidLogicTvUtils;
 
 public class HdmiCecExtend {
     private final String TAG = "HdmiCecExtend";
@@ -160,6 +163,7 @@ public class HdmiCecExtend {
 
     private final SettingsObserver mSettingsObserver;
     private Context mContext = null;
+    private HdmiTvClient mHdmiTvClient = null;
     private HdmiControlManager mControl = null;
     private HdmiPlaybackClient mPlayback = null;
     private List<HdmiPortInfo> mPortInfo = null;
@@ -178,6 +182,7 @@ public class HdmiCecExtend {
         mContext = ctx;
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         mService = IHdmiControlService.Stub.asInterface(ServiceManager.getService(Context.HDMI_CONTROL_SERVICE));
+        mHdmiTvClient = mControl.getTvClient();
         mHandler = new Handler();
         mSettingsObserver = new SettingsObserver(mHandler);
         registerContentObserver();
@@ -588,6 +593,12 @@ public class HdmiCecExtend {
                         SendGetMenuLanguage(ADDR_TV);
                     }
                     break;
+                case DroidLogicTvUtils.TV_CURRENT_DEVICE_ID:
+                    boolean cecOption = (Global.getInt(mContext.getContentResolver(), Global.HDMI_CONTROL_ENABLED, 1) == 1);
+                    if (!cecOption) return;
+                    int id = Settings.System.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_CURRENT_DEVICE_ID, 0);
+                    selectHdmiDevice(id);
+                    break;
             }
         }
     }
@@ -602,6 +613,8 @@ public class HdmiCecExtend {
             resolver.registerContentObserver(Global.getUriFor(s), false, mSettingsObserver,
                     UserHandle.USER_ALL);
         }
+        resolver.registerContentObserver(Settings.System.getUriFor(DroidLogicTvUtils.TV_CURRENT_DEVICE_ID),
+                    false, mSettingsObserver, UserHandle.USER_ALL);
     }
 
     private boolean isOneTouchPlayOn() {
@@ -612,6 +625,20 @@ public class HdmiCecExtend {
     private boolean isAutoChangeLanguageOn() {
         ContentResolver cr = mContext.getContentResolver();
         return Global.getInt(cr, HdmiCecManager.HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED, ENABLED) == ENABLED;
+    }
+
+    public void selectHdmiDevice(int deviceId) {
+        if (mHdmiTvClient == null) return;
+        for (HdmiDeviceInfo info : mHdmiTvClient.getDeviceList()) {
+            int id = (info.getPhysicalAddress() >> 12) + DroidLogicTvUtils.DEVICE_ID_HDMI1 - 1;
+            if (id == deviceId) {
+                mHdmiTvClient.deviceSelect(info.getLogicalAddress(), new HdmiTvClient.SelectCallback() {
+                    @Override
+                    public void onComplete(int result) {
+                    }
+                });
+            }
+        }
     }
 
     /* for native */

@@ -166,7 +166,7 @@ public class HdmiCecExtend {
     private boolean mLanguangeChanged = false;
     private boolean mInitFinished = false;
     private IHdmiControlService mService = null;
-    private int mPhyAddr = 0x1000;
+    private int mPhyAddr = -1;
     private int mVendorId = 0;
     private Handler mHandler;
 
@@ -198,6 +198,7 @@ public class HdmiCecExtend {
                     public void onReceived(HdmiHotplugEvent event) {
                         Slog.d(TAG, "HdmiHotplugEvent, connected:" + event.isConnected());
                         if (mPlayback != null) {
+                            updatePortInfo();
                             if (event.isConnected() == true && mLanguangeChanged == false && mInitFinished == true) {
                                 /* TODO: */
                             } else {
@@ -213,7 +214,6 @@ public class HdmiCecExtend {
     }
 
     public void updatePortInfo() {
-        int timeout = 0;
         if (mService != null) {
             mPhyAddr = nativeGetPhysicalAddr();
         }
@@ -247,6 +247,9 @@ public class HdmiCecExtend {
          * menually start one touch play
          */
         Slog.d(TAG, "oneTouchPlayExt started, flag:" + String.format("0x%02X", flag));
+        if (mPhyAddr == -1) {
+            mPhyAddr = nativeGetPhysicalAddr();
+        }
         ReportPhysicalAddr(ADDR_BROADCAST, mPhyAddr, HdmiDeviceInfo.DEVICE_PLAYBACK);
         SendVendorId(ADDR_BROADCAST, mVendorId);
         SendImageViewOn(ADDR_TV);
@@ -287,6 +290,9 @@ public class HdmiCecExtend {
         dest = (msg[0] >> 0) & 0xf;
         if (size > 1) {
             opcode = (msg[1] & 0xFF);
+            if (mPhyAddr == -1) {
+                mPhyAddr = nativeGetPhysicalAddr();
+            }
             /* TODO: process messages service can't process */
             switch (opcode) {
             case MESSAGE_GIVE_OSD_NAME:

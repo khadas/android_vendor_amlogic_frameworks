@@ -578,7 +578,7 @@ public class MediaPlayerExt extends MediaPlayer {
     }
 
     //must different with message value defined in MediaPlayer.java
-    private static final int MEDIA_BLURAY_INFO = 202;
+    private static final int MEDIA_BLURAY_INFO = 203;
     private class EventHandler extends Handler {
         private MediaPlayer mMediaPlayer;
 

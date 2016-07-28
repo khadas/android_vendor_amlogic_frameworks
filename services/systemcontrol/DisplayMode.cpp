@@ -1882,6 +1882,9 @@ void* DisplayMode::hdcpTxThreadLoop(void* data) {
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
     }
+    else{
+        pThiz->pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "0");
+    }
     return NULL;
 }
 

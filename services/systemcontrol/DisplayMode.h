@@ -39,6 +39,7 @@ using namespace android;
 #endif
 
 //#define USE_BEST_MODE
+#define DEFAULT_UBOOT_MODE
 
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
@@ -50,6 +51,7 @@ using namespace android;
 
 #define DEFAULT_EDID_CRCHEAD            "checkvalue: "
 #define DEFAULT_OUTPUT_MODE             "720p60hz"
+#define DEFAULT_HDMI_MODE               "1080p60hz"
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"

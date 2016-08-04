@@ -66,6 +66,8 @@ public class BootComplete extends BroadcastReceiver {
             }
 
             initDefaultAnimationSettings(context);
+
+            context.startService(new Intent(context,NtpService.class));
         }
     }
 

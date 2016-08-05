@@ -7,7 +7,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+import android.os.UserHandle;
 import android.provider.Settings;
+import android.content.ContentResolver;
 import android.util.Log;
 import android.view.IWindowManager;
 
@@ -71,6 +73,20 @@ public class BootComplete extends BroadcastReceiver {
 
             Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
             context.startService(gattServiceIntent);
+            String rotProp = sm.getPropertyString("persist.sys.app.rotation", "");
+            ContentResolver res = context.getContentResolver();
+            int acceRotation = Settings.System.getIntForUser(res,
+                Settings.System.ACCELEROMETER_ROTATION,
+                0,
+                UserHandle.USER_CURRENT);
+            if (rotProp != null && ("middle_port".equals(rotProp) || "force_land".equals(rotProp))) {
+                    if (0 != acceRotation) {
+                        Settings.System.putIntForUser(res,
+                            Settings.System.ACCELEROMETER_ROTATION,
+                            0,
+                            UserHandle.USER_CURRENT);
+                    }
+            }
         }
     }
 

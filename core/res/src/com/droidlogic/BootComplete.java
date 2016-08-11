@@ -68,6 +68,9 @@ public class BootComplete extends BroadcastReceiver {
             initDefaultAnimationSettings(context);
 
             context.startService(new Intent(context,NtpService.class));
+
+            Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
+            context.startService(gattServiceIntent);
         }
     }
 

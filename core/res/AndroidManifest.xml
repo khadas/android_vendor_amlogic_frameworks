@@ -49,6 +49,7 @@
         <service android:name="com.droidlogic.Optimization" />
         <service android:name="com.droidlogic.NtpService" />
         <service android:name="com.droidlogic.NetflixService" />
+        <service android:name="com.droidlogic.DialogBluetoothService" />
 
         <receiver android:name="com.droidlogic.BootComplete">
             <intent-filter>

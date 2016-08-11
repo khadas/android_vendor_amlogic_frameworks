@@ -29,7 +29,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 import android.media.tv.TvContract.Channels;
-
+import android.app.ActivityManager;
 import android.view.Surface;
 import android.net.Uri;
 import com.android.internal.os.SomeArgs;
@@ -63,15 +63,11 @@ public class DroidLogicTvInputService extends TvInputService implements
     private static final int MSG_DO_TUNE = 0;
     private static final int MSG_DO_SET_SURFACE = 3;
     private static final int RETUNE_TIMEOUT = 20; // 1 second
+    private static int mSelectPort = -1;
     private int timeout = RETUNE_TIMEOUT;
     private Surface mSurface;
     protected int ACTION_FAILED = -1;
     protected int ACTION_SUCCESS = 1;
-    private final int TV_SOURCE_EXTERNAL = 0;
-    private final int TV_SOURCE_INTERNAL = 1;
-    private HdmiTvClient mHdmiTvClient = null;
-    private HdmiControlManager mHdmiManager;
-    private int mCurPort = -1;
     private Context mContext;
     private int mCurrentSessionId = 0;
 
@@ -114,7 +110,6 @@ public class DroidLogicTvInputService extends TvInputService implements
         mHardware = tm.acquireTvInputHardware(mDeviceId, mHardwareCallback, tm.getTvInputInfo(inputId));
 
         mSessionHandler = new SurfaceHandler();
-        mHdmiManager = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         return null;
     }
 
@@ -1177,8 +1172,6 @@ public class DroidLogicTvInputService extends TvInputService implements
             Log.d(TAG, "surface is null, so stop TV play");
             stopTvPlay(session.mId);
         }
-        if (surface == null)
-            selectHdmiDevice(TV_SOURCE_INTERNAL);
     }
 
     public int doTune(Uri uri, int sessionId) {
@@ -1201,7 +1194,7 @@ public class DroidLogicTvInputService extends TvInputService implements
         Log.d(TAG, "startTvPlay inputId=" + mInputId + " surface=" + mSurface);
         if (mHardware != null && mSurface != null && mSurface.isValid()) {
             mHardware.setSurface(mSurface, mConfigs[0]);
-            selectHdmiDevice(TV_SOURCE_EXTERNAL);
+            selectHdmiDevice(mDeviceId);
             return ACTION_SUCCESS;
         }
         return ACTION_FAILED;
@@ -1210,92 +1203,54 @@ public class DroidLogicTvInputService extends TvInputService implements
     private int stopTvPlay(int sessionId) {
         if (mHardware != null) {
             mHardware.setSurface(null, null);
-            return ACTION_SUCCESS;
+        } else {
+            tvPlayStopped(sessionId);
         }
-        tvPlayStopped(sessionId);
+        selectHdmiDevice(-1);
         return ACTION_SUCCESS;
     }
     public void setCurrentSessionById(int sessionId){}
     public void doTuneFinish(int result, Uri uri, int sessionId){};
     public void tvPlayStopped(int sessionId){};
 
-
-    private boolean mInHdmi = false;
-    private int mSourcePort = 0;
-
-    private void setCurPort(int port) {
-        mCurPort = port;
-    }
-
     protected int getCurrentSessionId() {
         return mCurrentSessionId;
     }
 
-    public void selectHdmiDevice(int mode) {
-        boolean cecOption = (Global.getInt(mContext.getContentResolver(), Global.HDMI_CONTROL_ENABLED, 1) == 1);
-        Log.d(TAG, "CEC selectHdmiDevice, deviceId:" + mDeviceId + ", cecOption:" + cecOption);
-        if (mHdmiTvClient == null) {
-            if (mHdmiManager == null) {
-                Log.d(TAG, "CEC NULL mHdmiManager");
-                return;
-            }
-            mHdmiTvClient = mHdmiManager.getTvClient();
-        }
-        if (!cecOption || mHdmiTvClient == null) {
-            Log.d(TAG, "cec not enabled or null mHdmiTvClient");
-            return ;
-        }
-        Log.d(TAG, "CEC selectHdmiDevice, mode:" + mode + ", mInHdmi:" + mInHdmi);
-        if (mode == TV_SOURCE_EXTERNAL) {
-            int fit = DroidLogicTvUtils.DEVICE_ID_HDMI1 - 1;
-            int id = mDeviceId - fit;
-            Log.d(TAG, "CEC selectHdmiDevice, id:"+ id + ", mInHdmi:" + mInHdmi+ ", curPort:" + mCurPort);
-            for (HdmiDeviceInfo info : mHdmiTvClient.getDeviceList()) {
-                mSourcePort = info.getPhysicalAddress() >> 12;
-                Log.d(TAG, "CEC selectHdmiDevice, id:"+ id + ", port:" + mSourcePort);
-                if (id == mSourcePort && mCurPort != id) {
-                    mHdmiTvClient.deviceSelect(info.getLogicalAddress(), new SelectCallback() {
-                        @Override
-                        public void onComplete(int result) {
-                            Log.d(TAG, "CEC selectHdmiDevice success");
-                            mInHdmi = true;
-                            setCurPort(mSourcePort);
-                        }
-                    });
-                    return;
-                } else if (id == mSourcePort && mCurPort == id) {
-                    Log.d(TAG, "CEC already selected port:" + id);
-                    return ;
-                }
-            }
-            if (mInHdmi) {
-                /* select internal source if no hdmi */
-                Log.d(TAG, "CEC selectHdmiDevice, check to internal source");
-                mHdmiTvClient.deviceSelect(0, new SelectCallback() {
-                    @Override
-                    public void onComplete(int result) {
-                        Log.d(TAG, "CEC selectInternal success");
-                        mInHdmi = false;
-                        setCurPort(-1);
-                    }
-                });
-            }
-        } else if (mode == TV_SOURCE_INTERNAL) {
-            if (mInHdmi) {
-                /* select internal source if no hdmi */
-                Log.d(TAG, "CEC selectHdmiDevice, check to internal source");
-                mHdmiTvClient.deviceSelect(0, new SelectCallback() {
-                    @Override
-                    public void onComplete(int result) {
-                        Log.d(TAG, "CEC selectInternal success");
-                        mInHdmi = false;
-                        setCurPort(-1);
-                    }
-                });
-            }
-        }
+    private boolean isInTvApp() {
+        ActivityManager am = (ActivityManager) this.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningTaskInfo> runTaskInfos = am.getRunningTasks(1);
+        ActivityManager.RunningTaskInfo runningTaskInfo = runTaskInfos.get(0);
+        return runningTaskInfo.topActivity.getPackageName().equals("com.droidlogic.tvsource");
     }
 
-
+    public void selectHdmiDevice(final int port) {
+        int devAddr = 0;
+        if (!isInTvApp()) return;
+        HdmiControlManager manager = (HdmiControlManager) this.getSystemService(Context.HDMI_CONTROL_SERVICE);
+        if (manager == null) return;
+        HdmiTvClient client = manager.getTvClient();
+        boolean cecOption = (Global.getInt(this.getContentResolver(), Global.HDMI_CONTROL_ENABLED, 1) == 1);
+        if (!cecOption || client == null) return;
+        if (port >= DroidLogicTvUtils.DEVICE_ID_HDMI1) {
+            int id = port - DroidLogicTvUtils.DEVICE_ID_HDMI1 + 1;
+            for (HdmiDeviceInfo info : client.getDeviceList()) {
+                if (id == (info.getPhysicalAddress() >> 12)) {
+                    devAddr = info.getLogicalAddress();
+                }
+            }
+        }
+        if (mSelectPort < 0 && devAddr == 0) return;
+        if (mSelectPort != port) {
+            final int addr = devAddr;
+            client.deviceSelect(devAddr, new SelectCallback() {
+                @Override
+                public void onComplete(int result) {
+                    if (addr == 0) mSelectPort = -1;
+                    else mSelectPort = port;
+                }
+            });
+        }
+    }
 }
 

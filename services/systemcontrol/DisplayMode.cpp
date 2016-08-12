@@ -593,7 +593,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     bool cvbsMode = false;
 
     strcpy(finalMode, outputmode);
-    addSuffixForMode(finalMode);
+    addSuffixForMode(finalMode, state);
     if (state == OUPUT_MODE_STATE_SWITCH) {
         char curDisplayMode[MODE_LEN] = {0};
         pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
@@ -893,7 +893,7 @@ void DisplayMode::standardMode(char* mode) {
     }
 }
 
-void DisplayMode::addSuffixForMode(char* mode) {
+void DisplayMode::addSuffixForMode(char* mode, output_mode_state state) {
     char save_mode[MODE_LEN] = {0};
 
     strcpy(save_mode, mode);
@@ -905,7 +905,8 @@ void DisplayMode::addSuffixForMode(char* mode) {
         case DISPLAY_MODE_4K2K30HZ:
         case DISPLAY_MODE_4K2K50HZ420:
         case DISPLAY_MODE_4K2K60HZ420:
-            pSysWrite->writeSysfs(DISPLAY_HDMI_MIC, "0");
+            if (OUPUT_MODE_STATE_INIT != state)
+                pSysWrite->writeSysfs(DISPLAY_HDMI_VIC, "0");
             if (isDeepColor()) {
 #if 0
                 char deepColor[MAX_STR_LEN];

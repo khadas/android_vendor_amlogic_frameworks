@@ -512,7 +512,11 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
     memset(&data, 0, sizeof(hdmi_data_t));
-    pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "1");
+
+    if (mDisplayType == DISPLAY_TYPE_TV) {
+        pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "1");
+    }
+
     initHdmiData(&data, hpdstate);
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (!strcmp(data.hpd_state, "1")) {

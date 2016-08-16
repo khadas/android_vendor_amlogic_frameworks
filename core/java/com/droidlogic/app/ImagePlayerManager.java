@@ -1,6 +1,9 @@
 package com.droidlogic.app;
 
+import java.io.File;
+
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
@@ -14,6 +17,7 @@ public class ImagePlayerManager {
     private static final String TAG                 = "ImagePlayerManager";
 
     private static final String IMAGE_TOKEN         = "droidlogic.IImagePlayerService";
+    public static final int PERMISSION_DENIED_ERROR = -0xfffd;
     public static final int ARGUMENTS_ERROR         = -0xfffe;
     public static final int REMOTE_EXCEPTION        = -0xffff;
     int TRANSACTION_INIT                            = IBinder.FIRST_CALL_TRANSACTION;
@@ -117,6 +121,12 @@ public class ImagePlayerManager {
 
     //url start with http:// or https://
     public int setDataSourceURL(String url) {
+        if (mContext.checkCallingOrSelfPermission(android.Manifest.permission.INTERNET)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "setDataSourceURL Internet Permission Denial from pid="
+                + Binder.getCallingPid() + ", uid=" + Binder.getCallingUid());
+            return PERMISSION_DENIED_ERROR;
+        }
         try {
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
@@ -148,11 +158,16 @@ public class ImagePlayerManager {
         if (path.startsWith("http://") || path.startsWith("https://"))
             return setDataSourceURL(path);//it is a network picture
 
-        if (!path.startsWith("file://")) {
-            path = "file://" + path;
+        final File file = new File(path);
+        if (file.exists()) {
+            if (!path.startsWith("file://")) {
+                path = "file://" + path;
+            }
+            return _setDataSource(path);
+        } else {
+            Log.e(TAG, "dataSource file path:" + path + " not exists, setDataSource failed.");
+            return ARGUMENTS_ERROR;
         }
-
-        return _setDataSource(path);
     }
 
     private int _setDataSource(String path) {

@@ -3,6 +3,9 @@ package com.droidlogic;
 
 import android.content.Context;
 import android.content.ContentResolver;
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.database.ContentObserver;
@@ -118,6 +121,9 @@ public class HdmiCecExtend {
     static final int SEND_RESULT_BUSY = 2;
     static final int SEND_RESULT_FAILURE = 3;
 
+    static final int STANDBY_SCREEN_OFF = 0;
+    static final int STANDBY_SHUTDOWN = 1;
+
     /** Logical address for TV */
     public static final int ADDR_TV = 0;
     /** Logical address for recorder 1 */
@@ -173,6 +179,7 @@ public class HdmiCecExtend {
     private int mPhyAddr = -1;
     private int mVendorId = 0;
     private Handler mHandler;
+    private HdmiExtendReceiver mReceiver = new HdmiExtendReceiver();
 
     public HdmiCecExtend(Context ctx) {
         Slog.d(TAG, "HdmiCecExtend start");
@@ -197,6 +204,12 @@ public class HdmiCecExtend {
                 if (!mLanguangeChanged) {
                     mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
                 }
+                // Register broadcast receiver for power state change.
+                IntentFilter filter = new IntentFilter();
+                filter.addAction(Intent.ACTION_SCREEN_OFF);
+                filter.addAction(Intent.ACTION_SHUTDOWN);
+                filter.addAction(Intent.ACTION_SCREEN_ON);
+                ctx.getApplicationContext().registerReceiver(mReceiver, filter);
             }
             mControl.addHotplugEventListener(new HdmiControlManager.HotplugEventListener() {
                     @Override
@@ -439,6 +452,10 @@ public class HdmiCecExtend {
         SendCecMessage(dest, body);
     }
 
+    private void SendStandby(int dest) {
+        SendCecMessage(dest, buildCecMsg(MESSAGE_STANDBY, EmptyArray.BYTE));
+    }
+
     private void SendActiveSource(int dest, int physicalAddr) {
         byte[] msg = new byte[] {(byte)(MESSAGE_ACTIVE_SOURCE & 0xff),
                                  (byte)((physicalAddr >> 8) & 0xff),
@@ -643,6 +660,39 @@ public class HdmiCecExtend {
                     public void onComplete(int result) {
                     }
                 });
+            }
+        }
+    }
+
+    private void onStandby(int reason) {
+        boolean canPowerTv = SystemProperties.getBoolean("sys.cec.auto_tv_off", false);
+        Slog.d(TAG, "auto tv off:" + canPowerTv);
+        if (!canPowerTv)
+            return ;
+        switch (reason) {
+            case STANDBY_SCREEN_OFF:
+                SendStandby(ADDR_TV);
+                break;
+            case STANDBY_SHUTDOWN:
+                // ACTION_SHUTDOWN is taken as a signal to power off all the devices.
+                SendStandby(ADDR_BROADCAST);
+                break;
+        }
+    }
+
+    /* for suspend/resume */
+    private class HdmiExtendReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (intent.getAction()) {
+            case Intent.ACTION_SCREEN_OFF:
+                onStandby(STANDBY_SCREEN_OFF);
+                break;
+            case Intent.ACTION_SHUTDOWN:
+                onStandby(STANDBY_SHUTDOWN);
+                break;
+            case Intent.ACTION_SCREEN_ON:
+                break;
             }
         }
     }

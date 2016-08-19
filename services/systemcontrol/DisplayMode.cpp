@@ -578,6 +578,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
             pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
             pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
         }
+        strcpy(outputmode, data.current_mode);
     }
     setMboxOutputMode(outputmode, state);
 }
@@ -937,6 +938,9 @@ void DisplayMode::addSuffixForMode(char* mode, output_mode_state state) {
                 strcat(mode, SUFFIX_10BIT);
 #endif
             }
+            break;
+      case DISPLAY_MODE_4K2K50HZ422:
+            strcat(mode, SUFFIX_10BIT);
             break;
       case DISPLAY_MODE_4K2K60HZ422:
             strcat(mode, SUFFIX_10BIT);
@@ -1310,7 +1314,6 @@ void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
     outputheight = position[3];
 
     pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
-
     char axis[MAX_STR_LEN] = {0};
     sprintf(axis, "%d %d %d %d",
             0, 0, mDisplayWidth - 1, mDisplayHeight - 1);

@@ -39,7 +39,7 @@ using namespace android;
 #endif
 
 //#define USE_BEST_MODE
-//#define TEST_UBOOT_MODE
+#define TEST_UBOOT_MODE
 
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
@@ -202,6 +202,7 @@ using namespace android;
 
 #define UBOOTENV_DIGITAUDIO             "ubootenv.var.digitaudiooutput"
 #define UBOOTENV_HDMIMODE               "ubootenv.var.hdmimode"
+#define UBOOTENV_TESTMODE               "ubootenv.var.testmode"
 #define UBOOTENV_CVBSMODE               "ubootenv.var.cvbsmode"
 #define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"

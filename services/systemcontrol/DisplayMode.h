@@ -39,7 +39,7 @@ using namespace android;
 #endif
 
 //#define USE_BEST_MODE
-#define DEFAULT_UBOOT_MODE
+//#define TEST_UBOOT_MODE
 
 #define DEVICE_STR_MID                  "MID"
 #define DEVICE_STR_MBOX                 "MBOX"
@@ -51,7 +51,6 @@ using namespace android;
 
 #define DEFAULT_EDID_CRCHEAD            "checkvalue: "
 #define DEFAULT_OUTPUT_MODE             "720p60hz"
-#define DEFAULT_HDMI_MODE               "1080p60hz"
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
@@ -127,6 +126,9 @@ using namespace android;
 #define HDMI_RX_KEY_COMBINE             "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
 
 #define VIDEO_LAYER1_UEVENT             "DEVPATH=/devices/virtual/switch/video_layer1"
+#define VIDEO_LAYER_ENABLE    "0"
+#define VIDEO_LAYER_DISABLE    "1"
+#define VIDEO_LAYER_AUTO_ENABLE   "2"   //2:enable video layer when first frame data come
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"

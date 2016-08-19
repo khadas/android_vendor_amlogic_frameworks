@@ -356,7 +356,7 @@ void DisplayMode::reInit() {
 }
 
     SYS_LOGI("open osd0 and disable video\n");
-    pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "2");
+    pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_AUTO_ENABLE);
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
@@ -514,7 +514,7 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     memset(&data, 0, sizeof(hdmi_data_t));
 
     if (mDisplayType == DISPLAY_TYPE_TV) {
-        pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "1");
+        pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_DISABLE);
     }
 
     initHdmiData(&data, hpdstate);
@@ -870,12 +870,13 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
         }
         pCmp = pos + step;
     }
-#ifdef DEFAULT_UBOOT_MODE
-    strcpy(mode, data->ubootenv_hdmimode);
-    if (strlen(mode) == 0)
-        strcpy(mode, DEFAULT_HDMI_MODE);
-    return;
-#endif
+    if (DISPLAY_TYPE_TV == mDisplayType) {
+        #ifdef TEST_UBOOT_MODE
+            getBootEnv(UBOOTENV_TESTMODE, mode);
+            if (strlen(mode) != 0)
+               return;
+        #endif
+    }
     //old mode is not support in this TV, so switch to best mode.
 #ifdef USE_BEST_MODE
     getBestHdmiMode(mode, data);
@@ -1887,13 +1888,13 @@ void* DisplayMode::hdcpTxThreadLoop(void* data) {
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
 
         pThiz->hdcpTxAuthenticate(hdcp22, hdcp14);
-        pThiz->pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "0");
+        pThiz->pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
 
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
     }
     else{
-        pThiz->pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, "0");
+        pThiz->pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
     }
     return NULL;
 }

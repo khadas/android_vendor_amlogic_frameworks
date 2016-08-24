@@ -68,6 +68,7 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2K24HZ,
     MODE_4K2K25HZ,
     MODE_4K2K30HZ,
+    MODE_4K2K30HZ444_10BIT,
     MODE_4K2K50HZ,
     MODE_4K2K50HZ420,
     MODE_4K2K50HZ422,
@@ -888,6 +889,7 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
 void DisplayMode::standardMode(char* mode) {
     char* p;
     if ((p = strstr(mode, SUFFIX_10BIT)) != NULL) {
+        return;
     } else if ((p = strstr(mode, SUFFIX_12BIT)) != NULL) {
     } else if ((p = strstr(mode, SUFFIX_14BIT)) != NULL) {
     } else if ((p = strstr(mode, SUFFIX_RGB)) != NULL) {
@@ -1503,6 +1505,7 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             position[3] = getBootenvInt(ENV_4K2K25HZ_H, FULL_HEIGHT_4K2K);
             break;
         case DISPLAY_MODE_4K2K30HZ: // 4k2k30hz
+        case DISPLAY_MODE_4K2K30HZ444_10BIT: //4k2k30hz44010bit
             position[0] = getBootenvInt(ENV_4K2K30HZ_X, 0);
             position[1] = getBootenvInt(ENV_4K2K30HZ_Y, 0);
             position[2] = getBootenvInt(ENV_4K2K30HZ_W, FULL_WIDTH_4K2K);
@@ -1620,6 +1623,7 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
             setBootEnv(ENV_4K2K25HZ_H, h);
             break;
         case DISPLAY_MODE_4K2K30HZ:    //4k2k30hz
+        case DISPLAY_MODE_4K2K30HZ444_10BIT:    //4k2k30hz44410bit
             setBootEnv(ENV_4K2K30HZ_X, x);
             setBootEnv(ENV_4K2K30HZ_Y, y);
             setBootEnv(ENV_4K2K30HZ_W, w);

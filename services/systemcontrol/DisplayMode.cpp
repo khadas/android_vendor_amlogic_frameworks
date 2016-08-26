@@ -226,7 +226,7 @@ static bool isMatch(uevent_data_t* ueventData, const char* matchName) {
     const char* field = ueventData->buf;
     const char* end = ueventData->buf + ueventData->len + 1;
     do {
-        if (strstr(field, matchName)) {
+        if (!strcmp(field, matchName)) {
             SYS_LOGI("Matched uevent message with pattern: %s", matchName);
             matched = true;
         }

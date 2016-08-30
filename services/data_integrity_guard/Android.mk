@@ -59,6 +59,8 @@ LOCAL_SHARED_LIBRARIES := libcutils libc\
 
 LOCAL_STATIC_LIBRARIES:= libvold \
         libfs_mgr \
+        libfec \
+	      libfec_rs \
         liblogwrap \
         libmincrypt \
         libsquashfs_utils

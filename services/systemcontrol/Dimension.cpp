@@ -41,8 +41,8 @@ using namespace android;
 #endif
 
 Dimension::Dimension(DisplayMode *displayMode, SysWrite *sysWrite)
-    :mDisplay3DFormat(0),
-    mLogLevel(LOG_LEVEL_DEFAULT) {
+    :mLogLevel(LOG_LEVEL_DEFAULT),
+    mDisplay3DFormat(0) {
     pDisplayMode = displayMode;
     pSysWrite = sysWrite;
 
@@ -78,7 +78,8 @@ int32_t Dimension::set3DMode(const char* mode3d) {
 
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
     usleep(100 * 1000);
-    pDisplayMode->hdcpTxStop();
+    if (NULL != pDisplayMode->geTxAuth())
+        pDisplayMode->geTxAuth()->stop();
 
     char curDisplayMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
@@ -98,9 +99,8 @@ int32_t Dimension::set3DMode(const char* mode3d) {
     strcpy(mMode3d, mode3d);
     mode3DImpl(mode3d);
 
-    pDisplayMode->hdcpTxThreadExit();
-
-    pDisplayMode->hdcpTxThreadStart();
+    if (NULL != pDisplayMode->geTxAuth())
+        pDisplayMode->geTxAuth()->start();
     return 0;
 }
 
@@ -126,7 +126,7 @@ void Dimension::mode3DImpl(const char* mode3d) {
 
 #ifndef RECOVERY_MODE
     SurfaceComposerClient::openGlobalTransaction();
-    SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
+    //SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
     SurfaceComposerClient::closeGlobalTransaction();
 #endif
 
@@ -469,7 +469,7 @@ void Dimension::get3DFormatStr(int format, char *str) {
         return;
     }
 
-    char *formatStr = "3doff";
+    const char *formatStr = "3doff";
     switch (format) {
         case FORMAT_3D_OFF:
             formatStr = "3doff";

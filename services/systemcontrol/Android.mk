@@ -46,10 +46,12 @@ LOCAL_SRC_FILES:= \
   DisplayMode.cpp \
   Dimension.cpp \
   SysTokenizer.cpp \
-  HDCPKey/hdcp22_key.cpp \
-  HDCPKey/HdcpRx22Key.cpp \
-  HDCPKey/HdcpKeyDecrypt.cpp \
-  HDCPKey/aes.cpp
+  UEventObserver.cpp \
+  HDCP/aes.cpp \
+  HDCP/HdcpKeyDecrypt.cpp \
+  HDCP/HDCPRxKey.cpp \
+  HDCP/HDCPRxAuth.cpp \
+  HDCP/HDCPTxAuth.cpp
 
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \
@@ -95,7 +97,13 @@ LOCAL_SRC_FILES:= \
   ubootenv.c \
   SysWrite.cpp \
   DisplayMode.cpp \
-  SysTokenizer.cpp
+  SysTokenizer.cpp \
+  UEventObserver.cpp \
+  HDCP/aes.cpp \
+  HDCP/HdcpKeyDecrypt.cpp \
+  HDCP/HDCPRxKey.cpp \
+  HDCP/HDCPRxAuth.cpp \
+  HDCP/HDCPTxAuth.cpp
 
 LOCAL_STATIC_LIBRARIES := \
   libcutils \

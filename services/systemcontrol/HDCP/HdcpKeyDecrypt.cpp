@@ -29,7 +29,6 @@
 #include <errno.h>
 #include "common.h"
 
-#include "HdcpRx22Key.h"
 #include "HdcpKeyDecrypt.h"
 #include "aes.h"
 
@@ -70,13 +69,13 @@ unsigned addSum(const void* pBuf, const unsigned size)
     if (rest == 0) {
         ;
     }
-    else if(rest == 1) {
+    else if (rest == 1) {
         sum += (*data) & 0xff;
     }
-    else if(rest == 2) {
+    else if (rest == 2) {
         sum += (*data) & 0xffff;
     }
-    else if(rest == 3) {
+    else if (rest == 3) {
         sum += (*data) & 0xffffff;
     }
 
@@ -90,12 +89,11 @@ int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, 
     const int dataLen         = ( ( nInLen + 0xf ) >> 4 ) << 4;
     unsigned char* transferBuf = NULL;
 
-    if(!pIn || !nInLen || !pOut || !pOutLen) {
+    if (!pIn || !nInLen || !pOut || !pOutLen) {
         //_MSG_BOX_ERR(_T("arg nul"));
         return -__LINE__;
     }
-    if( nInLen & 0xf )
-    {
+    if ( nInLen & 0xf ) {
         transferBuf = new unsigned char [dataLen];
         data = transferBuf;
     }
@@ -108,7 +106,7 @@ int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, 
     unsigned char key[AES_KEY_BIT/8];
     memcpy(key, default_fixed_aeskey, sizeof(default_fixed_aeskey));
 
-    if(isEncrypt) {
+    if (isEncrypt) {
         aes_setkey_enc(&ctx, key, AES_KEY_BIT);
     }
     else {
@@ -118,7 +116,7 @@ int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, 
     nRet = aes_crypt_cbc(&ctx, isEncrypt, dataLen, iv, pIn, pOut);
 
     *pOutLen = dataLen;
-    if(transferBuf) delete[] transferBuf;
+    if (transferBuf) delete[] transferBuf;
     return nRet;
 }
 

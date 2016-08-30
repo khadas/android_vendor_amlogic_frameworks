@@ -437,7 +437,7 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args) {
                     int level = atoi(levelStr.string());
                     setLogLevel(level);
 
-                    result.appendFormat(String8::format("Setting log level to %d.\n", level));
+                    result.append(String8::format("Setting log level to %d.\n", level));
                     break;
                 }
             }
@@ -445,7 +445,7 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args) {
                 if((i + 3 < len) && (args[i + 1] == String16("set"))){
                     setBootEnv(args[i+2], args[i+3]);
 
-                    result.appendFormat(String8::format("set bootenv key:[%s] value:[%s]\n",
+                    result.append(String8::format("set bootenv key:[%s] value:[%s]\n",
                         String8(args[i+2]).string(), String8(args[i+3]).string()));
                     break;
                 }
@@ -458,7 +458,7 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args) {
                         String16 value;
                         getBootEnv(args[i+2], value);
 
-                        result.appendFormat(String8::format("get bootenv key:[%s] value:[%s]\n",
+                        result.append(String8::format("get bootenv key:[%s] value:[%s]\n",
                             String8(args[i+2]).string(), String8(value).string()));
                     }
                     break;

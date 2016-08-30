@@ -430,7 +430,11 @@ static SkBitmap* cropAndFillBitmap(SkBitmap *srcBitmap, int dstWidth, int dstHei
     SkRect dst = SkRect::MakeXYWH(dstx, dsty, minWidth, minHeight);
 
     SkRect src = SkRect::MakeXYWH(srcx, srcy, minWidth, minHeight);
+#if ANDROID_PLATFORM_SDK_VERSION >= 24 //Nougat
+    canvas->drawBitmapRect(*srcBitmap, src, dst, &paint);
+#else
     canvas->drawBitmapRectToRect(*srcBitmap, &src, dst, &paint);
+#endif
 
     delete canvas;
 
@@ -483,8 +487,11 @@ static SkBitmap* translateAndCropAndFillBitmap(SkBitmap *srcBitmap, int dstWidth
     SkRect dst = SkRect::MakeXYWH(dstx, dsty, minWidth, minHeight);
 
     SkIRect src = SkIRect::MakeXYWH(aftertranslatesrcx, aftertranslatesrcy, minWidth, minHeight);
+#if ANDROID_PLATFORM_SDK_VERSION >= 24 //Nougat
+    canvas->drawBitmapRect(*srcBitmap, src, dst, &paint);
+#else
     canvas->drawBitmapRect(*srcBitmap, &src, dst, &paint);
-
+#endif
     delete canvas;
 
     return devBitmap;
@@ -1312,6 +1319,7 @@ SkBitmap* ImagePlayerService::decode(SkStreamRewindable *stream, InitParameter *
     SkBitmap *bitmap = NULL;
     int imageW = 0, imageH = 0;
 
+#if 0
     //SkAutoTDelete<SkStreamRewindable> bufferedStream(
     //        SkFrontBufferedStream::Create(stream->duplicate(), BYTES_TO_BUFFER));
 
@@ -1417,7 +1425,7 @@ SkBitmap* ImagePlayerService::decode(SkStreamRewindable *stream, InitParameter *
         mHeight = bitmap->height();
         ALOGD("Image raw size, width:%d, height:%d", mWidth, mHeight);
     }
-
+#endif
     return bitmap;
 }
 

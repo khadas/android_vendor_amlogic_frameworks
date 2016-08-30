@@ -14,7 +14,7 @@ namespace android
         jint displayid, jint format) {
         ALOGD("nativeSetDisplaySize format is %d", format);
         SurfaceComposerClient::openGlobalTransaction();
-        SurfaceComposerClient::setVDisplaySize(displayid,format);
+        //SurfaceComposerClient::setVDisplaySize(displayid,format);
         SurfaceComposerClient::closeGlobalTransaction();
     }
 
@@ -22,7 +22,7 @@ namespace android
         jint displayid, jint format) {
         ALOGD("nativeSetDisplay2Stereoscopic format is %d", format);
         SurfaceComposerClient::openGlobalTransaction();
-        SurfaceComposerClient::setDisplay2Stereoscopic(displayid,format);
+        //SurfaceComposerClient::setDisplay2Stereoscopic(displayid,format);
         SurfaceComposerClient::closeGlobalTransaction();
     }
 

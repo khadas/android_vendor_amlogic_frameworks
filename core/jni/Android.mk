@@ -17,8 +17,8 @@ LOCAL_C_INCLUDES += \
     external/skia/include/core \
     libcore/include \
     libcore/include/libsuspend \
-	$(call include-path-for, libhardware)/hardware \
-	$(call include-path-for, libhardware_legacy)/hardware_legacy
+	  $(call include-path-for, libhardware)/hardware \
+	  $(call include-path-for, libhardware_legacy)/hardware_legacy
 
 ifeq ($(strip $(BOARD_ALSA_AUDIO)),tiny)
     LOCAL_C_INCLUDES += external/tinyalsa/include
@@ -105,9 +105,12 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := \
 	droid_logic_GIFDecode.cpp
 
-LOCAL_C_INCLUDES := $(JNI_H_INCLUDE)
+LOCAL_C_INCLUDES := $(JNI_H_INCLUDE) \
+    external/skia/include/core \
+    external/skia/include/private \
+    external/skia/src/core
 
-LOCAL_MODULE    := libgifdecode_jni
+LOCAL_MODULE := libgifdecode_jni
 
 LOCAL_SHARED_LIBRARIES := \
     liblog \

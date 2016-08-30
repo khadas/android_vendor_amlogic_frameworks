@@ -40,9 +40,6 @@
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
 
-#include "HDCPKey/hdcp22_key.h"
-#include "HDCPKey/HdcpRx22Key.h"
-
 #ifndef RECOVERY_MODE
 #include <binder/IBinder.h>
 #include <binder/IServiceManager.h>
@@ -105,39 +102,6 @@ char *_strstr(const char *s1, const char *s2)
     return NULL;
 }
 
-void printfMsg(char* msg_buf, int len)
-{
-#if 1
-    SYS_LOGI("printfMsg ===>");
-    int tmp_len = 0;
-    int total_len = 0;
-    char* tmp_buf = msg_buf;
-    while (total_len < len)
-    {
-        tmp_len = strlen(tmp_buf);
-        total_len += tmp_len;
-        SYS_LOGI("%s", tmp_buf);
-        tmp_buf = msg_buf + total_len;
-        while ((total_len < len) && (*tmp_buf == '\0'))
-        {
-            total_len++;
-            tmp_buf++;
-        }
-    }
-    SYS_LOGI("printfMsg <===");
-#else
-    //change@/devices/virtual/switch/hdmi ACTION=change DEVPATH=/devices/virtual/switch/hdmi
-    //SUBSYSTEM=switch SWITCH_NAME=hdmi SWITCH_STATE=0 SEQNUM=2791
-    char printBuf[1024] = {0};
-    memcpy(printBuf, msg_buf, len);
-    for (int i = 0; i < len; i++) {
-        if (printBuf[i] == 0x0)
-            printBuf[i] = ' ';
-    }
-    SYS_LOGI("Received uevent message: %s", printBuf);
-#endif
-}
-
 static void copy_if_gt0(uint32_t *src, uint32_t *dst, unsigned cnt)
 {
     do {
@@ -173,93 +137,8 @@ static void copy_changed_values(
     copy_if_gt0(&set->pixclock, &base->pixclock, 9);
 }
 
-static int uevent_init()
-{
-    struct sockaddr_nl addr;
-    int sz = 64*1024;
-    int s;
-
-    memset(&addr, 0, sizeof(addr));
-    addr.nl_family = AF_NETLINK;
-    addr.nl_pid = getpid();
-    addr.nl_groups = 0xffffffff;
-
-    s = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);
-    if (s < 0)
-        return 0;
-
-    setsockopt(s, SOL_SOCKET, SO_RCVBUFFORCE, &sz, sizeof(sz));
-
-    if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        close(s);
-        return 0;
-    }
-
-    return s;
-}
-
-static int uevent_next_event(int fd, char* buffer, int buffer_length)
-{
-    while (1) {
-        struct pollfd fds;
-        int nr;
-
-        fds.fd = fd;
-        fds.events = POLLIN;
-        fds.revents = 0;
-        nr = poll(&fds, 1, -1);
-
-        if (nr > 0 && (fds.revents & POLLIN)) {
-            int count = recv(fd, buffer, buffer_length, 0);
-            if (count > 0) {
-                return count;
-            }
-        }
-    }
-
-    // won't get here
-    return 0;
-}
-
-static bool isMatch(uevent_data_t* ueventData, const char* matchName) {
-    bool matched = false;
-    // Consider all zero-delimited fields of the buffer.
-    const char* field = ueventData->buf;
-    const char* end = ueventData->buf + ueventData->len + 1;
-    do {
-        if (strstr(field, matchName)) {
-            SYS_LOGI("Matched uevent message with pattern: %s", matchName);
-            matched = true;
-        }
-        //SWITCH_STATE=1, SWITCH_NAME=hdmi
-        else if (strstr(field, "SWITCH_STATE=")) {
-            strcpy(ueventData->state, field + strlen("SWITCH_STATE="));
-        }
-        else if (strstr(field, "SWITCH_NAME=")) {
-            strcpy(ueventData->name, field + strlen("SWITCH_NAME="));
-        }
-        field += strlen(field) + 1;
-    } while (field != end);
-
-    return matched;
-}
-
-#ifndef RECOVERY_MODE
-static void sfRepaintEverything() {
-    sp<IServiceManager> sm = defaultServiceManager();
-    sp<IBinder> sf = sm->getService(String16("SurfaceFlinger"));
-    if (sf != NULL) {
-        Parcel data;
-        data.writeInterfaceToken(String16("android.ui.ISurfaceComposer"));
-        //SYS_LOGI("send message to sf to repaint everything!\n");
-        sf->transact(1004, data, NULL);
-    }
-}
-#endif
-
 DisplayMode::DisplayMode(const char *path)
-    :mRxSupportHdcpAuth(0),
-    mDisplayType(DISPLAY_TYPE_MBOX),
+    :mDisplayType(DISPLAY_TYPE_MBOX),
     mFb0Width(-1),
     mFb0Height(-1),
     mFb0FbBits(-1),
@@ -271,11 +150,7 @@ DisplayMode::DisplayMode(const char *path)
     mNativeWinX(0), mNativeWinY(0), mNativeWinW(0), mNativeWinH(0),
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
-    mLogLevel(LOG_LEVEL_DEFAULT),
-    mLastVideoState(0),
-    pthreadIdHdcpTx(0),
-    mExitHdcpTxThread(false),
-    mBootAnimDetectFinished(false) {
+    mLogLevel(LOG_LEVEL_DEFAULT) {
 
     if (NULL == path) {
         pConfigPath = DISPLAY_CFG_FILE;
@@ -290,17 +165,9 @@ DisplayMode::DisplayMode(const char *path)
 
 DisplayMode::~DisplayMode() {
     delete pSysWrite;
-
-    sem_destroy(&pthreadTxSem);
-    sem_destroy(&pthreadBootDetectSem);
 }
 
 void DisplayMode::init() {
-    if ((sem_init(&pthreadTxSem, 0, 0) < 0) || (sem_init(&pthreadBootDetectSem, 0, 0) < 0)) {
-        SYS_LOGE("display mode, sem_init failed\n");
-        exit(0);
-    }
-
     parseConfigFile();
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
@@ -309,23 +176,15 @@ void DisplayMode::init() {
         setTabletDisplay();
     }
     else if (DISPLAY_TYPE_MBOX == mDisplayType) {
-        pthread_t id;
-        int ret = pthread_create(&id, NULL, HdmiUenventThreadLoop, this);
-        if (ret != 0) {
-            SYS_LOGE("Create HdmiPlugDetectThread error!\n");
-        }
-
+        pTxAuth = new HDCPTxAuth();
+        pTxAuth->setUevntCallback(this);
         setMboxDisplay(NULL, OUPUT_MODE_STATE_INIT);
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
-        hdcpRxInit();
+        pTxAuth = new HDCPTxAuth();
+        pTxAuth->setUevntCallback(this);
 
-        pthread_t id;
-        int ret;
-        ret = pthread_create(&id, NULL, HdmiUenventThreadLoop, this);
-        if (ret != 0) {
-            SYS_LOGE("Create HdmiUenventThreadLoop error!\n");
-        }
+        pRxAuth = new HDCPRxAuth(pTxAuth);
 
         setTVDisplay(true);
     }
@@ -343,22 +202,26 @@ void DisplayMode::reInit() {
      */
     pSysWrite->readSysfs(SYSFS_BOOT_TYPE, boot_type);
     if (strcmp(boot_type, "snapshotted")) {
-    SYS_LOGI("display mode reinit type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
-        mDisplayType, mSocType, mDefaultUI);
-    if (DISPLAY_TYPE_TABLET == mDisplayType) {
-        setTabletDisplay();
-    }
-    else if (DISPLAY_TYPE_MBOX == mDisplayType) {
+        SYS_LOGI("display mode reinit type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
+            mDisplayType, mSocType, mDefaultUI);
+        if (DISPLAY_TYPE_TABLET == mDisplayType) {
+            setTabletDisplay();
+        }
+        else if (DISPLAY_TYPE_MBOX == mDisplayType) {
             setMboxDisplay(NULL, OUPUT_MODE_STATE_POWER);
+        }
+        else if (DISPLAY_TYPE_TV == mDisplayType) {
+            setTVDisplay(false);
+        }
     }
-    else if (DISPLAY_TYPE_TV == mDisplayType) {
-        setTVDisplay(false);
-    }
-}
 
     SYS_LOGI("open osd0 and disable video\n");
     pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_AUTO_ENABLE);
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+}
+
+HDCPTxAuth *DisplayMode:: geTxAuth() {
+    return pTxAuth;
 }
 
 void DisplayMode:: getDisplayInfo(int &type, char* socType, char* defaultUI) {
@@ -661,15 +524,10 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
 
-    hdcpTxThreadExit();
-
+    pTxAuth->stop();
     //only HDMI mode need HDCP authenticate
     if (!cvbsMode) {
-        hdcpTxThreadStart();
-    }
-    else {
-        SYS_LOGI("CVBS mode need stop hdcp tx authenticate\n");
-        hdcpTxStop();
+        pTxAuth->start();
     }
 
     if (OUPUT_MODE_STATE_INIT == state) {
@@ -997,217 +855,6 @@ void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
     standardMode(data->ubootenv_hdmimode);
 }
 
-// all the hdmi plug checking complete in this loop
-/*
-void* DisplayMode::HdmiPlugDetectThread(void* data) {
-    DisplayMode *pThiz = (DisplayMode*)data;
-
-    char status[PROPERTY_VALUE_MAX] = {0};
-#if 0
-    char oldHpdstate[MAX_STR_LEN] = {0};
-    char currentHpdstate[MAX_STR_LEN] = {0};
-
-    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, oldHpdstate);
-    while (1) {
-        if (property_get("instaboot.status", status, "completed") &&
-           !strcmp("booting", status)){
-            usleep(2000000);
-            continue;
-        }
-
-        pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, currentHpdstate);
-        if (strcmp(oldHpdstate, currentHpdstate)) {
-            SYS_LOGI("HdmiPlugDetectLoop: detected HDMI plug: change state from %s to %s\n", oldHpdstate, currentHpdstate);
-
-            pThiz->setMboxDisplay(currentHpdstate, false);
-            strcpy(oldHpdstate, currentHpdstate);
-        }
-        usleep(2000000);
-    }
-#endif
-
-    // reset mode, because hdcp init need too much time, it maybe miss the HDMI plug event
-    char curMode[MODE_LEN] = {0};
-    char hpdState[MODE_LEN] = {0};
-    pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
-    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, hpdState);
-    if (!strstr(curMode, "cvbs") && !strcmp(hpdState, "1")) {
-        SYS_LOGI("current mode is cvbs, but detect HDMI plugged, reset mode");
-        pThiz->setMboxDisplay(hpdState, OUPUT_MODE_STATE_POWER);
-    }
-
-    //use uevent instead of usleep, because it's has some delay
-    uevent_data_t u_data;
-
-    memset(&u_data, 0, sizeof(uevent_data_t));
-    int fd = uevent_init();
-    while (fd >= 0) {
-        if (property_get("instaboot.status", status, "completed") &&
-           !strcmp("booting", status)) {
-            usleep(2000000);
-            continue;
-        }
-
-        u_data.len= uevent_next_event(fd, u_data.buf, sizeof(u_data.buf) - 1);
-        if (u_data.len <= 0)
-            continue;
-
-        u_data.buf[u_data.len] = '\0';
-
-    #if 0
-        //change@/devices/virtual/switch/hdmi ACTION=change DEVPATH=/devices/virtual/switch/hdmi
-        //SUBSYSTEM=switch SWITCH_NAME=hdmi SWITCH_STATE=0 SEQNUM=2791
-        char printBuf[1024] = {0};
-        memcpy(printBuf, u_data.buf, u_data.len);
-        for (int i = 0; i < u_data.len; i++) {
-            if (printBuf[i] == 0x0)
-                printBuf[i] = ' ';
-        }
-        SYS_LOGI("Received uevent message: %s", printBuf);
-    #endif
-        if (isMatch(&u_data, HDMI_TX_PLUG_UEVENT)
-            || isMatch(&u_data, HDMI_TX_POWER_UEVENT)) {
-            SYS_LOGI("HDMI switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
-            if (!strcmp(u_data.name, "hdmi") ||
-                //0: hdmi suspend 1:hdmi resume
-                (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "1"))) {
-                pThiz->setMboxDisplay(u_data.state, OUPUT_MODE_STATE_POWER);
-            }
-            if (//0: hdmi suspend 1:hdmi resume
-                (!strcmp(u_data.name, "hdmi_power") && !strcmp(u_data.state, "0"))) {
-                pThiz->hdcpTxSuspend();
-            }
-        }
-
-
-#ifndef RECOVERY_MODE
-        if (isMatch(&u_data, VIDEO_LAYER1_UEVENT)) {
-            //0: no aml video data, 1: aml video data aviliable
-            if (!strcmp(u_data.name, "video_layer1") && !strcmp(u_data.state, "1")) {
-                SYS_LOGI("Video Layer1 switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
-                sfRepaintEverything();
-            }
-        }
-#endif
-    }
-
-    return NULL;
-}
-*/
-// all the hdmi plug checking complete in this loop
-void* DisplayMode::HdmiUenventThreadLoop(void* data) {
-    DisplayMode *pThiz = (DisplayMode*)data;
-
-    char status[PROPERTY_VALUE_MAX] = {0};
-/*
-    // reset mode, because hdcp init need too much time, it maybe miss the HDMI plug event
-    char curMode[MODE_LEN] = {0};
-    char hpdState[MODE_LEN] = {0};
-    pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
-    pThiz->pSysWrite->readSysfs(DISPLAY_HPD_STATE, hpdState);
-    if (!strstr(curMode, "cvbs") && !strcmp(hpdState, "1")) {
-        SYS_LOGI("current mode is cvbs, but detect HDMI plugged, reset mode");
-        pThiz->setMboxDisplay(hpdState, OUPUT_MODE_STATE_POWER);
-    }
-*/
-    //use uevent instead of usleep, because it's has some delay
-    uevent_data_t u_data;
-
-    memset(&u_data, 0, sizeof(uevent_data_t));
-    int fd = uevent_init();
-    while (fd >= 0) {
-        if (property_get("instaboot.status", status, "completed") &&
-           !strcmp("booting", status)) {
-            usleep(2000000);
-            continue;
-        }
-
-        u_data.len= uevent_next_event(fd, u_data.buf, sizeof(u_data.buf) - 1);
-        if (u_data.len <= 0)
-            continue;
-
-        u_data.buf[u_data.len] = '\0';
-
-        //printfMsg(u_data.buf, u_data.len);
-
-        if (isMatch(&u_data, HDMI_TX_POWER_UEVENT)) {
-            SYS_LOGI("switch_name: %s switch_state: %s\n", u_data.name, u_data.state);
-            //0: hdmi suspend  1: hdmi resume
-            if (!strcmp(u_data.state, HDMI_TX_RESUME)) {
-                pThiz->setMboxDisplay(u_data.state, OUPUT_MODE_STATE_POWER);
-            }
-            if (!strcmp(u_data.state, HDMI_TX_SUSPEND)) {
-                pThiz->hdcpTxSuspend();
-            }
-        }
-        else if (isMatch(&u_data, HDMI_RX_PLUG_UEVENT)) {
-            SYS_LOGI("switch_name: %s switch_state: %s\n", u_data.name, u_data.state);
-            if (!strcmp(u_data.state, HDMI_RX_PLUG_IN)) {
-                pThiz->hdcpTxThreadExit();
-                pThiz->hdcpTxStopSvc();
-                pThiz->hdcpRxStopSvc();
-                usleep(50*1000);
-                pThiz->hdcpRxStartSvc();
-            } else if (!strcmp(u_data.state, HDMI_RX_PLUG_OUT)) {
-                pThiz->hdcpTxThreadExit();
-                pThiz->hdcpTxStopSvc();
-                pThiz->hdcpRxStopSvc();
-                pThiz->hdcpTxThreadStart();
-            }
-        }
-        else if (isMatch(&u_data, HDMI_RX_AUTH_UEVENT)) {
-            SYS_LOGI("switch_name: %s switch_state: %s\n", u_data.name, u_data.state);
-            char hdmiPlugState[MODE_LEN] = {0};
-            pThiz->pSysWrite->readSysfs(HDMI_TX_PLUG_STATE, hdmiPlugState);
-            if (!strcmp(u_data.state, HDMI_RX_AUTH_HDCP14)) {
-                SYS_LOGI("hdcp_rx 1.4 hdmi is plug in\n");
-                if (!strcmp(hdmiPlugState, "1"))
-                    pThiz->pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-
-                pThiz->mRxSupportHdcpAuth = 1;
-                pThiz->hdcpRxForceFlushVideoLayer();
-                if (!strcmp(hdmiPlugState, "1")) {
-                    SYS_LOGI("hdcp_tx hdmi is plug in\n");
-                    pThiz->hdcpTxThreadExit();
-                    pThiz->hdcpTxThreadStart();
-                } else {
-                    SYS_LOGI("hdcp_tx hdmi is plug out\n");
-                }
-            } else if (!strcmp(u_data.state, HDMI_RX_AUTH_HDCP22)) {
-                SYS_LOGI("hdcp_rx 2.2 hdmi is plug in\n");
-                if (!strcmp(hdmiPlugState, "1"))
-                    pThiz->pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
-
-                pThiz->mRxSupportHdcpAuth = 2;
-                pThiz->hdcpRxForceFlushVideoLayer();
-                if (!strcmp(hdmiPlugState, "1")) {
-                    SYS_LOGI("hdcp_tx hdmi is plug in\n");
-                    pThiz->hdcpTxThreadExit();
-                    pThiz->hdcpTxThreadStart();
-                } else {
-                    SYS_LOGI("hdcp_tx hdmi is plug out\n");
-                }
-            }
-        }
-        else if (isMatch(&u_data, HDMI_TX_PLUG_UEVENT)) {
-            SYS_LOGI("switch_name: %s switch_state: %s\n", u_data.name, u_data.state);
-            pThiz->setMboxDisplay(u_data.state, OUPUT_MODE_STATE_POWER);
-        }
-
-#ifndef RECOVERY_MODE
-        if (isMatch(&u_data, VIDEO_LAYER1_UEVENT)) {
-            //0: no aml video data, 1: aml video data aviliable
-            if (!strcmp(u_data.name, "video_layer1") && !strcmp(u_data.state, "1")) {
-                SYS_LOGI("Video Layer1 switch_state: %s switch_name: %s\n", u_data.state, u_data.name);
-                sfRepaintEverything();
-            }
-        }
-#endif
-    }
-
-    return NULL;
-}
-
 void DisplayMode::startBootanimDetectThread() {
     pthread_t id;
     int ret = pthread_create(&id, NULL, bootanimDetect, this);
@@ -1266,8 +913,7 @@ void* DisplayMode::bootanimDetect(void* data) {
     }
 
     pThiz->setOsdMouse(outputmode);
-    pThiz->mBootAnimDetectFinished = true;
-    sem_post(&pThiz->pthreadBootDetectSem);
+    pThiz->pTxAuth->setBootAnimFinished(true);
     return NULL;
 }
 
@@ -1678,293 +1324,15 @@ int DisplayMode::modeToIndex(const char *mode) {
     return index;
 }
 
-void DisplayMode::hdcpRxStartSvc() {
-    pSysWrite->setProperty("ctl.start", "hdcp_rx22");
-}
+void DisplayMode::onTxEvent (char* hpdstate, int outputState) {
 
-void DisplayMode::hdcpRxStopSvc() {
-    pSysWrite->setProperty("ctl.stop", "hdcp_rx22");
-}
-
-void DisplayMode::hdcpRxInit() {
-#ifndef RECOVERY_MODE
-#ifdef IMPDATA_HDCP_RX_KEY//used for tcl
-    if ((access(HDCP_RX_DES_FW_PATH, F_OK) || (access(HDCP_NEW_KEY_CREATED, F_OK) == F_OK)) &&
-        (access(HDCP_PACKED_IMG_PATH, F_OK) == F_OK)) {
-        SYS_LOGI("HDCP rx 2.2 firmware do not exist or new key come, first create it\n");
-        generateHdcpFw(HDCP_FW_LE_OLD_PATH, HDCP_PACKED_IMG_PATH, HDCP_RX_DES_FW_PATH);
-        remove(HDCP_NEW_KEY_CREATED);
-    }
-#else
-
-    #if 0
-    if (access(HDCP_RX_DES_FW_PATH, F_OK)) {
-        SYS_LOGI("HDCP rx 2.2 firmware do not exist, first create it\n");
-        int ret = generateHdcpFwFromStorage(HDCP_RX_SRC_FW_PATH, HDCP_RX_DES_FW_PATH);
-        if (ret < 0) {
-            pSysWrite->writeSysfs(HDMI_RX_KEY_COMBINE, "0");
-            SYS_LOGE("HDCP rx 2.2 generate firmware fail\n");
-        }
-    }
-    #else
-    HdcpRx22Key hdcpRxFw;
-    hdcpRxFw.generateHdcpRxFw();
-    #endif
-
-#endif
-#endif
-}
-
-void DisplayMode::hdcpRxForceFlushVideoLayer() {
-#ifndef RECOVERY_MODE
-    int curVideoState;
-    char valueStr[10] = {0};
-
-    memset(valueStr, 0, sizeof(valueStr));
-    pSysWrite->readSysfs(SYSFS_VIDEO_LAYER_STATE, valueStr);
-    curVideoState = atoi(valueStr);
-
-    if (curVideoState != mLastVideoState) {
-        SYS_LOGI("hdcp_rx Video Layer1 switch_state: %d\n", curVideoState);
-        sfRepaintEverything();
-        mLastVideoState = curVideoState;
-    }
-    usleep(200*1000);//sleep 200ms
-#endif
-}
-
-void DisplayMode::hdcpTxStart22() {
-    //start hdcp_tx 2.2
-    SYS_LOGI("start hdcp_tx 2.2\n");
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_22);
-    usleep(50*1000);
-
-    hdcpTxStartSvc();
-}
-
-void DisplayMode::hdcpTxStartSvc() {
-    pSysWrite->setProperty("ctl.start", "hdcp_tx22");
-}
-
-void DisplayMode::hdcpTxStart14() {
-    //start hdcp_tx 1.4
-    SYS_LOGI("hdcp_tx 1.4 start\n");
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_14);
-}
-
-void DisplayMode::hdcpTxStop() {
-    //stop hdcp_tx 2.2 & 1.4
-    SYS_LOGI("hdcp_tx 2.2 & 1.4 stop\n");
-    hdcpTxStopSvc() ;
-
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP14_STOP);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP22_STOP);
-    usleep(2000);
-}
-
-void DisplayMode::hdcpTxStopSvc() {
-    pSysWrite->setProperty("ctl.stop", "hdcp_tx22");
-}
-
-void DisplayMode::hdcpTxSuspend() {
-    SYS_LOGI("hdcp_tx suspend\n");
-    pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
-}
-
-bool DisplayMode::hdcpTxInit(bool *pHdcp22, bool *pHdcp14) {
-    bool useHdcp22 = false;
-    bool useHdcp14 = false;
-#ifdef HDCP_AUTHENTICATION
-    char hdcpRxVer[MODE_LEN] = {0};
-    char hdcpTxKey[MODE_LEN] = {0};
-
-    //14 22 00 HDCP TX
-    pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_KEY, hdcpTxKey);
-    SYS_LOGI("hdcp_tx key:%s\n", hdcpTxKey);
-    if ((strlen(hdcpTxKey) == 0) || !(strcmp(hdcpTxKey, "00")))
-        return false;
-
-    //14 22 00 HDCP RX
-    pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_VER, hdcpRxVer);
-    SYS_LOGI("hdcp_tx remote version:%s\n", hdcpRxVer);
-    if ((strlen(hdcpRxVer) == 0) || !(strcmp(hdcpRxVer, "00")))
-        return false;
-
-    //stop hdcp_tx
-    hdcpTxStop();
-
-    //char cap[MAX_STR_LEN] = {0};
-    //pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, cap);
-    if (mRxSupportHdcpAuth == 2) {
-        SYS_LOGI("hdcp_tx 2.2 supported for RxSupportHdcp2.2Auth\n");
-        useHdcp22 = true;
-    } else if (/*(_strstr(cap, (char *)"2160p") != NULL) && */(_strstr(hdcpRxVer, (char *)"22") != NULL) &&
-        (_strstr(hdcpTxKey, (char *)"22") != NULL)) {
-        SYS_LOGI("hdcp_tx 2.2 supported\n");
-        useHdcp22 = true;
-    }
-
-    if (mRxSupportHdcpAuth == 1) {
-        SYS_LOGI("hdcp_tx 1.4 supported for RxSupportHdcp1.4Auth\n");
-        useHdcp14 = true;
-    } else if (!useHdcp22 && (_strstr(hdcpRxVer, (char *)"14") != NULL) &&
-        (_strstr(hdcpTxKey, (char *)"14") != NULL)) {
-        useHdcp14 = true;
-        SYS_LOGI("hdcp_tx 1.4 supported\n");
-    }
-
-    if (!useHdcp22 && !useHdcp14) {
-        //do not support hdcp1.4 and hdcp2.2
-        SYS_LOGE("device do not support hdcp1.4 or hdcp2.2\n");
-        return false;
-    }
-
-    //start hdcp_tx
-    if (useHdcp22) {
-        hdcpTxStart22();
-    }
-    else if (useHdcp14) {
-        hdcpTxStart14();
-    }
-#endif
-    *pHdcp22 = useHdcp22;
-    *pHdcp14 = useHdcp14;
-    return true;
-}
-
-void DisplayMode::hdcpTxAuthenticate(bool useHdcp22, bool useHdcp14) {
-#ifdef HDCP_AUTHENTICATION
-    SYS_LOGI("hdcp_tx begin to authenticate\n");
-    int count = 0;
-    while (!mExitHdcpTxThread) {
-        usleep(200*1000);//sleep 200ms
-
-        char auth[MODE_LEN] = {0};
-        pSysWrite->readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
-        if (_strstr(auth, (char *)"1")) {//Authenticate is OK
-            SYS_LOGI("hdcp_tx authenticate succeed\n");
-            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-            break;
-        }
-
-        count++;
-        if (count > 40) { //max 200msx40 = 8s it will authenticate completely
-            if (useHdcp22) {
-                SYS_LOGE("hdcp_tx 2.2 authenticate fail for 8s timeout, change to hdcp_tx 1.4 authenticate\n");
-
-                count = 0;
-                useHdcp22 = false;
-                useHdcp14 = true;
-                //if support hdcp22, must support hdcp14
-                hdcpTxStart14();
-                continue;
-            }
-            else if (useHdcp14) {
-                SYS_LOGE("hdcp_tx 1.4 authenticate fail, 8s timeout\n");
-                hdcpTxStop();
-            }
-            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-            break;
-        }
-    }
-    SYS_LOGI("hdcp_tx authenticate finish\n");
-#else
-    useHdcp22 = useHdcp22;
-    useHdcp14 = useHdcp14;
-#endif
-}
-
-void* DisplayMode::hdcpTxThreadLoop(void* data) {
-    bool hdcp22 = false;
-    bool hdcp14 = false;
-    DisplayMode *pThiz = (DisplayMode*)data;
-
-    SYS_LOGI("hdcp_tx thread loop entry\n");
-    sem_post(&pThiz->pthreadTxSem);
-
-    if (!pThiz->mBootAnimDetectFinished) {
-        SYS_LOGI("hdcp_tx thread, boot animation detect do not finished, wait for it\n");
-        int ret = sem_wait(&pThiz->pthreadBootDetectSem);
-        if (ret < 0) SYS_LOGE("hdcp_tx thread, sem_wait failed\n");
-
-        SYS_LOGI("hdcp_tx thread, boot animation detect finished, begin to authenticate\n");
-    }
-
-    if (pThiz->hdcpTxInit(&hdcp22, &hdcp14)) {
-        //first close osd, after HDCP authenticate completely, then open osd
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
-
-        pThiz->hdcpTxAuthenticate(hdcp22, hdcp14);
-        pThiz->pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
-
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    }
-    else{
-        pThiz->pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
-    }
-    return NULL;
-}
-
-int DisplayMode::hdcpTxThreadStart() {
-    int ret;
-    pthread_t thread_id;
-
-    SYS_LOGI("hdcp_tx thread start\n");
-    if (pthread_mutex_trylock(&pthreadTxMutex) == EDEADLK) {
-        SYS_LOGE("hdcp_tx display mode create thread, Mutex is deadlock\n");
-        return -1;
-    }
-
-    mExitHdcpTxThread = false;
-    ret = pthread_create(&thread_id, NULL, hdcpTxThreadLoop, this);
-    if (ret != 0) SYS_LOGE("hdcp_tx display mode, thread create failed\n");
-
-    ret = sem_wait(&pthreadTxSem);
-    if (ret < 0) SYS_LOGE("hdcp_tx display mode, sem_wait failed\n");
-
-    pthreadIdHdcpTx = thread_id;
-    pthread_mutex_unlock(&pthreadTxMutex);
-    SYS_LOGI("hdcp_tx display mode, create hdcp thread thread id = %lu\n", thread_id);
-    return 1;
-}
-
-int DisplayMode::hdcpTxThreadExit() {
-    void *threadResult;
-    int ret = 1;
-
-    if (0 == pthreadIdHdcpTx) {
-        //SYS_LOGI("hdcp_tx thread already exit\n");
-        return ret;
-    }
-
-    mExitHdcpTxThread = true;
-    if (0 != pthreadIdHdcpTx) {
-        if (pthread_mutex_trylock(&pthreadTxMutex) == EDEADLK) {
-            SYS_LOGE("hdcp_tx exit hdcp thread, Mutex is deadlock\n");
-            return -1;
-        }
-
-        if (0 != pthread_join(pthreadIdHdcpTx, &threadResult)) {
-            SYS_LOGE("hdcp_tx exit failed\n");
-            ret = 0;
-        }
-
-        pthread_mutex_unlock(&pthreadTxMutex);
-        SYS_LOGI("hdcp_tx pthread exit id = %lu, %s  done\n", pthreadIdHdcpTx, (char *)threadResult);
-        pthreadIdHdcpTx = 0;
-    }
-
-    return ret;
+    SYS_LOGI("onTxEvent hpdstate:%s state: %d\n", hpdstate, outputState);
+    setMboxDisplay(hpdstate, (output_mode_state)outputState);
 }
 
 //for debug
 void DisplayMode::hdcpSwitch() {
     SYS_LOGI("hdcpSwitch for debug hdcp authenticate\n");
-
-    hdcpTxThreadExit();
-
-    hdcpTxThreadStart();
 }
 
 #ifndef RECOVERY_MODE

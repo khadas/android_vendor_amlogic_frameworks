@@ -464,6 +464,14 @@ public class HdmiCecExtend {
         SendCecMessage(dest, msg);
     }
 
+    private void SendInActiveSource(int dest, int physicalAddr) {
+        byte[] msg = new byte[] {(byte)(MESSAGE_INACTIVE_SOURCE & 0xff),
+                                 (byte)((physicalAddr >> 8) & 0xff),
+                                 (byte) (physicalAddr & 0xff)
+                                };
+        SendCecMessage(dest, msg);
+    }
+
     private void ReportPhysicalAddr(int dest, int phyAddr, int type) {
         byte[] msg = new byte[] {(byte)(MESSAGE_REPORT_PHYSICAL_ADDRESS & 0xff),
                                  (byte)((phyAddr >> 8) & 0xff),
@@ -666,6 +674,8 @@ public class HdmiCecExtend {
 
     private void onStandby(int reason) {
         boolean canPowerTv = SystemProperties.getBoolean("sys.cec.auto_tv_off", false);
+        SendInActiveSource(ADDR_TV, mPhyAddr);
+        SendReportPowerStatus(ADDR_TV, HdmiControlManager.POWER_STATUS_STANDBY);
         Slog.d(TAG, "auto tv off:" + canPowerTv);
         if (!canPowerTv)
             return ;

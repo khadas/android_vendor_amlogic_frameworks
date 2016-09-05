@@ -119,13 +119,15 @@ public class TVMultilingualText{
         return ret;
     }
 
+    private static final Locale HK_LOCAL = new Locale("zh", "HK");
     public static String getLocalLang() {
         String lang;
         Locale defaultLocale = Locale.getDefault();
         /* recover lang by the current local Android language */
         if (defaultLocale.equals(Locale.SIMPLIFIED_CHINESE)) {
             lang = "chs";
-        }else if (defaultLocale.equals(Locale.TRADITIONAL_CHINESE)) {
+        }else if (defaultLocale.equals(Locale.TRADITIONAL_CHINESE) ||
+            defaultLocale.equals(HK_LOCAL)) {
             lang = "chi";
         }else{
             lang = Locale.getDefault().getISO3Language();

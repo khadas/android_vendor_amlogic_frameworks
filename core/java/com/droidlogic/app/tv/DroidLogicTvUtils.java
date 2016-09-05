@@ -144,6 +144,7 @@ public class DroidLogicTvUtils
     public static final String ACTION_ATV_RESUME_SCAN = "atv_resume_scan";
     public static final String ACTION_STOP_SCAN = "stop_scan";
     public static final String PARA_MANUAL_SCAN = "scan_freq";
+    public static final String ACTION_DTV_AUTO_TRACKS = "dtv_auto_tracks";
 
     /**
      * Other extra names for {@link TvInputInfo.createSetupIntent#intent} except for input id.

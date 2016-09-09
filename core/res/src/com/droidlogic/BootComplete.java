@@ -30,6 +30,8 @@ public class BootComplete extends BroadcastReceiver {
         Log.i(TAG, "action: " + action);
 
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
+            Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
+            context.startService(gattServiceIntent);
             SystemControlManager sm = new SystemControlManager(context);
             //register system control callback
             sm.setListener(new SystemControlEvent(context));
@@ -68,9 +70,6 @@ public class BootComplete extends BroadcastReceiver {
             initDefaultAnimationSettings(context);
 
             context.startService(new Intent(context,NtpService.class));
-
-            Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
-            context.startService(gattServiceIntent);
             String rotProp = sm.getPropertyString("persist.sys.app.rotation", "");
             ContentResolver res = context.getContentResolver();
             int acceRotation = Settings.System.getIntForUser(res,

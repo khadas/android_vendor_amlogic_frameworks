@@ -60,6 +60,15 @@ SystemControl::SystemControl(const char *path)
     pDisplayMode->init();
 
     pDimension = new Dimension(pDisplayMode, pSysWrite);
+
+    //if ro.firstboot is true, we should clear first boot flag
+    const char* firstBoot = bootenv_get("ubootenv.var.firstboot");
+    if (firstBoot && (strcmp(firstBoot, "1") == 0)) {
+        ALOGI("ubootenv.var.firstboot first_boot:%s, clear it to 0", firstBoot);
+        if ( bootenv_update("ubootenv.var.firstboot", "0") < 0 ) {
+            ALOGE("set firstboot to 0 fail");
+        }
+    }
 }
 
 SystemControl::~SystemControl() {

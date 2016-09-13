@@ -144,7 +144,13 @@ LOCAL_SRC_FILES:= \
   ubootenv.c \
   SysWrite.cpp \
   DisplayMode.cpp \
-  SysTokenizer.cpp
+  SysTokenizer.cpp \
+  UEventObserver.cpp \
+  HDCP/aes.cpp \
+  HDCP/HdcpKeyDecrypt.cpp \
+  HDCP/HDCPRxKey.cpp \
+  HDCP/HDCPRxAuth.cpp \
+  HDCP/HDCPTxAuth.cpp
 
 LOCAL_STATIC_LIBRARIES := \
   libcutils \

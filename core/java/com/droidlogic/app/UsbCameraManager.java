@@ -54,20 +54,17 @@ public class UsbCameraManager {
     private IBinder mIBinder = null;
     public UsbCameraManager(Context context){
         mContext = context;
-
-        try {
-            Object object = Class.forName("android.os.ServiceManager")
-                    .getMethod("getService", new Class[] { String.class })
-                    .invoke(null, new Object[] { "media.camera" });
-            mIBinder = (IBinder)object;
-        }
-        catch (Exception ex) {
-            Log.e(TAG, "USB camera manager init fail:" + ex);
-        }
     }
 
     private void usbCameraAttach(boolean isAttach){
         try {
+            if (null == mIBinder) {
+                Object object = Class.forName("android.os.ServiceManager")
+                        .getMethod("getService", new Class[] { String.class })
+                        .invoke(null, new Object[] { "media.camera" });
+                mIBinder = (IBinder)object;
+            }
+
             if (null != mIBinder) {
                 Parcel data = Parcel.obtain();
                 Parcel reply = Parcel.obtain();
@@ -77,7 +74,7 @@ public class UsbCameraManager {
                 reply.recycle();
                 data.recycle();
             }
-        } catch (RemoteException ex) {
+        } catch (Exception ex) {
             Log.e(TAG, "USB camera attach:" + ex);
         }
     }

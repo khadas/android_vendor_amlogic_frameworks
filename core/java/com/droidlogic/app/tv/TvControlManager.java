@@ -122,6 +122,7 @@ public class TvControlManager {
     private native final void native_create_video_frame_bitmap(Object bmp);
     private native final void native_create_subtitle_bitmap(Object bmp);
     private static native Bitmap native_GetFrameBitmap(int width, int hight, int type);
+    private native int native_setTvCaptureSurfaceSize(int width, int height);
 
     private static void postEventFromNative(Object tv_ref, int what, Parcel ext) {
         ext.setDataPosition(0);
@@ -1645,6 +1646,23 @@ public class TvControlManager {
     }
 
     // Audio Mute
+
+    /**
+     * @Function: SetAudioMuteForTv
+     * @Description: Set audio mute or unmute for TV
+     * @Param: KeyStatus refer to enum SET_AUDIO_MUTE_FOR_TV
+     * @Return: 0 success, -1 fail
+     */
+     public int SetAudioMuteForTv(int muteOrUnmute) {
+        libtv_log_open();
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        cmd.writeInt(SET_AUDIO_MUTE_FOR_TV);
+        cmd.writeInt(muteOrUnmute);
+        sendCmdToTv(cmd, r);
+        int ret = r.readInt();
+        return ret;
+    }
 
     /**
      * @Function: SetAudioMuteKeyStatus
@@ -5272,6 +5290,8 @@ public class TvControlManager {
     public final static int EVENT_AV_SCRAMBLED                  = 3;
     public final static int EVENT_AV_UNSUPPORT                  = 4;
     public final static int EVENT_AV_VIDEO_AVAILABLE            = 5;
+    public final static int AUDIO_UNMUTE_FOR_TV                 = 0;
+    public final static int AUDIO_MUTE_FOR_TV                   = 1;
 
     public interface AVPlaybackListener {
         void onEvent(int msgType, int programID);

@@ -442,7 +442,12 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
             pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
             pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
         }
-        strcpy(outputmode, data.current_mode);
+
+        //when tvserver change display mode, need keep pace with outputmode
+        if (strlen(data.current_mode) != 0 && !strcmp(data.hpd_state, "1") &&
+                strstr(data.current_mode, "cvbs") == NULL) {
+            strcpy(outputmode, data.current_mode);
+        }
     }
     setMboxOutputMode(outputmode, state);
 }

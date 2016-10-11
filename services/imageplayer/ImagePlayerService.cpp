@@ -726,7 +726,6 @@ int ImagePlayerService::init() {
     mDeathNotifier = new DeathNotifier(this);
     mSystemControl = interface_cast<ISystemControlService>(
             defaultServiceManager()->getService(String16("system_control")));
-
     ALOGI("init success display fd:%d", mDisplayFd);
 
     return RET_OK;
@@ -1319,18 +1318,18 @@ SkBitmap* ImagePlayerService::decode(SkStreamRewindable *stream, InitParameter *
     SkBitmap *bitmap = NULL;
     int imageW = 0, imageH = 0;
 
-#if 0
     //SkAutoTDelete<SkStreamRewindable> bufferedStream(
     //        SkFrontBufferedStream::Create(stream->duplicate(), BYTES_TO_BUFFER));
 
     //SkASSERT(bufferedStream.get() != NULL);
     codec = SkImageDecoder::Factory(stream);
     if (codec) {
+       /*
         ret = codec->buildTileIndex(stream->duplicate(), &imageW, &imageH);
         if (!ret) {
             ALOGE("buildTileIndex failed to decode using %s decoder", codec->getFormatName());
         }
-
+       */
         //in order to free the pointer
         //SkAutoTDelete<SkImageDecoder> add(codec);
         format = codec->getFormat();
@@ -1356,6 +1355,8 @@ SkBitmap* ImagePlayerService::decode(SkStreamRewindable *stream, InitParameter *
             if (!ret) {
                 ALOGW("decode fail result:%d, try to use decodeSubset, uri:%s", ret, mImageUrl);
 
+                ret = SkImageDecoder::DecodeStream(stream,&decodingBitmap);
+                /*
                 SkFILEStream fstream(mImageUrl);
                 SkImageDecoder* decoder = SkImageDecoder::Factory(&fstream);
                 if (NULL != decoder) {
@@ -1372,7 +1373,7 @@ SkBitmap* ImagePlayerService::decode(SkStreamRewindable *stream, InitParameter *
                     ret = decoder->decodeSubset(&decodingBitmap,
                         SkIRect::MakeWH(imageW, imageH), kN32_SkColorType);
                     SkDELETE(decoder);
-                }
+                }*/
             }
             if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
                 ALOGW("decode: bitmap size:%d, request size:%d\n",
@@ -1425,7 +1426,6 @@ SkBitmap* ImagePlayerService::decode(SkStreamRewindable *stream, InitParameter *
         mHeight = bitmap->height();
         ALOGD("Image raw size, width:%d, height:%d", mWidth, mHeight);
     }
-#endif
     return bitmap;
 }
 

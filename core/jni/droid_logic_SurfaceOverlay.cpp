@@ -88,7 +88,8 @@ namespace android
         sp<ANativeWindow> tmpWindow = NULL;
         if (new_st != NULL) {
             tmpWindow = new Surface(new_st);
-
+            status_t err = native_window_api_connect(tmpWindow.get(),
+                NATIVE_WINDOW_API_MEDIA);
             ALOGI("set native window overlay");
             native_window_set_usage(tmpWindow.get(), GRALLOC_USAGE_HW_TEXTURE |
                 GRALLOC_USAGE_EXTERNAL_DISP  | GRALLOC_USAGE_AML_VIDEO_OVERLAY);

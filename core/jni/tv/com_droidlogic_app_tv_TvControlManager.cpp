@@ -532,7 +532,7 @@ static JNINativeMethod camMethods[] = {
         "(Ljava/lang/Object;)V",
         (void *)com_droidlogic_app_tv_TvControlManager_create_video_frame_bitmap
     },
-    }
+    {
         "native_setTvCaptureSurfaceSize",
         "(II)I",
         (void *)com_droidlogic_app_tv_TvControlManager_nativesetTvCaptureSurfaceSize

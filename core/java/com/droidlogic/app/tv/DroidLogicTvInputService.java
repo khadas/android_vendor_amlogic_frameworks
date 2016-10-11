@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import com.droidlogic.app.tv.ChannelInfo;
+import com.droidlogic.app.tv.DroidLogicHdmiCecManager;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
 import com.droidlogic.app.tv.TvControlManager;
 import com.droidlogic.app.tv.TVInSignalInfo;
@@ -74,6 +75,9 @@ public class DroidLogicTvInputService extends TvInputService implements
     private int c_displayNum = DISPLAY_NUM_START_DEF;
     private TvDataBaseManager mTvDataBaseManager;
     private TvControlManager mTvControlManager;
+
+    private DroidLogicHdmiCecManager mHdmiCecManager;
+
     private HardwareCallback mHardwareCallback = new HardwareCallback(){
         @Override
         public void onReleased() {
@@ -90,6 +94,12 @@ public class DroidLogicTvInputService extends TvInputService implements
             mConfigs = configs;
         }
     };
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mHdmiCecManager = new DroidLogicHdmiCecManager(this);
+    }
 
     /**
      * inputId should get from subclass which must invoke {@link super#onCreateSession(String)}
@@ -1225,32 +1235,14 @@ public class DroidLogicTvInputService extends TvInputService implements
     }
 
     public void selectHdmiDevice(final int port) {
-        int devAddr = 0;
-        if (!isInTvApp()) return;
-        HdmiControlManager manager = (HdmiControlManager) this.getSystemService(Context.HDMI_CONTROL_SERVICE);
-        if (manager == null) return;
-        HdmiTvClient client = manager.getTvClient();
-        boolean cecOption = (Global.getInt(this.getContentResolver(), Global.HDMI_CONTROL_ENABLED, 1) == 1);
-        if (!cecOption || client == null) return;
-        if (port >= DroidLogicTvUtils.DEVICE_ID_HDMI1) {
-            int id = port - DroidLogicTvUtils.DEVICE_ID_HDMI1 + 1;
-            for (HdmiDeviceInfo info : client.getDeviceList()) {
-                if (id == (info.getPhysicalAddress() >> 12)) {
-                    devAddr = info.getLogicalAddress();
-                }
-            }
-        }
-        if (mSelectPort < 0 && devAddr == 0) return;
-        if (mSelectPort != port) {
-            final int addr = devAddr;
-            client.deviceSelect(devAddr, new SelectCallback() {
-                @Override
-                public void onComplete(int result) {
-                    if (addr == 0) mSelectPort = -1;
-                    else mSelectPort = port;
-                }
-            });
-        }
+        if (!isInTvApp() || mHdmiCecManager == null)
+            return;
+        mHdmiCecManager.selectHdmiDevice(port);
+    }
+
+    public void disconnectHdmiCec() {
+        if (mHdmiCecManager != null)
+            mHdmiCecManager.disconnectHdmiCec();
     }
 }
 

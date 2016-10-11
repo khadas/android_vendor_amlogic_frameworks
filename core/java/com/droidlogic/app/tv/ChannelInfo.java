@@ -536,12 +536,17 @@ public class ChannelInfo {
         mDisplayNumber = number;
         mNumber = stringToInteger(number);
     }
+
     public void setDisplayName(String name) {
         mDisplayName = name;
     }
 
     public void setDisplayNameLocal(String name) {
         mDisplayNameMulti = mDisplayNameMulti.replace(getDisplayNameLocal(), name);
+    }
+
+    public void setDisplayNameMulti(String name) {
+        mDisplayNameMulti = name;
     }
 
     public void setVideoStd(int std) {
@@ -598,6 +603,30 @@ public class ChannelInfo {
 
     public void setFavourite(boolean enable) {
         mIsFavourite = enable;
+    }
+
+    public void setSubtitleTypes(int[] types) {
+        mSubtitleTypes = types;
+    }
+
+    public void setSubtitlePids(int[] pids) {
+        mSubtitlePids = pids;
+    }
+
+    public void setSubtitleStypes(int[] types) {
+        mSubtitleStypes = types;
+    }
+
+    public void setSubtitleId1s(int[] id1s) {
+        mSubtitleId1s = id1s;
+    }
+
+    public void setSubtitleId2s(int[] id2s) {
+        mSubtitleId2s = id2s;
+    }
+
+    public void setSubtitleLangs(String[] langs) {
+        mSubtitleLangs = langs;
     }
 
     public void setSubtitleTrackIndex(int index) {

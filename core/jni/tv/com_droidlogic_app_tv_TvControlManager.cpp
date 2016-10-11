@@ -19,6 +19,7 @@
 #include <linux/videodev2.h>
 #include <hardware/hardware.h>
 #include <hardware/aml_screen.h>
+#include <hardware/tv_input.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -456,6 +457,29 @@ static void com_droidlogic_app_tv_TvControlManager_create_video_frame_bitmap(JNI
     return;
 }
 
+static jint com_droidlogic_app_tv_TvControlManager_nativesetTvCaptureSurfaceSize(JNIEnv *env, jobject thiz, jint width, jint height)
+{
+    tv_input_module_t* module = NULL;
+    status_t err = hw_get_module(TV_INPUT_HARDWARE_MODULE_ID,
+            (hw_module_t const**)&module);
+    if (err) {
+        ALOGE("Couldn't load %s module (%s)",
+                TV_INPUT_HARDWARE_MODULE_ID, strerror(-err));
+        return 0;
+    }
+
+    tv_input_device_t* device = NULL;
+    err = module->common.methods->open(
+            (hw_module_t*)module,
+            TV_INPUT_DEFAULT_DEVICE,
+            (hw_device_t**)&device);
+    if (err) {
+        ALOGE("Couldn't open %s device (%s)",
+                TV_INPUT_DEFAULT_DEVICE, strerror(-err));
+        return 0;
+    }
+    return device->set_capturesurface_size(device, width, height);
+}
 //-------------------------------------------------
 
 static JNINativeMethod camMethods[] = {
@@ -507,6 +531,11 @@ static JNINativeMethod camMethods[] = {
         "native_create_video_frame_bitmap",
         "(Ljava/lang/Object;)V",
         (void *)com_droidlogic_app_tv_TvControlManager_create_video_frame_bitmap
+    },
+    }
+        "native_setTvCaptureSurfaceSize",
+        "(II)I",
+        (void *)com_droidlogic_app_tv_TvControlManager_nativesetTvCaptureSurfaceSize
     },
 
 };

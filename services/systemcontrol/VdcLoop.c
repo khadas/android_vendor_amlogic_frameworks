@@ -67,9 +67,35 @@ int vdc_loop(int argc, char **argv) {
 }
 
 static int do_cmd(int sock, int argc, char **argv) {
-    char final_cmd[255] = "0 "; /* 0 is a (now required) sequence number */
+    char final_cmd[4196] = "0 "; /* 0 is a (now required) sequence number */
+    char pathname[4096] = {'\0'};
+    char *pathpoint = NULL;
     int i;
     size_t ret;
+
+    if ((argc > 3) && (strcmp(argv[argc-2], "mount") == 0)) {
+        if (strlen(argv[argc-1]) > 4096) {
+            ALOGE("The Path name lengh[%ld] is too long, exceed Linux limit 4096 byte\n", strlen(argv[argc-1]));
+            ALOGE("This is path:[%s]\n", argv[argc-1]);
+            return errno;
+        }
+        pathpoint = argv[argc-1];
+        while (*pathpoint != '\0') {
+            if (*pathpoint == '/') {
+                i = 0;
+                pathpoint++;
+                while (*pathpoint != '/' && *pathpoint != '\0')
+                    pathname[i++] = *pathpoint++;
+                if (strlen(pathname) > 255) {
+                    ALOGE("The File name lengh [%ld] is too long, exceed Linux limit 255 byte\n", strlen(pathname));
+                    ALOGE("This is file name:[%s]\n", pathname);
+                    return errno;
+                }
+                memset(pathname, 0, 4096*sizeof(char));
+            } else
+                pathpoint++;
+        }
+    }
 
     for (i = 1; i < argc; i++) {
         char *cmp;

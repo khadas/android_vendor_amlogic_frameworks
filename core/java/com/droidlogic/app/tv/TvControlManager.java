@@ -522,6 +522,39 @@ public class TvControlManager {
         native_release();
     }
 
+    public enum dtv_mode_std_e {
+        DTV_MODE_STD_AUTO(0),
+        DTV_MODE_STD_DTMB(1),
+        DTV_MODE_STD_DVBC(2);
+
+        private int val;
+
+        dtv_mode_std_e(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+
+        public static dtv_mode_std_e valueOf(int val) { // int to enum
+            switch (val) {
+                case 0:
+                    return DTV_MODE_STD_AUTO;
+                case 1:
+                    return DTV_MODE_STD_DTMB;
+                case 2:
+                    return DTV_MODE_STD_DVBC;
+                default:
+                    return null;
+            }
+        }
+
+        public int value() {
+            return this.val;
+        }
+    }
+
     // Tv function
     // public int OpenTv();
 
@@ -3609,6 +3642,39 @@ public class TvControlManager {
      }
     //MISC END
 
+    public enum ScanMode {
+        SCAN_DTV_AUTO(1),
+        SCAN_DTV_MANUAL(2),
+        SCAN_DTV_ALLBAND(3);
+
+        private int val;
+
+        ScanMode(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    public int DtvScan(int mode, int scan_mode, int freq, int para1, int para2) {
+        int val[] = new int[]{mode, scan_mode, freq, para1, para2};
+        return sendCmdIntArray(DTV_SCAN, val);
+    }
+
+    public int DtvAutoScan(int mode) {
+        return DtvScan(mode, ScanMode.SCAN_DTV_ALLBAND.toInt(), 0, -1, -1);
+    }
+
+    public int DtvManualScan(int mode, int freq, int para1, int para2) {
+        return DtvScan(mode, ScanMode.SCAN_DTV_MANUAL.toInt(), freq, para1, para2);
+    }
+
+    public int DtvManualScan(int mode, int freq) {
+        return DtvManualScan(mode, freq, -1, -1);
+    }
+
     public int DtvAutoScan() {
         return sendCmd(DTV_SCAN_AUTO);
     }
@@ -3673,6 +3739,11 @@ public class TvControlManager {
 
     public int AtvDtvResumeScan() {
         return sendCmd(ATV_DTV_SCAN_RESUME);
+    }
+
+    public int clearFrontEnd(int arg0) {
+        int val[] = new int[]{arg0};
+        return sendCmdIntArray(TV_CLEAR_FRONTEND, val);
     }
 
     public int DtvSetTextCoding(String coding) {
@@ -3869,7 +3940,32 @@ public class TvControlManager {
         cmd.recycle();
         r.recycle();
         return FList;
+    }
 
+    public ArrayList<FreqList> DTVGetScanFreqList(int mode) {
+        libtv_log_open();
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        cmd.writeInt(DTV_GET_SCAN_FREQUENCY_LIST_MODE);
+        cmd.writeInt(mode);
+        sendCmdToTv(cmd, r);
+        int size = r.readInt();
+        int base = 1 ;
+        ArrayList<FreqList> FList = new ArrayList<FreqList>();
+        FreqList bpl = new FreqList();
+        base = r.readInt() - 1;
+        bpl.ID = 1 ;
+        bpl.freq= r.readInt();
+        FList.add(bpl);
+        for (int i = 1; i < size; i++) {
+            FreqList pl = new FreqList();
+            pl.ID = r.readInt() - base;
+            pl.freq= r.readInt();
+            FList.add(pl);
+        }
+        cmd.recycle();
+        r.recycle();
+        return FList;
     }
 
     /**

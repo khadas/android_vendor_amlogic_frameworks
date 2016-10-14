@@ -343,6 +343,8 @@ public class TvDataBaseManager {
         map.put(ChannelInfo.KEY_VFMT, String.valueOf(channel.getVfmt()));
         map.put(ChannelInfo.KEY_FREQUENCY, String.valueOf(channel.getFrequency()));
         map.put(ChannelInfo.KEY_BAND_WIDTH, String.valueOf(channel.getBandwidth()));
+        map.put(ChannelInfo.KEY_SYMBOL_RATE, String.valueOf(channel.getSymbolRate()));
+        map.put(ChannelInfo.KEY_MODULATION, String.valueOf(channel.getModulation()));
         map.put(ChannelInfo.KEY_VIDEO_PID, String.valueOf(channel.getVideoPid()));
         map.put(ChannelInfo.KEY_AUDIO_PIDS, Arrays.toString(channel.getAudioPids()));
         map.put(ChannelInfo.KEY_AUDIO_FORMATS, Arrays.toString(channel.getAudioFormats()));

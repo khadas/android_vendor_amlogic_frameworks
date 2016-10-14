@@ -27,7 +27,7 @@ public class HdmiInManager {
      * @hide
      */
     public void init(int source, boolean isFullscreen) {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _init(source, isFullscreen);
     }
 
@@ -35,7 +35,7 @@ public class HdmiInManager {
      * @hide
      */
     public void deinit() {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _deinit();
     }
 
@@ -44,7 +44,7 @@ public class HdmiInManager {
      */
     public int displayHdmi() {
         int ret = -1;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _displayHdmi();
         return ret;
     }
@@ -54,7 +54,7 @@ public class HdmiInManager {
      */
     public int displayAndroid() {
         int ret = -1;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _displayAndroid();
         return ret;
     }
@@ -63,7 +63,7 @@ public class HdmiInManager {
      * @hide
      */
     public void displayPip(int x, int y, int width, int height) {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _displayPip(x, y, width, height);
     }
 
@@ -72,7 +72,7 @@ public class HdmiInManager {
      */
     public int getHActive() {
         int ret = -1;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _getHActive();
         return ret;
     }
@@ -82,7 +82,7 @@ public class HdmiInManager {
      */
     public int getVActive() {
         int ret = -1;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _getVActive();
         return ret;
     }
@@ -102,7 +102,7 @@ public class HdmiInManager {
      */
     public boolean isDvi() {
         boolean ret = false;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _isDvi();
         return ret;
     }
@@ -112,7 +112,7 @@ public class HdmiInManager {
      */
     public boolean isPowerOn() {
         boolean ret = false;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _isPowerOn();
         return ret;
     }
@@ -122,7 +122,7 @@ public class HdmiInManager {
      */
     public boolean isEnable() {
         boolean ret = false;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _isEnable();
         return ret;
     }
@@ -132,7 +132,7 @@ public class HdmiInManager {
      */
     public boolean isInterlace() {
         boolean ret = false;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _isInterlace();
         return ret;
     }
@@ -142,7 +142,7 @@ public class HdmiInManager {
      */
     public boolean hdmiPlugged() {
         boolean ret = false;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _hdmiPlugged();
         return ret;
     }
@@ -152,7 +152,7 @@ public class HdmiInManager {
      */
     public boolean hdmiSignal() {
         boolean ret = false;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _hdmiSignal();
         return ret;
     }
@@ -161,7 +161,7 @@ public class HdmiInManager {
      * @hide
      */
     public void enableAudio(int flag) {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _enableAudio(flag);
     }
 
@@ -170,7 +170,7 @@ public class HdmiInManager {
      */
     public int handleAudio() {
         int ret = -1;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _handleAudio();
         return ret;
     }
@@ -178,8 +178,46 @@ public class HdmiInManager {
     /**
      * @hide
      */
+    public void startMonitorUsbHostBusThread() {
+        if (getHdmiInEnable())
+            _startMonitorUsbHostBusThread();
+    }
+
+    /**
+     * @hide
+    */
+    public int setAmaudioMusicGain(int gain) {
+        int ret = -1;
+        if (getHdmiInEnable())
+            ret = _setAmaudioMusicGain(gain);
+        return ret;
+    }
+
+    /**
+        * @hide
+    */
+    public int setAmaudioLeftGain(int gain) {
+        int ret = -1;
+        if (getHdmiInEnable())
+            ret = _setAmaudioLeftGain(gain);
+        return ret;
+    }
+
+    /**
+     * @hide
+    */
+    public int setAmaudioRightGain(int gain) {
+        int ret = -1;
+        if (getHdmiInEnable())
+            ret = _setAmaudioRightGain(gain);
+        return ret;
+    }
+
+    /**
+     * @hide
+     */
     public void setEnable(boolean enable) {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _setEnable(enable);
     }
 
@@ -187,7 +225,7 @@ public class HdmiInManager {
      * @hide
      */
     public void setMainWindowPosition(int x, int y) {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _setMainWindowPosition(x, y);
     }
 
@@ -195,7 +233,7 @@ public class HdmiInManager {
      * @hide
      */
     public void setMainWindowFull() {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _setMainWindowFull();
     }
 
@@ -214,7 +252,7 @@ public class HdmiInManager {
      */
     public boolean isSurfaceAvailable(Surface surface) {
         boolean ret = false;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _isSurfaceAvailable(surface);
         return ret;
     }
@@ -223,7 +261,7 @@ public class HdmiInManager {
      * @hide
      */
     public void displayOSD(int width, int height) {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _displayOSD(width, height);
     }
 
@@ -232,7 +270,7 @@ public class HdmiInManager {
      */
     public boolean setPreviewWindow(Surface surface) {
         boolean ret = false;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _setPreviewWindow(surface);
         return ret;
     }
@@ -242,7 +280,7 @@ public class HdmiInManager {
      */
     public int setCrop(int x, int y, int width, int height){
         int ret = -1;
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             ret = _setCrop(x, y, width, height);
         return ret;
     }
@@ -251,7 +289,7 @@ public class HdmiInManager {
      * @hide
      */
     public void startMov() {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _startMov();
     }
 
@@ -259,7 +297,7 @@ public class HdmiInManager {
      * @hide
      */
     public void stopMov() {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _stopMov();
     }
 
@@ -267,7 +305,7 @@ public class HdmiInManager {
      * @hide
      */
     public void pauseMov() {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _pauseMov();
     }
 
@@ -275,7 +313,7 @@ public class HdmiInManager {
      * @hide
      */
     public void resumeMov() {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _resumeMov();
     }
 
@@ -283,7 +321,7 @@ public class HdmiInManager {
      * @hide
      */
     public void startVideo() {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _startVideo();
     }
 
@@ -291,7 +329,7 @@ public class HdmiInManager {
      * @hide
      */
     public void stopVideo() {
-        if(getHdmiInEnable())
+        if (getHdmiInEnable())
             _stopVideo();
     }
 
@@ -311,6 +349,10 @@ public class HdmiInManager {
     private native boolean _hdmiSignal();
     private native void _enableAudio(int flag);
     private native int _handleAudio();
+    private native void _startMonitorUsbHostBusThread();
+    private native int _setAmaudioMusicGain(int gain);
+    private native int _setAmaudioLeftGain(int gain);
+    private native int _setAmaudioRightGain(int gain);
     private native void _setEnable(boolean enable);
     private native void _setMainWindowPosition(int x, int y);
     private native void _setMainWindowFull();

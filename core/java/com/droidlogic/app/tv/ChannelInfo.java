@@ -86,6 +86,9 @@ public class ChannelInfo {
 
     public static final String KEY_FREQUENCY = "frequency";
     public static final String KEY_BAND_WIDTH = "band_width";
+    public static final String KEY_SYMBOL_RATE = "symbol_rate";
+    public static final String KEY_MODULATION = "modulation";
+
     public static final String KEY_FINE_TUNE = "fine_tune";
     public static final String KEY_IS_FAVOURITE = "is_favourite";
 
@@ -140,6 +143,8 @@ public class ChannelInfo {
 
     private int mFrequency;
     private int mBandwidth;
+    private int mSymbolRate;
+    private int mModulation;
     private int mFineTune;
 
     private boolean mBrowsable;
@@ -236,11 +241,15 @@ public class ChannelInfo {
             if (parsedMap.get(KEY_FREQUENCY) != null)
                 builder.setFrequency(Integer.parseInt(parsedMap.get(KEY_FREQUENCY)));
             if (parsedMap.get(KEY_BAND_WIDTH) != null)
-            builder.setBandwidth(Integer.parseInt(parsedMap.get(KEY_BAND_WIDTH)));
+                builder.setBandwidth(Integer.parseInt(parsedMap.get(KEY_BAND_WIDTH)));
+            if (parsedMap.get(KEY_SYMBOL_RATE) != null)
+                builder.setSymbolRate(Integer.parseInt(parsedMap.get(KEY_SYMBOL_RATE)));
+            if (parsedMap.get(KEY_MODULATION) != null)
+                builder.setModulation(Integer.parseInt(parsedMap.get(KEY_MODULATION)));
             if (parsedMap.get(KEY_VIDEO_PID) != null)
                 builder.setVideoPid(Integer.parseInt(parsedMap.get(KEY_VIDEO_PID)));
             if (parsedMap.get(KEY_PCR_ID) != null)
-            builder.setPcrPid(Integer.parseInt(parsedMap.get(KEY_PCR_ID)));
+                builder.setPcrPid(Integer.parseInt(parsedMap.get(KEY_PCR_ID)));
 
             if (parsedMap.get(KEY_AUDIO_TRACK_INDEX) != null)
                 builder.setAudioTrackIndex(Integer.parseInt(parsedMap.get(KEY_AUDIO_TRACK_INDEX)));
@@ -435,6 +444,14 @@ public class ChannelInfo {
 
     public int getBandwidth() {
         return mBandwidth;
+    }
+
+    public int getSymbolRate() {
+        return mSymbolRate;
+    }
+
+    public int getModulation() {
+        return mModulation;
     }
 
     public int getFineTune() {
@@ -716,6 +733,8 @@ public class ChannelInfo {
             mChannel.mPcrPid = -1;
             mChannel.mFrequency = -1;
             mChannel.mBandwidth = -1;
+            mChannel.mSymbolRate = -1;
+            mChannel.mModulation = -1;
             mChannel.mFineTune = 0;
 
             mChannel.mBrowsable = false;
@@ -874,6 +893,16 @@ public class ChannelInfo {
 
         public Builder setBandwidth(int w) {
             mChannel.mBandwidth = w;
+            return this;
+        }
+
+        public Builder setSymbolRate(int s) {
+            mChannel.mSymbolRate = s;
+            return this;
+        }
+
+        public Builder setModulation(int m) {
+            mChannel.mModulation = m;
             return this;
         }
 

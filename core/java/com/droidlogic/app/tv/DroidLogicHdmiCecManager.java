@@ -15,7 +15,7 @@ public class DroidLogicHdmiCecManager {
     private Context mContext;
     private HdmiControlManager mHdmiControlManager;
     private HdmiTvClient mTvClient;
-    private int mSelectPort = -1;
+    private static int mSelectPort = -1;
 
     public DroidLogicHdmiCecManager(Context context) {
         mContext = context;
@@ -32,7 +32,7 @@ public class DroidLogicHdmiCecManager {
      * @return {@value true} indicates has select device successfully, otherwise {@value false}.
      */
     public boolean selectHdmiDevice(final int deviceId) {
-        Log.d(TAG, "selectHdmiDevice, deviceId = " + deviceId);
+        Log.d(TAG, "selectHdmiDevice, deviceId = " + deviceId + ", mSelectPort = " + mSelectPort);
 
         int devAddr = 0;
         if (mHdmiControlManager == null || mSelectPort == deviceId)
@@ -43,8 +43,7 @@ public class DroidLogicHdmiCecManager {
             return false;
 
         devAddr = getLogicalAddress(deviceId);
-        Log.d(TAG, "mSelectPort = " + mSelectPort + ", devAddr = " + devAddr
-                + ", deviceId = " + deviceId);
+        Log.d(TAG, "mSelectPort = " + mSelectPort + ", devAddr = " + devAddr);
 
         if (mSelectPort < 0 && devAddr == 0)
             return false;
@@ -54,15 +53,17 @@ public class DroidLogicHdmiCecManager {
             @Override
             public void onComplete(int result) {
                 Log.d(TAG, "select device, onComplete result = " + result);
-                if (addr == 0) mSelectPort = -1;
-                else mSelectPort = deviceId;
+                if (addr == 0)
+                    mSelectPort = 0;
+                else
+                    mSelectPort = deviceId;
             }
         });
         return true;
     }
 
     public void disconnectHdmiCec() {
-        mSelectPort = -1;
+        selectHdmiDevice(0);
     }
 
     public int getLogicalAddress (int deviceId) {

@@ -242,7 +242,10 @@ public class OutputModeManager {
                         if (intMode == higMode && lenMode >= len) continue;
                         lenMode = len;
                         higMode = intMode;
-                        outputMode = supportList[i];
+                        if (supportList[i].contains("*"))
+                            outputMode = supportList[i].substring(0, supportList[i].length()-1);
+                        else
+                            outputMode = supportList[i];
                     }
                 }
             }

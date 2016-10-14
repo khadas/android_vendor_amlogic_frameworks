@@ -411,6 +411,8 @@ public class DroidLogicTvInputService extends TvInputService implements
                .setPcrPid(0)
                .setFrequency(event.freq)
                .setBandwidth(0)
+               .setSymbolRate(0)
+               .setModulation(0)
                .setFineTune(0)
                .setBrowsable(true)
                .setIsFavourite(false)
@@ -464,6 +466,8 @@ public class DroidLogicTvInputService extends TvInputService implements
                .setPcrPid(event.pcr)
                .setFrequency(event.freq)
                .setBandwidth(event.bandwidth)
+               .setSymbolRate(event.sr)
+               .setModulation(event.mod)
                .setFineTune(0)
                .setBrowsable(true)
                .setIsFavourite(false)
@@ -1216,7 +1220,7 @@ public class DroidLogicTvInputService extends TvInputService implements
         } else {
             tvPlayStopped(sessionId);
         }
-        selectHdmiDevice(-1);
+        disconnectHdmiCec();
         return ACTION_SUCCESS;
     }
     public void setCurrentSessionById(int sessionId){}

@@ -145,6 +145,8 @@ public class DroidLogicTvUtils
     public static final String ACTION_STOP_SCAN = "stop_scan";
     public static final String PARA_MANUAL_SCAN = "scan_freq";
     public static final String ACTION_DTV_AUTO_TRACKS = "dtv_auto_tracks";
+    public static final String ACTION_DTV_SET_MODE = "dtv_set_mode";
+    public static final String PARA_MODE = "dtv_mode";
 
     /**
      * Other extra names for {@link TvInputInfo.createSetupIntent#intent} except for input id.
@@ -186,6 +188,7 @@ public class DroidLogicTvUtils
     public static final String TV_CURRENT_CHANNEL_IS_RADIO = "tv_current_channel_is_radio";
 
     public static final String TV_KEY_DTV_NUMBER_MODE = "tv_dtv_number_mode";
+    public static final String TV_KEY_DTV_MODE = "tv_dtv_mode";
 
     private static final UriMatcher sUriMatcher;
     public static final int NO_MATCH = UriMatcher.NO_MATCH;

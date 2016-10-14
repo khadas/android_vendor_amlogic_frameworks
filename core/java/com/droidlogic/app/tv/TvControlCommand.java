@@ -476,4 +476,7 @@ public interface TvControlCommand {
     int GET_AVERAGE_LUMA = 1480;
     int GET_AUTO_BACKLIGHT_DATA = 1481;
     int SET_AUTO_BACKLIGHT_DATA = 1482;
+    int DTV_SCAN = 1483;
+    int DTV_GET_SCAN_FREQUENCY_LIST_MODE = 1484;
+    int TV_CLEAR_FRONTEND = 1485;
 }

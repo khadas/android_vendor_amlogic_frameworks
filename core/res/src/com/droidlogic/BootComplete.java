@@ -54,7 +54,19 @@ public class BootComplete extends BroadcastReceiver {
 
             new PlayBackManager(context).initHdmiSelfadaption();
 
-            new HdmiCecExtend(context);
+            android.content.pm.PackageInfo packageInfo = null;
+            try {
+                packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(),
+                android.content.pm.PackageManager.GET_META_DATA |
+                android.content.pm.PackageManager.MATCH_DEBUG_TRIAGED_MISSING);
+            } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+                Log.e(TAG, "Couldn't find package " + e.getMessage());
+            }
+            android.content.pm.ApplicationInfo ai = packageInfo.applicationInfo;
+            boolean primaryArchIs64bit = dalvik.system.VMRuntime.is64BitAbi(ai.primaryCpuAbi);
+            Log.i(TAG, "primaryArchIs64bit: " + primaryArchIs64bit);
+            if (!primaryArchIs64bit)
+                new HdmiCecExtend(context);
 
             if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false)) {
                 new HdrManager(context).initHdrMode();

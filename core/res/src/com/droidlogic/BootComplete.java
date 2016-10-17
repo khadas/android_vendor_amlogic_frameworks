@@ -68,9 +68,7 @@ public class BootComplete extends BroadcastReceiver {
             if (!primaryArchIs64bit)
                 new HdmiCecExtend(context);
 
-            if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false)) {
-                new HdrManager(context).initHdrMode();
-            }
+            new HdrManager(context).initHdrMode();
 
             //start optimization service
             context.startService(new Intent(context, Optimization.class));

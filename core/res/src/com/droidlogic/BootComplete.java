@@ -4,7 +4,7 @@ package com.droidlogic;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.hardware.hdmi.HdmiDeviceInfo;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.UserHandle;
@@ -54,19 +54,9 @@ public class BootComplete extends BroadcastReceiver {
 
             new PlayBackManager(context).initHdmiSelfadaption();
 
-            android.content.pm.PackageInfo packageInfo = null;
-            try {
-                packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(),
-                android.content.pm.PackageManager.GET_META_DATA |
-                android.content.pm.PackageManager.MATCH_DEBUG_TRIAGED_MISSING);
-            } catch (android.content.pm.PackageManager.NameNotFoundException e) {
-                Log.e(TAG, "Couldn't find package " + e.getMessage());
-            }
-            android.content.pm.ApplicationInfo ai = packageInfo.applicationInfo;
-            boolean primaryArchIs64bit = dalvik.system.VMRuntime.is64BitAbi(ai.primaryCpuAbi);
-            Log.i(TAG, "primaryArchIs64bit: " + primaryArchIs64bit);
-            if (!primaryArchIs64bit)
+            if (needCecExtend(sm, context)) {
                 new HdmiCecExtend(context);
+            }
 
             new HdrManager(context).initHdrMode();
 
@@ -98,6 +88,10 @@ public class BootComplete extends BroadcastReceiver {
                     }
             }
         }
+    }
+
+    private boolean needCecExtend(SystemControlManager sm, Context context) {
+        return sm.getPropertyInt("ro.hdmi.device_type", -1) == HdmiDeviceInfo.DEVICE_PLAYBACK;
     }
 
     //this function fix setting database not load AnimationSettings bug

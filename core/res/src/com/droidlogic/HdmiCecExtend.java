@@ -181,11 +181,17 @@ public class HdmiCecExtend {
     private Handler mHandler;
     private HdmiExtendReceiver mReceiver = new HdmiExtendReceiver();
 
+    private long mNativePtr = 0;
+    private final Object mLock = new Object();
+    static {
+        System.loadLibrary("hdmicec_jni");
+    }
+
     public HdmiCecExtend(Context ctx) {
         Slog.d(TAG, "HdmiCecExtend start");
-        System.load("/system/lib/hw/hdmi_cec.amlogic.so");
-        nativeInit(this);
-        Slog.d(TAG, "nativeInit:" + this);
+
+        init();
+
         mContext = ctx;
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         mService = IHdmiControlService.Stub.asInterface(ServiceManager.getService(Context.HDMI_CONTROL_SERVICE));
@@ -199,7 +205,7 @@ public class HdmiCecExtend {
             if (mPlayback != null) {
                 mPlayback.setVendorCommandListener(mVendorCmdListener);
                 mPlayback.oneTouchPlay(mOneTouchPlay);
-                mVendorId = nativeGetVendorId();
+                mVendorId = getCecVendorId();
                 Slog.d(TAG, "vendorId:" + mVendorId);
                 if (!mLanguangeChanged) {
                     mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
@@ -233,7 +239,7 @@ public class HdmiCecExtend {
 
     public void updatePortInfo() {
         if (mService != null) {
-            mPhyAddr = nativeGetPhysicalAddr();
+            mPhyAddr = getCecPhysicalAddress();
         }
     }
 
@@ -261,12 +267,9 @@ public class HdmiCecExtend {
     }
 
     public void oneTouchPlayExt(int flag) {
-        /*
-         * menually start one touch play
-         */
         Slog.d(TAG, "oneTouchPlayExt started, flag:" + String.format("0x%02X", flag));
         if (mPhyAddr == -1) {
-            mPhyAddr = nativeGetPhysicalAddr();
+            mPhyAddr = getCecPhysicalAddress();
         }
         ReportPhysicalAddr(ADDR_BROADCAST, mPhyAddr, HdmiDeviceInfo.DEVICE_PLAYBACK);
         SendVendorId(ADDR_BROADCAST, mVendorId);
@@ -298,6 +301,7 @@ public class HdmiCecExtend {
     }
 
     private void onCecMessageRx(byte[] msg) {
+        Slog.d(TAG, "onCecMessageRx");
         int dest, init;
         int opcode, size, addr;
         size = msg.length;
@@ -309,7 +313,7 @@ public class HdmiCecExtend {
         if (size > 1) {
             opcode = (msg[1] & 0xFF);
             if (mPhyAddr == -1) {
-                mPhyAddr = nativeGetPhysicalAddr();
+                mPhyAddr = getCecPhysicalAddress();
             }
             /* TODO: process messages service can't process */
             switch (opcode) {
@@ -351,7 +355,7 @@ public class HdmiCecExtend {
 
 
             case MESSAGE_GET_CEC_VERSION:
-                int version = nativeGetCecVersion();
+                int version = getCecVersion();
                 SendCecVersion(init, version);
                 break;
 
@@ -422,10 +426,15 @@ public class HdmiCecExtend {
     private final Runnable mDelayedRun = new Runnable() {
         @Override
         public void run() {
-            if (isOneTouchPlayOn()) {
-                updatePortInfo();
-                oneTouchPlayExt(0);
-            }
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isOneTouchPlayOn()) {
+                        updatePortInfo();
+                        oneTouchPlayExt(0);
+                    }
+                }
+            }).start();
         }
     };
 
@@ -591,7 +600,7 @@ public class HdmiCecExtend {
     public int SendCecMessage(int dest, byte[] body) {
         int retry = 2, ret = 0;
         while (retry > 0) {
-            ret = nativeSendCecMessage(dest, body);
+            ret = sendCecMessage(dest, body);
             if (ret == SEND_RESULT_SUCCESS) {
                 break;
             }
@@ -697,10 +706,73 @@ public class HdmiCecExtend {
         }
     }
 
+    private void init() {
+        synchronized (mLock) {
+            mNativePtr = nativeInit(this);
+        }
+        Slog.d(TAG, "init, mNativePtr = " + mNativePtr);
+    }
+
+    private int getCecPhysicalAddress() {
+        int ret = 0;
+        synchronized (mLock) {
+            if (mNativePtr != 0) {
+                ret = nativeGetPhysicalAddr(mNativePtr);
+            }
+        }
+        Slog.d(TAG, "getCecPhysicalAddress, ret = " + ret);
+        return ret;
+    }
+
+    private int getCecVendorId() {
+        int ret = -1;
+        synchronized (mLock) {
+            if (mNativePtr != 0) {
+                ret = nativeGetVendorId(mNativePtr);
+            }
+        }
+        Slog.d(TAG, "getCecVendorId, ret = " + ret);
+        return ret;
+    }
+
+    private int getCecVersion() {
+        int ret = -1;
+        synchronized (mLock) {
+            if (mNativePtr != 0) {
+                ret = nativeGetCecVersion(mNativePtr);
+            }
+        }
+        Slog.d(TAG, "getCecVersion, ret = " + ret);
+        return ret;
+    }
+
+    private int sendCecMessage(int dest, byte[] body) {
+        int ret = -1;
+        synchronized (mLock) {
+            if (mNativePtr != 0) {
+                ret = nativeSendCecMessage(mNativePtr, dest, body);
+            }
+        }
+        Slog.d(TAG, "sendCecMessage, " + toString(dest, body));
+        return ret;
+    }
+
+    private String toString(int dest, byte[] body) {
+        StringBuffer s = new StringBuffer();
+        s.append(String.format("dest: %d", dest));
+        if (body.length > 0) {
+            s.append(", body:");
+            for (byte data : body) {
+                s.append(String.format(" %02X", data));
+            }
+        }
+        return s.toString();
+    }
+
     /* for native */
-    public native int  nativeSendCecMessage(int dest, byte[] body);
-    public native void nativeInit(HdmiCecExtend ext);
-    public native int  nativeGetPhysicalAddr();
-    public native int  nativeGetVendorId();
-    public native int  nativeGetCecVersion();
+    public native int  nativeSendCecMessage(long ptr, int dest, byte[] body);
+    public native long nativeInit(HdmiCecExtend ext);
+    public native int  nativeGetPhysicalAddr(long ptr);
+    public native int  nativeGetVendorId(long ptr);
+    public native int  nativeGetCecVersion(long ptr);
 }

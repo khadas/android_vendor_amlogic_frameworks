@@ -103,7 +103,7 @@ public class MediaPlayerExt extends MediaPlayer {
     private IBinder mIBinderService = null; //IMediaPlayerService
     private static final String SYS_TOKEN_SERVICE           = "android.media.IMediaPlayerService";
     private static final int CREATE                         = IBinder.FIRST_CALL_TRANSACTION;
-    private static final int SET_MEDIA_PLAYER_CLIENT        = IBinder.FIRST_CALL_TRANSACTION + 11;
+    private static final int SET_MEDIA_PLAYER_CLIENT        = IBinder.FIRST_CALL_TRANSACTION + 9;
 
     //must sync with Mediaplayer.h (av\include\media)
     public static final int KEY_PARAMETER_AML_VIDEO_POSITION_INFO           = 2000;
@@ -578,7 +578,7 @@ public class MediaPlayerExt extends MediaPlayer {
     }
 
     //must different with message value defined in MediaPlayer.java
-    private static final int MEDIA_BLURAY_INFO = 202;
+    private static final int MEDIA_BLURAY_INFO = 203;
     private class EventHandler extends Handler {
         private MediaPlayer mMediaPlayer;
 

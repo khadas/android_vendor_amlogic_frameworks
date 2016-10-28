@@ -309,6 +309,23 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
                 pThiz->mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
             }
         }
+        else if (!strcmp(ueventData.matchName, HDMI_TX_HDR_UEVENT)) {
+            SYS_LOGI("tx switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
+
+            //0: exit hdr mode  1: enter hdr mode
+            char hdrState[MODE_LEN] = {0};
+            pThiz->mSysWrite.readSysfs(HDMI_TX_SWITCH_HDR, hdrState);
+            if (!strcmp(hdrState, "0")) {
+                pThiz->mSysWrite.writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+                usleep(100000);//100ms
+                pThiz->stopVerAll();
+                pThiz->stop();
+                pThiz->mSysWrite.writeSysfs(DISPLAY_HDMI_PHY, "0"); /* Turn off TMDS PHY */
+                usleep(200000);//200ms
+                pThiz->mSysWrite.writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
+                pThiz->start();
+            }
+        }
 
 #ifndef RECOVERY_MODE
         if (!strcmp(ueventData.matchName, VIDEO_LAYER1_UEVENT)) {

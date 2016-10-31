@@ -1,4 +1,7 @@
 LOCAL_PATH:= $(call my-dir)
+
+CURRENT_PATH := $(TOP)/vendor/amlogic/frameworks/core/jni
+
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:= \
@@ -135,4 +138,5 @@ LOCAL_STATIC_LIBRARIES := \
 
 include $(BUILD_SHARED_LIBRARY)
 
-include $(LOCAL_PATH)/tv/Android.mk
+include $(CURRENT_PATH)/tv/Android.mk
+include $(CURRENT_PATH)/hdmi_cec/Android.mk

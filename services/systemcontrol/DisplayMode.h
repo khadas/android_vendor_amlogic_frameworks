@@ -105,9 +105,11 @@ using namespace android;
 #define AV_HDMI_CONFIG                  "/sys/class/amhdmitx/amhdmitx0/config"
 #define AV_HDMI_3D_SUPPORT              "/sys/class/amhdmitx/amhdmitx0/support_3d"
 
-#define HDMI_TX_PLUG_UEVENT             "DEVPATH=/devices/virtual/switch/hdmi"
+#define HDMI_TX_PLUG_UEVENT             "DEVPATH=/devices/virtual/switch/hdmi_hpd"
 #define HDMI_TX_POWER_UEVENT            "DEVPATH=/devices/virtual/switch/hdmi_power"
 #define HDMI_TX_PLUG_STATE              "/sys/devices/virtual/switch/hdmi/state"
+#define HDMI_TX_HDR_UEVENT              "DEVPATH=/devices/virtual/switch/hdmi_hdr"
+#define HDMI_TX_SWITCH_HDR              "/sys/class/switch/hdmi_hdr/state"
 
 #define HDMI_TX_PLUG_OUT                "0"
 #define HDMI_TX_PLUG_IN                 "1"

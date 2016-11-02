@@ -39,7 +39,6 @@ IMPLEMENT_META_INTERFACE(HdmiCecCallback, "droidlogic.IHdmiCecCallback");
 
 status_t BnHdmiCecCallback::onTransact(uint32_t code, const Parcel &data, Parcel *reply,
         uint32_t flags) {
-    LOGD("code = %d", code);
     switch (code) {
         case NOTIFY_CALLBACK: {
             CHECK_INTERFACE(IHdmiCecCallback, data, reply);

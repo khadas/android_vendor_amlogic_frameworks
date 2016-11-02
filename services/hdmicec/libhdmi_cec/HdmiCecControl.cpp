@@ -41,7 +41,7 @@ void HdmiCecControl::init()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("persist.sys.hdmi.keep_awake", value, "true");
     mCecDevice->mExtendControl = (!strcmp(value, "false")) ? 1 : 0;
-    LOGD("device_type: %d, ext_control: %d", mCecDevice->mDeviceType, mCecDevice->mExtendControl);
+    LOGV("device_type: %d, ext_control: %d", mCecDevice->mDeviceType, mCecDevice->mExtendControl);
 }
 
 /**
@@ -83,6 +83,7 @@ int HdmiCecControl::openCecDevice()
     mCecDevice->mConnectStatus = 0;
     mCecDevice->mpPortData = NULL;
     mCecDevice->mAddrBitmap = (1 << CEC_ADDR_BROADCAST);
+    mCecDevice->isCecEnabled = true;
     mCecDevice->isCecControlled = false;
     mCecDevice->mFd = open(CEC_FILE, O_RDWR);
     if (mCecDevice->mFd < 0) {
@@ -105,7 +106,7 @@ void HdmiCecControl::getBootConnectStatus()
     int port, ret;
 
     ret = ioctl(mCecDevice->mFd, CEC_IOC_GET_PORT_NUM, &total);
-    LOGD("total port:%d, ret:%d", total, ret);
+    LOGV("total port:%d, ret:%d", total, ret);
     if (ret < 0)
         return ;
 
@@ -121,7 +122,7 @@ void HdmiCecControl::getBootConnectStatus()
         }
         mCecDevice->mConnectStatus |= ((port ? 1 : 0) << i);
     }
-    LOGD("mConnectStatus: %d", mCecDevice->mConnectStatus);
+    LOGV("mConnectStatus: %d", mCecDevice->mConnectStatus);
 }
 
 void* HdmiCecControl::__threadLoop(void *user)
@@ -137,7 +138,7 @@ void HdmiCecControl::threadLoop()
     hdmi_cec_event_t event;
     int r = -1;
 
-    LOGD("threadLoop start.");
+    LOGV("threadLoop start.");
     while (mCecDevice->mFd < 0) {
         usleep(1000 * 1000);
         mCecDevice->mFd = open(CEC_FILE, O_RDWR);
@@ -145,12 +146,14 @@ void HdmiCecControl::threadLoop()
     LOGD("file open ok, fd = %d.", mCecDevice->mFd);
 
     while (mCecDevice != NULL && mCecDevice->mRun) {
+        if (!mCecDevice->isCecEnabled)
+            continue;
         checkConnectStatus();
 
         memset(msg_buf, 0, sizeof(msg_buf));
         //try to get a message from dev.
         r = readMessage(msg_buf, CEC_MESSAGE_BODY_MAX_LENGTH);
-        if (r < 1)//ignore received ping messages
+        if (r <= 1)//ignore received ping messages
             continue;
 
         printCecMsgBuf((const char*)msg_buf);
@@ -169,7 +172,7 @@ void HdmiCecControl::threadLoop()
             }
         }
 
-        LOGD("mExtendControl = %d, mDeviceType = %d, isCecControlled = %d",
+        LOGV("mExtendControl = %d, mDeviceType = %d, isCecControlled = %d",
                 mCecDevice->mExtendControl, mCecDevice->mDeviceType, mCecDevice->isCecControlled);
         /* call java method to process cec message for ext control */
         if ((mCecDevice->mExtendControl == 0x03)
@@ -181,7 +184,7 @@ void HdmiCecControl::threadLoop()
             mEventListener->onEventUpdate(&event);
         }
     }
-    LOGD("thread end.");
+    LOGV("thread end.");
     mCecDevice->mExited = true;
 }
 
@@ -196,17 +199,17 @@ void HdmiCecControl::checkConnectStatus()
         port = mCecDevice->mpPortData[i].port_id;
         ret = ioctl(mCecDevice->mFd, CEC_IOC_GET_CONNECT_STATUS, &port);
         if (ret) {
-            LOGD("get port %d connected status failed, ret:%d\n", mCecDevice->mpPortData[i].port_id, ret);
+            LOGE("get port %d connected status failed, ret:%d\n", mCecDevice->mpPortData[i].port_id, ret);
             continue;
         }
         bit = prev_status & (1 << i);
-        if (bit ^ ((port ? 1 : 0) << i)) {
+        if (bit ^ ((port ? 1 : 0) << i)) {//connect status has changed
             LOGD("port:%d, connect status changed, now:%d, prev_status:%x\n",
                     mCecDevice->mpPortData[i].port_id, port, prev_status);
-            event.eventType = HDMI_EVENT_HOT_PLUG;
-            event.hotplug.connected = port;
-            event.hotplug.port_id = mCecDevice->mpPortData[i].port_id;
-            if (mEventListener != NULL && mCecDevice->isCecControlled) {
+            if (mEventListener != NULL && mCecDevice->isCecEnabled && mCecDevice->isCecControlled) {
+                event.eventType = HDMI_EVENT_HOT_PLUG;
+                event.hotplug.connected = port;
+                event.hotplug.port_id = mCecDevice->mpPortData[i].port_id;
                 mEventListener->onEventUpdate(&event);
             }
             prev_status &= ~(bit);
@@ -310,6 +313,7 @@ void HdmiCecControl::setOption(int flag, int value)
     switch (flag) {
         case HDMI_OPTION_ENABLE_CEC:
             ret = ioctl(mCecDevice->mFd, CEC_IOC_SET_OPTION_ENALBE_CEC, value);
+            mCecDevice->isCecEnabled = (value == 1) ? true : false;
             break;
 
         case HDMI_OPTION_WAKEUP:
@@ -333,7 +337,7 @@ void HdmiCecControl::setOption(int flag, int value)
         default:
             break;
         }
-        LOGD("flag:%x, value:%x, ret:%d, isCecControlled:%x", flag, value, ret, mCecDevice->isCecControlled);
+        LOGV("flag:0x%x, value:0x%x, ret:%d, isCecControlled:%x", flag, value, ret, mCecDevice->isCecControlled);
 }
 
 void HdmiCecControl::setAudioReturnChannel(int port, bool flag)
@@ -365,9 +369,9 @@ int HdmiCecControl::getVersion(int* version)
     if (assertHdmiCecDevice())
         return -1;
 
-    ioctl(mCecDevice->mFd, CEC_IOC_GET_VERSION, version);
-    LOGD("version:%x\n", *version);
-    return 0;
+    int ret = ioctl(mCecDevice->mFd, CEC_IOC_GET_VERSION, version);
+    LOGD("version:%x, ret = %d", *version, ret);
+    return ret;
 }
 
 int HdmiCecControl::getVendorId(uint32_t* vendorId)
@@ -375,9 +379,9 @@ int HdmiCecControl::getVendorId(uint32_t* vendorId)
     if (assertHdmiCecDevice())
         return -1;
 
-    ioctl(mCecDevice->mFd, CEC_IOC_GET_VENDOR_ID, vendorId);
-    LOGD("vendorId: %x", *vendorId);
-    return 0;
+    int ret = ioctl(mCecDevice->mFd, CEC_IOC_GET_VENDOR_ID, vendorId);
+    LOGD("vendorId: %x, ret = %d", *vendorId, ret);
+    return ret;
 }
 
 int HdmiCecControl::getPhysicalAddress(uint16_t* addr)
@@ -385,9 +389,9 @@ int HdmiCecControl::getPhysicalAddress(uint16_t* addr)
     if (assertHdmiCecDevice())
         return -EINVAL;
 
-    ioctl(mCecDevice->mFd, CEC_IOC_GET_PHYSICAL_ADDR, addr);
-    LOGD("physical addr: %x", *addr);
-    return 0;
+    int ret = ioctl(mCecDevice->mFd, CEC_IOC_GET_PHYSICAL_ADDR, addr);
+    LOGD("physical addr: %x, ret = %d", *addr, ret);
+    return ret;
 }
 
 int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
@@ -395,28 +399,57 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
     if (assertHdmiCecDevice())
         return -EINVAL;
 
-    int i, addr;
-    cec_message_t msg;
+    LOGV("isExtend = %d, mExtendControl = %d", isExtend, mCecDevice->mExtendControl);
     if (isExtend) {
-        if (mCecDevice->mDeviceType == DEV_TYPE_PLAYBACK) {
-            addr = mCecDevice->mAddrBitmap;
-            addr &= 0x7fff;
-            for (i = 0; i < 15; i++) {
-                if (addr & 1) {
-                    break;
-                }
-                addr >>= 1;
-            }
-            msg.initiator = (cec_logical_address_t) i;
-        } else {
-            msg.initiator = CEC_ADDR_TV; /* root for TV */
-        }
-        msg.destination = message->destination;
-        msg.length = message->length;
-        memcpy(msg.body, message->body, msg.length);
-        return sendMessage(&msg, false);
+        return sendExtMessage(message);
+    }
+    /* don't send message if controlled by extend */
+    if (mCecDevice->mExtendControl == 0x03 && hasHandledByExtend(message)) {
+        return HDMI_RESULT_SUCCESS;
     }
 
+    return send(message);
+}
+
+bool HdmiCecControl::hasHandledByExtend(const cec_message_t* message)
+{
+    bool ret = false;
+    int opcode = message->body[0] & 0xff;
+    switch (opcode) {
+        case CEC_MESSAGE_SET_MENU_LANGUAGE:
+            ret = true;
+            break;
+        default:
+            break;
+    }
+    return ret;
+}
+
+int HdmiCecControl::sendExtMessage(const cec_message_t* message)
+{
+    int i, addr;
+    cec_message_t msg;
+    if (mCecDevice->mDeviceType == DEV_TYPE_PLAYBACK) {
+        addr = mCecDevice->mAddrBitmap;
+        addr &= 0x7fff;
+        for (i = 0; i < 15; i++) {
+            if (addr & 1) {
+                break;
+            }
+            addr >>= 1;
+        }
+        msg.initiator = (cec_logical_address_t) i;
+    } else {
+        msg.initiator = CEC_ADDR_TV; /* root for TV */
+    }
+    msg.destination = message->destination;
+    msg.length = message->length;
+    memcpy(msg.body, message->body, msg.length);
+    return send(&msg);
+}
+
+int HdmiCecControl::send(const cec_message_t* message)
+{
     unsigned char msg_buf[CEC_MESSAGE_BODY_MAX_LENGTH];
     int ret = -1;
 

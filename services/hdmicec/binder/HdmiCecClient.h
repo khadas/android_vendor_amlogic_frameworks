@@ -19,7 +19,7 @@ public:
     virtual int getVersion(int* version);
     virtual int getVendorId(uint32_t* vendorId);
     virtual int getPhysicalAddress(uint16_t* addr);
-    virtual int sendMessage(const cec_message_t* message, bool isExtend);
+    virtual int sendMessage(const cec_message_t* message, bool isExtend = false);
 
     virtual void getPortInfos(hdmi_port_info_t* list[], int* total);
     virtual int addLogicalAddress(cec_logical_address_t address);

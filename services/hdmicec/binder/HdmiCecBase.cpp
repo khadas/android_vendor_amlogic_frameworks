@@ -31,7 +31,7 @@ void HdmiCecBase::printCecEvent(const hdmi_cec_event_t *event)
     } else if ((event->eventType & HDMI_EVENT_HOT_PLUG) != 0) {
         LOGD("hotplug, connected:%d, port_id:%d", event->hotplug.connected, event->hotplug.port_id);
     } else if ((event->eventType & HDMI_EVENT_ADD_PHYSICAL_ADDRESS) != 0) {
-        LOGD("add physical address, physicalAdd:%d", event->physicalAdd);
+        LOGD("add physical address, physicalAdd:%x", event->physicalAdd);
     }
 }
 

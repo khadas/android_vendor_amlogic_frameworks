@@ -1,5 +1,5 @@
 #define LOG_NDEBUG 0
-#define LOG_TAG "hdmi_cec_extend"
+#define LOG_TAG "JHdmiCecExtend"
 
 #include <jni.h>
 #include <JNIHelp.h>

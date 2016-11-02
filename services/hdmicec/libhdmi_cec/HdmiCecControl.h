@@ -43,8 +43,10 @@ namespace android {
  * @mDeviceType      Indentify type of cec device, such as TV or BOX.
  * @mAddrBitmap      Bit maps for each valid logical address
  * @mFd              File descriptor for global read/write
+ * @isCecEnabled     Flag of HDMI_OPTION_ENABLE_CEC,
+ * can't do anything when value is false.
  * @isCecControlled  Flag of HDMI_OPTION_SYSTEM_CEC_CONTROL,
- * Android system will stop handling CEC service when vaule is false.
+ * android system will stop handling CEC service when vaule is false.
  * @mTotalPort       Total ports of HDMI
  * @mpPortData       Array of HDMI ports
  * @mThreadId        pthread for polling cec rx message
@@ -56,6 +58,7 @@ typedef struct hdmi_device {
     int                         mDeviceType;
     int                         mAddrBitmap;
     int                         mFd;
+    bool                        isCecEnabled;
     bool                        isCecControlled;
     unsigned int                mConnectStatus;
     int                         mTotalPort;
@@ -94,10 +97,13 @@ private:
     static void *__threadLoop(void *data);
     void threadLoop();
 
+    int sendExtMessage(const cec_message_t* message);
+    int send(const cec_message_t* message);
     int readMessage(unsigned char *buf, int msg_cnt);
     void checkConnectStatus();
 
     bool assertHdmiCecDevice();
+    bool hasHandledByExtend(const cec_message_t* message);
 
     hdmi_device_t *mCecDevice;
     sp<HdmiCecEventListener> mEventListener;

@@ -14,6 +14,7 @@ namespace android {
 #define LOGD(...) do{}while(0)
 #endif
 
+#define LOGV(format, args...) ALOGV("[%s:] " format, __FUNCTION__, ##args)
 #define LOGW(format, args...) ALOGW("[%s:] " format, __FUNCTION__, ##args)
 #define LOGE(format, args...) ALOGE("[%s:] " format, __FUNCTION__, ##args)
 #define LOGI(format, args...) ALOGI("[%s:] " format, __FUNCTION__, ##args)
@@ -88,6 +89,8 @@ public:
     void printCecEvent(const hdmi_cec_event_t *event);
     void printCecMessage(const cec_message_t* message);
     void printCecMessage(const cec_message_t* message, int result);
+
+private:
     const char *getResult(int result);
 };
 

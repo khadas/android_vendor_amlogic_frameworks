@@ -142,7 +142,6 @@ IMPLEMENT_META_INTERFACE(HdmiCecService, "droidlogic.IHdmiCecService");
 status_t BnHdmiCecService::onTransact(
     uint32_t code, const Parcel &data, Parcel *reply, uint32_t flags)
 {
-    LOGD("code = %d", code);
     switch (code) {
         case CONNECT: {
             CHECK_INTERFACE(IHdmiCecService, data, reply);

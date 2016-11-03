@@ -109,13 +109,13 @@ public class DialogBluetoothService extends Service {
     private static final UUID CLIENT_CONFIG_DESCRIPTOR = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
     // Ble Remote HID Report Characteristic instance IDs (Audio)
-    private static final int  HID_STREAM_ENABLE_WRITE_INSTANCE = 3;
-    private static final int  HID_STREAM_ENABLE_READ_INSTANCE  = 4;
-    private static final int  HID_STREAM_DATA_MIN_INSTANCE     = 5;
-    private static final int  HID_STREAM_DATA_MAX_INSTANCE     = 7;
-    private static final int  HID_STREAM_DATA_REP5_INSTANCE    = 5;
-    private static final int  HID_STREAM_DATA_REP6_INSTANCE    = 6;
-    private static final int  HID_STREAM_DATA_REP7_INSTANCE    = 7;
+    private static final int  HID_STREAM_ENABLE_WRITE_INSTANCE = 59;
+    private static final int  HID_STREAM_ENABLE_READ_INSTANCE  = 62;
+    private static final int  HID_STREAM_DATA_MIN_INSTANCE     = 66;
+    private static final int  HID_STREAM_DATA_MAX_INSTANCE     = 74;
+    private static final int  HID_STREAM_DATA_REP5_INSTANCE    = 66;
+    private static final int  HID_STREAM_DATA_REP6_INSTANCE    = 70;
+    private static final int  HID_STREAM_DATA_REP7_INSTANCE    = 74;
 
     // Data
     private BluetoothManager mBluetoothManager;

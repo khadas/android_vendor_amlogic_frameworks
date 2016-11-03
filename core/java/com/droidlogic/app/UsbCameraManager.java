@@ -11,10 +11,15 @@ import android.hardware.Camera.CameraInfo;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbInterface;
+import android.hardware.ICameraService;
 import android.os.IBinder;
+import android.os.Binder;
+import android.os.DeadObjectException;
 import android.os.Parcel;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.ServiceManager;
+import android.os.ServiceSpecificException;
 import android.util.Log;
 
 public class UsbCameraManager {
@@ -30,49 +35,32 @@ public class UsbCameraManager {
         "com.android.camera.CameraLauncher",
     };
 
-    private static final String SYS_TOKEN       = "android.hardware.ICameraService";
-    public static final int REMOTE_EXCEPTION    = -0xffff;
-
-    //must sync with ICameraService.h (frameworks\av\include\camera)
-    int GET_NUMBER_OF_CAMERAS                   = IBinder.FIRST_CALL_TRANSACTION;
-    int GET_CAMERA_INFO                         = IBinder.FIRST_CALL_TRANSACTION + 1;
-    int CONNECT                                 = IBinder.FIRST_CALL_TRANSACTION + 2;
-    int CONNECT_DEVICE                          = IBinder.FIRST_CALL_TRANSACTION + 3;
-    int ADD_LISTENER                            = IBinder.FIRST_CALL_TRANSACTION + 4;
-    int REMOVE_LISTENER                         = IBinder.FIRST_CALL_TRANSACTION + 5;
-    int GET_CAMERA_CHARACTERISTICS              = IBinder.FIRST_CALL_TRANSACTION + 6;
-    int GET_CAMERA_VENDOR_TAG_DESCRIPTOR        = IBinder.FIRST_CALL_TRANSACTION + 7;
-    int GET_LEGACY_PARAMETERS                   = IBinder.FIRST_CALL_TRANSACTION + 8;
-    int SUPPORTS_CAMERA_API                     = IBinder.FIRST_CALL_TRANSACTION + 9;
-    int CONNECT_LEGACY                          = IBinder.FIRST_CALL_TRANSACTION + 10;
-    int SET_TORCH_MODE                          = IBinder.FIRST_CALL_TRANSACTION + 11;
-    int NOTIFY_SYSTEM_EVENT                     = IBinder.FIRST_CALL_TRANSACTION + 12;
-
-    int USB_CAMERA_ATTACH                       = IBinder.FIRST_CALL_TRANSACTION + 13;
-
     private Context mContext;
-    private IBinder mIBinder = null;
+    private ICameraService mCameraService = null;
     public UsbCameraManager(Context context){
         mContext = context;
     }
 
     private void usbCameraAttach(boolean isAttach){
         try {
-            if (null == mIBinder) {
-                Object object = Class.forName("android.os.ServiceManager")
-                        .getMethod("getService", new Class[] { String.class })
-                        .invoke(null, new Object[] { "media.camera" });
-                mIBinder = (IBinder)object;
+            if (null == mCameraService) {
+                IBinder cameraServiceBinder = ServiceManager.getService("media.camera");
+                if (cameraServiceBinder == null) {
+                    // Camera service is now down, leave mCameraService as null
+                    return;
+                }
+                mCameraService = ICameraService.Stub.asInterface(cameraServiceBinder);
             }
 
-            if (null != mIBinder) {
-                Parcel data = Parcel.obtain();
-                Parcel reply = Parcel.obtain();
-                data.writeInterfaceToken(SYS_TOKEN);
-                data.writeInt(isAttach?1:0);
-                mIBinder.transact(USB_CAMERA_ATTACH, data, reply, 0);
-                reply.recycle();
-                data.recycle();
+            if (null != mCameraService) {
+                try {
+                    mCameraService.usbCameraAttach(isAttach);
+                } catch(ServiceSpecificException e) {
+                    Log.e(TAG, "USB camera attach:" + e);
+                } catch (RemoteException e) {
+                    // camera service just died - if no camera service, then no devices
+                    Log.e(TAG, "USB camera attach:" + e);
+                }
             }
         } catch (Exception ex) {
             Log.e(TAG, "USB camera attach:" + ex);

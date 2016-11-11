@@ -7,6 +7,8 @@ import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.database.ContentObserver;
 import android.hardware.hdmi.HdmiControlManager;
+import android.hardware.hdmi.HdmiControlManager.HotplugEventListener;
+import android.hardware.hdmi.HdmiControlManager.VendorCommandListener;
 import android.hardware.hdmi.HdmiPlaybackClient;
 import android.hardware.hdmi.HdmiHotplugEvent;
 import android.hardware.hdmi.HdmiTvClient;
@@ -16,6 +18,9 @@ import android.hardware.hdmi.HdmiPlaybackClient.OneTouchPlayCallback;
 import android.hardware.hdmi.IHdmiControlService;
 import android.util.Slog;
 import android.net.Uri;
+import android.os.Message;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.os.UserHandle;
 import android.os.ServiceManager;
 import android.os.Handler;
@@ -27,7 +32,7 @@ import java.io.UnsupportedEncodingException;
 import com.droidlogic.app.HdmiCecManager;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
 
-public class HdmiCecExtend {
+public class HdmiCecExtend implements VendorCommandListener, HotplugEventListener {
     private final String TAG = "HdmiCecExtend";
     private static final int DISABLED = 0;
     private static final int ENABLED = 1;
@@ -150,7 +155,14 @@ public class HdmiCecExtend {
     /** Logical address used to indicate it is not initialized or invalid. */
     public static final int ADDR_INVALID = -1;
 
-    public static final int ONE_TOUCH_PLAY_DELAY = 100;
+    private static final int ONE_TOUCH_PLAY_DELAY = 100;
+    private static final int MSG_WAKE_LOCK = 1;
+
+    /**
+     * add wake lock for HdmiControlService.
+     * Timeout in millisecond for device clean up and sending standby message to TV.
+     */
+    private static final int TIMER_DEVICE_CLEANUP = 2000;
 
     static final int MENU_STATE_ACTIVATED = 0;
     static final int MENU_STATE_DEACTIVATED = 1;
@@ -167,13 +179,26 @@ public class HdmiCecExtend {
     private IHdmiControlService mService = null;
     private int mPhyAddr = -1;
     private int mVendorId = 0;
-    private Handler mHandler;
+    private PowerManager mPowerManager;
+    private ActiveWakeLock mWakeLock;
 
     private long mNativePtr = 0;
     private final Object mLock = new Object();
     static {
         System.loadLibrary("hdmicec_jni");
     }
+
+    private final Handler mHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+            case MSG_WAKE_LOCK:
+                getWakeLock().release();
+                break;
+            default:
+                break;
+            }
+        };
+    };
 
     public HdmiCecExtend(Context ctx) {
         Slog.d(TAG, "HdmiCecExtend start");
@@ -183,34 +208,23 @@ public class HdmiCecExtend {
         mContext = ctx;
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         mService = IHdmiControlService.Stub.asInterface(ServiceManager.getService(Context.HDMI_CONTROL_SERVICE));
+        mPowerManager = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
         mHdmiTvClient = mControl.getTvClient();
-        mHandler = new Handler();
         mSettingsObserver = new SettingsObserver(mHandler);
         registerContentObserver();
         if (mControl != null) {
             mPlayback = mControl.getPlaybackClient();
             Slog.d(TAG, "mHasPlaybackDevice:" + mPlayback);
             if (mPlayback != null) {
-                mPlayback.oneTouchPlay(mOneTouchPlay);
+                mPlayback.setVendorCommandListener(this);
+                mPlayback.oneTouchPlay(mOneTouchPlayCallback);
                 mVendorId = getCecVendorId();
                 Slog.d(TAG, "vendorId:" + mVendorId);
                 if (!mLanguangeChanged) {
                     mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
                 }
             }
-            mControl.addHotplugEventListener(new HdmiControlManager.HotplugEventListener() {
-                    @Override
-                    public void onReceived(HdmiHotplugEvent event) {
-                        Slog.d(TAG, "HdmiHotplugEvent, connected:" + event.isConnected());
-                        if (mPlayback != null) {
-                            updatePortInfo();
-                            if (!(event.isConnected() && !mLanguangeChanged && mInitFinished)) {
-                                mLanguangeChanged = false;
-                                mPortInfo = null;
-                            }
-                        }
-                    }
-                });
+            mControl.addHotplugEventListener(this);
         } else {
             Slog.d(TAG, "can't find HdmiControlManager");
         }
@@ -222,7 +236,75 @@ public class HdmiCecExtend {
         }
     }
 
-    private final OneTouchPlayCallback mOneTouchPlay = new OneTouchPlayCallback () {
+    @Override
+    public void onReceived(HdmiHotplugEvent event) {
+        Slog.d(TAG, "HdmiHotplugEvent, connected:" + event.isConnected());
+        if (mPlayback != null) {
+            updatePortInfo();
+            if (!(event.isConnected() && !mLanguangeChanged && mInitFinished)) {
+                mLanguangeChanged = false;
+                mPortInfo = null;
+            }
+        }
+    }
+
+    /**
+     * The callback is called:
+     * 1. before HdmiControlService is disabled.
+     * 2. after HdmiControlService is enabled and the local address assigned.
+     * The client shouldn't hold the thread too long since this is a blocking call.
+     */
+    @Override
+    public void onControlStateChanged(boolean enabled, int reason) {
+        Slog.d(TAG, "enabled = " + enabled + ", reason = " + reason);
+        if (!enabled && reason == HdmiControlManager.CONTROL_STATE_CHANGED_REASON_STANDBY) {//go to standby
+            getWakeLock().acquire();
+            mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_WAKE_LOCK), TIMER_DEVICE_CLEANUP);
+        }
+    }
+
+    @Override
+    public void onReceived(int srcAddress, int destAddress, byte[] params, boolean hasVendorId) {
+        // TODO Auto-generated method stub
+    }
+
+    private ActiveWakeLock getWakeLock() {
+        if (mWakeLock == null) {
+            mWakeLock = new SystemWakeLock();
+        }
+        return mWakeLock;
+    }
+
+    private interface ActiveWakeLock {
+        void acquire();
+        void release();
+        boolean isHeld();
+    }
+
+    private class SystemWakeLock implements ActiveWakeLock {
+        private final WakeLock mWakeLock;
+        public SystemWakeLock() {
+            mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+            mWakeLock.setReferenceCounted(false);
+        }
+
+        @Override
+        public void acquire() {
+            mWakeLock.acquire();
+        }
+
+        @Override
+        public void release() {
+            mWakeLock.release();
+        }
+
+        @Override
+        public boolean isHeld() {
+            return mWakeLock.isHeld();
+        }
+    }
+
+    private final OneTouchPlayCallback mOneTouchPlayCallback = new OneTouchPlayCallback () {
         @Override
         public void onComplete(int result) {
             Slog.d(TAG, "oneTouchPlay:" + result);
@@ -243,21 +325,6 @@ public class HdmiCecExtend {
         } catch (InterruptedException e) {
 
         }
-    }
-
-    public void oneTouchPlayExt(int flag) {
-        Slog.d(TAG, "oneTouchPlayExt started, flag:" + String.format("0x%02X", flag));
-        if (mPhyAddr == -1) {
-            mPhyAddr = getCecPhysicalAddress();
-        }
-        ReportPhysicalAddr(ADDR_BROADCAST, mPhyAddr, HdmiDeviceInfo.DEVICE_PLAYBACK);
-        SendVendorId(ADDR_BROADCAST, mVendorId);
-        SendImageViewOn(ADDR_TV);
-        SendActiveSource(ADDR_BROADCAST, mPhyAddr);
-        SendReportMenuStatus(ADDR_TV, MENU_STATE_ACTIVATED);
-        sleep(100);
-        SendGetMenuLanguage(ADDR_TV);
-        mInitFinished = true;
     }
 
     public boolean updateLanguage(Locale locale) {
@@ -320,9 +387,8 @@ public class HdmiCecExtend {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    if (isOneTouchPlayOn()) {
-                        updatePortInfo();
-                        oneTouchPlayExt(0);
+                    if (isOneTouchPlayOn() && mPlayback != null) {
+                        mPlayback.oneTouchPlay(mOneTouchPlayCallback);
                     }
                 }
             }).start();

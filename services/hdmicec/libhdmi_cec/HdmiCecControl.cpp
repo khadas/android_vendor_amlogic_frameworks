@@ -167,7 +167,7 @@ void HdmiCecControl::threadLoop()
                 && msg_buf[1] == CEC_MESSAGE_SET_MENU_LANGUAGE && mCecDevice->mExtendControl) {
             LOGD("ignore menu language change for hdmi-tx.");
         } else {
-            if (mEventListener != NULL && mCecDevice->isCecControlled) {
+            if (mCecDevice->isCecControlled) {
                 event.eventType |= HDMI_EVENT_CEC_MESSAGE;
             }
         }
@@ -180,7 +180,7 @@ void HdmiCecControl::threadLoop()
                 && mCecDevice->isCecControlled) {
             event.eventType |= HDMI_EVENT_RECEIVE_MESSAGE;
         }
-        if (event.eventType != 0) {
+        if (mEventListener != NULL && event.eventType != 0) {
             mEventListener->onEventUpdate(&event);
         }
     }

@@ -30,12 +30,22 @@
 
 //should sync with SurfaceFlinger.h
 #define SURFACE_3D_OFF                  0
-#define SURFACE_3D_SIDE_BY_SIDE         8
-#define SURFACE_3D_TOP_BOTTOM           16
+#define SURFACE_3D_SIDE_BY_SIDE         0x01//8
+#define SURFACE_3D_TOP_BOTTOM           0x02//16
+#define SURFACE_3D_FRAME_PACKING        0x04//32
 
 #define VIDEO_3D_OFF                    "3doff"
 #define VIDEO_3D_SIDE_BY_SIDE           "3dlr"
 #define VIDEO_3D_TOP_BOTTOM             "3dtb"
+#define VIDEO_3D_FRAME_PACKING          "3dfp"
+
+#define KEY_SIDE_BY_SIDE                "SidebySide"
+#define KEY_TOP_BOTTOM                  "TopBottom"
+#define KEY_FRAME_PACKING               "FramePacking"
+
+//should bigger than DISPLAY_MODE_TOTAL 28
+#define NUM_MAX                         64
+#define LINE_LEN                        128
 
 //should sync with vendor\amlogic\frameworks\av\LibPlayer\amcodec\include\amports\Amstream.h
 #define VIDEO_PATH                      "/dev/amvideo"
@@ -127,6 +137,12 @@ public:
     int dump(char *result);
 
 private:
+    void init(void);
+    int32_t getLineTotal(char* buf);
+    void getLine(int idx, int total, char* src, char* dst);
+    void parseLine(int idx, char *line);
+    void setDispMode(const char* mode3d);
+    void setWindowAxis(const char* mode3d);
     void mode3DImpl(const char* mode3d);
     void get3DFormatStr(int format, char *str);
     unsigned int get3DOperationByFormat(int format);
@@ -135,11 +151,39 @@ private:
     void setDiBypassAll(int format);
 
     char mMode3d[32];//this used for video 3d set
-    char mLastDisMode[32];//last display mode
     int mLogLevel;
     int mDisplay3DFormat;
     DisplayMode *pDisplayMode;
     SysWrite *pSysWrite;
+    HDCPTxAuth *pTxAuth;
+
+    struct info_t {
+        char mode[MODE_LEN];
+        char list[LINE_LEN];
+        int mo;
+        int hz;
+    };
+    struct support_info_t {
+        int total;
+        char stored[MODE_LEN];//display mode for resume
+        char dst[MODE_LEN];
+        info_t info[NUM_MAX];
+    };
+    support_info_t mSupport;
+
+    struct axis_t {
+        int x0;
+        int y0;
+        int x1;
+        int y1;
+    };
+    struct window_axis_t {
+        axis_t stored;//original window axis stored for resume
+        axis_t dst;
+    };
+    window_axis_t mWindowAxis;
+
+    bool mInitDone;
 };
 // ----------------------------------------------------------------------------
 } // namespace android

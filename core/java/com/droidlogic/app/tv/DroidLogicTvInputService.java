@@ -404,6 +404,7 @@ public class DroidLogicTvInputService extends TvInputService implements
                .setAudioPids(null)
                .setAudioFormats(null)
                .setAudioLangs(null)
+               .setAudioExts(null)
                .setAudioStd(event.audioStd)
                .setIsAutoStd(event.isAutoStd)
                .setAudioTrackIndex(0)
@@ -459,6 +460,7 @@ public class DroidLogicTvInputService extends TvInputService implements
                .setAudioPids(event.aids)
                .setAudioFormats(event.afmts)
                .setAudioLangs(event.alangs)
+               .setAudioExts(event.aexts)
                .setAudioStd(0)
                .setIsAutoStd(event.isAutoStd)
                //.setAudioTrackIndex(getidxByDefLan(event.alangs))
@@ -554,6 +556,26 @@ public class DroidLogicTvInputService extends TvInputService implements
     private boolean isFinalStoreStage = false;
     private boolean isRealtimeStore = false;
 
+    private void onScanBegin(TvControlManager.ScannerEvent event) {
+        Bundle bundle = null;
+        mScanMode = new ScanMode(event.scan_mode);
+        mSortMode = new SortMode(event.sort_mode);
+        c_displayNum = DISPLAY_NUM_START_DEF;
+        c_displayNum2 = new Integer(DISPLAY_NUM_START_DEF);
+        isFinalStoreStage = false;
+        isRealtimeStore = false;
+
+        bundle = getBundleByScanEvent(event);
+        mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCAN_BEGIN_EVENT, bundle);
+    }
+
+    private void checkOrPatchBeginLost(TvControlManager.ScannerEvent event) {
+        if (mScanMode == null) {
+            Log.d(TAG, "!Lost EVENT_SCAN_BEGIN, assume began.");
+            onScanBegin(event);
+        }
+    }
+
     @Override
     public void StorDBonEvent(TvControlManager.ScannerEvent event) {
         ChannelInfo channel = null;
@@ -563,19 +585,13 @@ public class DroidLogicTvInputService extends TvInputService implements
         switch (event.type) {
         case TvControlManager.EVENT_SCAN_BEGIN:
             Log.d(TAG, "Scan begin");
-
-            mScanMode = new ScanMode(event.scan_mode);
-            mSortMode = new SortMode(event.sort_mode);
-            c_displayNum = DISPLAY_NUM_START_DEF;
-            c_displayNum2 = new Integer(DISPLAY_NUM_START_DEF);
-            isFinalStoreStage = false;
-            isRealtimeStore = false;
-
-            bundle = getBundleByScanEvent(event);
-            mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCAN_BEGIN_EVENT, bundle);
+            onScanBegin(event);
             break;
 
         case TvControlManager.EVENT_LCN_INFO_DATA:
+
+            checkOrPatchBeginLost(event);
+
             if (mLcnInfo == null)
                 mLcnInfo = new ArrayList<TvControlManager.ScannerLcnInfo>();
             mLcnInfo.add(event.lcnInfo);
@@ -586,6 +602,8 @@ public class DroidLogicTvInputService extends TvInputService implements
 
         case TvControlManager.EVENT_DTV_PROG_DATA:
             Log.d(TAG, "dtv prog data");
+
+            checkOrPatchBeginLost(event);
 
             if (!isFinalStoreStage)
                 isRealtimeStore = true;
@@ -624,6 +642,8 @@ public class DroidLogicTvInputService extends TvInputService implements
         case TvControlManager.EVENT_ATV_PROG_DATA:
             Log.d(TAG, "atv prog data");
 
+            checkOrPatchBeginLost(event);
+
             if (!isFinalStoreStage)
                 isRealtimeStore = true;
 
@@ -648,6 +668,8 @@ public class DroidLogicTvInputService extends TvInputService implements
 
         case TvControlManager.EVENT_SCAN_PROGRESS:
             Log.d(TAG, event.precent + "%\tfreq[" + event.freq + "] lock[" + event.lock + "] strength[" + event.strength + "] quality[" + event.quality + "]");
+
+            checkOrPatchBeginLost(event);
 
             //take evt:progress as a store-loop end.
             if (!isFinalStoreStage
@@ -709,6 +731,8 @@ public class DroidLogicTvInputService extends TvInputService implements
                 mLcnInfo = null;
             }
 
+            mScanMode = null;
+
             bundle = getBundleByScanEvent(event);
             mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_C_SCAN_EXIT_EVENT, bundle);
             break;
@@ -751,6 +775,7 @@ public class DroidLogicTvInputService extends TvInputService implements
         bundle.putIntArray(DroidLogicTvUtils.SIG_INFO_C_AFMTS, mEvent.afmts);
         bundle.putStringArray(DroidLogicTvUtils.SIG_INFO_C_ALANGS, mEvent.alangs);
         bundle.putIntArray(DroidLogicTvUtils.SIG_INFO_C_ATYPES, mEvent.atypes);
+        bundle.putIntArray(DroidLogicTvUtils.SIG_INFO_C_AEXTS, mEvent.aexts);
         bundle.putInt(DroidLogicTvUtils.SIG_INFO_C_PCR, mEvent.pcr);
 
         bundle.putIntArray(DroidLogicTvUtils.SIG_INFO_C_STYPES, mEvent.stypes);

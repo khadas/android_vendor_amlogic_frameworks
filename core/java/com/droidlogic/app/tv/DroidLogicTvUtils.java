@@ -9,6 +9,8 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 
 public class DroidLogicTvUtils
 {
@@ -66,6 +68,7 @@ public class DroidLogicTvUtils
     public static final String SIG_INFO_C_AFMTS = "afmts";
     public static final String SIG_INFO_C_ALANGS = "alangs";
     public static final String SIG_INFO_C_ATYPES = "atypes";
+    public static final String SIG_INFO_C_AEXTS = "aexts";
     public static final String SIG_INFO_C_PCR = "pcr";
 
     public static final String SIG_INFO_C_STYPES = "stypes";
@@ -133,6 +136,12 @@ public class DroidLogicTvUtils
 
     public static final String ACTION_SUBTITLE_SWITCH = "android.intent.action.subtitle_switch";
 
+    public static final String ACTION_AD_SWITCH = "android.intent.action.ad_switch";
+
+    public static final String ACTION_AD_MIXING_LEVEL = "android.intent.action.ad_mixing_level";
+
+    public static final String ACTION_AD_TRACK = "android.intent.action.ad_track";
+
     public static final String ACTION_CHANNEL_CHANGED = "android.intent.action.tv_channel_changed";
 
     public static final String ACTION_PROGRAM_APPOINTED = "android.intent.action.tv_appointed_program";
@@ -147,6 +156,9 @@ public class DroidLogicTvUtils
     public static final String ACTION_DTV_AUTO_TRACKS = "dtv_auto_tracks";
     public static final String ACTION_DTV_SET_MODE = "dtv_set_mode";
     public static final String PARA_MODE = "dtv_mode";
+    public static final String ACTION_DTV_ENABLE_AUDIO_AD = "dtv_enable_audio_ad";
+    public static final String PARA_ENABLE = "enable";
+    public static final String PARA_VALUE1 = "value1";
 
     /**
      * Other extra names for {@link TvInputInfo.createSetupIntent#intent} except for input id.
@@ -163,7 +175,8 @@ public class DroidLogicTvUtils
 
     public static final String EXTRA_IS_RADIO_CHANNEL = "is_radio_channel";
 
-    public static final String EXTRA_SUBTITLE_SWITCH_VALUE = "sub_switch_val";
+    public static final String EXTRA_SWITCH_VALUE = "switch_val";
+
 
     /**
      * used for TvSettings to switch hdmi source
@@ -181,6 +194,9 @@ public class DroidLogicTvUtils
     public static final String TV_START_UP_APP_NAME = "tv_start_up_app_name";
     public static final String TV_KEY_DEFAULT_LANGUAGE = "default_language";
     public static final String TV_KEY_SUBTITLE_SWITCH = "sub_switch";
+    public static final String TV_KEY_AD_SWITCH = "ad_switch";
+    public static final String TV_KEY_AD_MIX = "ad_mix_level";
+    public static final String TV_KEY_AD_TRACK = "ad_track";
 
     public static final String TV_CURRENT_DEVICE_ID = "tv_current_device_id";
     public static final String TV_ATV_CHANNEL_INDEX = "tv_atv_channel_index";
@@ -312,5 +328,68 @@ public class DroidLogicTvUtils
         }
         return ret;
     }
+
+    private static final int AUDIO_AD_MAIN = 0x1000000;
+    private static final int AUDIO_AD_ASVC = 0x2000000;
+    private static final int AUDIO_AD_ID_MASK = 0xFF0000;
+
+    public static int[] getAudioADTracks(ChannelInfo info, int mainTrackIndex) {
+        String[] trackLangArray = info.getAudioLangs();
+        if (trackLangArray == null)
+            return null;
+
+        if (mainTrackIndex < 0 || mainTrackIndex >= trackLangArray.length)
+            return null;
+
+        /*audio_exten is 32 bit,31:24 bit: exten type,the value is enum AM_Audio_Exten vaue*/
+        /*23:16:mainid or asvc id,8 bit*/
+        /*15:0 bit:no use*/
+        int mainAudioExt = info.getAudioExts()[mainTrackIndex];
+
+        /*only main track need ad*/
+        if ((mainAudioExt & AUDIO_AD_MAIN) != AUDIO_AD_MAIN)
+            return null;
+
+        int mainAudioId = (mainAudioExt & AUDIO_AD_ID_MASK) >>> 16;
+
+        int[] trackExtArray = info.getAudioExts();
+
+        ArrayList<Integer> a = new ArrayList();
+        for (int trackIdx = 0; trackIdx < trackExtArray.length; trackIdx++) {
+            if ((trackExtArray[trackIdx] & AUDIO_AD_ASVC) != AUDIO_AD_ASVC)
+                continue;
+            int audioId = (trackExtArray[trackIdx] & AUDIO_AD_ID_MASK) >>> 16;
+            if ((audioId & (1<<mainAudioId)) == (1<<mainAudioId)) {
+                a.add(trackIdx);
+            }
+        }
+
+        int[] ret = null;
+        int s = a.size();
+        if (s != 0) {
+            ret = new int[s];
+            Iterator<Integer> it = a.iterator();
+            for (int i = 0; i < ret.length; i++)
+                ret[i] = it.next().intValue();
+        }
+        return ret;
+    }
+
+    public static boolean hasAudioADTracks(ChannelInfo info) {
+        String[] trackLangArray = info.getAudioLangs();
+        if (trackLangArray == null)
+            return false;
+
+        /*audio_exten is 32 bit,31:24 bit: exten type,the value is enum AM_Audio_Exten vaue*/
+        /*23:16:mainid or asvc id,8 bit*/
+        /*15:0 bit:no use*/
+        int[] trackExtArray = info.getAudioExts();
+        for (int trackIdx = 0; trackIdx < trackExtArray.length; trackIdx++) {
+            if ((trackExtArray[trackIdx] & AUDIO_AD_ASVC) == AUDIO_AD_ASVC)
+                return true;
+        }
+        return false;
+    }
+
 
 }

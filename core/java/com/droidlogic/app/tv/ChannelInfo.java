@@ -61,6 +61,7 @@ public class ChannelInfo {
     public static final String KEY_AUDIO_PIDS = "audio_pids";
     public static final String KEY_AUDIO_FORMATS = "AUDIO_FORMATS";
     public static final String KEY_AUDIO_LANGS = "audio_langs";
+    public static final String KEY_AUDIO_EXTS = "audio_exts";
     public static final String KEY_AUDIO_TRACK_INDEX = "audio_track_index";
     public static final String KEY_AUDIO_COMPENSATION = "audio_compensation";
     public static final String KEY_AUDIO_CHANNEL = "audio_channel";
@@ -125,6 +126,7 @@ public class ChannelInfo {
     private int mAudioPids[];
     private int mAudioFormats[];
     private String mAudioLangs[];
+    private int mAudioExts[];
     private int mAudioStd;
     private int mIsAutoStd;
     private int mAudioTrackIndex; //-1:not select, -2:off, >=0:index
@@ -214,26 +216,32 @@ public class ChannelInfo {
             if (parsedMap.get(KEY_AUDIO_PIDS) != null) {
                 String[] str_audioPids = parsedMap.get(KEY_AUDIO_PIDS).replace("[", "").replace("]", "").split(", ");
                 String[] str_audioFormats = parsedMap.get(KEY_AUDIO_FORMATS).replace("[", "").replace("]", "").split(", ");
+                String[] str_audioExts = parsedMap.get(KEY_AUDIO_EXTS).replace("[", "").replace("]", "").split(", ");
                 int number = (str_audioPids[0].compareTo("null") == 0)? 0 : str_audioPids.length;
                 int[] audioPids = null;
                 int[] audioFormats = null;
+                int[] audioExts = null;
                 String[] audioLangs = null;
                 if (number > 0) {
                     audioPids = new int[number];
                     audioFormats = new int[number];
+                    audioExts = new int[number];
                     audioLangs = new String[number];
                     for (int i=0; i < str_audioPids.length; i++) {
                         audioPids[i] = Integer.parseInt(str_audioPids[i]);
                         audioFormats[i] = Integer.parseInt(str_audioFormats[i]);
+                        audioExts[i] = Integer.parseInt(str_audioExts[i]);
                     }
                     audioLangs = parsedMap.get(KEY_AUDIO_LANGS).replace("[", "").replace("]", "").split(", ");
                     builder.setAudioPids(audioPids);
                     builder.setAudioFormats(audioFormats);
+                    builder.setAudioExts(audioExts);
                     builder.setAudioLangs(audioLangs);
                 }
             }else {
                 builder.setAudioPids(null);
                 builder.setAudioFormats(null);
+                builder.setAudioExts(null);
                 builder.setAudioLangs(null);
             }
             if (parsedMap.get(KEY_VFMT) != null)
@@ -412,6 +420,10 @@ public class ChannelInfo {
 
     public String[] getAudioLangs() {
         return mAudioLangs;
+    }
+
+    public int[] getAudioExts() {
+        return mAudioExts;
     }
 
     public int getAudioStd() {
@@ -594,6 +606,10 @@ public class ChannelInfo {
         mAudioLangs = langs;
     }
 
+    public void setAudioExts(int[] exts) {
+        mAudioExts = exts;
+    }
+
     public void setAudioStd(int std) {
         mAudioStd = std;
     }
@@ -724,6 +740,7 @@ public class ChannelInfo {
             mChannel.mAudioPids = null;
             mChannel.mAudioFormats = null;
             mChannel.mAudioLangs = null;
+            mChannel.mAudioExts = null;
             mChannel.mAudioStd = -1;
             mChannel.mIsAutoStd = -1;
             mChannel.mAudioTrackIndex = -1;
@@ -853,6 +870,11 @@ public class ChannelInfo {
 
         public Builder setAudioLangs(String[] langs) {
             mChannel.mAudioLangs = langs;
+            return this;
+        }
+
+        public Builder setAudioExts(int[] exts) {
+            mChannel.mAudioExts = exts;
             return this;
         }
 
@@ -1096,6 +1118,7 @@ public class ChannelInfo {
                 "\n AudioPids = " + Arrays.toString(mAudioPids) +
                 "\n AudioFormats = " + Arrays.toString(mAudioFormats) +
                 "\n AudioLangs = " + Arrays.toString(mAudioLangs) +
+                "\n AudioExts = " + Arrays.toString(mAudioExts) +
                 "\n AudioStd = " + mAudioStd +
                 "\n IsAutoStd = " + mIsAutoStd +
                 "\n AudioTrackIndex = " + mAudioTrackIndex +

@@ -348,6 +348,7 @@ public class TvDataBaseManager {
         map.put(ChannelInfo.KEY_VIDEO_PID, String.valueOf(channel.getVideoPid()));
         map.put(ChannelInfo.KEY_AUDIO_PIDS, Arrays.toString(channel.getAudioPids()));
         map.put(ChannelInfo.KEY_AUDIO_FORMATS, Arrays.toString(channel.getAudioFormats()));
+        map.put(ChannelInfo.KEY_AUDIO_EXTS, Arrays.toString(channel.getAudioExts()));
         map.put(ChannelInfo.KEY_AUDIO_LANGS, Arrays.toString(channel.getAudioLangs()));
         map.put(ChannelInfo.KEY_PCR_ID, String.valueOf(channel.getPcrPid()));
         map.put(ChannelInfo.KEY_AUDIO_TRACK_INDEX, String.valueOf(channel.getAudioTrackIndex()));

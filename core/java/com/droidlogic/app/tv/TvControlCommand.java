@@ -467,6 +467,7 @@ public interface TvControlCommand {
     int DTV_GET_VIDEO_FMT_INFO = 1429;
     int DTV_START_CC = 1430;
     int DTV_STOP_CC = 1431;
+    int DTV_SET_AUDIO_AD = 1442;
     int TV_CLEAR_ALL_PROGRAM  = 1454;
     int SET_BLACKOUT_ENABLE = 1455;
     int START_AUTO_BACKLIGHT = 1456;

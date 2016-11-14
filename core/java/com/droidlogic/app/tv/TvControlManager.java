@@ -122,7 +122,6 @@ public class TvControlManager {
     private native final void native_create_video_frame_bitmap(Object bmp);
     private native final void native_create_subtitle_bitmap(Object bmp);
     private static native Bitmap native_GetFrameBitmap(int width, int hight, int type);
-    private native int native_setTvCaptureSurfaceSize(int width, int height);
 
     private static void postEventFromNative(Object tv_ref, int what, Parcel ext) {
         ext.setDataPosition(0);
@@ -270,6 +269,9 @@ public class TvControlManager {
                 scan_ev.atypes = new int[acnt];
                 for (i=0;i<acnt;i++)
                     scan_ev.atypes[i] = p.readInt();
+                scan_ev.aexts = new int[acnt];
+                for (i=0;i<acnt;i++)
+                    scan_ev.aexts[i] = p.readInt();
             }
             scan_ev.pcr = p.readInt();
             int scnt = p.readInt();
@@ -4100,6 +4102,7 @@ public class TvControlManager {
         public int[] afmts;
         public String[] alangs;
         public int[] atypes;
+        public int[] aexts;
         public int pcr;
 
         public int[] stypes;
@@ -4347,6 +4350,11 @@ public class TvControlManager {
         return sendCmdIntArray(DTV_SWITCH_AUDIO_TRACK, val);
     }
 
+    public int DtvSetAudioAD(int enable, int audio_pid, int audio_format) {
+        int val[] = new int[]{enable, audio_pid, audio_format};
+        return sendCmdIntArray(DTV_SET_AUDIO_AD, val);
+    }
+
     public long DtvGetEpgUtcTime() {
         return sendCmd(DTV_GET_EPG_UTC_TIME);
     }
@@ -4462,6 +4470,16 @@ public class TvControlManager {
     public int PlayDTVProgram(int mode, int freq, int para1, int para2, int vid, int vfmt, int aid, int afmt, int pcr, int audioCompetation) {
         int val[] = new int[]{mode, freq, para1, para2, vid, vfmt, aid, afmt, pcr, audioCompetation};
         return sendCmdIntArray(PLAY_PROGRAM, val);
+    }
+
+    public int PlayDTVProgram(int mode, int freq, int para1, int para2, int vid, int vfmt, int aid, int afmt, int pcr, int audioCompetation, boolean adPrepare) {
+        SystemProperties.set ("media.audio.enable_asso", (adPrepare)? "1" : "0");
+        return PlayDTVProgram(mode, freq, para1, para2, vid, vfmt, aid, afmt, pcr, audioCompetation);
+    }
+
+    public int PlayDTVProgram(int mode, int freq, int para1, int para2, int vid, int vfmt, int aid, int afmt, int pcr, int audioCompetation, boolean adPrepare, int adMixingLevel) {
+        SystemProperties.set ("media.audio.mix_asso", String.valueOf(adMixingLevel));
+        return PlayDTVProgram(mode, freq, para1, para2, vid, vfmt, aid, afmt, pcr, audioCompetation, adPrepare);
     }
 
     public int StopPlayProgram() {

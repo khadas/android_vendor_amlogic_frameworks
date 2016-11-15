@@ -3,43 +3,37 @@ package com.droidlogic;
 
 import android.content.Context;
 import android.content.ContentResolver;
-import android.content.BroadcastReceiver;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.database.ContentObserver;
 import android.hardware.hdmi.HdmiControlManager;
+import android.hardware.hdmi.HdmiControlManager.HotplugEventListener;
+import android.hardware.hdmi.HdmiControlManager.VendorCommandListener;
 import android.hardware.hdmi.HdmiPlaybackClient;
 import android.hardware.hdmi.HdmiHotplugEvent;
 import android.hardware.hdmi.HdmiTvClient;
 import android.hardware.hdmi.HdmiPortInfo;
 import android.hardware.hdmi.HdmiDeviceInfo;
-import android.hardware.hdmi.HdmiControlManager.VendorCommandListener;
 import android.hardware.hdmi.HdmiPlaybackClient.OneTouchPlayCallback;
 import android.hardware.hdmi.IHdmiControlService;
 import android.util.Slog;
 import android.net.Uri;
+import android.os.Message;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.os.UserHandle;
 import android.os.ServiceManager;
-import android.os.RemoteException;
-import android.os.SystemProperties;
 import android.os.Handler;
-import android.os.Build;
 import com.android.internal.app.LocalePicker;
 
-import libcore.util.EmptyArray;
 import java.util.Locale;
-import java.util.ArrayList;
 import java.util.List;
-import java.lang.reflect.Method;
 import java.io.UnsupportedEncodingException;
-import android.content.res.Configuration;
 import com.droidlogic.app.HdmiCecManager;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
 import android.os.SystemProperties;
 
-public class HdmiCecExtend {
+public class HdmiCecExtend implements VendorCommandListener, HotplugEventListener {
     private final String TAG = "HdmiCecExtend";
     private static final int DISABLED = 0;
     private static final int ENABLED = 1;
@@ -162,7 +156,14 @@ public class HdmiCecExtend {
     /** Logical address used to indicate it is not initialized or invalid. */
     public static final int ADDR_INVALID = -1;
 
-    public static final int ONE_TOUCH_PLAY_DELAY = 100;
+    private static final int ONE_TOUCH_PLAY_DELAY = 100;
+    private static final int MSG_WAKE_LOCK = 1;
+
+    /**
+     * add wake lock for HdmiControlService.
+     * Timeout in millisecond for device clean up and sending standby message to TV.
+     */
+    private static final int TIMER_DEVICE_CLEANUP = 2000;
 
     static final int MENU_STATE_ACTIVATED = 0;
     static final int MENU_STATE_DEACTIVATED = 1;
@@ -176,58 +177,52 @@ public class HdmiCecExtend {
     private HdmiPlaybackClient mPlayback = null;
     private List<HdmiPortInfo> mPortInfo = null;
     private boolean mLanguangeChanged = false;
-    private boolean mInitFinished = false;
     private IHdmiControlService mService = null;
     private int mPhyAddr = -1;
     private int mVendorId = 0;
-    private Handler mHandler;
-    private HdmiExtendReceiver mReceiver = new HdmiExtendReceiver();
+    private PowerManager mPowerManager;
+    private ActiveWakeLock mWakeLock;
+
+    private long mNativePtr = 0;
+    private final Object mLock = new Object();
+    static {
+        System.load("/system/lib/hw/hdmi_cec.amlogic.so");
+    }
+
+    private final Handler mHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+            case MSG_WAKE_LOCK:
+                getWakeLock().release();
+                break;
+            default:
+                break;
+            }
+        };
+    };
 
     public HdmiCecExtend(Context ctx) {
         Slog.d(TAG, "HdmiCecExtend start");
-        System.load("/system/lib/hw/hdmi_cec.amlogic.so");
+
         nativeInit(this);
-        Slog.d(TAG, "nativeInit:" + this);
+
         mContext = ctx;
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         mService = IHdmiControlService.Stub.asInterface(ServiceManager.getService(Context.HDMI_CONTROL_SERVICE));
+        mPowerManager = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
         mHdmiTvClient = mControl.getTvClient();
-        mHandler = new Handler();
         mSettingsObserver = new SettingsObserver(mHandler);
         registerContentObserver();
         if (mControl != null) {
             mPlayback = mControl.getPlaybackClient();
-            Slog.d(TAG, "mHasPlaybackDevice:" + mPlayback);
             if (mPlayback != null) {
-                mPlayback.setVendorCommandListener(mVendorCmdListener);
-                mPlayback.oneTouchPlay(mOneTouchPlay);
+                mPlayback.setVendorCommandListener(this);
                 mVendorId = nativeGetVendorId();
-                Slog.d(TAG, "vendorId:" + mVendorId);
                 if (!mLanguangeChanged) {
                     mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
                 }
-                // Register broadcast receiver for power state change.
-                IntentFilter filter = new IntentFilter();
-                filter.addAction(Intent.ACTION_SCREEN_OFF);
-                filter.addAction(Intent.ACTION_SHUTDOWN);
-                filter.addAction(Intent.ACTION_SCREEN_ON);
-                ctx.getApplicationContext().registerReceiver(mReceiver, filter);
             }
-            mControl.addHotplugEventListener(new HdmiControlManager.HotplugEventListener() {
-                    @Override
-                    public void onReceived(HdmiHotplugEvent event) {
-                        Slog.d(TAG, "HdmiHotplugEvent, connected:" + event.isConnected());
-                        if (mPlayback != null) {
-                            updatePortInfo();
-                            if (event.isConnected() == true && mLanguangeChanged == false && mInitFinished == true) {
-                                /* TODO: */
-                            } else {
-                                mLanguangeChanged = false;
-                                mPortInfo = null;
-                            }
-                        }
-                    }
-                });
+            mControl.addHotplugEventListener(this);
         } else {
             Slog.d(TAG, "can't find HdmiControlManager");
         }
@@ -239,7 +234,75 @@ public class HdmiCecExtend {
         }
     }
 
-    private final OneTouchPlayCallback mOneTouchPlay = new OneTouchPlayCallback () {
+    @Override
+    public void onReceived(HdmiHotplugEvent event) {
+        Slog.d(TAG, "HdmiHotplugEvent, connected:" + event.isConnected());
+        if (mPlayback != null) {
+            updatePortInfo();
+            if (!(event.isConnected() && !mLanguangeChanged)) {
+                mLanguangeChanged = false;
+                mPortInfo = null;
+            }
+        }
+    }
+
+    /**
+     * The callback is called:
+     * 1. before HdmiControlService is disabled.
+     * 2. after HdmiControlService is enabled and the local address assigned.
+     * The client shouldn't hold the thread too long since this is a blocking call.
+     */
+    @Override
+    public void onControlStateChanged(boolean enabled, int reason) {
+        Slog.d(TAG, "enabled = " + enabled + ", reason = " + reason);
+        if (!enabled && reason == HdmiControlManager.CONTROL_STATE_CHANGED_REASON_STANDBY) {//go to standby
+            getWakeLock().acquire();
+            mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_WAKE_LOCK), TIMER_DEVICE_CLEANUP);
+        }
+    }
+
+    @Override
+    public void onReceived(int srcAddress, int destAddress, byte[] params, boolean hasVendorId) {
+        // TODO Auto-generated method stub
+    }
+
+    private ActiveWakeLock getWakeLock() {
+        if (mWakeLock == null) {
+            mWakeLock = new SystemWakeLock();
+        }
+        return mWakeLock;
+    }
+
+    private interface ActiveWakeLock {
+        void acquire();
+        void release();
+        boolean isHeld();
+    }
+
+    private class SystemWakeLock implements ActiveWakeLock {
+        private final WakeLock mWakeLock;
+        public SystemWakeLock() {
+            mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+            mWakeLock.setReferenceCounted(false);
+        }
+
+        @Override
+        public void acquire() {
+            mWakeLock.acquire();
+        }
+
+        @Override
+        public void release() {
+            mWakeLock.release();
+        }
+
+        @Override
+        public boolean isHeld() {
+            return mWakeLock.isHeld();
+        }
+    }
+
+    private final OneTouchPlayCallback mOneTouchPlayCallback = new OneTouchPlayCallback () {
         @Override
         public void onComplete(int result) {
             Slog.d(TAG, "oneTouchPlay:" + result);
@@ -260,24 +323,6 @@ public class HdmiCecExtend {
         } catch (InterruptedException e) {
 
         }
-    }
-
-    public void oneTouchPlayExt(int flag) {
-        /*
-         * menually start one touch play
-         */
-        Slog.d(TAG, "oneTouchPlayExt started, flag:" + String.format("0x%02X", flag));
-        if (mPhyAddr == -1) {
-            mPhyAddr = nativeGetPhysicalAddr();
-        }
-        ReportPhysicalAddr(ADDR_BROADCAST, mPhyAddr, HdmiDeviceInfo.DEVICE_PLAYBACK);
-        SendVendorId(ADDR_BROADCAST, mVendorId);
-        SendImageViewOn(ADDR_TV);
-        SendActiveSource(ADDR_BROADCAST, mPhyAddr);
-        SendReportMenuStatus(ADDR_TV, MENU_STATE_ACTIVATED);
-        sleep(100);
-        SendGetMenuLanguage(ADDR_TV);
-        mInitFinished = true;
     }
 
     public boolean updateLanguage(Locale locale) {
@@ -305,99 +350,32 @@ public class HdmiCecExtend {
     }
 
     private void onCecMessageRx(byte[] msg) {
-        int dest, init;
-        int opcode, size, addr;
-        size = msg.length;
-        if (size == 0) {
-            return ;
+        Slog.d(TAG, "onCecMessageRx");
+        int opcode;
+        if (msg.length <= 1) {
+            return;
         }
-        init = (msg[0] >> 4) & 0xf;
-        dest = (msg[0] >> 0) & 0xf;
-        if (size > 1) {
-            opcode = (msg[1] & 0xFF);
-            if (mPhyAddr == -1) {
-                mPhyAddr = nativeGetPhysicalAddr();
+        opcode = (msg[1] & 0xFF);
+        if (mPhyAddr == -1) {
+            mPhyAddr = nativeGetPhysicalAddr();
+        }
+        /* TODO: process messages service can't process */
+        switch (opcode) {
+        case MESSAGE_SET_MENU_LANGUAGE:
+            Slog.d(TAG, String.format("opcode = 0x%02x", opcode));
+            if (isAutoChangeLanguageOn()) {
+                try {
+                    byte lan[] = new byte[3];
+                    System.arraycopy(msg, 2, lan, 0, 3);
+                    String iso3Language = new String(lan, 0, 3, "US-ASCII");
+                    onLanguageChange(iso3Language);
+                } catch (UnsupportedEncodingException e) {
+                    Slog.d(TAG, "process MESSAGE_SET_MENU_LANGUAGE failed");
+                }
             }
-            /* TODO: process messages service can't process */
-            switch (opcode) {
-            case MESSAGE_GIVE_OSD_NAME:
-                SetOsdName(init);
-                break;
-
-            case MESSAGE_GIVE_PHYSICAL_ADDRESS:
-                ReportPhysicalAddr(ADDR_BROADCAST, mPhyAddr, HdmiDeviceInfo.DEVICE_PLAYBACK);
-                break;
-
-            case MESSAGE_GIVE_DEVICE_VENDOR_ID:
-                SendVendorId(ADDR_BROADCAST, mVendorId);
-                break;
-
-            case MESSAGE_GIVE_DEVICE_POWER_STATUS:
-                SendReportPowerStatus(init, HdmiControlManager.POWER_STATUS_ON);
-                break;
-
-            case MESSAGE_SET_MENU_LANGUAGE:
-                if (isAutoChangeLanguageOn()) {
-                    try {
-                        byte lan[] = new byte[3];
-                        System.arraycopy(msg, 2, lan, 0, 3);
-                        String iso3Language = new String(lan, 0, 3, "US-ASCII");
-                        onLanguageChange(iso3Language);
-                    } catch (UnsupportedEncodingException e) {
-                        Slog.d(TAG, "process MESSAGE_SET_MENU_LANGUAGE failed");
-                    }
-                }
-                break;
-
-            case MESSAGE_SET_STREAM_PATH:
-                addr = ((msg[2] & 0xff) << 8) | (msg[3] & 0xff);
-                if (addr == mPhyAddr) {
-                    SendActiveSource(ADDR_BROADCAST, mPhyAddr);
-                }
-                break;
-
-
-            case MESSAGE_GET_CEC_VERSION:
-                int version = nativeGetCecVersion();
-                SendCecVersion(init, version);
-                break;
-
-            case MESSAGE_REQUEST_ACTIVE_SOURCE:
-                SendActiveSource(ADDR_BROADCAST, mPhyAddr);
-                break;
-
-            case MESSAGE_ACTIVE_SOURCE:
-                addr = ((msg[2] & 0xff) << 8) | (msg[3] & 0xff);
-                if (addr != mPhyAddr) {
-                    Slog.d(TAG, "other source " + String.format("0x%02X", addr) +
-                                " actived, may confilct");
-                }
-                break;
-
-            case MESSAGE_ROUTING_CHANGE:
-                addr = ((msg[4] & 0xff) << 8) | (msg[5] & 0xff);
-                if (addr == mPhyAddr) {
-                    Slog.d(TAG, "routing change to current source");
-                } else {
-                    Slog.d(TAG, "routing change to other source");
-                }
-                break;
-
-            case MESSAGE_GIVE_DECK_STATUS:
-                /* deck stopped */
-                SendDeckStatus(init, 0x1A);
-                break;
-
-            /* these command will processed by system service */
-            case MESSAGE_USER_CONTROL_PRESSED:
-            case MESSAGE_USER_CONTROL_RELEASED:
-            case MESSAGE_STANDBY:
-                break;
-
-            default:
-                Slog.d(TAG, "can't Process message:" + String.format("0x%02x", (byte)opcode));
-                break;
-            }
+            break;
+        default:
+            break;
         }
     }
 
@@ -406,33 +384,19 @@ public class HdmiCecExtend {
         mHandler.postDelayed(mDelayedRun, 200);
     }
 
-    private final VendorCommandListener mVendorCmdListener = new VendorCommandListener() {
-        @Override
-        public void onReceived(int srcAddress, int destAddress, byte[] params, boolean hasVendorId) {
-            Slog.d(TAG, "VendorCommandReceived, src:" + srcAddress + ", dst:"
-                        + destAddress + ",para:" + params + ", hasVendorId:" + hasVendorId);
-        }
-
-        @Override
-        public void onControlStateChanged(boolean enabled, int reason) {
-            Slog.d(TAG, "VendorCmd State changed:" + enabled + ", reason:" + reason);
-            /* TODO: */
-            switch (reason) {
-            case HdmiControlManager.CONTROL_STATE_CHANGED_REASON_STANDBY:
-                break;
-            case HdmiControlManager.CONTROL_STATE_CHANGED_REASON_WAKEUP:
-                break;
-            }
-        }
-    };
-
     private final Runnable mDelayedRun = new Runnable() {
         @Override
         public void run() {
-            if (isOneTouchPlayOn()) {
-                updatePortInfo();
-                oneTouchPlayExt(0);
-            }
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isOneTouchPlayOn() && mPlayback != null) {
+                        mPlayback.oneTouchPlay(mOneTouchPlayCallback);
+                    } else {//need update menu language
+                        updateMenuLanguage();
+                    }
+                }
+            }).start();
         }
     };
 
@@ -443,36 +407,8 @@ public class HdmiCecExtend {
         return params;
     }
 
-    private void SetOsdName(int dest) {
-        String name = Build.MODEL;
-        int length = Math.min(name.length(), OSD_NAME_MAX_LENGTH);
-        byte[] params;
-        try {
-            params = name.substring(0, length).getBytes("US-ASCII");
-        } catch (UnsupportedEncodingException e) {
-            Slog.d(TAG, "can't append osd name");
-            return ;
-        }
-        byte[] body = new byte[1 + params.length];
-        body[0] = (byte)MESSAGE_SET_OSD_NAME & 0xff;
-        System.arraycopy(params, 0, body, 1, params.length);
-        SendCecMessage(dest, body);
-    }
-
-    private void SendStandby(int dest) {
-        SendCecMessage(dest, buildCecMsg(MESSAGE_STANDBY, EmptyArray.BYTE));
-    }
-
     private void SendActiveSource(int dest, int physicalAddr) {
         byte[] msg = new byte[] {(byte)(MESSAGE_ACTIVE_SOURCE & 0xff),
-                                 (byte)((physicalAddr >> 8) & 0xff),
-                                 (byte) (physicalAddr & 0xff)
-                                };
-        SendCecMessage(dest, msg);
-    }
-
-    private void SendInActiveSource(int dest, int physicalAddr) {
-        byte[] msg = new byte[] {(byte)(MESSAGE_INACTIVE_SOURCE & 0xff),
                                  (byte)((physicalAddr >> 8) & 0xff),
                                  (byte) (physicalAddr & 0xff)
                                 };
@@ -498,7 +434,7 @@ public class HdmiCecExtend {
     }
 
     private void SendImageViewOn(int dest) {
-        SendCecMessage(dest, buildCecMsg(MESSAGE_IMAGE_VIEW_ON, EmptyArray.BYTE));
+        SendCecMessage(dest, buildCecMsg(MESSAGE_IMAGE_VIEW_ON, new byte[0]));
     }
 
     private void SendReportMenuStatus(int dest, int status) {
@@ -507,14 +443,8 @@ public class HdmiCecExtend {
         SendCecMessage(dest, msg);
     }
 
-    private void SendReportPowerStatus(int dest, int status) {
-        byte[] para = new byte[] {(byte) (status& 0xFF)};
-        byte[] msg = buildCecMsg(MESSAGE_REPORT_POWER_STATUS, para);
-        SendCecMessage(dest, msg);
-    }
-
     private void SendGetMenuLanguage(int dest) {
-        SendCecMessage(dest, buildCecMsg(MESSAGE_GET_MENU_LANGUAGE, EmptyArray.BYTE));
+        SendCecMessage(dest, buildCecMsg(MESSAGE_GET_MENU_LANGUAGE, new byte[0]));
     }
 
     private void SendCecVersion(int dest, int version) {
@@ -623,13 +553,12 @@ public class HdmiCecExtend {
         @Override
         public void onChange(boolean selfChange, Uri uri) {
             String option = uri.getLastPathSegment();
+            Slog.d(TAG, "onChange, option = " + option);
             switch (option) {
                 case HdmiCecManager.HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED:
                     break;
                 case HdmiCecManager.HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED:
-                    if (isAutoChangeLanguageOn()) {
-                        SendGetMenuLanguage(ADDR_TV);
-                    }
+                    updateMenuLanguage();
                     break;
                 case DroidLogicTvUtils.TV_CURRENT_DEVICE_ID:
                     boolean cecOption = (Global.getInt(mContext.getContentResolver(), Global.HDMI_CONTROL_ENABLED, 1) == 1);
@@ -638,6 +567,12 @@ public class HdmiCecExtend {
                     selectHdmiDevice(id);
                     break;
             }
+        }
+    }
+
+    private void updateMenuLanguage() {
+        if (isAutoChangeLanguageOn()) {
+            SendGetMenuLanguage(ADDR_TV);
         }
     }
 
@@ -679,40 +614,6 @@ public class HdmiCecExtend {
         }
     }
 
-    private void onStandby(int reason) {
-        boolean canPowerTv = SystemProperties.getBoolean("sys.cec.auto_tv_off", false);
-        SendInActiveSource(ADDR_TV, mPhyAddr);
-        SendReportPowerStatus(ADDR_TV, HdmiControlManager.POWER_STATUS_STANDBY);
-        Slog.d(TAG, "auto tv off:" + canPowerTv);
-        if (!canPowerTv)
-            return ;
-        switch (reason) {
-            case STANDBY_SCREEN_OFF:
-                SendStandby(ADDR_TV);
-                break;
-            case STANDBY_SHUTDOWN:
-                // ACTION_SHUTDOWN is taken as a signal to power off all the devices.
-                SendStandby(ADDR_BROADCAST);
-                break;
-        }
-    }
-
-    /* for suspend/resume */
-    private class HdmiExtendReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            switch (intent.getAction()) {
-            case Intent.ACTION_SCREEN_OFF:
-                onStandby(STANDBY_SCREEN_OFF);
-                break;
-            case Intent.ACTION_SHUTDOWN:
-                onStandby(STANDBY_SHUTDOWN);
-                break;
-            case Intent.ACTION_SCREEN_ON:
-                break;
-            }
-        }
-    }
 
     /* for native */
     public native int  nativeSendCecMessage(int dest, byte[] body);

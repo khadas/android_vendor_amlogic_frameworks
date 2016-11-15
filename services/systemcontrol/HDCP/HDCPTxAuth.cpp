@@ -295,11 +295,11 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
 
     while (true) {
         ueventObserver.waitForNextEvent(&ueventData);
-        if (!strcmp(ueventData.matchName, HDMI_TX_PLUG_UEVENT) && (NULL != pThiz->mpCallback)) {
+        if (!strcmp(ueventData.matchName, HDMI_TX_PLUG_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI) && (NULL != pThiz->mpCallback)) {
             SYS_LOGI("tx switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
             pThiz->mpCallback->onTxEvent(ueventData.switchState, OUPUT_MODE_STATE_POWER);
         }
-        else if (!strcmp(ueventData.matchName, HDMI_TX_POWER_UEVENT)) {
+        else if (!strcmp(ueventData.matchName, HDMI_TX_POWER_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI_POWER)) {
             SYS_LOGI("tx switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
             //0: hdmi suspend  1: hdmi resume
             if (!strcmp(ueventData.switchState, HDMI_TX_RESUME) && (NULL != pThiz->mpCallback)) {
@@ -309,7 +309,7 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
                 pThiz->mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
             }
         }
-        else if (!strcmp(ueventData.matchName, HDMI_TX_HDR_UEVENT)) {
+        else if (!strcmp(ueventData.matchName, HDMI_TX_HDR_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI_HDR)) {
             SYS_LOGI("tx switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
 
             //0: exit hdr mode  1: enter hdr mode

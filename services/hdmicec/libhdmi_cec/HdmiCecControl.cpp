@@ -442,6 +442,8 @@ int HdmiCecControl::sendExtMessage(const cec_message_t* message)
     } else {
         msg.initiator = CEC_ADDR_TV; /* root for TV */
     }
+    if (msg.initiator == CEC_ADDR_UNREGISTERED)//source can not be 0xf
+        return -1;
     msg.destination = message->destination;
     msg.length = message->length;
     memcpy(msg.body, message->body, msg.length);

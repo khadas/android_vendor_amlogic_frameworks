@@ -3,7 +3,6 @@ package com.droidlogic;
 
 import android.content.Context;
 import android.content.ContentResolver;
-import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.database.ContentObserver;
 import android.hardware.hdmi.HdmiControlManager;
@@ -11,9 +10,7 @@ import android.hardware.hdmi.HdmiControlManager.HotplugEventListener;
 import android.hardware.hdmi.HdmiControlManager.VendorCommandListener;
 import android.hardware.hdmi.HdmiPlaybackClient;
 import android.hardware.hdmi.HdmiHotplugEvent;
-import android.hardware.hdmi.HdmiTvClient;
 import android.hardware.hdmi.HdmiPortInfo;
-import android.hardware.hdmi.HdmiDeviceInfo;
 import android.hardware.hdmi.HdmiPlaybackClient.OneTouchPlayCallback;
 import android.hardware.hdmi.IHdmiControlService;
 import android.util.Slog;
@@ -30,7 +27,6 @@ import java.util.Locale;
 import java.util.List;
 import java.io.UnsupportedEncodingException;
 import com.droidlogic.app.HdmiCecManager;
-import com.droidlogic.app.tv.DroidLogicTvUtils;
 
 public class HdmiCecExtend implements VendorCommandListener, HotplugEventListener {
     private final String TAG = "HdmiCecExtend";
@@ -170,12 +166,10 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
 
     private final SettingsObserver mSettingsObserver;
     private Context mContext = null;
-    private HdmiTvClient mHdmiTvClient = null;
     private HdmiControlManager mControl = null;
     private HdmiPlaybackClient mPlayback = null;
     private List<HdmiPortInfo> mPortInfo = null;
     private boolean mLanguangeChanged = false;
-    private boolean mInitFinished = false;
     private IHdmiControlService mService = null;
     private int mPhyAddr = -1;
     private int mVendorId = 0;
@@ -209,17 +203,13 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         mService = IHdmiControlService.Stub.asInterface(ServiceManager.getService(Context.HDMI_CONTROL_SERVICE));
         mPowerManager = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
-        mHdmiTvClient = mControl.getTvClient();
         mSettingsObserver = new SettingsObserver(mHandler);
         registerContentObserver();
         if (mControl != null) {
             mPlayback = mControl.getPlaybackClient();
-            Slog.d(TAG, "mHasPlaybackDevice:" + mPlayback);
             if (mPlayback != null) {
                 mPlayback.setVendorCommandListener(this);
-                mPlayback.oneTouchPlay(mOneTouchPlayCallback);
                 mVendorId = getCecVendorId();
-                Slog.d(TAG, "vendorId:" + mVendorId);
                 if (!mLanguangeChanged) {
                     mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
                 }
@@ -241,7 +231,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         Slog.d(TAG, "HdmiHotplugEvent, connected:" + event.isConnected());
         if (mPlayback != null) {
             updatePortInfo();
-            if (!(event.isConnected() && !mLanguangeChanged && mInitFinished)) {
+            if (!(event.isConnected() && !mLanguangeChanged)) {
                 mLanguangeChanged = false;
                 mPortInfo = null;
             }
@@ -389,6 +379,8 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
                 public void run() {
                     if (isOneTouchPlayOn() && mPlayback != null) {
                         mPlayback.oneTouchPlay(mOneTouchPlayCallback);
+                    } else {//need update menu language
+                        updateMenuLanguage();
                     }
                 }
             }).start();
@@ -548,21 +540,22 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         @Override
         public void onChange(boolean selfChange, Uri uri) {
             String option = uri.getLastPathSegment();
+            Slog.d(TAG, "onChange, option = " + option);
             switch (option) {
                 case HdmiCecManager.HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED:
                     break;
                 case HdmiCecManager.HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED:
-                    if (isAutoChangeLanguageOn()) {
-                        SendGetMenuLanguage(ADDR_TV);
-                    }
+                    updateMenuLanguage();
                     break;
-                case DroidLogicTvUtils.TV_CURRENT_DEVICE_ID:
-                    boolean cecOption = (Global.getInt(mContext.getContentResolver(), Global.HDMI_CONTROL_ENABLED, 1) == 1);
-                    if (!cecOption) return;
-                    int id = Settings.System.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_CURRENT_DEVICE_ID, 0);
-                    selectHdmiDevice(id);
+                default:
                     break;
             }
+        }
+    }
+
+    private void updateMenuLanguage() {
+        if (isAutoChangeLanguageOn()) {
+            SendGetMenuLanguage(ADDR_TV);
         }
     }
 
@@ -576,8 +569,6 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
             resolver.registerContentObserver(Global.getUriFor(s), false, mSettingsObserver,
                     UserHandle.USER_ALL);
         }
-        resolver.registerContentObserver(Settings.System.getUriFor(DroidLogicTvUtils.TV_CURRENT_DEVICE_ID),
-                    false, mSettingsObserver, UserHandle.USER_ALL);
     }
 
     private boolean isOneTouchPlayOn() {
@@ -588,20 +579,6 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
     private boolean isAutoChangeLanguageOn() {
         ContentResolver cr = mContext.getContentResolver();
         return Global.getInt(cr, HdmiCecManager.HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED, ENABLED) == ENABLED;
-    }
-
-    public void selectHdmiDevice(int deviceId) {
-        if (mHdmiTvClient == null) return;
-        for (HdmiDeviceInfo info : mHdmiTvClient.getDeviceList()) {
-            int id = (info.getPhysicalAddress() >> 12) + DroidLogicTvUtils.DEVICE_ID_HDMI1 - 1;
-            if (id == deviceId) {
-                mHdmiTvClient.deviceSelect(info.getLogicalAddress(), new HdmiTvClient.SelectCallback() {
-                    @Override
-                    public void onComplete(int result) {
-                    }
-                });
-            }
-        }
     }
 
     private void init() {

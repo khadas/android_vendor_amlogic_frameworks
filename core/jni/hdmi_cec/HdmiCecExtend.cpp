@@ -93,7 +93,6 @@ int JHdmiCecExtend::sendMessage(const cec_message_t* message, bool isExtend) {
 
 void JHdmiCecExtend::onEventUpdate(const hdmi_cec_event_t* event)
 {
-    LOGD("==== onEventUpdate, eventType: %d", event->eventType);
     printCecEvent(event);
 
     JNIEnv* env = AndroidRuntime::getJNIEnv();

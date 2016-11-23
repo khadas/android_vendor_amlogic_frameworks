@@ -68,16 +68,34 @@ void HdmiCecBase::printCecMessage(const cec_message_t* message, int result)
 const char *HdmiCecBase::getResult(int result)
 {
     switch (result) {
-    case HDMI_RESULT_SUCCESS:
-        return "success";
-    case HDMI_RESULT_NACK:
-        return "no ack";
-    case HDMI_RESULT_BUSY:
-        return "busy";
-    case HDMI_RESULT_FAIL:
-        return "fail other";
-    default:
-        return "unknown fail code";
+        case HDMI_RESULT_SUCCESS:
+            return "success";
+        case HDMI_RESULT_NACK:
+            return "no ack";
+        case HDMI_RESULT_BUSY:
+            return "busy";
+        case HDMI_RESULT_FAIL:
+            return "fail other";
+        default:
+            return "unknown fail code";
+    }
+}
+
+const char* HdmiCecBase::getEventType(int eventType)
+{
+    switch (eventType) {
+        case HDMI_EVENT_CEC_MESSAGE:
+            return "cec message";
+        case HDMI_EVENT_HOT_PLUG:
+            return "hotplug message";
+        case HDMI_EVENT_ADD_PHYSICAL_ADDRESS:
+            return "add physical address for extend";
+        case HDMI_EVENT_RECEIVE_MESSAGE:
+            return "cec message for extend";
+        case (HDMI_EVENT_CEC_MESSAGE | HDMI_EVENT_RECEIVE_MESSAGE):
+            return "cec message for system and extend";
+        default:
+            return "unknown message";
     }
 }
 

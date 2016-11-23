@@ -132,7 +132,7 @@ int HdmiCecService::connect(const sp<IHdmiCecCallback> &client)
 
 void HdmiCecService::onEventUpdate(const hdmi_cec_event_t* event)
 {
-    LOGD("cec event has updated.");
+    LOGV("%s", getEventType(event->eventType));
     int clientSize = mClients.size();
     for (int i = 0; i < clientSize; i++) {
         mClients[i]->notifyCallback(event);

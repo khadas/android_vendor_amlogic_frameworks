@@ -89,6 +89,7 @@ public:
     void printCecEvent(const hdmi_cec_event_t *event);
     void printCecMessage(const cec_message_t* message);
     void printCecMessage(const cec_message_t* message, int result);
+    const char* getEventType(int eventType);
 
 private:
     const char *getResult(int result);

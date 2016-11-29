@@ -77,6 +77,13 @@ enum {
     SWITCH_3DTO2D                  = IBinder::FIRST_CALL_TRANSACTION + 33,
     SWITCH_2DTO3D                  = IBinder::FIRST_CALL_TRANSACTION + 34,
     AUTO_DETECT_3D                 = IBinder::FIRST_CALL_TRANSACTION + 35,
+
+    WRITE_SYSFS_BIN         = IBinder::FIRST_CALL_TRANSACTION + 36,
+    READ_HDCPRX22_KEY       = IBinder::FIRST_CALL_TRANSACTION + 37,
+    WRITE_HDCPRX22_KEY      = IBinder::FIRST_CALL_TRANSACTION + 38,
+    READ_HDCPRX14_KEY       = IBinder::FIRST_CALL_TRANSACTION + 39,
+    WRITE_HDCPRX14_KEY      = IBinder::FIRST_CALL_TRANSACTION + 40,
+    WRITE_HDCPRX_IMG        = IBinder::FIRST_CALL_TRANSACTION + 41,
 };
 
 // ----------------------------------------------------------------------------
@@ -97,6 +104,13 @@ public:
 
     virtual bool readSysfs(const String16& path, String16& value) = 0;
     virtual bool writeSysfs(const String16& path, const String16& value) = 0;
+    virtual bool writeSysfs(const String16& path, const char *value, const int size) = 0;
+
+    virtual int32_t readHdcpRX22Key(char *value, int size) = 0;
+    virtual bool writeHdcpRX22Key(const char *value, const int size) = 0;
+    virtual int32_t readHdcpRX14Key(char *value, int size) = 0;
+    virtual bool writeHdcpRX14Key(const char *value, const int size) = 0;
+    virtual bool writeHdcpRXImg(const String16& path) = 0;
 
     virtual void setBootEnv(const String16& key, const String16& value) = 0;
     virtual bool getBootEnv(const String16& key, String16& value) = 0;

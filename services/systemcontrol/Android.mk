@@ -51,7 +51,9 @@ LOCAL_SRC_FILES:= \
   HDCP/HdcpKeyDecrypt.cpp \
   HDCP/HDCPRxKey.cpp \
   HDCP/HDCPRxAuth.cpp \
-  HDCP/HDCPTxAuth.cpp
+  HDCP/HDCPTxAuth.cpp \
+  HDCP/sha1.cpp \
+  HDCP/hdcp22_key.cpp
 
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \

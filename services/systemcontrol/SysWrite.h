@@ -39,10 +39,11 @@ public:
     bool readSysfs(const char *path, char *value);
     bool readSysfsOriginal(const char *path, char *value);
     bool writeSysfs(const char *path, const char *value);
-
+    bool writeSysfs(const char *path, const char *value, const int size);
     void setLogLevel(int level);
 private:
     void writeSys(const char *path, const char *val);
+    void writeSys(const char *path, const char *val, const int size);
     void readSys(const char *path, char *buf, int count, bool needOriginalData);
 
     int mLogLevel;

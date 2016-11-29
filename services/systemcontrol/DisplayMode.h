@@ -26,6 +26,8 @@
 #include "common.h"
 #include "HDCP/HDCPTxAuth.h"
 #include "HDCP/HDCPRxAuth.h"
+#include "HDCP/hdcp22_key.h"
+#include "HDCP/HDCPRxKey.h"
 
 #include <map>
 #include <cmath>
@@ -352,6 +354,12 @@ public:
 
     void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
+
+    int readHdcpRX22Key(char *value, int size);
+    bool writeHdcpRX22Key(const char *value, const int size);
+    int readHdcpRX14Key(char *value, int size);
+    bool writeHdcpRX14Key(const char *value, const int size);
+    bool writeHdcpRXImg(const char *path);
 
     HDCPTxAuth *geTxAuth();
 #ifndef RECOVERY_MODE

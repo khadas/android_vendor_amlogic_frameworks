@@ -177,6 +177,105 @@ public:
         return reply.readInt32() != 0;
     }
 
+    virtual bool writeSysfs(const String16& path, const char *value, const int size)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(path);
+        data.writeInt32(size);
+        data.write((void *)value, size);
+        ALOGV("writeSysfs path:%s, size:%d\n", String8(path).string(), size);
+
+        if (remote()->transact(WRITE_SYSFS_BIN, data, &reply) != NO_ERROR) {
+            ALOGE("writeSysfs could not contact remote\n");
+            return false;
+        }
+
+        return reply.readInt32() != 0;
+    }
+
+    virtual int32_t readHdcpRX22Key(char *value, int size)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(size);
+        ALOGE("readHdcpRX22Key size:%d\n", size);
+
+        if (remote()->transact(READ_HDCPRX22_KEY, data, &reply) != NO_ERROR) {
+            ALOGE("readHdcp22Key could not contact remote\n");
+            return false;
+        }
+
+        int len = reply.readInt32();
+        reply.read(value, len);
+        ALOGE("readHdcpRX22Key len:%d\n", len);
+        return len;
+    }
+
+    virtual bool writeHdcpRX22Key(const char *value, const int size)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(size);
+        data.write((void *)value, size);
+        ALOGV("writeHdcp22Key size:%d\n", size);
+
+        if (remote()->transact(WRITE_HDCPRX22_KEY, data, &reply) != NO_ERROR) {
+            ALOGE("writeHdcp22Key could not contact remote\n");
+            return false;
+        }
+
+        return reply.readInt32() != 0;
+    }
+
+    virtual int32_t readHdcpRX14Key(char *value, int size)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(size);
+        ALOGV("readHdcpRX14Key size:%d\n", size);
+
+        if (remote()->transact(READ_HDCPRX14_KEY, data, &reply) != NO_ERROR) {
+            ALOGE("readHdcpRX14Key could not contact remote\n");
+            return false;
+        }
+
+        int len = reply.readInt32();
+        reply.read(value, len);
+        ALOGE("readHdcpRX14Key len:%d\n", len);
+        return len;
+    }
+
+    virtual bool writeHdcpRX14Key(const char *value, const int size)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(size);
+        data.write((void *)value, size);
+        ALOGV("writeHdcp14Key size:%d\n", size);
+
+        if (remote()->transact(WRITE_HDCPRX14_KEY, data, &reply) != NO_ERROR) {
+            ALOGE("writeHdcp14Key could not contact remote\n");
+            return false;
+        }
+
+        return reply.readInt32() != 0;
+    }
+
+    virtual bool writeHdcpRXImg(const String16& path)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(path);
+        ALOGV("writeHdcpImg path:%s\n", String8(path).string());
+
+        if (remote()->transact(WRITE_HDCPRX_IMG, data, &reply) != NO_ERROR) {
+            ALOGE("writeHdcpImg could not contact remote\n");
+            return false;
+        }
+
+        return reply.readInt32() != 0;
+    }
 
     virtual bool getBootEnv(const String16& key, String16& value)
     {
@@ -660,6 +759,62 @@ status_t BnISystemControlService::onTransact(
             String16 sys = data.readString16();
             String16 value = data.readString16();
             bool result = writeSysfs(sys, value);
+            reply->writeInt32(result?1:0);
+            return NO_ERROR;
+        }
+        case WRITE_SYSFS_BIN: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 sys = data.readString16();
+            int size = data.readInt32();
+            void *value = (void *)malloc(size);
+            data.read(value, size);
+            bool result = writeSysfs(sys, (char *)value, size);
+            reply->writeInt32(result?1:0);
+            free(value);
+            return NO_ERROR;
+        }
+        case READ_HDCPRX22_KEY: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int size = data.readInt32();
+            char *value = (char *)malloc(size);
+            int len = readHdcpRX22Key((char *)value, size);
+            reply->writeInt32(len);
+            reply->write(value, len);
+            free(value);
+            return NO_ERROR;
+        }
+        case WRITE_HDCPRX22_KEY: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int size = data.readInt32();
+            void *value = (void *)malloc(size);
+            data.read(value, size);
+            bool result = writeHdcpRX22Key((char *)value, size);
+            reply->writeInt32(result?1:0);
+            return NO_ERROR;
+        }
+        case READ_HDCPRX14_KEY: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int size = data.readInt32();
+            char *value = (char *)malloc(size);
+            int len = readHdcpRX14Key((char *)value, size);
+            reply->writeInt32(len);
+            reply->write(value, len);
+            free(value);
+            return NO_ERROR;
+        }
+        case WRITE_HDCPRX14_KEY: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int size = data.readInt32();
+            void *value = (void *)malloc(size);
+            data.read(value, size);
+            bool result = writeHdcpRX14Key((char *)value, size);
+            reply->writeInt32(result?1:0);
+            return NO_ERROR;
+        }
+        case WRITE_HDCPRX_IMG: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 sys = data.readString16();
+            bool result = writeHdcpRXImg(sys);
             reply->writeInt32(result?1:0);
             return NO_ERROR;
         }

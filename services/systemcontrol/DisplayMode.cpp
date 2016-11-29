@@ -611,6 +611,50 @@ void DisplayMode::setVideoPlayingAxis() {
     pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
 }
 
+int DisplayMode::readHdcpRX22Key(char *value, int size) {
+    SYS_LOGI("read HDCP rx 2.2 key \n");
+    HDCPRxKey key22(HDCP_RX_22_KEY);
+    int ret = key22.getHdcpRX22key(value, size);
+    return ret;
+}
+
+bool DisplayMode::writeHdcpRX22Key(const char *value, const int size) {
+    SYS_LOGI("write HDCP rx 2.2 key \n");
+    HDCPRxKey key22(HDCP_RX_22_KEY);
+    int ret = key22.setHdcpRX22key(value, size);
+    if (ret == 0)
+        return true;
+    else
+        return false;
+}
+
+int DisplayMode::readHdcpRX14Key(char *value, int size) {
+    SYS_LOGI("read HDCP rx 1.4 key \n");
+    HDCPRxKey key14(HDCP_RX_14_KEY);
+    int ret = key14.getHdcpRX14key(value, size);
+    return ret;
+}
+
+bool DisplayMode::writeHdcpRX14Key(const char *value, const int size) {
+    SYS_LOGI("write HDCP rx 1.4 key \n");
+    HDCPRxKey key14(HDCP_RX_14_KEY);
+    int ret = key14.setHdcpRX14key(value,size);
+    if (ret == 0)
+        return true;
+    else
+        return false;
+}
+
+bool DisplayMode::writeHdcpRXImg(const char *path) {
+    SYS_LOGI("write HDCP key from Img \n");
+    int ret = setImgPath(path);
+    if (ret == 0)
+        return true;
+    else
+        return false;
+}
+
+
 //get the best hdmi mode by edid
 void DisplayMode::getBestHdmiMode(char* mode, hdmi_data_t* data) {
     char* pos = strchr(data->edid, '*');

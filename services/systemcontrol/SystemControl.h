@@ -54,6 +54,13 @@ public:
 
     virtual bool readSysfs(const String16& path, String16& value);
     virtual bool writeSysfs(const String16& path, const String16& value);
+    virtual bool writeSysfs(const String16& path, const char *value, const int size);
+
+    virtual int32_t readHdcpRX22Key(char *value, int size);
+    virtual bool writeHdcpRX22Key(const char *value, const int size);
+    virtual int32_t readHdcpRX14Key(char *value, int size);
+    virtual bool writeHdcpRX14Key(const char *value, const int size);
+    virtual bool writeHdcpRXImg(const String16& path);
 
     virtual void setBootEnv(const String16& key, const String16& value);
     virtual bool getBootEnv(const String16& key, String16& value);
@@ -97,6 +104,10 @@ private:
     int permissionCheck();
     void setLogLevel(int level);
     void traceValue(const String16& type, const String16& key, const String16& value);
+    void traceValue(const String16& type, const String16& key, const int size);
+    void traceValue(const String16& type, const int size);
+    void traceValue(const String16& type, const String16& value);
+    void traceValue(const String16& type);
     int getProcName(pid_t pid, String16& procName);
 
     mutable Mutex mLock;

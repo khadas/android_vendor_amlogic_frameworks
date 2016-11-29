@@ -41,6 +41,10 @@ public:
      * refresh the 1.4 key or 2.2 key firmware
      */
     bool refresh();
+    int getHdcpRX14key(char *value, int size);
+    int setHdcpRX14key(const char *value, const int size);
+    int getHdcpRX22key(char *value, int size);
+    int setHdcpRX22key(const char *value, const int size);
 
 private:
     int mKeyType;

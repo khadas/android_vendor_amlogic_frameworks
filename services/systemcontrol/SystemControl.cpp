@@ -155,6 +155,66 @@ bool SystemControl::writeSysfs(const String16& path, const String16& value) {
     return false;
 }
 
+bool SystemControl::writeSysfs(const String16& path, const char *value, const int size) {
+    if (NO_ERROR == permissionCheck()) {
+        traceValue(String16("writeSysfs"), path, size);
+
+        bool ret = pSysWrite->writeSysfs(String8(path).string(), value, size);
+        return ret;
+    }
+
+    return false;
+}
+
+int32_t SystemControl::readHdcpRX22Key(char *value, int size) {
+    /*if (NO_ERROR == permissionCheck()) {
+        traceValue(String16("readHdcpRX22Key"), size);
+        int len = pDisplayMode->readHdcpRX22Key(value, size);
+        return len;
+    }*/
+    return 0;
+}
+
+bool SystemControl::writeHdcpRX22Key(const char *value, const int size) {
+   if (NO_ERROR == permissionCheck()) {
+        traceValue(String16("writeHdcp22Key"), size);
+
+        bool ret = pDisplayMode->writeHdcpRX22Key(value, size);
+        return ret;
+    }
+    return false;
+}
+
+int32_t SystemControl::readHdcpRX14Key(char *value, int size) {
+    /*if (NO_ERROR == permissionCheck()) {
+        traceValue(String16("readHdcpRX14Key"), size);
+        int len = pDisplayMode->readHdcpRX14Key(value, size);
+        return len;
+    }*/
+    return 0;
+}
+
+bool SystemControl::writeHdcpRX14Key(const char *value, const int size) {
+    if (NO_ERROR == permissionCheck()) {
+        traceValue(String16("writeHdcp14Key"), size);
+
+        bool ret = pDisplayMode->writeHdcpRX14Key(value, size);
+        return ret;
+    }
+    return false;
+}
+
+bool SystemControl::writeHdcpRXImg(const String16& path) {
+    if (NO_ERROR == permissionCheck()) {
+        traceValue(String16("writeSysfs"), path);
+
+        return pDisplayMode->writeHdcpRXImg(String8(path).string());
+    }
+
+    return false;
+}
+
+
 //set or get uboot env
 bool SystemControl::getBootEnv(const String16& key, String16& value) {
     const char* p_value = bootenv_get(String8(key).string());
@@ -381,6 +441,67 @@ void SystemControl::traceValue(const String16& type, const String16& key, const 
             String8(procName).string());
     }
 }
+
+void SystemControl::traceValue(const String16& type, const String16& key, const int size) {
+    if (mLogLevel > LOG_LEVEL_0) {
+        String16 procName;
+        int pid = IPCThreadState::self()->getCallingPid();
+        int uid = IPCThreadState::self()->getCallingUid();
+
+        getProcName(pid, procName);
+
+        ALOGI("%s [ %s ] [ %d ] from pid=%d, uid=%d, process name=%s",
+           String8(type).string(), String8(key).string(), size,
+           pid, uid,
+           String8(procName).string());
+    }
+}
+
+void SystemControl::traceValue(const String16& type, const int size) {
+    if (mLogLevel > LOG_LEVEL_0) {
+        String16 procName;
+        int pid = IPCThreadState::self()->getCallingPid();
+        int uid = IPCThreadState::self()->getCallingUid();
+
+        getProcName(pid, procName);
+
+        ALOGI("%s [ %d ] from pid=%d, uid=%d, process name=%s",
+           String8(type).string(), size,
+           pid, uid,
+           String8(procName).string());
+    }
+}
+
+void SystemControl::traceValue(const String16& type, const String16& value) {
+    if (mLogLevel > LOG_LEVEL_0) {
+        String16 procName;
+        int pid = IPCThreadState::self()->getCallingPid();
+        int uid = IPCThreadState::self()->getCallingUid();
+
+        getProcName(pid, procName);
+
+        ALOGI("%s [ %s ] from pid=%d, uid=%d, process name=%s",
+            String8(type).string(), String8(value).string(),
+            pid, uid,
+            String8(procName).string());
+    }
+}
+
+void SystemControl::traceValue(const String16& type) {
+    if (mLogLevel > LOG_LEVEL_0) {
+        String16 procName;
+        int pid = IPCThreadState::self()->getCallingPid();
+        int uid = IPCThreadState::self()->getCallingUid();
+
+        getProcName(pid, procName);
+
+        ALOGI("%s from pid=%d, uid=%d, process name=%s",
+            String8(type).string(),
+            pid, uid,
+            String8(procName).string());
+    }
+}
+
 
 void SystemControl::setLogLevel(int level) {
     if (level > (LOG_LEVEL_TOTAL - 1)) {

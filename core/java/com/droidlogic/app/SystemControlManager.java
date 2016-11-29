@@ -70,6 +70,13 @@ public class SystemControlManager {
     private static final int SWITCH_3DTO2D                  = IBinder.FIRST_CALL_TRANSACTION + 33;
     private static final int SWITCH_2DTO3D                  = IBinder.FIRST_CALL_TRANSACTION + 34;
 
+    private static final int WRITE_SYSFS_BIN         = IBinder.FIRST_CALL_TRANSACTION + 36;
+    private static final int READ_HDCPRX22_KEY       = IBinder.FIRST_CALL_TRANSACTION + 37;
+    private static final int WRITE_HDCPRX22_KEY      = IBinder.FIRST_CALL_TRANSACTION + 38;
+    private static final int READ_HDCPRX14_KEY       = IBinder.FIRST_CALL_TRANSACTION + 39;
+    private static final int WRITE_HDCPRX14_KEY      = IBinder.FIRST_CALL_TRANSACTION + 40;
+    private static final int WRITE_HDCPRX_IMG        = IBinder.FIRST_CALL_TRANSACTION + 41;
+
     private Context mContext;
     private IBinder mIBinder = null;
     public SystemControlManager(Context context){
@@ -245,6 +252,132 @@ public class SystemControlManager {
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "writeSysFs:" + ex);
+        }
+
+        return false;
+    }
+
+    public boolean writeSysFs(String path, String val, int def) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(path);
+                data.writeString(val);
+                data.writeInt(def);
+                mIBinder.transact(WRITE_SYSFS_BIN, data, reply, 0);
+                int result = reply.readInt();
+                reply.recycle();
+                data.recycle();
+                return result!=0;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "writeSysFs:" + ex);
+        }
+
+        return false;
+    }
+
+    public int readHdcpRX22Key(String val, int def) {
+        /*try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(def);
+                mIBinder.transact(READ_HDCPRX22_KEY, data, reply, 0);
+                int result = reply.readInt();
+                val = reply.readString();
+                reply.recycle();
+                data.recycle();
+                return result;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "readHdcp22Key:" + ex);
+        }*/
+
+        return 0;
+    }
+
+    public boolean writeHdcpRX22Key(String val, int def) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(val);
+                data.writeInt(def);
+                mIBinder.transact(WRITE_HDCPRX22_KEY, data, reply, 0);
+                int result = reply.readInt();
+                val = reply.readString();
+                reply.recycle();
+                data.recycle();
+                return result!=0;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "writeHdcp22Key:" + ex);
+        }
+
+        return false;
+    }
+
+    public int readHdcpRX14Key(String val, int def) {
+        /*try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(def);
+                mIBinder.transact(READ_HDCPRX14_KEY, data, reply, 0);
+                int result = reply.readInt();
+                reply.recycle();
+                data.recycle();
+                return result;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "readHdcp14Key:" + ex);
+        }*/
+
+        return 0;
+    }
+
+    public boolean writeHdcpRX14Key(String val, int def) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(val);
+                data.writeInt(def);
+                mIBinder.transact(WRITE_HDCPRX14_KEY, data, reply, 0);
+                int result = reply.readInt();
+                reply.recycle();
+                data.recycle();
+                return result!=0;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "writeHdcp14Key:" + ex);
+        }
+
+        return false;
+    }
+
+    public boolean writeHdcpRXImg(String path) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(path);
+                mIBinder.transact(WRITE_HDCPRX_IMG, data, reply, 0);
+                int result = reply.readInt();
+                reply.recycle();
+                data.recycle();
+                return result!=0;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "writeHdcpImg:" + ex);
         }
 
         return false;

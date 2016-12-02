@@ -1,5 +1,5 @@
 #define LOG_NDEBUG 0
-#define LOG_TAG "IHdmiCecService"
+#define LOG_CEE_TAG "IHdmiCecService"
 
 #include "IHdmiCecService.h"
 

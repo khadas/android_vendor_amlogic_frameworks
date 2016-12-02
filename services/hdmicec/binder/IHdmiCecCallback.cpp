@@ -1,5 +1,5 @@
 #define LOG_NDEBUG 0
-#define LOG_TAG "IHdmiCecCallback"
+#define LOG_CEE_TAG "IHdmiCecCallback"
 
 #include "IHdmiCecCallback.h"
 
@@ -21,12 +21,12 @@ public:
             data.writeInt32(event->cec.initiator);
             data.writeInt32(event->cec.destination);
             data.writeInt32(event->cec.length);
-            data.writeCString((char*) event->cec.body);
+            data.write(event->cec.body, event->cec.length);
         } else if ((event->eventType & HDMI_EVENT_HOT_PLUG) != 0) {
             data.writeInt32(event->hotplug.connected);
             data.writeInt32(event->hotplug.port_id);
-        } else if ((event->eventType & HDMI_EVENT_ADD_PHYSICAL_ADDRESS) != 0) {
-            data.writeInt32(event->physicalAdd);
+        } else if ((event->eventType & HDMI_EVENT_ADD_LOGICAL_ADDRESS) != 0) {
+            data.writeInt32(event->logicalAddress);
         }
         remote()->transact(NOTIFY_CALLBACK, data, &reply);
     }
@@ -49,13 +49,12 @@ status_t BnHdmiCecCallback::onTransact(uint32_t code, const Parcel &data, Parcel
                 event.cec.initiator = (cec_logical_address_t) data.readInt32();
                 event.cec.destination = (cec_logical_address_t) data.readInt32();
                 event.cec.length = data.readInt32();
-                const char* body = data.readCString();
-                memcpy(event.cec.body, body, event.cec.length);
+                data.read(event.cec.body, event.cec.length);
             } else if ((event.eventType & HDMI_EVENT_HOT_PLUG) != 0) {
                 event.hotplug.connected = data.readInt32();
                 event.hotplug.port_id = data.readInt32();
-            } else if ((event.eventType & HDMI_EVENT_ADD_PHYSICAL_ADDRESS) != 0) {
-                event.physicalAdd = data.readInt32();
+            } else if ((event.eventType & HDMI_EVENT_ADD_LOGICAL_ADDRESS) != 0) {
+                event.logicalAddress = data.readInt32();
             }
             notifyCallback(&event);
             return NO_ERROR;

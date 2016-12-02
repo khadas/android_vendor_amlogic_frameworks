@@ -1,5 +1,5 @@
 #define LOG_NDEBUG 0
-#define LOG_TAG "HdmiCecClient"
+#define LOG_CEE_TAG "HdmiCecClient"
 
 #include <binder/IServiceManager.h>
 #include <utils/Log.h>

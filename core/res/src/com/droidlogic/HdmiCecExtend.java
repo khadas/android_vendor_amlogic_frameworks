@@ -170,7 +170,6 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
     private HdmiPlaybackClient mPlayback = null;
     private List<HdmiPortInfo> mPortInfo = null;
     private boolean mLanguangeChanged = false;
-    private IHdmiControlService mService = null;
     private int mPhyAddr = -1;
     private int mVendorId = 0;
     private PowerManager mPowerManager;
@@ -201,7 +200,6 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
 
         mContext = ctx;
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
-        mService = IHdmiControlService.Stub.asInterface(ServiceManager.getService(Context.HDMI_CONTROL_SERVICE));
         mPowerManager = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
         mSettingsObserver = new SettingsObserver(mHandler);
         registerContentObserver();
@@ -221,7 +219,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
     }
 
     public void updatePortInfo() {
-        if (mService != null) {
+        if (mControl != null) {
             mPhyAddr = getCecPhysicalAddress();
         }
     }

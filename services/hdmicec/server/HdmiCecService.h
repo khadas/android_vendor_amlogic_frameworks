@@ -2,6 +2,9 @@
 #define _HDMI_CEC_SERVICE_H_
 
 #include <utils/Vector.h>
+#include <utils/String8.h>
+#include <utils/String16.h>
+#include <utils/Mutex.h>
 #include <HdmiCecControl.h>
 #include <IHdmiCecService.h>
 
@@ -30,9 +33,15 @@ public:
     virtual void onEventUpdate(const hdmi_cec_event_t* event);
 
     static void instantiate();
+
+    virtual status_t dump(int fd, const Vector<String16>& args);
 private:
+    void dumpHelp(String8 &result);
+
     HdmiCecControl *mHdmiCecControl;
     Vector<sp<IHdmiCecCallback>> mClients;
+
+    mutable Mutex mLock;
 };
 
 }; //namespace android

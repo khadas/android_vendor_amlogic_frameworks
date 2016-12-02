@@ -1,6 +1,7 @@
 #define LOG_NDEBUG 0
-#define LOG_TAG "HdmiCecService"
+#define LOG_CEE_TAG "HdmiCecService"
 
+#include <binder/IPCThreadState.h>
 #include <binder/IServiceManager.h>
 
 #include "HdmiCecService.h"
@@ -132,11 +133,65 @@ int HdmiCecService::connect(const sp<IHdmiCecCallback> &client)
 
 void HdmiCecService::onEventUpdate(const hdmi_cec_event_t* event)
 {
-    LOGV("%s", getEventType(event->eventType));
+    LOGV("%s, %s", __FUNCTION__, getEventType(event->eventType));
     int clientSize = mClients.size();
     for (int i = 0; i < clientSize; i++) {
         mClients[i]->notifyCallback(event);
     }
+}
+
+void HdmiCecService::dumpHelp(String8 &result)
+{
+    result.appendFormat(
+        "hdmi_cec service use to control the hdmi cec.\n"
+        "usage: \n"
+        "    dumpsys hdmi_cec -l [value] \n"
+        "    -l: set or get debug level \n"
+        "    -h: help \n");
+}
+
+status_t HdmiCecService::dump(int fd, const Vector<String16>& args)
+{
+    const size_t SIZE = 256;
+    char buffer[SIZE];
+    String8 result;
+    if (checkCallingPermission(String16("android.permission.DUMP")) == false) {
+        snprintf(buffer, SIZE, "Permission Denial: "
+            "can't dump hdmi_cec from pid=%d, uid=%d\n",
+                IPCThreadState::self()->getCallingPid(), IPCThreadState::self()->getCallingUid());
+        result.append(buffer);
+    } else {
+        Mutex::Autolock lock(mLock);
+
+        int len = args.size();
+
+        for (int i = 0; i < len; i++) {
+            String16 debugLevel("-l");
+            String16 help("-h");
+            if (args[i] == debugLevel) {
+                if (i + 1 < len) {
+                    String8 levelStr(args[i + 1]);
+                    int level = atoi(levelStr.string());
+                    setLogLevel(level);
+
+                    result.appendFormat("Setting log level to %d\n", level);
+                    break;
+                } else {
+                    result.appendFormat("current log level is %d\n", getLogLevel());
+                    break;
+                }
+            } else if (args[i] == help) {
+                dumpHelp(result);
+                break;
+            }
+        }
+        if (len <= 0) {
+            dumpHelp(result);
+        }
+    }
+
+    write(fd, result.string(), result.size());
+    return NO_ERROR;
 }
 
 };//namespace android

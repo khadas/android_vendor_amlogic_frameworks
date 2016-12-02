@@ -64,7 +64,6 @@ JHdmiCecExtend::~JHdmiCecExtend() {
 }
 
 void JHdmiCecExtend::init() {
-    LOGD("==== init.");
 }
 
 int JHdmiCecExtend::getPhysicalAddress(uint16_t* addr) {
@@ -101,15 +100,15 @@ void JHdmiCecExtend::onEventUpdate(const hdmi_cec_event_t* event)
         memset(msg_buf, 0, sizeof(msg_buf));
         memcpy(msg_buf + 1, event->cec.body, event->cec.length);
         msg_buf[0] = ((event->cec.initiator << 4) & 0x0f) | (event->cec.destination & 0x0f);
-        printCecMsgBuf(msg_buf);
+        printCecMsgBuf(msg_buf, event->cec.length);
 
         jbyteArray array = env->NewByteArray(event->cec.length + 1);
         const jbyte* bodyPtr = reinterpret_cast<const jbyte *>(msg_buf);
         env->SetByteArrayRegion(array, 0, event->cec.length + 1, bodyPtr);
         env->CallVoidMethod(mCallbacksObj, gHdmiCecExtendClassInfo.onCecMessageRx, array);
         env->DeleteLocalRef(array);
-    } else if ((event->eventType & HDMI_EVENT_ADD_PHYSICAL_ADDRESS) != 0) {
-        env->CallVoidMethod(mCallbacksObj, gHdmiCecExtendClassInfo.onAddAddress, event->physicalAdd);
+    } else if ((event->eventType & HDMI_EVENT_ADD_LOGICAL_ADDRESS) != 0) {
+        env->CallVoidMethod(mCallbacksObj, gHdmiCecExtendClassInfo.onAddAddress, event->logicalAddress);
     }
 }
 

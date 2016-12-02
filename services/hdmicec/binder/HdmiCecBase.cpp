@@ -1,43 +1,46 @@
 #define LOG_NDEBUG 0
-#define LOG_TAG "HdmiCecBase"
+#define LOG_CEE_TAG "HdmiCecBase"
 
 #include "HdmiCecBase.h"
 
+int mLogLevel = LOG_LEVEL_1;
+
 namespace android {
 
-void HdmiCecBase::printCecMsgBuf(const char *msg_buf)
+void HdmiCecBase::printCecMsgBuf(const char *msg_buf, int len)
 {
-    if (!DEBUG)
+    if (mLogLevel < LOG_LEVEL_2)
         return;
 
     char buf[64] = { };
-    int i, r = strlen(msg_buf), size = 0;
+    int i, size = 0;
     memset(buf, 0, sizeof(buf));
-    for (i = 0; i < r; i++) {
+    for (i = 0; i < len; i++) {
         size += sprintf(buf + size, " %02x", msg_buf[i]);
     }
-    LOGD("msg:%s", buf);
+    LOGD("%s, msg:%s", __FUNCTION__, buf);
 }
 
 void HdmiCecBase::printCecEvent(const hdmi_cec_event_t *event)
 {
-    if (!DEBUG)
+    if (mLogLevel < LOG_LEVEL_2)
         return;
 
     if (((event->eventType & HDMI_EVENT_CEC_MESSAGE) != 0)
             || ((event->eventType & HDMI_EVENT_RECEIVE_MESSAGE) != 0)) {
-        LOGD("eventType: %d", event->eventType);
+        LOGD("%s, eventType: %d", __FUNCTION__, event->eventType);
         printCecMessage(&event->cec);
     } else if ((event->eventType & HDMI_EVENT_HOT_PLUG) != 0) {
-        LOGD("hotplug, connected:%d, port_id:%d", event->hotplug.connected, event->hotplug.port_id);
-    } else if ((event->eventType & HDMI_EVENT_ADD_PHYSICAL_ADDRESS) != 0) {
-        LOGD("add physical address, physicalAdd:%x", event->physicalAdd);
+        LOGD("%s, hotplug, connected:%d, port_id:%d", __FUNCTION__, event->hotplug.connected,
+                event->hotplug.port_id);
+    } else if ((event->eventType & HDMI_EVENT_ADD_LOGICAL_ADDRESS) != 0) {
+        LOGD("%s, add logical address, logicalAddress:%x", __FUNCTION__, event->logicalAddress);
     }
 }
 
 void HdmiCecBase::printCecMessage(const cec_message_t* message)
 {
-    if (!DEBUG)
+    if (mLogLevel < LOG_LEVEL_2)
         return;
 
     char buf[64];
@@ -46,13 +49,13 @@ void HdmiCecBase::printCecMessage(const cec_message_t* message)
     for (i = 0; i < message->length; i++) {
         size += sprintf(buf + size, " %02x", message->body[i]);
     }
-    LOGD("[%x -> %x] len: %d, body:%s", message->initiator, message->destination, message->length,
-            buf);
+    LOGD("%s, [%x -> %x] len: %d, body:%s", __FUNCTION__, message->initiator, message->destination,
+            message->length, buf);
 }
 
 void HdmiCecBase::printCecMessage(const cec_message_t* message, int result)
 {
-    if (!DEBUG)
+    if (mLogLevel < LOG_LEVEL_2)
         return;
 
     char buf[64];
@@ -61,7 +64,7 @@ void HdmiCecBase::printCecMessage(const cec_message_t* message, int result)
     for (i = 0; i < message->length; i++) {
         size += sprintf(buf + size, " %02x", message->body[i]);
     }
-    LOGD("[%x -> %x] len: %d, body:%s, result: %s",
+    LOGD("%s, [%x -> %x] len: %d, body:%s, result: %s", __FUNCTION__,
             message->initiator, message->destination, message->length, buf, getResult(result));
 }
 
@@ -88,8 +91,8 @@ const char* HdmiCecBase::getEventType(int eventType)
             return "cec message";
         case HDMI_EVENT_HOT_PLUG:
             return "hotplug message";
-        case HDMI_EVENT_ADD_PHYSICAL_ADDRESS:
-            return "add physical address for extend";
+        case HDMI_EVENT_ADD_LOGICAL_ADDRESS:
+            return "add logical address for extend";
         case HDMI_EVENT_RECEIVE_MESSAGE:
             return "cec message for extend";
         case (HDMI_EVENT_CEC_MESSAGE | HDMI_EVENT_RECEIVE_MESSAGE):
@@ -99,5 +102,27 @@ const char* HdmiCecBase::getEventType(int eventType)
     }
 }
 
+void HdmiCecBase::setLogLevel(int level)
+{
+    mLogLevel = level;
+}
+
+int HdmiCecBase::getLogLevel()
+{
+    return mLogLevel;
+}
+
+int __unit_log_print(int prio, const char *tag, const char *cec_tag, const char *fmt, ...)
+{
+    char buf[DEFAULT_LOG_BUFFER_LEN];
+    sprintf(buf, "[%s]:", cec_tag);
+    int cec_tag_len = strlen(buf);
+
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf + cec_tag_len, DEFAULT_LOG_BUFFER_LEN - cec_tag_len, fmt, ap);
+
+    return __android_log_write(prio, tag, buf);
+}
 
 };//namespace android

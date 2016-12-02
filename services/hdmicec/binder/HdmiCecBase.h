@@ -4,20 +4,14 @@
 #include <cutils/log.h>
 #include <hardware/hdmi_cec.h>
 #include <utils/RefBase.h>
+#include <LogControl.h>
 
 namespace android {
 
-#define DEBUG 1
-#if DEBUG
-#define LOGD(format, args...) ALOGD("[%s:] " format, __FUNCTION__, ##args)
-#else
-#define LOGD(...) do{}while(0)
-#endif
+#define LOG_UNIT_TAG "CEC"
+#define DEFAULT_LOG_BUFFER_LEN 1152
 
-#define LOGV(format, args...) ALOGV("[%s:] " format, __FUNCTION__, ##args)
-#define LOGW(format, args...) ALOGW("[%s:] " format, __FUNCTION__, ##args)
-#define LOGE(format, args...) ALOGE("[%s:] " format, __FUNCTION__, ##args)
-#define LOGI(format, args...) ALOGI("[%s:] " format, __FUNCTION__, ##args)
+extern int __unit_log_print(int prio, const char *tag, const char *cec_tag, const char *fmt, ...);
 
 enum {
     OPEN_CEC_DEVICE = 1,
@@ -38,7 +32,7 @@ enum {
 };
 
 enum hdmi_cec_event_type {
-    HDMI_EVENT_ADD_PHYSICAL_ADDRESS = 0x04,
+    HDMI_EVENT_ADD_LOGICAL_ADDRESS = 0x04,
     HDMI_EVENT_RECEIVE_MESSAGE = 0x08,
 };
 
@@ -47,7 +41,7 @@ typedef struct hdmi_cec_event {
     union {
         cec_message_t cec;
         hotplug_event_t hotplug;
-        int physicalAdd;
+        int logicalAddress;
     };
 } hdmi_cec_event_t;
 
@@ -85,14 +79,18 @@ public:
     // Whether to hdmi device is connected to the given port.
     virtual bool isConnected(int port) = 0;
 
-    void printCecMsgBuf(const char *msg_buf);
+    void printCecMsgBuf(const char *msg_buf, int len);
     void printCecEvent(const hdmi_cec_event_t *event);
     void printCecMessage(const cec_message_t* message);
     void printCecMessage(const cec_message_t* message, int result);
     const char* getEventType(int eventType);
+    void setLogLevel(int level);
+    int getLogLevel();
 
 private:
     const char *getResult(int result);
+
+    static int debugLevel;
 };
 
 

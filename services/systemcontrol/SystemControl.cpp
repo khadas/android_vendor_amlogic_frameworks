@@ -177,7 +177,7 @@ int32_t SystemControl::readHdcpRX22Key(char *value, int size) {
 
 bool SystemControl::writeHdcpRX22Key(const char *value, const int size) {
    if (NO_ERROR == permissionCheck()) {
-        traceValue(String16("writeHdcp22Key"), size);
+        traceValue(String16("writeHdcp22Key"), String16(""), size);
 
         bool ret = pDisplayMode->writeHdcpRX22Key(value, size);
         return ret;
@@ -196,7 +196,7 @@ int32_t SystemControl::readHdcpRX14Key(char *value, int size) {
 
 bool SystemControl::writeHdcpRX14Key(const char *value, const int size) {
     if (NO_ERROR == permissionCheck()) {
-        traceValue(String16("writeHdcp14Key"), size);
+        traceValue(String16("writeHdcp14Key"), String16(""), size);
 
         bool ret = pDisplayMode->writeHdcpRX14Key(value, size);
         return ret;
@@ -206,7 +206,7 @@ bool SystemControl::writeHdcpRX14Key(const char *value, const int size) {
 
 bool SystemControl::writeHdcpRXImg(const String16& path) {
     if (NO_ERROR == permissionCheck()) {
-        traceValue(String16("writeSysfs"), path);
+        traceValue(String16("writeSysfs"), path, String16(""));
 
         return pDisplayMode->writeHdcpRXImg(String8(path).string());
     }
@@ -456,52 +456,6 @@ void SystemControl::traceValue(const String16& type, const String16& key, const 
            String8(procName).string());
     }
 }
-
-void SystemControl::traceValue(const String16& type, const int size) {
-    if (mLogLevel > LOG_LEVEL_0) {
-        String16 procName;
-        int pid = IPCThreadState::self()->getCallingPid();
-        int uid = IPCThreadState::self()->getCallingUid();
-
-        getProcName(pid, procName);
-
-        ALOGI("%s [ %d ] from pid=%d, uid=%d, process name=%s",
-           String8(type).string(), size,
-           pid, uid,
-           String8(procName).string());
-    }
-}
-
-void SystemControl::traceValue(const String16& type, const String16& value) {
-    if (mLogLevel > LOG_LEVEL_0) {
-        String16 procName;
-        int pid = IPCThreadState::self()->getCallingPid();
-        int uid = IPCThreadState::self()->getCallingUid();
-
-        getProcName(pid, procName);
-
-        ALOGI("%s [ %s ] from pid=%d, uid=%d, process name=%s",
-            String8(type).string(), String8(value).string(),
-            pid, uid,
-            String8(procName).string());
-    }
-}
-
-void SystemControl::traceValue(const String16& type) {
-    if (mLogLevel > LOG_LEVEL_0) {
-        String16 procName;
-        int pid = IPCThreadState::self()->getCallingPid();
-        int uid = IPCThreadState::self()->getCallingUid();
-
-        getProcName(pid, procName);
-
-        ALOGI("%s from pid=%d, uid=%d, process name=%s",
-            String8(type).string(),
-            pid, uid,
-            String8(procName).string());
-    }
-}
-
 
 void SystemControl::setLogLevel(int level) {
     if (level > (LOG_LEVEL_TOTAL - 1)) {

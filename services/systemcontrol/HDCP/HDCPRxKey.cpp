@@ -493,7 +493,6 @@ bool HDCPRxKey::setHDCP22Key() {
         }
     }
     SYS_LOGI("hdcp_rx22 start success\n");
-    writeBufSys(HDCP_RX_DEBUG_PATH, "load22key", 10);
 _exit:
     if (pKeyBuf) delete[] pKeyBuf;
     return ret;

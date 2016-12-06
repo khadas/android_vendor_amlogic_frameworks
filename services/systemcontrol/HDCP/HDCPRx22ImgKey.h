@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef __HDCP22_HEY_H__
-#define __HDCP22_HEY_H__
+#ifndef __HDCPRX22_IMG_KEY_H__
+#define __HDCPRX22_IMG_KEY_H__
 
 //old path use for tcl
 #define HDCP_FW_LE_OLD_PATH         "/system/etc/firmware.le"
@@ -33,6 +33,7 @@
 #define UNIFYKEY_WRITE      "/sys/class/unifykeys/write"
 #define UNIFYKEY_READ        "/sys/class/unifykeys/read"
 #define UNIFYKEY_EXIST       "/sys/class/unifykeys/exist"
+#define HDCP_RX_DEBUG_PATH              "/sys/class/hdmirx/hdmirx0/debug"
 
 #define WRITE_SIZE     (200*1024)
 #define MAX_STR_LEN         4096
@@ -99,14 +100,7 @@ typedef struct {
  *
  */
 
-int aml_hdcp22_key_pack(const char** const path_src, const int totalFileNum, const char* const packedImg);
-
-int aml_hdcp22_extract_firmwarele(const char* firmwarele, const char* extractedKey);
-
-int generateHdcpFw(const char* firmwarele, const char* packedImg, const char* newFw);
-int generateHdcpFwFromStorage(const char* firmwarele, const char* newFw);
 int setImgPath(const char *path);
 
-
-#endif// #ifndef __HDCP22_HEY_H__
+#endif// #ifndef __HDCPRX22_IMG_KEY_H__
 

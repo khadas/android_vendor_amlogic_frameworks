@@ -105,9 +105,6 @@ private:
     void setLogLevel(int level);
     void traceValue(const String16& type, const String16& key, const String16& value);
     void traceValue(const String16& type, const String16& key, const int size);
-    void traceValue(const String16& type, const int size);
-    void traceValue(const String16& type, const String16& value);
-    void traceValue(const String16& type);
     int getProcName(pid_t pid, String16& procName);
 
     mutable Mutex mLock;

@@ -26,7 +26,7 @@
 #include "common.h"
 #include "HDCP/HDCPTxAuth.h"
 #include "HDCP/HDCPRxAuth.h"
-#include "HDCP/hdcp22_key.h"
+#include "HDCP/HDCPRx22ImgKey.h"
 #include "HDCP/HDCPRxKey.h"
 
 #include <map>

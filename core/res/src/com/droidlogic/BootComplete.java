@@ -12,6 +12,7 @@ import android.provider.Settings;
 import android.content.ContentResolver;
 import android.util.Log;
 import android.view.IWindowManager;
+import android.media.AudioManager;
 
 import com.droidlogic.app.HdrManager;
 import com.droidlogic.app.PlayBackManager;
@@ -23,6 +24,7 @@ import com.droidlogic.HdmiCecExtend;
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
     private static final String FIRST_RUN       = "first_run";
+    private static final int SPEAKER_DEFAULT_VOLUME = 11;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -33,6 +35,16 @@ public class BootComplete extends BroadcastReceiver {
             SystemControlManager sm = new SystemControlManager(context);
             //register system control callback
             sm.setListener(new SystemControlEvent(context));
+
+            ContentResolver resolver = context.getContentResolver();
+            int speakervalue = Settings.System.getInt(resolver,"volume_music_speaker",-1);
+            if (speakervalue == -1) {
+                Settings.System.putInt(resolver,"volume_music_speaker", SPEAKER_DEFAULT_VOLUME);
+                AudioManager speakmanager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
+                int current = speakmanager.getStreamVolume( AudioManager.STREAM_MUSIC);
+                speakmanager.setStreamVolume(AudioManager.STREAM_MUSIC,current,0);
+                Log.d(TAG,"boot complete set volume: "+current);
+            }
 
             //set default show_ime_with_hard_keyboard 1, then first boot can show the ime.
             if (SettingsPref.getFirstRun(context)) {

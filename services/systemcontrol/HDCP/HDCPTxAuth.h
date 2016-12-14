@@ -55,6 +55,7 @@ public:
     void setUevntCallback (TxUevntCallbak *ob);
     int start();
     int stop();
+    void stopVerAll();
 
     #ifndef RECOVERY_MODE
     void sfRepaintEverything();
@@ -66,7 +67,6 @@ private:
     void authLoop(bool useHdcp22, bool useHdcp14);
     void startVer22();
     void startVer14();
-    void stopVerAll();
 
     static void* authThread(void* data);
     static void* TxUenventThreadLoop(void* data);

@@ -41,10 +41,12 @@ using namespace android;
 #endif
 
 Dimension::Dimension(DisplayMode *displayMode, SysWrite *sysWrite)
-    :mLogLevel(LOG_LEVEL_DEFAULT),
-    mDisplay3DFormat(0) {
+    :mDisplay3DFormat(0),
+    mInitDone(false),
+    mLogLevel(LOG_LEVEL_DEFAULT) {
     pDisplayMode = displayMode;
     pSysWrite = sysWrite;
+    pTxAuth = displayMode->geTxAuth();
 
     strcpy(mMode3d, VIDEO_3D_OFF);
 
@@ -54,8 +56,323 @@ Dimension::Dimension(DisplayMode *displayMode, SysWrite *sysWrite)
 Dimension::~Dimension() {
 }
 
-void Dimension::setLogLevel(int level){
+void Dimension::setLogLevel(int level) {
     mLogLevel = level;
+}
+
+//----3d set for mbox----------------------------------------
+int32_t Dimension::getLineTotal(char* buf) {
+    int num = 0;
+    while (true) {
+        char *ptr = strchr(buf, '\n');
+        if (ptr != NULL) {
+            int offset = (int)(ptr - buf);
+            /*if (offset < 1) {
+                ALOGE("[getLineTotal]offset error.\n");
+                break;
+            }*/
+            buf += (offset + 1);
+            num++;
+
+            if (num > NUM_MAX) {// max line should less than 64
+                ALOGE("[getLineTotal]num error.\n");
+                break;
+            }
+        }
+        else { //last line
+            if (strlen(buf) > 0) {
+                num++;
+            }
+            break;
+        }
+    }
+    return num;
+}
+
+void Dimension::getLine(int idx, int total, char* src, char* dst) {
+    char *pBuf = src;
+    for (int i = 0; i < total; i++) {
+        char *ptr = strchr(pBuf, '\n');
+        if (ptr != NULL) {
+            int offset = (int)(ptr - pBuf);
+            //ALOGE("[getLine]i:%d, idx:%d, ptr:%x, pBuf:%x\n", i, idx, ptr, pBuf);
+            if (i == idx) {
+                strncpy(dst, pBuf, offset);
+                break;
+            }
+            pBuf += (offset + 1);
+        }
+        else { //last line
+            ALOGE("[getLine]pBuf:%x, pBuf:%s\n", pBuf, pBuf);
+            if (strlen(pBuf) > 0) {
+                strcpy(dst, pBuf);
+            }
+            break;
+        }
+    }
+    ALOGI("[getLine] dst:%s\n", dst);
+}
+
+void Dimension::parseLine(int idx, char *line) {
+    ALOGI("[parseLine] idx:%d, line:%s\n", idx, line);
+    if (!strcmp(line, "3D support lists:")) {
+        return;// skip comment
+    }
+
+    if (line != NULL && strlen(line) <= 0) {
+        return;// skip no data
+    }
+
+    char mostr[8] = {0};
+    char hzstr[8] = {0};
+
+    char *ptr = strchr(line, ' ');
+    if (ptr != NULL) {
+        int offset = (int)(ptr - line);
+        strncpy(mSupport.info[idx].mode, line, offset);// store mode
+        line += (offset + 1);
+        strcpy(mSupport.info[idx].list, line);//store support list
+
+        //parse mode and frequency for search the best display mode
+        ptr = strchr(mSupport.info[idx].mode, 'p');
+        if (ptr != NULL) {
+            offset = (int)(ptr - mSupport.info[idx].mode);
+            strncpy(mostr, mSupport.info[idx].mode, offset);//store mode, such as 480, 576, 720, 1080, 2160...
+            strncpy(hzstr, ptr + 1, 2);//store frequency, such as 24, 25, 30, 50, 60...
+            mSupport.info[idx].mo = atoi(mostr);
+            mSupport.info[idx].hz = atoi(hzstr);
+        }
+        else {
+            //do nothing, skip interlace and smpte(4k) mode
+        }
+    }
+}
+
+void Dimension::init() {
+    ALOGI("[init] mInitDone:%d\n", mInitDone);
+    char line[LINE_LEN] = {0};
+    if (!mInitDone) {
+        mInitDone = true;
+
+        //store current display mode
+        memset(mSupport.stored, 0, sizeof(mSupport.stored));
+        pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, mSupport.stored);
+
+        //store current window axis
+        char axis[MAX_STR_LEN] = {0};
+        pSysWrite->readSysfsOriginal(DISPLAY_FB0_WINDOW_AXIS, axis);
+        if (sscanf(axis, "%d %d %d %d", &mWindowAxis.stored.x0, &mWindowAxis.stored.y0, &mWindowAxis.stored.x1, &mWindowAxis.stored.y1) != 4) {
+            ALOGE("[init]mWindowAxis.stored fail.\n");
+            return;
+        }
+
+        //read disp_cap_3d
+        char disp_cap_3d[MAX_STR_LEN] = {0};
+        pSysWrite->readSysfsOriginal(DISPLAY_HDMI_DISP_CAP_3D, disp_cap_3d);
+
+        //parse line
+        mSupport.total = getLineTotal(disp_cap_3d);
+        for (int i = 0; i < mSupport.total; i++) {
+            memset(line, 0, LINE_LEN);
+            memset(mSupport.info[i].mode, 0, sizeof(mSupport.info[i].mode));
+            memset(mSupport.info[i].list, 0, sizeof(mSupport.info[i].list));
+            mSupport.info[i].mo = 0;
+            mSupport.info[i].hz = 0;
+
+            getLine(i, mSupport.total, disp_cap_3d, line);
+            parseLine(i, line);
+        }
+
+        // for debug
+        for (int i = 0; i < mSupport.total; i++) {
+            ALOGI("[init]mSupport.info[%d].mode:%s, mSupport.info[%d].list:%s\n", i, mSupport.info[i].mode, i, mSupport.info[i].list);
+            ALOGI("[init]mSupport.info[%d].mo:%d, mSupport.info[%d].hz:%d\n", i, mSupport.info[i].mo, i, mSupport.info[i].hz);
+        }
+    }
+
+    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+}
+
+void Dimension::setWindowAxis(const char* mode3d) {
+    if (strcmp(mode3d, VIDEO_3D_OFF)) {
+        if (!strcmp(mode3d, VIDEO_3D_FRAME_PACKING)) {
+            if (strstr(mSupport.dst, "720") != NULL) {
+                mWindowAxis.dst.x0 = 0;
+                mWindowAxis.dst.y0 = 0;
+                mWindowAxis.dst.x1 = 1280 - 1;
+                mWindowAxis.dst.y1 = 720 + 750 - 1;
+            }
+            else if (strstr(mSupport.dst, "1080") != NULL) {
+                mWindowAxis.dst.x0 = 0;
+                mWindowAxis.dst.y0 = 0;
+                mWindowAxis.dst.x1 = 1920 - 1;
+                mWindowAxis.dst.y1 = 1080 + 1125 - 1;
+            }
+        }
+        else {
+            if (strstr(mSupport.dst, "720") != NULL) {
+                mWindowAxis.dst.x0 = 0;
+                mWindowAxis.dst.y0 = 0;
+                mWindowAxis.dst.x1 = 1280 - 1;
+                mWindowAxis.dst.y1 = 720 - 1;
+            }
+            else if (strstr(mSupport.dst, "1080") != NULL) {
+                mWindowAxis.dst.x0 = 0;
+                mWindowAxis.dst.y0 = 0;
+                mWindowAxis.dst.x1 = 1920 - 1;
+                mWindowAxis.dst.y1 = 1080 - 1;
+            }
+        }
+    }
+    else {
+        mWindowAxis.dst.x0 = mWindowAxis.stored.x0;
+        mWindowAxis.dst.y0 = mWindowAxis.stored.y0;
+        mWindowAxis.dst.x1 = mWindowAxis.stored.x1;
+        mWindowAxis.dst.y1 = mWindowAxis.stored.y1;
+    }
+
+    char axis[MAX_STR_LEN] = {0};
+    sprintf(axis, "%d %d %d %d",
+        mWindowAxis.dst.x0,
+        mWindowAxis.dst.y0,
+        mWindowAxis.dst.x1,
+        mWindowAxis.dst.y1);
+    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
+    usleep(50 * 1000);
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x0");
+    usleep(50 * 1000);
+    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+}
+
+void Dimension::setDispMode(const char* mode3d) {
+    char mode[MODE_LEN] = {0};
+    char keystr[32] = {0};
+
+    if (strcmp(mode3d, VIDEO_3D_OFF)) {
+        memset(mSupport.dst, 0, sizeof(mSupport.dst));
+        if (!strcmp(mode3d, VIDEO_3D_SIDE_BY_SIDE)) {
+            strcpy(keystr, KEY_SIDE_BY_SIDE);
+        }
+        else if (!strcmp(mode3d, VIDEO_3D_TOP_BOTTOM)) {
+            strcpy(keystr, KEY_TOP_BOTTOM);
+        }
+        else if (!strcmp(mode3d, VIDEO_3D_FRAME_PACKING)) {
+            strcpy(keystr, KEY_FRAME_PACKING);
+        }
+
+        if (!strcmp(keystr, KEY_FRAME_PACKING) ||
+            (strstr(mSupport.stored, "2160p") != NULL || strstr(mSupport.stored, "smpte") != NULL)) {
+            int mo = 0;
+            int hz = 0;
+            int idx = -1;
+            char mostr[8] = {0};
+            char hzstr[8] = {0};
+
+            //searching the best display mode to switch
+            for (int j = 0; j < mSupport.total; j++) {
+                if (strstr(mSupport.info[j].list, keystr) != NULL) {
+                    if (!strcmp(mSupport.info[j].mode, mSupport.stored)) {
+                        mo = mSupport.info[j].mo;
+                        hz = mSupport.info[j].hz;
+                        idx = j;
+                        break;
+                    }
+
+                    //ALOGI("[setDispMode] mSupport.info[%d].mo:%d, mo:%d, mSupport.info[%d].hz:%d, hz:%d\n", j, mSupport.info[j].mo, mo, j, mSupport.info[j].hz, hz);
+                    if (mSupport.info[j].mo > mo) {
+                        mo = mSupport.info[j].mo;
+                        hz = mSupport.info[j].hz;
+                        idx = j;
+                    }
+                    else if (mSupport.info[j].mo == mo) {
+                        if (mSupport.info[j].hz > hz) {
+                            hz = mSupport.info[j].hz;
+                            idx = j;
+                        }
+                    }
+                }
+            }
+
+            sprintf(mostr, "%d", mo);
+            sprintf(hzstr, "%d", hz);
+            strcat(mSupport.dst, mostr);
+            if (!strcmp(keystr, KEY_FRAME_PACKING)) {
+                strcat(mSupport.dst, "fp");
+            }
+            else {
+                strcat(mSupport.dst, "p");
+            }
+            strcat(mSupport.dst, hzstr);
+            strcat(mSupport.dst, "hz");
+
+        }
+        else {
+            //check current display mode is support mode for 3d that will switch to
+            for (int i = 0; i < mSupport.total; i++) {
+                if (!strcmp(mSupport.info[i].mode, mSupport.stored)) {
+                    if (strstr(mSupport.info[i].list, keystr) != NULL) {
+                        //no need to switch mode
+                        strcpy(mSupport.dst, mSupport.stored);
+                    }
+                    else {
+                        //3d mode is not support
+                        ALOGE("[setDispMode] keystr:%s is not support for %s\n", keystr, mSupport.stored);
+                    }
+                    break;
+                }
+            }
+        }
+
+        //set display mode if stored is different with destination mode
+        if (strcmp(mSupport.dst, mSupport.stored)) {
+            strcpy(mode, mSupport.dst);
+        }
+    }
+    else {
+        if (strlen(mSupport.stored) != 0) {
+            strcpy(mode, mSupport.stored);
+
+            //make sure getting support info and store current for every set from off mode
+            mInitDone = false;
+        }
+    }
+
+    ALOGI("[setDispMode]setMboxOutputMode mode:%s\n", mode);
+    char mode_tmp[MODE_LEN] = {0};
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, mode_tmp);
+    if (strlen(mode) > 0 &&
+        strcmp(mode, "0fp0hz") &&
+        strcmp(mode, mode_tmp)) {//skip 0fp0hz and same mode
+        pDisplayMode->setMboxOutputMode(mode);
+    }
+}
+
+void Dimension::mode3DImpl(const char* mode3d) {
+    int format = SURFACE_3D_OFF;
+    if (!strcmp(mode3d, VIDEO_3D_OFF)) {
+        format = SURFACE_3D_OFF;
+    }
+    else if (!strcmp(mode3d, VIDEO_3D_SIDE_BY_SIDE)) {
+        format = SURFACE_3D_SIDE_BY_SIDE;
+    }
+    else if (!strcmp(mode3d, VIDEO_3D_TOP_BOTTOM)) {
+        format = SURFACE_3D_TOP_BOTTOM;
+    }
+    else if (!strcmp(mode3d, VIDEO_3D_FRAME_PACKING)) {
+        format = SURFACE_3D_FRAME_PACKING;
+    }
+
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("[mode3DImpl]mode3d = %s, format = %d\n", mode3d, format);
+    }
+
+#ifndef RECOVERY_MODE
+    SurfaceComposerClient::openGlobalTransaction();
+    SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
+    SurfaceComposerClient::closeGlobalTransaction();
+#endif
+
+    pSysWrite->writeSysfs(AV_HDMI_CONFIG, mode3d);
 }
 
 int32_t Dimension::set3DMode(const char* mode3d) {
@@ -78,73 +395,42 @@ int32_t Dimension::set3DMode(const char* mode3d) {
 
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
     usleep(100 * 1000);
-    if (NULL != pDisplayMode->geTxAuth())
-        pDisplayMode->geTxAuth()->stop();
-
-    char curDisplayMode[MODE_LEN] = {0};
-    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
-    if (strcmp(mode3d, VIDEO_3D_OFF)) {
-        if (strstr(curDisplayMode, "2160p") != NULL || strstr(curDisplayMode, "smpte") != NULL) {
-            pDisplayMode->setMboxOutputMode(MODE_1080P50HZ);
-            strcpy(mLastDisMode, curDisplayMode);
-        }
-    }
-    else {
-        if (strlen(mLastDisMode) != 0) {
-            pDisplayMode->setMboxOutputMode(mLastDisMode);
-            memset(mLastDisMode, 0, sizeof(mLastDisMode));
-        }
-    }
-
-    strcpy(mMode3d, mode3d);
-    mode3DImpl(mode3d);
-
-    if (NULL != pDisplayMode->geTxAuth())
-        pDisplayMode->geTxAuth()->start();
-    return 0;
-}
-
-void Dimension::mode3DImpl(const char* mode3d) {
+    pTxAuth->stopVerAll();
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1"); // "-1" means stop hdcp 14/22
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
 
-    int format = SURFACE_3D_OFF;
-    if (!strcmp(mode3d, VIDEO_3D_OFF)) {
-        format = SURFACE_3D_OFF;
-    }
-    else if (!strcmp(mode3d, VIDEO_3D_SIDE_BY_SIDE)) {
-        format = SURFACE_3D_SIDE_BY_SIDE;
-    }
-    else if (!strcmp(mode3d, VIDEO_3D_TOP_BOTTOM)) {
-        format = SURFACE_3D_TOP_BOTTOM;
-    }
+    //1. init support list
+    init();
 
-    if (mLogLevel > LOG_LEVEL_1) {
-        ALOGI("[mode3DImpl]mode3d = %s, format = %d\n", mode3d, format);
-    }
+    //2. 3D mode implement
+    strcpy(mMode3d, mode3d);
+    mode3DImpl(mode3d);
+    usleep(100 * 1000);
 
-#ifndef RECOVERY_MODE
-    SurfaceComposerClient::openGlobalTransaction();
-    //SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
-    SurfaceComposerClient::closeGlobalTransaction();
-#endif
+    //3. check display mode and set
+    setDispMode(mode3d);
 
-    pSysWrite->writeSysfs(AV_HDMI_CONFIG, mode3d);
+    //4. check window axis and set
+    setWindowAxis(mode3d);
 
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); // Turn on TMDS PHY
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+    pTxAuth->stop();
+    pTxAuth->start();
+    return 0;
 }
 
+//----3d set for tv----------------------------------------
 void Dimension::init3DSetting(void) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("init3DSetting\n");
     }
 
-    setDisplay3DFormat(FORMAT_3D_OFF);//for osd
-    setDisplay3DTo2DFormat(FORMAT_3D_OFF);//for video
+    setDisplay3DFormat(FORMAT_3D_OFF);//for mbox
+    setDisplay3DTo2DFormat(FORMAT_3D_OFF);//for tv
 }
 
 int32_t Dimension::getVideo3DFormat(void) {
@@ -469,7 +755,7 @@ void Dimension::get3DFormatStr(int format, char *str) {
         return;
     }
 
-    const char *formatStr = "3doff";
+    char *formatStr = "3doff";
     switch (format) {
         case FORMAT_3D_OFF:
             formatStr = "3doff";

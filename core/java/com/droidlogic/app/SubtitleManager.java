@@ -34,6 +34,7 @@ public class SubtitleManager {
         private String mPath = null;
         private Thread mThread = null;
         private int RETRY_MAX = 10;
+        private boolean mOpen = false;
 
         public SubtitleManager (MediaPlayer mp) {
             mMediaPlayer = mp;
@@ -182,8 +183,10 @@ public class SubtitleManager {
             LOGI("[start]mPath:" + mPath);
             mThreadStop = false;
             if (mPath != null) {
-                int ret = open (mPath);
-                if (ret == 0) {
+                if (!mOpen) {
+                    mOpen = (open (mPath) == 0) ? true : false;
+                }
+                if (mOpen) {
                     show();
 
                     if (optionEnable() ) {
@@ -200,6 +203,7 @@ public class SubtitleManager {
                 mThread = null;
             }
 
+            mOpen= false;
             try {
                 if (mService != null) {
                     mService.close();
@@ -410,6 +414,7 @@ public class SubtitleManager {
         }
 
         public void release() {
+            mOpen= false;
             close();
         }
 

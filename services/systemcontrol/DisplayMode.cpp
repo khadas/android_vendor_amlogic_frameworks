@@ -399,9 +399,12 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
 
     //if the tv don't support current outputmode,then switch to best outputmode
     if (strcmp(data.hpd_state, "1")) {
+        pSysWrite->writeSysfs(H265_DOUBLE_WRITE_MODE, "3");
         if (strcmp(outputmode, MODE_480CVBS) && strcmp(outputmode, MODE_576CVBS)) {
             strcpy(outputmode, MODE_576CVBS);
         }
+    } else {
+        pSysWrite->writeSysfs(H265_DOUBLE_WRITE_MODE, "0");
     }
 
     SYS_LOGI("init mbox display hpdstate:%s, old outputmode:%s, new outputmode:%s\n",
@@ -497,6 +500,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
         }
 
         cvbsMode = true;
+
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, mode);
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, "null");
     }

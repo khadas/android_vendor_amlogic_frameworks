@@ -136,6 +136,8 @@ using namespace android;
 #define HDMI_RX_HPD_STATE               "/sys/module/tvin_hdmirx/parameters/hpd_to_esm"
 #define HDMI_RX_KEY_COMBINE             "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
 
+#define H265_DOUBLE_WRITE_MODE          "/sys/module/amvdec_h265/parameters/double_write_mode"
+
 #define VIDEO_LAYER1_UEVENT             "DEVPATH=/devices/virtual/switch/video_layer1"
 #define VIDEO_LAYER_ENABLE              "0"
 #define VIDEO_LAYER_DISABLE             "1"

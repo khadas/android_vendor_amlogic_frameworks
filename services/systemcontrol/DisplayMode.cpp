@@ -569,7 +569,7 @@ void DisplayMode::setDigitalMode(const char* mode) {
         pSysWrite->writeSysfs(AV_HDMI_CONFIG, "audio_on");
     } else if (!strcmp("SPDIF passthrough", mode))  {
         pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, "1");
-        pSysWrite->writeSysfs(AV_HDMI_CONFIG, "audio_off");
+        pSysWrite->writeSysfs(AV_HDMI_CONFIG, "audio_on");
     } else if (!strcmp("HDMI passthrough", mode)) {
         pSysWrite->writeSysfs(AUDIO_DSP_DIGITAL_RAW, "2");
         pSysWrite->writeSysfs(AV_HDMI_CONFIG, "audio_on");

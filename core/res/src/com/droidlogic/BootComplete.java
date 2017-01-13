@@ -13,6 +13,7 @@ import android.content.ContentResolver;
 import android.util.Log;
 import android.view.IWindowManager;
 import android.media.AudioManager;
+import android.provider.Settings;
 
 import com.droidlogic.app.HdrManager;
 import com.droidlogic.app.PlayBackManager;
@@ -20,11 +21,16 @@ import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
 import com.droidlogic.HdmiCecExtend;
+import com.droidlogic.app.OutputModeManager;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
     private static final String FIRST_RUN       = "first_run";
     private static final int SPEAKER_DEFAULT_VOLUME = 11;
+    private static final String DRC_MODE = "drc_mode";
+    private static final int DRC_OFF = 0;
+    private static final int DRC_LINE = 1;
+    private static final int DRC_RF = 2;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -44,6 +50,25 @@ public class BootComplete extends BroadcastReceiver {
                 int current = speakmanager.getStreamVolume( AudioManager.STREAM_MUSIC);
                 speakmanager.setStreamVolume(AudioManager.STREAM_MUSIC,current,0);
                 Log.d(TAG,"boot complete set volume: "+current);
+            }
+
+            OutputModeManager drcomm = new OutputModeManager(context);
+            int drcvalue = Settings.Global.getInt(context.getContentResolver(), DRC_MODE, DRC_LINE);
+            Log.d(TAG,"read drcmode value: "+drcvalue);
+            switch (drcvalue) {
+                case DRC_OFF:
+                    drcomm.enableDobly_DRC(false);
+                    Settings.Global.putInt(context.getContentResolver(),DRC_MODE, drcvalue);
+                    break;
+                case DRC_LINE:
+                    drcomm.enableDobly_DRC(true);
+                    drcomm.setDoblyMode(String.valueOf(DRC_LINE));
+                    Settings.Global.putInt(context.getContentResolver(),DRC_MODE, drcvalue);
+                    break;
+                case DRC_RF:
+                    drcomm.setDoblyMode(String.valueOf(DRC_RF));
+                    Settings.Global.putInt(context.getContentResolver(),DRC_MODE, drcvalue);
+                    break;
             }
 
             //set default show_ime_with_hard_keyboard 1, then first boot can show the ime.

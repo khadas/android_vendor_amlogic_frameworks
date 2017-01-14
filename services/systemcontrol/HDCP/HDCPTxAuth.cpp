@@ -272,9 +272,14 @@ void HDCPTxAuth::startVer14() {
 }
 
 void HDCPTxAuth::stopVerAll() {
+    char hdcpRxVer[MODE_LEN] = {0};
     //stop hdcp_tx 2.2 & 1.4
-    SYS_LOGI("hdcp_tx 2.2 & 1.4 stop\n");
+    SYS_LOGI("hdcp_tx 2.2 & 1.4 stop hdcppwr\n");
+    mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
+    usleep(20000);
     mSysWrite.setProperty("ctl.stop", "hdcp_tx22");
+    usleep(20000);
+    mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_POWER, hdcpRxVer);
 
     mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP14_STOP);
     mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_CONF, DISPLAY_HDMI_HDCP22_STOP);

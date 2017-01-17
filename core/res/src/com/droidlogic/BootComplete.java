@@ -16,6 +16,7 @@ import android.media.AudioManager;
 import android.provider.Settings;
 
 import com.droidlogic.app.HdrManager;
+import com.droidlogic.app.SdrManager;
 import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
@@ -97,6 +98,7 @@ public class BootComplete extends BroadcastReceiver {
 
             new HdrManager(context).initHdrMode();
 
+            new SdrManager(context).initSdrMode();
             //start optimization service
             context.startService(new Intent(context, Optimization.class));
 

@@ -37,6 +37,7 @@ import java.io.UnsupportedEncodingException;
 import android.content.res.Configuration;
 import com.droidlogic.app.HdmiCecManager;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
+import android.os.SystemProperties;
 
 public class HdmiCecExtend {
     private final String TAG = "HdmiCecExtend";
@@ -166,6 +167,7 @@ public class HdmiCecExtend {
     static final int MENU_STATE_ACTIVATED = 0;
     static final int MENU_STATE_DEACTIVATED = 1;
     private static final int OSD_NAME_MAX_LENGTH = 13;
+    private static final String CEC_LANGUAGE_PROP = "persist.sys.cec.language.prop";
 
     private final SettingsObserver mSettingsObserver;
     private Context mContext = null;
@@ -289,6 +291,11 @@ public class HdmiCecExtend {
     }
 
     public void onLanguageChange(String lan) {
+        String propVal = SystemProperties.get(CEC_LANGUAGE_PROP,"true");
+        Slog.w(TAG,"CEC language prop = "+propVal);
+        if (propVal.equals("false")) {
+          return;
+        }
         Slog.d(TAG, "onLanguageChange:" + lan);
         HdmiCecLanguageHelp cecLanguage = new HdmiCecLanguageHelp(lan);
         Locale l = new Locale(cecLanguage.LanguageCode(), cecLanguage.CountryCode());

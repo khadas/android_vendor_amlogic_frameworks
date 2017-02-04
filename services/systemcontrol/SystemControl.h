@@ -32,6 +32,8 @@
 #include "common.h"
 #include "DisplayMode.h"
 #include "Dimension.h"
+#include <string>
+#include <vector>
 
 extern "C" int vdc_loop(int argc, char **argv);
 
@@ -99,7 +101,9 @@ public:
     virtual status_t dump(int fd, const Vector<String16>& args);
 
     int getLogLevel();
-
+    virtual bool getSupportDispModeList(std::vector<std::string> *supportDispModes) ;
+    virtual bool getActiveDispMode(std::string *activeDispMode) ;
+    virtual bool setActiveDispMode(std::string& activeDispMode) ;
 private:
     int permissionCheck();
     void setLogLevel(int level);

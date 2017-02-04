@@ -76,6 +76,9 @@ public class SystemControlManager {
     private static final int READ_HDCPRX14_KEY       = IBinder.FIRST_CALL_TRANSACTION + 39;
     private static final int WRITE_HDCPRX14_KEY      = IBinder.FIRST_CALL_TRANSACTION + 40;
     private static final int WRITE_HDCPRX_IMG        = IBinder.FIRST_CALL_TRANSACTION + 41;
+    private static final int GET_SUPPORTED_DISPLAYMODE_LIST       = IBinder.FIRST_CALL_TRANSACTION + 42;
+    private static final int GET_ACTIVE_DISPLAYMODE      = IBinder.FIRST_CALL_TRANSACTION + 43;
+    private static final int SET_ACTIVE_DISPLAYMODE        = IBinder.FIRST_CALL_TRANSACTION + 44;
 
     private Context mContext;
     private IBinder mIBinder = null;

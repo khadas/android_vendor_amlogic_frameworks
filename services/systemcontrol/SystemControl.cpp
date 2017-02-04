@@ -272,6 +272,45 @@ void SystemControl::setMboxOutputMode(const String16& mode) {
     pDisplayMode->setMboxOutputMode(String8(mode).string());
 }
 
+bool SystemControl::getSupportDispModeList(std::vector<std::string> *supportDispModes) {
+    bool ret = false;
+    char edid[MAX_STR_LEN] = {0};
+    ret = pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, edid);
+    char value[MODE_LEN] = {0};
+    char* start = edid;
+    char* pos =edid;
+    do {
+        pos = strstr(pos, "\n");
+        if (pos == NULL)
+            break;
+        if (pos == start) {
+            pos++;
+            start = pos;
+            continue;
+        }
+
+        strncpy(value, start, pos - start);
+        if (value[pos - start - 1] == '*')
+            value[pos - start - 1] = '\0';
+        pos++;
+        start = pos;
+        (*supportDispModes).push_back(std::string(value));
+        memset(value,0,strlen(value));
+    } while (strlen(pos) > 0);
+    return ret;
+}
+
+bool SystemControl::getActiveDispMode(std::string *activeDispMode) {
+      char mode[MODE_LEN]  = {0};
+      bool ret =  pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, mode);
+      *activeDispMode = mode;
+      return ret;
+}
+
+bool SystemControl::setActiveDispMode(std::string& activeDispMode) {
+       setMboxOutputMode(String16(activeDispMode.c_str()));
+       return true;
+}
 int32_t SystemControl::set3DMode(const String16& mode3d) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set 3d mode :%s", String8(mode3d).string());

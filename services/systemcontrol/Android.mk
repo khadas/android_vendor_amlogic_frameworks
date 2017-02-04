@@ -36,6 +36,7 @@ LOCAL_CFLAGS += -DGXL_ENVSIZE
 endif
 
 LOCAL_CFLAGS += -DHDCP_AUTHENTICATION
+LOCAL_CPPFLAGS += -std=c++14
 
 LOCAL_SRC_FILES:= \
   main_systemcontrol.cpp \
@@ -94,7 +95,7 @@ LOCAL_CFLAGS += -DGXTVBB_ENVSIZE
 endif
 
 LOCAL_CFLAGS += -DRECOVERY_MODE
-
+LOCAL_CPPFLAGS += -std=c++14
 LOCAL_SRC_FILES:= \
   main_recovery.cpp \
   ubootenv.c \

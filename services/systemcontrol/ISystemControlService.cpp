@@ -685,6 +685,58 @@ public:
             return;
         }
     }
+    virtual bool getSupportDispModeList(std::vector<std::string> *supportDispModes){
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(GET_SUPPORTED_DISPLAYMODE_LIST, data, &reply) != NO_ERROR) {
+            ALOGE("getSupportDispModeList could not contact remote\n");
+            return false;
+        }
+        int32_t err = reply.readInt32();
+        if (err == 0) {
+            ALOGE("get activeDispMode caught exception\n");
+            return false;
+        }
+       std::vector<String16> edid;
+       err = reply.readString16Vector(&edid);
+       for (auto it = edid.begin(); it != edid.end(); it ++) {
+           (*supportDispModes).push_back(std::string(String8(*it).string()));
+       }
+       return true;
+    }
+    virtual bool getActiveDispMode(std::string* activeDispMode){
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(GET_ACTIVE_DISPLAYMODE, data, &reply) != NO_ERROR) {
+            ALOGE("get activeDispMode could not contact remote\n");
+            return false;
+        }
+        int32_t err = reply.readInt32();
+        if (err == 0) {
+            ALOGE("get activeDispMode caught exception\n");
+            return false;
+        }
+        String16 curDisplayMode = reply.readString16();
+       *activeDispMode  = std::string(String8(curDisplayMode).string());
+       ALOGV("get active displaymode:%s\n", curDisplayMode.string());
+       return true;
+    }
+    virtual bool setActiveDispMode(std::string& activeDispMode)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(String16(activeDispMode.c_str()));
+        if (remote()->transact(SET_ACTIVE_DISPLAYMODE, data, &reply) != NO_ERROR) {
+            ALOGE("set active displaymode could not contact remote\n");
+            return false;
+        }
+        int32_t err = reply.readInt32();
+        if (err == 0) {
+            ALOGE("set activeDispMode caught exception\n");
+            return false;
+        }
+        return true;
+    }
 };
 
 IMPLEMENT_META_INTERFACE(SystemControlService, "droidlogic.ISystemControlService");
@@ -1009,7 +1061,34 @@ status_t BnISystemControlService::onTransact(
             autoDetect3DForMbox();
             return NO_ERROR;
         }
-
+        case GET_SUPPORTED_DISPLAYMODE_LIST: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            std::vector<std::string> supportDispModes;
+            bool result = getSupportDispModeList(&supportDispModes);
+            std::vector<String16> edid;
+            for (auto it = supportDispModes.begin(); it != supportDispModes.end(); it ++) {
+                edid.push_back(String16((*it).c_str()));
+            }
+            reply->writeInt32(result);
+            reply->writeString16Vector(edid);
+            return NO_ERROR;
+        }
+        case GET_ACTIVE_DISPLAYMODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            std::string value;
+            int result = getActiveDispMode(&value);
+            reply->writeInt32(result);
+            reply->writeString16(String16(value.c_str()));
+            return NO_ERROR;
+        }
+        case SET_ACTIVE_DISPLAYMODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            std::string value = std::string(String8(mode).string());
+            int result =setActiveDispMode(value);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        }
         default: {
             return BBinder::onTransact(code, data, reply, flags);
         }

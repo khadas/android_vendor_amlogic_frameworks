@@ -27,6 +27,8 @@
 #include <utils/String8.h>
 #include <utils/String16.h>
 #include "ISystemControlNotify.h"
+#include <string>
+#include <vector>
 
 namespace android {
 
@@ -84,6 +86,9 @@ enum {
     READ_HDCPRX14_KEY       = IBinder::FIRST_CALL_TRANSACTION + 39,
     WRITE_HDCPRX14_KEY      = IBinder::FIRST_CALL_TRANSACTION + 40,
     WRITE_HDCPRX_IMG        = IBinder::FIRST_CALL_TRANSACTION + 41,
+    GET_SUPPORTED_DISPLAYMODE_LIST     = IBinder::FIRST_CALL_TRANSACTION + 42,
+    GET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 43,
+    SET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 44,
 };
 
 // ----------------------------------------------------------------------------
@@ -146,6 +151,9 @@ public:
     virtual bool switch3DTo2D(int format) = 0;
     virtual bool switch2DTo3D(int format) = 0;
     virtual void autoDetect3DForMbox(void) = 0;
+    virtual bool getSupportDispModeList(std::vector<std::string> *supportDispModes) = 0;
+    virtual bool getActiveDispMode(std::string* activeDispMode) = 0;
+    virtual bool setActiveDispMode(std::string& activeDispMode) = 0;
 };
 
 // ----------------------------------------------------------------------------

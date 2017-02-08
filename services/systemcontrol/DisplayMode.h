@@ -28,6 +28,7 @@
 #include "HDCP/HDCPRxAuth.h"
 #include "HDCP/HDCPRx22ImgKey.h"
 #include "HDCP/HDCPRxKey.h"
+#include "FrameRateAutoAdaption.h"
 
 #include <map>
 #include <cmath>
@@ -311,7 +312,8 @@ typedef enum {
     OUPUT_MODE_STATE_INIT               = 0,
     OUPUT_MODE_STATE_POWER              = 1,
     OUPUT_MODE_STATE_SWITCH             = 2,
-    OUPUT_MODE_STATE_RESERVE            = 3
+    OUPUT_MODE_STATE_SWITCH_ADAPTER     = 3,
+    OUPUT_MODE_STATE_RESERVE            = 4
 }output_mode_state;
 
 typedef struct hdmi_data {
@@ -330,7 +332,8 @@ typedef struct axis_s {
 
 // ----------------------------------------------------------------------------
 
-class DisplayMode : public HDCPTxAuth::TxUevntCallbak
+class DisplayMode : public HDCPTxAuth::TxUevntCallbak,
+                                      private FrameRateAutoAdaption::Callbak
 {
 public:
     DisplayMode(const char *path);
@@ -371,7 +374,7 @@ public:
 #endif
 
     virtual void onTxEvent (char* hpdstate, int outputState);
-
+    virtual void onDispModeSyncEvent (const char* outputmode, int state);
     void hdcpSwitch();
 
 private:

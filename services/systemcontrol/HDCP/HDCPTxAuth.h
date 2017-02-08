@@ -30,7 +30,7 @@
 
 #include "../common.h"
 #include "../SysWrite.h"
-
+#include "../FrameRateAutoAdaption.h"
 enum {
     REPEATER_RX_VERSION_NONE        = 0,
     REPEATER_RX_VERSION_14          = 1,
@@ -53,6 +53,7 @@ public:
     void setBootAnimFinished(bool finished);
     void setRepeaterRxVersion(int ver);
     void setUevntCallback (TxUevntCallbak *ob);
+    void setFRAutoAdpt (FrameRateAutoAdaption *mFRAutoAdpt);
     int start();
     int stop();
     void stopVerAll();
@@ -74,6 +75,7 @@ private:
     SysWrite mSysWrite;
     int mRepeaterRxVer;
     TxUevntCallbak *mpCallback;
+    FrameRateAutoAdaption *mFRAutoAdpt;
 
     bool mBootAnimFinished;
 

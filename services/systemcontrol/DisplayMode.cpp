@@ -177,12 +177,13 @@ void DisplayMode::init() {
     else if (DISPLAY_TYPE_MBOX == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
+        pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
         setMboxDisplay(NULL, OUPUT_MODE_STATE_INIT);
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
-
+        pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
         pRxAuth = new HDCPRxAuth(pTxAuth);
 
         setTVDisplay(true);
@@ -464,7 +465,8 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
 
     strcpy(finalMode, outputmode);
     addSuffixForMode(finalMode, state);
-    if (state == OUPUT_MODE_STATE_SWITCH) {
+    pSysWrite->readSysfs(HDMI_TX_FRAMRATE_POLY, value);
+    if (state == OUPUT_MODE_STATE_SWITCH  && (strcmp(value, "0") == 0)) {
         char curDisplayMode[MODE_LEN] = {0};
         pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
         if (!strcmp(finalMode, curDisplayMode)) {
@@ -488,6 +490,19 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     outputy = position[1];
     outputwidth = position[2];
     outputheight = position[3];
+
+
+    char curDisplayMode[MODE_LEN] = {0};
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
+    if (!strcmp(finalMode, curDisplayMode)) {
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+    }
+    if (state == OUPUT_MODE_STATE_SWITCH_ADAPTER) {
+        pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLY, "1");
+    }
+    else {
+        pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLY, "0");
+    }
 
     if ((!strcmp(finalMode, MODE_480I) || !strcmp(finalMode, MODE_576I)) &&
             (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {
@@ -525,7 +540,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     setVideoPlayingAxis();
 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
-
+    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn off TMDS PHY */
     pTxAuth->stop();
     //only HDMI mode need HDCP authenticate
     if (!cvbsMode) {
@@ -545,6 +560,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
 #endif
 
     //audio
+    memset(value, 0, sizeof(0));
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
     setDigitalMode(value);
 
@@ -1371,6 +1387,11 @@ void DisplayMode::onTxEvent (char* hpdstate, int outputState) {
 
     SYS_LOGI("onTxEvent hpdstate:%s state: %d\n", hpdstate, outputState);
     setMboxDisplay(hpdstate, (output_mode_state)outputState);
+}
+
+void DisplayMode::onDispModeSyncEvent (const char* outputmode, int state) {
+    SYS_LOGI("onDispModeSyncEvent outputmode:%s state: %d\n", outputmode, state);
+    setMboxOutputMode(outputmode, (output_mode_state)state);
 }
 
 //for debug

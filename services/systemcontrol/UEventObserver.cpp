@@ -135,6 +135,12 @@ bool UEventObserver::isMatch(const char* buffer, size_t length,
         else if (strstr(field, "SWITCH_NAME=")) {
             strcpy(ueventData->switchName, field + strlen("SWITCH_NAME="));
         }
+        else if (strstr(field, "FRAME_RATE_HINT=")) {
+            strcpy(ueventData->switchName, field + strlen("FRAME_RATE_HINT="));
+        }
+        else if (strstr(field, "FRAME_RATE_END_HINT")) {
+            strcpy(ueventData->switchName, "end_hint");
+        }
         field += strlen(field) + 1;
     } while (field != end);
 

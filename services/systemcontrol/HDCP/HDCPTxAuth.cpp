@@ -76,6 +76,10 @@ void HDCPTxAuth::setUevntCallback (TxUevntCallbak *ob) {
     mpCallback = ob;
 }
 
+void HDCPTxAuth::setFRAutoAdpt(FrameRateAutoAdaption * mFRAutoAdpt) {
+   this->mFRAutoAdpt = mFRAutoAdpt;
+}
+
 //start HDCP TX authenticate
 int HDCPTxAuth::start() {
     int ret;
@@ -297,6 +301,9 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
     ueventObserver.addMatch(HDMI_TX_POWER_UEVENT);
     ueventObserver.addMatch(HDMI_TX_PLUG_UEVENT);
     ueventObserver.addMatch(VIDEO_LAYER1_UEVENT);
+    ueventObserver.addMatch(HDMI_TX_HDR_UEVENT);
+    ueventObserver.addMatch(HDMI_VIDEO_FRAME_RATE_UEVENT);
+    ueventObserver.addMatch(HDMI_IONVIDEO_FRAME_RATE_UEVENT);
 
     while (true) {
         ueventObserver.waitForNextEvent(&ueventData);
@@ -331,7 +338,10 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
                 pThiz->start();
             }
         }
-
+       if (!strcmp(ueventData.matchName, HDMI_VIDEO_FRAME_RATE_UEVENT)
+            ||!strcmp(ueventData.matchName, HDMI_IONVIDEO_FRAME_RATE_UEVENT)) {
+               pThiz->mFRAutoAdpt->onTxUeventReceived(&ueventData);
+        }
 #ifndef RECOVERY_MODE
         if (!strcmp(ueventData.matchName, VIDEO_LAYER1_UEVENT)) {
             //0: no aml video data, 1: aml video data aviliable

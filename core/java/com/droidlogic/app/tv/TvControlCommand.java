@@ -420,6 +420,7 @@ public interface TvControlCommand {
     int FACTORY_WHITE_BALANCE_GET_ALL_PRAMAS = 1121;
 
     //ATV/DTV
+    int ATV_DTV_GET_SCAN_STATUS = 1376;
     int DTV_SET_TEXT_CODING = 1377;
     int ATV_DTV_SCAN_PAUSE = 1378;
     int ATV_DTV_SCAN_RESUME = 1379;
@@ -468,6 +469,8 @@ public interface TvControlCommand {
     int DTV_START_CC = 1430;
     int DTV_STOP_CC = 1431;
     int DTV_SET_AUDIO_AD = 1442;
+    int DTV_GET_AUDIO_FMT_INFO = 1443;
+
     int TV_CLEAR_ALL_PROGRAM  = 1454;
     int SET_BLACKOUT_ENABLE = 1455;
     int START_AUTO_BACKLIGHT = 1456;

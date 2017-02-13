@@ -71,16 +71,37 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     }
 
     public void doAppPrivateCmd(String action, Bundle bundle) {
-        //do something
         if (DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN.equals(action)) {
-            mTvControlManager.AtvAutoScan(TvControlManager.ATV_VIDEO_STD_PAL, TvControlManager.ATV_AUDIO_STD_I, 0, 1);
+            mTvControlManager.AtvAutoScan(
+                (bundle == null ? TvControlManager.ATV_VIDEO_STD_PAL
+                    : bundle.getInt(DroidLogicTvUtils.PARA_SCAN_PARA1, TvControlManager.ATV_VIDEO_STD_PAL)),
+                (bundle == null ? TvControlManager.ATV_AUDIO_STD_DK
+                    : bundle.getInt(DroidLogicTvUtils.PARA_SCAN_PARA2, TvControlManager.ATV_AUDIO_STD_DK)),
+                (bundle == null ? 0 : bundle.getInt(DroidLogicTvUtils.PARA_SCAN_PARA3, 0)),
+                (bundle == null ? 1 : bundle.getInt(DroidLogicTvUtils.PARA_SCAN_PARA4, 1))
+            );
+        } else if (DroidLogicTvUtils.ACTION_ATV_MANUAL_SCAN.equals(action)) {
+            if (bundle != null) {
+                mTvControlManager.AtvManualScan(
+                    bundle.getInt(DroidLogicTvUtils.PARA_SCAN_PARA1, 0),
+                    bundle.getInt(DroidLogicTvUtils.PARA_SCAN_PARA2, 0),
+                    bundle.getInt(DroidLogicTvUtils.PARA_SCAN_PARA3, TvControlManager.ATV_VIDEO_STD_PAL),
+                    bundle.getInt(DroidLogicTvUtils.PARA_SCAN_PARA4, TvControlManager.ATV_AUDIO_STD_DK)
+                );
+            }
         } else if (DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN.equals(action)) {
             mTvControlManager.DtvSetTextCoding("GB2312");
-            mTvControlManager.DtvAutoScan();
+            mTvControlManager.DtvAutoScan(
+                (bundle == null ? TVChannelParams.MODE_DTMB
+                    : bundle.getInt(DroidLogicTvUtils.PARA_SCAN_MODE, TVChannelParams.MODE_DTMB))
+            );
         } else if (DroidLogicTvUtils.ACTION_DTV_MANUAL_SCAN.equals(action)) {
             if (bundle != null) {
                 mTvControlManager.DtvSetTextCoding("GB2312");
-                mTvControlManager.DtvManualScan(bundle.getInt(DroidLogicTvUtils.PARA_MANUAL_SCAN));
+                mTvControlManager.DtvManualScan(
+                    bundle.getInt(DroidLogicTvUtils.PARA_SCAN_MODE, TVChannelParams.MODE_DTMB),
+                    bundle.getInt(DroidLogicTvUtils.PARA_MANUAL_SCAN, 0)
+                );
             }
         } else if (DroidLogicTvUtils.ACTION_STOP_SCAN.equals(action)) {
             mTvControlManager.DtvStopScan();

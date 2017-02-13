@@ -2,8 +2,11 @@ package com.droidlogic.app.tv;
 
 import android.content.Context;
 import android.provider.Settings;
+import android.os.SystemClock;
 
 import java.util.Date;
+
+import com.droidlogic.app.SystemControlManager;
 
 /**
  *TV时间管理
@@ -11,14 +14,17 @@ import java.util.Date;
 public class TVTime{
     private long diff = 0;
     private Context mContext;
+    private SystemControlManager mSystemControlManager;
 
     private final static String TV_KEY_TVTIME = "dtvtime";
+    private final static String PROP_SET_SYSTIME_ENABLED = "persist.sys.getdtvtime.isneed";
 
     /**
      *创建时间管理器
      */
     public TVTime(Context context){
         mContext = context;
+        mSystemControlManager = new SystemControlManager(mContext);
     }
 
     /**
@@ -29,6 +35,12 @@ public class TVTime{
         Date sys = new Date();
 
         diff = time - sys.getTime();
+        if (mSystemControlManager.getPropertyBoolean(PROP_SET_SYSTIME_ENABLED, false)
+                && (Math.abs(diff) > 1000)) {
+            SystemClock.setCurrentTimeMillis(time);
+            diff = 0;
+        }
+
         Settings.System.putLong(mContext.getContentResolver(), TV_KEY_TVTIME, diff);
     }
 

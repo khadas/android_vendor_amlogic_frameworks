@@ -338,6 +338,7 @@ public class TvDataBaseManager {
         values.put(Channels.COLUMN_TYPE, channel.getType());
         values.put(Channels.COLUMN_BROWSABLE, channel.isBrowsable()? 1 : 0);
         values.put(Channels.COLUMN_SERVICE_TYPE, channel.getServiceType());
+        values.put(Channels.COLUMN_VIDEO_FORMAT, channel.getVideoFormat());
 
         Map<String, String> map = new HashMap<String, String>();
         map.put(ChannelInfo.KEY_VFMT, String.valueOf(channel.getVfmt()));

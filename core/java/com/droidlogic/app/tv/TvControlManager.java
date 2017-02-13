@@ -35,6 +35,9 @@ import android.os.Message;
 import android.os.Parcel;
 import android.graphics.Matrix;
 
+import android.media.tv.TvContract;
+import android.text.TextUtils;
+
 //import android.media.audiofx.Srs;
 //import android.media.audiofx.Hpeq;
 
@@ -524,10 +527,19 @@ public class TvControlManager {
         native_release();
     }
 
+    // Deprecated, use Channels TYPE_XXXX from TvContract
     public enum dtv_mode_std_e {
         DTV_MODE_STD_AUTO(0),
         DTV_MODE_STD_DTMB(1),
-        DTV_MODE_STD_DVBC(2);
+        DTV_MODE_STD_DVB_C(2),
+        DTV_MODE_STD_DVB_C2(3),
+        DTV_MODE_STD_DVB_T(4),
+        DTV_MODE_STD_DVB_T2(5),
+        DTV_MODE_STD_DVB_S(6),
+        DTV_MODE_STD_DVB_S2(7),
+        DTV_MODE_STD_ATSC_T(8),
+        DTV_MODE_STD_ATSC_C(9),
+        DTV_MODE_STD_ISDB_T(10);
 
         private int val;
 
@@ -546,7 +558,23 @@ public class TvControlManager {
                 case 1:
                     return DTV_MODE_STD_DTMB;
                 case 2:
-                    return DTV_MODE_STD_DVBC;
+                    return DTV_MODE_STD_DVB_C;
+                case 3:
+                    return DTV_MODE_STD_DVB_C2;
+                case 4:
+                    return DTV_MODE_STD_DVB_T;
+                case 5:
+                    return DTV_MODE_STD_DVB_T2;
+                case 6:
+                    return DTV_MODE_STD_DVB_S;
+                case 7:
+                    return DTV_MODE_STD_DVB_S2;
+                case 8:
+                    return DTV_MODE_STD_ATSC_T;
+                case 9:
+                    return DTV_MODE_STD_ATSC_C;
+                case 10:
+                    return DTV_MODE_STD_ISDB_T;
                 default:
                     return null;
             }
@@ -774,10 +802,10 @@ public class TvControlManager {
     /**
      * @Function: SetBrightness
      * @Description: Set current source brightness value
-     * @Param: value brightness, source refer to enum SourceInput_Type, is_save 1 to save
+     * @Param: value brightness, source refer to enum SourceInput, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetBrightness(int value, SourceInput_Type source,  int is_save) {
+    public int SetBrightness(int value, SourceInput source,  int is_save) {
         int val[] = new int[]{value, source.toInt(), is_save};
         return sendCmdIntArray(SET_BRIGHTNESS, val);
     }
@@ -785,10 +813,10 @@ public class TvControlManager {
     /**
      * @Function: GetBrightness
      * @Description: Get current source brightness value
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: value brightness
      */
-    public int GetBrightness(SourceInput_Type source) {
+    public int GetBrightness(SourceInput source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_BRIGHTNESS, val);
     }
@@ -796,10 +824,10 @@ public class TvControlManager {
     /**
      * @Function: SaveBrightness
      * @Description: Save current source brightness value
-     * @Param: value brightness, source refer to enum SourceInput_Type
+     * @Param: value brightness, source refer to enum SourceInput
      * @Return: 0 success, -1 fail
      */
-    public int SaveBrightness(int value, SourceInput_Type source) {
+    public int SaveBrightness(int value, SourceInput source) {
         int val[] = new int[]{value, source.toInt()};
         return sendCmdIntArray(SAVE_BRIGHTNESS, val);
     }
@@ -807,10 +835,10 @@ public class TvControlManager {
     /**
      * @Function: SetContrast
      * @Description: Set current source contrast value
-     * @Param: value contrast, source refer to enum SourceInput_Type, is_save 1 to save
+     * @Param: value contrast, source refer to enum SourceInput, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetContrast(int value, SourceInput_Type source, int is_save) {
+    public int SetContrast(int value, SourceInput source, int is_save) {
         int val[] = new int[]{value, source.toInt(), is_save};
         return sendCmdIntArray(SET_CONTRAST, val);
     }
@@ -818,10 +846,10 @@ public class TvControlManager {
     /**
      * @Function: GetContrast
      * @Description: Get current source contrast value
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: value contrast
      */
-    public int GetContrast(SourceInput_Type source) {
+    public int GetContrast(SourceInput source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_CONTRAST, val);
     }
@@ -829,10 +857,10 @@ public class TvControlManager {
     /**
      * @Function: SaveContrast
      * @Description: Save current source contrast value
-     * @Param: value contrast, source refer to enum SourceInput_Type
+     * @Param: value contrast, source refer to enum SourceInput
      * @Return: 0 success, -1 fail
      */
-    public int SaveContrast(int value, SourceInput_Type source) {
+    public int SaveContrast(int value, SourceInput source) {
         int val[] = new int[]{value, source.toInt()};
         return sendCmdIntArray(SAVE_CONTRAST, val);
     }
@@ -840,10 +868,10 @@ public class TvControlManager {
     /**
      * @Function: SetSatuation
      * @Description: Set current source saturation value
-     * @Param: value saturation, source refer to enum SourceInput_Type, fmt current fmt refer to tvin_sig_fmt_e, is_save 1 to save
+     * @Param: value saturation, source refer to enum SourceInput, fmt current fmt refer to tvin_sig_fmt_e, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetSaturation(int value, SourceInput_Type source, TVInSignalInfo.SignalFmt fmt, int is_save) {
+    public int SetSaturation(int value, SourceInput source, TVInSignalInfo.SignalFmt fmt, int is_save) {
         int val[] = new int[]{value, source.toInt(), fmt.toInt(), is_save};
         return sendCmdIntArray(SET_SATURATION, val);
     }
@@ -851,10 +879,10 @@ public class TvControlManager {
     /**
      * @Function: GetSatuation
      * @Description: Get current source saturation value
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: value saturation
      */
-    public int GetSaturation(SourceInput_Type source) {
+    public int GetSaturation(SourceInput source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_SATURATION, val);
     }
@@ -862,10 +890,10 @@ public class TvControlManager {
     /**
      * @Function: SaveSaturation
      * @Description: Save current source saturation value
-     * @Param: value saturation, source refer to enum SourceInput_Type
+     * @Param: value saturation, source refer to enum SourceInput
      * @Return: 0 success, -1 fail
      */
-    public int SaveSaturation(int value, SourceInput_Type source) {
+    public int SaveSaturation(int value, SourceInput source) {
         int val[] = new int[]{value, source.toInt()};
         return sendCmdIntArray(SAVE_SATURATION, val);
     }
@@ -873,10 +901,10 @@ public class TvControlManager {
     /**
      * @Function: SetHue
      * @Description: Set current source hue value
-     * @Param: value saturation, source refer to enum SourceInput_Type, fmt current fmt refer to tvin_sig_fmt_e, is_save 1 to save
+     * @Param: value saturation, source refer to enum SourceInput, fmt current fmt refer to tvin_sig_fmt_e, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetHue(int value, SourceInput_Type source, TVInSignalInfo.SignalFmt fmt, int is_save) {
+    public int SetHue(int value, SourceInput source, TVInSignalInfo.SignalFmt fmt, int is_save) {
         int val[] = new int[]{value, source.toInt(), fmt.toInt(), is_save};
         return sendCmdIntArray(SET_HUE, val);
     }
@@ -884,10 +912,10 @@ public class TvControlManager {
     /**
      * @Function: GetHue
      * @Description: Get current source hue value
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: value hue
      */
-    public int GetHue(SourceInput_Type source) {
+    public int GetHue(SourceInput source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_HUE, val);
     }
@@ -895,10 +923,10 @@ public class TvControlManager {
     /**
      * @Function: SaveHue
      * @Description: Save current source hue value
-     * @Param: value hue, source refer to enum SourceInput_Type
+     * @Param: value hue, source refer to enum SourceInput
      * @Return: 0 success, -1 fail
      */
-    public int SaveHue(int value, SourceInput_Type source) {
+    public int SaveHue(int value, SourceInput source) {
         int val[] = new int[]{value, source.toInt()};
         return sendCmdIntArray(SAVE_HUE, val);
     }
@@ -931,10 +959,10 @@ public class TvControlManager {
     /**
      * @Function: SetPQMode
      * @Description: Set current source picture mode
-     * @Param: value mode refer to enum PQMode, source refer to enum SourceInput_Type, is_save 1 to save
+     * @Param: value mode refer to enum PQMode, source refer to enum SourceInput, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetPQMode(PQMode pq_mode, SourceInput_Type source, int is_save) {
+    public int SetPQMode(PQMode pq_mode, SourceInput source, int is_save) {
         int val[] = new int[]{pq_mode.toInt(), source.toInt(), is_save};
         return sendCmdIntArray(SET_PQMODE, val);
     }
@@ -942,10 +970,10 @@ public class TvControlManager {
     /**
      * @Function: GetPQMode
      * @Description: Get current source picture mode
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: picture mode refer to enum PQMode
      */
-    public int GetPQMode(SourceInput_Type source) {
+    public int GetPQMode(SourceInput source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_PQMODE, val);
     }
@@ -953,10 +981,10 @@ public class TvControlManager {
     /**
      * @Function: SavePQMode
      * @Description: Save current source picture mode
-     * @Param: picture mode refer to enum PQMode, source refer to enum SourceInput_Type
+     * @Param: picture mode refer to enum PQMode, source refer to enum SourceInput
      * @Return: 0 success, -1 fail
      */
-    public int SavePQMode(PQMode pq_mode, SourceInput_Type source) {
+    public int SavePQMode(PQMode pq_mode, SourceInput source) {
         int val[] = new int[]{pq_mode.toInt(), source.toInt()};
         return sendCmdIntArray(SAVE_PQMODE, val);
     }
@@ -964,11 +992,11 @@ public class TvControlManager {
     /**
      * @Function: SetSharpness
      * @Description: Set current source sharpness value
-     * @Param: value saturation, source_type refer to enum SourceInput_Type, is_enable set 1 as default
+     * @Param: value saturation, source_type refer to enum SourceInput, is_enable set 1 as default
      * @Param: is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetSharpness(int value, SourceInput_Type source_type, int is_enable, int is_save) {
+    public int SetSharpness(int value, SourceInput source_type, int is_enable, int is_save) {
         int val[] = new int[]{value, source_type.toInt(), is_enable, is_save};
         return sendCmdIntArray(SET_SHARPNESS, val);
     }
@@ -976,10 +1004,10 @@ public class TvControlManager {
     /**
      * @Function: GetSharpness
      * @Description: Get current source sharpness value
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: value sharpness
      */
-    public int GetSharpness(SourceInput_Type source_type) {
+    public int GetSharpness(SourceInput source_type) {
         int val[] = new int[]{source_type.toInt()};
         return sendCmdIntArray(GET_SHARPNESS, val);
     }
@@ -987,10 +1015,10 @@ public class TvControlManager {
     /**
      * @Function: SaveSharpness
      * @Description: Save current source sharpness value
-     * @Param: value sharpness, source refer to enum SourceInput_Type, isEnable set 1 enable as default
+     * @Param: value sharpness, source refer to enum SourceInput, isEnable set 1 enable as default
      * @Return: 0 success, -1 fail
      */
-    public int SaveSharpness(int value, SourceInput_Type sourceType, int isEnable) {
+    public int SaveSharpness(int value, SourceInput sourceType, int isEnable) {
         int val[] = new int[]{value, sourceType.toInt(), 1};
         return sendCmdIntArray(SAVE_SHARPNESS, val);
     }
@@ -998,10 +1026,10 @@ public class TvControlManager {
     /**
      * @Function: SetBacklight
      * @Description: Set current source backlight value
-     * @Param: value backlight, source refer to enum SourceInput_Type, is_save 1 to save
+     * @Param: value backlight, source refer to enum SourceInput, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetBacklight(int value, SourceInput_Type source_type, int is_save) {
+    public int SetBacklight(int value, SourceInput source_type, int is_save) {
         int val[] = new int[]{value, source_type.toInt(), is_save};
         return sendCmdIntArray(SET_BACKLIGHT, val);
     }
@@ -1009,10 +1037,10 @@ public class TvControlManager {
     /**
      * @Function: GetBacklight
      * @Description: Get current source backlight value
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: value backlight
      */
-    public int GetBacklight(SourceInput_Type source_type) {
+    public int GetBacklight(SourceInput source_type) {
         int val[] = new int[]{source_type.toInt()};
         return sendCmdIntArray(GET_BACKLIGHT, val);
     }
@@ -1041,10 +1069,10 @@ public class TvControlManager {
     /**
      * @Function: SaveBacklight
      * @Description: Save current source backlight value
-     * @Param: value backlight, source refer to enum SourceInput_Type
+     * @Param: value backlight, source refer to enum SourceInput
      * @Return: 0 success, -1 fail
      */
-    public int SaveBacklight(int value, SourceInput_Type source_type) {
+    public int SaveBacklight(int value, SourceInput source_type) {
         int val[] = new int[]{value, source_type.toInt()};
         return sendCmdIntArray(SAVE_BACKLIGHT, val);
     }
@@ -1068,10 +1096,10 @@ public class TvControlManager {
     /**
      * @Function: SetColorTemperature
      * @Description: Set current source color temperature mode
-     * @Param: value mode refer to enum color_temperature, source refer to enum SourceInput_Type, is_save 1 to save
+     * @Param: value mode refer to enum color_temperature, source refer to enum SourceInput, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetColorTemperature(color_temperature mode, SourceInput_Type source, int is_save) {
+    public int SetColorTemperature(color_temperature mode, SourceInput source, int is_save) {
         int val[] = new int[]{mode.toInt(), source.toInt(), is_save};
         return sendCmdIntArray(SET_COLOR_TEMPERATURE, val);
     }
@@ -1079,10 +1107,10 @@ public class TvControlManager {
     /**
      * @Function: GetColorTemperature
      * @Description: Get current source color temperature mode
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: color temperature refer to enum color_temperature
      */
-    public int GetColorTemperature(SourceInput_Type source) {
+    public int GetColorTemperature(SourceInput source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_COLOR_TEMPERATURE, val);
     }
@@ -1090,10 +1118,10 @@ public class TvControlManager {
     /**
      * @Function: SaveColorTemperature
      * @Description: Save current source color temperature mode
-     * @Param: color temperature mode refer to enum color_temperature, source refer to enum SourceInput_Type
+     * @Param: color temperature mode refer to enum color_temperature, source refer to enum SourceInput
      * @Return: 0 success, -1 fail
      */
-    public int SaveColorTemp(color_temperature mode, SourceInput_Type source) {
+    public int SaveColorTemp(color_temperature mode, SourceInput source) {
         int val[] = new int[]{mode.toInt(), source.toInt()};
         return sendCmdIntArray(SAVE_COLOR_TEMPERATURE, val);
     }
@@ -1125,10 +1153,10 @@ public class TvControlManager {
     /**
      * @Function: SetDisplayMode
      * @Description: Set current source display mode
-     * @Param: value mode refer to enum Display_Mode, source refer to enum SourceInput_Type, fmt refer to tvin_sig_fmt_e, is_save 1 to save
+     * @Param: value mode refer to enum Display_Mode, source refer to enum SourceInput, fmt refer to tvin_sig_fmt_e, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetDisplayMode(Display_Mode display_mode, SourceInput_Type source, TVInSignalInfo.SignalFmt fmt, int is_save) {
+    public int SetDisplayMode(Display_Mode display_mode, SourceInput source, TVInSignalInfo.SignalFmt fmt, int is_save) {
         int val[] = new int[]{display_mode.toInt(), source.toInt(), fmt.toInt(), is_save};
         return sendCmdIntArray(SET_DISPLAY_MODE, val);
     }
@@ -1136,10 +1164,10 @@ public class TvControlManager {
     /**
      * @Function: GetDisplayMode
      * @Description: Get current source display mode
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: display mode refer to enum Display_Mode
      */
-    public int GetDisplayMode(SourceInput_Type source) {
+    public int GetDisplayMode(SourceInput source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_DISPLAY_MODE, val);
     }
@@ -1147,10 +1175,10 @@ public class TvControlManager {
     /**
      * @Function: SaveDisplayMode
      * @Description: Save current source display mode
-     * @Param: display mode refer to enum Display_Mode, source refer to enum SourceInput_Type
+     * @Param: display mode refer to enum Display_Mode, source refer to enum SourceInput
      * @Return: 0 success, -1 fail
      */
-    public int SaveDisplayMode(Display_Mode display_mode, SourceInput_Type source) {
+    public int SaveDisplayMode(Display_Mode display_mode, SourceInput source) {
         int val[] = new int[]{display_mode.toInt(), source.toInt()};
         return sendCmdIntArray(SAVE_DISPLAY_MODE, val);
     }
@@ -1194,10 +1222,10 @@ public class TvControlManager {
     /**
      * @Function: SetNoiseReductionMode
      * @Description: Set current source noise reduction mode
-     * @Param: noise reduction mode refer to enum Noise_Reduction_Mode, source refer to enum SourceInput_Type, is_save 1 to save
+     * @Param: noise reduction mode refer to enum Noise_Reduction_Mode, source refer to enum SourceInput, is_save 1 to save
      * @Return: 0 success, -1 fail
      */
-    public int SetNoiseReductionMode(Noise_Reduction_Mode nr_mode, SourceInput_Type source, int is_save) {
+    public int SetNoiseReductionMode(Noise_Reduction_Mode nr_mode, SourceInput source, int is_save) {
         int val[] = new int[]{nr_mode.toInt(), source.toInt(), is_save};
         return sendCmdIntArray(SET_NOISE_REDUCTION_MODE, val);
     }
@@ -1205,10 +1233,10 @@ public class TvControlManager {
     /**
      * @Function: GetNoiseReductionMode
      * @Description: Get current source noise reduction mode
-     * @Param: source refer to enum SourceInput_Type
+     * @Param: source refer to enum SourceInput
      * @Return: noise reduction mode refer to enum Noise_Reduction_Mode
      */
-    public int GetNoiseReductionMode(SourceInput_Type source) {
+    public int GetNoiseReductionMode(SourceInput source) {
         int val[] = new int[]{source.toInt()};
         return sendCmdIntArray(GET_NOISE_REDUCTION_MODE, val);
     }
@@ -1297,10 +1325,10 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Brightness
      * @Description: Adjust brightness value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, brightness brightness value
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode, brightness brightness value
      * @Return: 0 success, -1 fail
      */
-    public int FactorySetPQMode_Brightness(SourceInput_Type source_type, int pq_mode, int brightness) {
+    public int FactorySetPQMode_Brightness(SourceInput source_type, int pq_mode, int brightness) {
         int val[] = new int[]{source_type.toInt(), pq_mode, brightness};
         return sendCmdIntArray(FACTORY_SETPQMODE_BRIGHTNESS, val);
     }
@@ -1308,10 +1336,10 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Brightness
      * @Description: Get brightness value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode
      * @Return: 0 success, -1 fail
      */
-    public int FactoryGetPQMode_Brightness(SourceInput_Type source_type, int pq_mode) {
+    public int FactoryGetPQMode_Brightness(SourceInput source_type, int pq_mode) {
         int val[] = new int[]{source_type.toInt(), pq_mode};
         return sendCmdIntArray(FACTORY_GETPQMODE_BRIGHTNESS, val);
     }
@@ -1319,10 +1347,10 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Contrast
      * @Description: Adjust contrast value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, contrast contrast value
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode, contrast contrast value
      * @Return: contrast value
      */
-    public int FactorySetPQMode_Contrast(SourceInput_Type source_type, int pq_mode, int contrast) {
+    public int FactorySetPQMode_Contrast(SourceInput source_type, int pq_mode, int contrast) {
         int val[] = new int[]{source_type.toInt(), pq_mode, contrast};
         return sendCmdIntArray(FACTORY_SETPQMODE_CONTRAST, val);
     }
@@ -1330,10 +1358,10 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Contrast
      * @Description: Get contrast value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode
      * @Return: 0 success, -1 fail
      */
-    public int FactoryGetPQMode_Contrast(SourceInput_Type source_type, int pq_mode) {
+    public int FactoryGetPQMode_Contrast(SourceInput source_type, int pq_mode) {
         int val[] = new int[]{source_type.toInt(), pq_mode};
         return sendCmdIntArray(FACTORY_GETPQMODE_CONTRAST, val);
     }
@@ -1341,10 +1369,10 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Saturation
      * @Description: Adjust saturation value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, saturation saturation value
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode, saturation saturation value
      * @Return: 0 success, -1 fail
      */
-    public int FactorySetPQMode_Saturation(SourceInput_Type source_type, int pq_mode, int saturation) {
+    public int FactorySetPQMode_Saturation(SourceInput source_type, int pq_mode, int saturation) {
         int val[] = new int[]{source_type.toInt(), pq_mode, saturation};
         return sendCmdIntArray(FACTORY_SETPQMODE_SATURATION, val);
     }
@@ -1352,10 +1380,10 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Saturation
      * @Description: Get saturation value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode
      * @Return: saturation value
      */
-    public int FactoryGetPQMode_Saturation(SourceInput_Type source_type, int pq_mode) {
+    public int FactoryGetPQMode_Saturation(SourceInput source_type, int pq_mode) {
         int val[] = new int[]{source_type.toInt(), pq_mode};
         return sendCmdIntArray(FACTORY_GETPQMODE_SATURATION, val);
     }
@@ -1363,10 +1391,10 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Hue
      * @Description: Adjust hue value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, hue hue value
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode, hue hue value
      * @Return: 0 success, -1 fail
      */
-    public int FactorySetPQMode_Hue(SourceInput_Type source_type, int pq_mode, int hue) {
+    public int FactorySetPQMode_Hue(SourceInput source_type, int pq_mode, int hue) {
         int val[] = new int[]{source_type.toInt(), pq_mode, hue};
         return sendCmdIntArray(FACTORY_SETPQMODE_HUE, val);
     }
@@ -1374,10 +1402,10 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Hue
      * @Description: Get hue value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode
      * @Return: hue value
      */
-    public int FactoryGetPQMode_Hue(SourceInput_Type source_type, int pq_mode) {
+    public int FactoryGetPQMode_Hue(SourceInput source_type, int pq_mode) {
         int val[] = new int[]{source_type.toInt(), pq_mode};
         return sendCmdIntArray(FACTORY_GETPQMODE_HUE, val);
     }
@@ -1385,10 +1413,10 @@ public class TvControlManager {
     /**
      * @Function: FactorySetPQMode_Sharpness
      * @Description: Adjust sharpness value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, sharpness sharpness value
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode, sharpness sharpness value
      * @Return: 0 success, -1 fail
      */
-    public int FactorySetPQMode_Sharpness(SourceInput_Type source_type, int pq_mode, int sharpness) {
+    public int FactorySetPQMode_Sharpness(SourceInput source_type, int pq_mode, int sharpness) {
         int val[] = new int[]{source_type.toInt(), pq_mode, sharpness};
         return sendCmdIntArray(FACTORY_SETPQMODE_SHARPNESS, val);
     }
@@ -1396,10 +1424,10 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetPQMode_Sharpness
      * @Description: Get sharpness value in corresponding pq mode for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+     * @Param: source_type refer to enum SourceInput, PQMode refer to enum Pq_Mode
      * @Return: sharpness value
      */
-    public int FactoryGetPQMode_Sharpness(SourceInput_Type source_type, int pq_mode) {
+    public int FactoryGetPQMode_Sharpness(SourceInput source_type, int pq_mode) {
         int val[] = new int[]{source_type.toInt(), pq_mode};
         return sendCmdIntArray(FACTORY_GETPQMODE_SHARPNESS, val);
     }
@@ -1520,10 +1548,10 @@ public class TvControlManager {
     /**
      * @Function: FactorySetNolineParams
      * @Description: Nonlinearize the params of corresponding nolinear param type for factory menu conctrol
-     * @Param: noline_params_type refer to enum NOLINE_PARAMS_TYPE, source_type refer to SourceInput_Type, params params value refer to class noline_params_t
+     * @Param: noline_params_type refer to enum NOLINE_PARAMS_TYPE, source_type refer to SourceInput, params params value refer to class noline_params_t
      * @Return: 0 success, -1 fail
      */
-    public int FactorySetNolineParams(NOLINE_PARAMS_TYPE noline_params_type, SourceInput_Type source_type,
+    public int FactorySetNolineParams(NOLINE_PARAMS_TYPE noline_params_type, SourceInput source_type,
             noline_params_t params) {
         int val[] = new int[]{noline_params_type.toInt(), source_type.toInt(),
             params.osd0, params.osd25, params.osd50, params.osd75, params.osd100};
@@ -1533,10 +1561,10 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetNolineParams
      * @Description: Nonlinearize the params of corresponding nolinear param type for factory menu conctrol
-     * @Param: noline_params_type refer to enum NOLINE_PARAMS_TYPE, source_type refer to SourceInput_Type
+     * @Param: noline_params_type refer to enum NOLINE_PARAMS_TYPE, source_type refer to SourceInput
      * @Return: params value refer to class noline_params_t
      */
-    public noline_params_t FactoryGetNolineParams(NOLINE_PARAMS_TYPE noline_params_type, SourceInput_Type source_type) {
+    public noline_params_t FactoryGetNolineParams(NOLINE_PARAMS_TYPE noline_params_type, SourceInput source_type) {
         libtv_log_open();
         Parcel cmd = Parcel.obtain();
         Parcel r = Parcel.obtain();
@@ -1558,11 +1586,11 @@ public class TvControlManager {
     /**
      * @Function: FactorySetOverscanParams
      * @Description: Set overscan params of corresponding source type and fmt for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, fmt refer to enum tvin_sig_fmt_e
+     * @Param: source_type refer to enum SourceInput, fmt refer to enum tvin_sig_fmt_e
      * @Param: trans_fmt refer to enum tvin_trans_fmt, cutwin_t refer to class tvin_cutwin_t
      * @Return: 0 success, -1 fail
      */
-    public int FactorySetOverscanParams(SourceInput_Type source_type, TVInSignalInfo.SignalFmt fmt,
+    public int FactorySetOverscanParams(SourceInput source_type, TVInSignalInfo.SignalFmt fmt,
             TVInSignalInfo.TransFmt trans_fmt, tvin_cutwin_t cutwin_t) {
         int val[] = new int[]{source_type.toInt(), fmt.toInt(), trans_fmt.ordinal(),
             cutwin_t.hs, cutwin_t.he, cutwin_t.vs, cutwin_t.ve};
@@ -1572,11 +1600,11 @@ public class TvControlManager {
     /**
      * @Function: FactoryGetOverscanParams
      * @Description: Get overscan params of corresponding source type and fmt for factory menu conctrol
-     * @Param: source_type refer to enum SourceInput_Type, fmt refer to enum tvin_sig_fmt_e
+     * @Param: source_type refer to enum SourceInput, fmt refer to enum tvin_sig_fmt_e
      * @Param: trans_fmt refer to enum tvin_trans_fmt
      * @Return: cutwin_t value for overscan refer to class tvin_cutwin_t
      */
-    public tvin_cutwin_t FactoryGetOverscanParams(SourceInput_Type source_type, TVInSignalInfo.SignalFmt fmt,
+    public tvin_cutwin_t FactoryGetOverscanParams(SourceInput source_type, TVInSignalInfo.SignalFmt fmt,
             TVInSignalInfo.TransFmt trans_fmt) {
         libtv_log_open();
         Parcel cmd = Parcel.obtain();
@@ -3644,14 +3672,14 @@ public class TvControlManager {
      }
     //MISC END
 
-    public enum ScanMode {
+    public enum ScanType {
         SCAN_DTV_AUTO(1),
         SCAN_DTV_MANUAL(2),
         SCAN_DTV_ALLBAND(3);
 
         private int val;
 
-        ScanMode(int val) {
+        ScanType(int val) {
             this.val = val;
         }
 
@@ -3660,17 +3688,184 @@ public class TvControlManager {
         }
     }
 
-    public int DtvScan(int mode, int scan_mode, int freq, int para1, int para2) {
-        int val[] = new int[]{mode, scan_mode, freq, para1, para2};
+    public static String baseModeToType(int baseMode) {
+        String type = "";
+        switch (baseMode) {
+            case TVChannelParams.MODE_DTMB:
+                type = TvContract.Channels.TYPE_DTMB;
+                break;
+            case TVChannelParams.MODE_QPSK:
+                type = TvContract.Channels.TYPE_DVB_S;
+                break;
+            case TVChannelParams.MODE_QAM:
+                type = TvContract.Channels.TYPE_DVB_C;
+                break;
+            case TVChannelParams.MODE_OFDM:
+                type = TvContract.Channels.TYPE_DVB_T;
+                break;
+            case TVChannelParams.MODE_ATSC:
+                type = TvContract.Channels.TYPE_ATSC_C;
+                break;
+            case TVChannelParams.MODE_ANALOG:
+                type = TvContract.Channels.TYPE_PAL;
+                break;
+            case TVChannelParams.MODE_ISDBT:
+                type = TvContract.Channels.TYPE_ISDB_T;
+                break;
+            default:
+                break;
+        }
+        return type;
+    }
+
+
+    public static class TvMode {
+        /*
+                mode:0xaabbccdd
+                aa - reserved
+                bb - scanlist/contury etc.
+                cc - t/t2 s/s2 c/c2 identifier
+                dd - femode FE_XXXX
+        */
+        private int mMode;
+        private String mType;
+
+        public TvMode() {}
+        public TvMode(int baseMode) {
+            setBase(baseMode);
+        }
+        public TvMode(TvMode mode) {
+            this.mMode = mode.mMode;
+        }
+        public TvMode(String type) {
+            mType = type;
+            setBase(typeToBaseMode(mType))
+                .setExt1(typeToExt1(mType));
+        }
+        public int getMode() {
+            return mMode;
+        }
+        public int getBase() {
+            return get8(0);
+        }
+        public int getExt1() {
+            return get8(1);
+        }
+        public int getExt2() {
+            return get8(2);
+        }
+        public int getExt3() {
+            return get8(3);
+        }
+        public TvMode setBase(int base) {
+            return set8(0, base);
+        }
+        public TvMode setExt1(int ext) {
+            return set8(1, ext);
+        }
+        public TvMode setExt2(int ext) {
+            return set8(2, ext);
+        }
+        public TvMode setExt3(int ext) {
+            return set8(3, ext);
+        }
+
+        private TvMode set8(int n, int v) {
+            mMode = ((mMode & ~(0xff << (8 * n))) | ((v & 0xff) << (8 * n)));
+            return this;
+        }
+        private int get8(int n) {
+            return (mMode >> (8 * n)) & 0xff;
+        }
+
+        public String toType() {
+            String type = "";
+            switch (getBase()) {
+                case TVChannelParams.MODE_DTMB:
+                    type = TvContract.Channels.TYPE_DTMB;
+                    break;
+                case TVChannelParams.MODE_QPSK:
+                    type = TvContract.Channels.TYPE_DVB_S;
+                    if (getExt1() == 1)
+                        type = TvContract.Channels.TYPE_DVB_S2;
+                    break;
+                case TVChannelParams.MODE_QAM:
+                    type = TvContract.Channels.TYPE_DVB_C;
+                    if (getExt1() == 1)
+                        type = TvContract.Channels.TYPE_DVB_C2;
+                    break;
+                case TVChannelParams.MODE_OFDM:
+                    type = TvContract.Channels.TYPE_DVB_T;
+                    if (getExt1() == 1)
+                        type = TvContract.Channels.TYPE_DVB_T2;
+                    break;
+                case TVChannelParams.MODE_ATSC:
+                    type = TvContract.Channels.TYPE_ATSC_T;
+                    if (getExt1() == 1)
+                        type = TvContract.Channels.TYPE_ATSC_C;
+                    break;
+                case TVChannelParams.MODE_ANALOG:
+                    type = TvContract.Channels.TYPE_PAL;
+                    break;
+                case TVChannelParams.MODE_ISDBT:
+                    type = TvContract.Channels.TYPE_ISDB_T;
+                    break;
+                default:
+                    break;
+            }
+            return type;
+        }
+        private int typeToBaseMode(String type) {
+            int mode = TVChannelParams.MODE_DTMB;
+            if (TextUtils.equals(type, TvContract.Channels.TYPE_DTMB)) {
+                mode = TVChannelParams.MODE_DTMB;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_S)
+                || (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_S2))) {
+                mode = TVChannelParams.MODE_QPSK;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_C)
+                || (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_C2))) {
+                mode = TVChannelParams.MODE_QAM;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_T)
+                || (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_T2))) {
+                mode = TVChannelParams.MODE_OFDM;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_ATSC_T)
+                || (TextUtils.equals(type, TvContract.Channels.TYPE_ATSC_C))) {
+                mode = TVChannelParams.MODE_ATSC;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_PAL)
+                || (TextUtils.equals(type, TvContract.Channels.TYPE_NTSC))) {
+                mode = TVChannelParams.MODE_ANALOG;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_ISDB_T)) {
+                mode = TVChannelParams.MODE_ISDBT;
+            }
+            return mode;
+        }
+
+        private int typeToExt1(String type) {
+            int ext = 0;
+            if (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_S2)) {
+                ext = 1;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_C2)) {
+                ext = 1;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_DVB_T2)) {
+                ext = 1;
+            } else if (TextUtils.equals(type, TvContract.Channels.TYPE_ATSC_C)) {
+                ext = 1;
+            }
+            return ext;
+        }
+    }
+
+    public int DtvScan(int mode, int type, int freq, int para1, int para2) {
+        int val[] = new int[]{mode, type, freq, para1, para2};
         return sendCmdIntArray(DTV_SCAN, val);
     }
 
     public int DtvAutoScan(int mode) {
-        return DtvScan(mode, ScanMode.SCAN_DTV_ALLBAND.toInt(), 0, -1, -1);
+        return DtvScan(mode, ScanType.SCAN_DTV_ALLBAND.toInt(), 0, -1, -1);
     }
 
     public int DtvManualScan(int mode, int freq, int para1, int para2) {
-        return DtvScan(mode, ScanMode.SCAN_DTV_MANUAL.toInt(), freq, para1, para2);
+        return DtvScan(mode, ScanType.SCAN_DTV_MANUAL.toInt(), freq, para1, para2);
     }
 
     public int DtvManualScan(int mode, int freq) {
@@ -3741,6 +3936,14 @@ public class TvControlManager {
 
     public int AtvDtvResumeScan() {
         return sendCmd(ATV_DTV_SCAN_RESUME);
+    }
+
+    public static final int ATV_DTV_SCAN_STATUS_RUNNING = 0;
+    public static final int ATV_DTV_SCAN_STATUS_PAUSED = 1;
+    public static final int ATV_DTV_SCAN_STATUS_PAUSED_USER = 2;
+
+    public int AtvDtvGetScanStatus() {
+        return sendCmd(ATV_DTV_GET_SCAN_STATUS);
     }
 
     public int clearFrontEnd(int arg0) {
@@ -4132,6 +4335,62 @@ public class TvControlManager {
         public int[] valid;
     }
 
+
+    public static class ScanMode {
+        private int scanMode;
+
+        ScanMode(int ScanMode) {
+            scanMode = ScanMode;
+        }
+
+        public int getMode() {
+            return (scanMode >> 24) & 0xf;
+        }
+
+        public int getATVMode() {
+            return (scanMode >> 16) & 0xf;
+        }
+
+        public int getDTVMode() {
+            return (scanMode & 0xFFFF);
+        }
+
+        public boolean isDTVManulScan() {
+            return (getATVMode() == 0x7) && (getDTVMode() == 0x2);
+        }
+
+        public boolean isDTVAutoScan() {
+            return (getATVMode() == 0x7) && (getDTVMode() == 0x1);
+        }
+
+        public boolean isATVScan() {
+            return (getATVMode() != 0x7) && (getDTVMode() == 0x7);
+        }
+
+        public boolean isATVManualScan() {
+            return (getATVMode() == 0x2) && (getDTVMode() == 0x7);
+        }
+
+        public boolean isATVAutoScan() {
+            return (getATVMode() == 0x1) && (getDTVMode() == 0x7);
+        }
+    }
+
+    public static class SortMode {
+        private int sortMode;
+
+        SortMode(int SortMode) {
+            sortMode = SortMode;
+        }
+        public int getDTVSortMode() {
+            return (sortMode&0xFFFF);
+        }
+
+        public boolean isLCNSort() {
+            return (getDTVSortMode() == 0x2);
+        }
+    }
+
     public interface ScannerEventListener {
         void onEvent(ScannerEvent ev);
     }
@@ -4382,6 +4641,50 @@ public class TvControlManager {
         cmd.recycle();
         r.recycle();
         return pVideoFormatInfo;
+    }
+
+    public class AudioFormatInfo {
+        public int Format;
+        public int SampleRate;
+        public int Resolution;
+        public int Channels;
+        public int LFEPresent;
+        public int FormatOriginal;
+        public int SampleRateOriginal;
+        public int ResolutionOriginal;
+        public int ChannelsOriginal;
+        public int LFEPresentOriginal;
+        public int Frames;
+        public int ABSize;
+        public int ABData;
+        public int ABFree;
+    }
+
+    public AudioFormatInfo DtvGetAudioFormatInfo() {
+        libtv_log_open();
+        AudioFormatInfo pAudioFormatInfo = new AudioFormatInfo();
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+
+        cmd.writeInt(DTV_GET_AUDIO_FMT_INFO);
+        sendCmdToTv(cmd, r);
+        pAudioFormatInfo.Format = r.readInt();
+        pAudioFormatInfo.FormatOriginal = r.readInt();
+        pAudioFormatInfo.SampleRate = r.readInt();
+        pAudioFormatInfo.SampleRateOriginal = r.readInt();
+        pAudioFormatInfo.Resolution = r.readInt();
+        pAudioFormatInfo.ResolutionOriginal = r.readInt();
+        pAudioFormatInfo.Channels = r.readInt();
+        pAudioFormatInfo.ChannelsOriginal = r.readInt();
+        pAudioFormatInfo.LFEPresent = r.readInt();
+        pAudioFormatInfo.LFEPresentOriginal = r.readInt();
+        pAudioFormatInfo.Frames = r.readInt();
+        pAudioFormatInfo.ABSize = r.readInt();
+        pAudioFormatInfo.ABData = r.readInt();
+        pAudioFormatInfo.ABFree = r.readInt();
+        cmd.recycle();
+        r.recycle();
+        return pAudioFormatInfo;
     }
 
     public class BookEventInfo {

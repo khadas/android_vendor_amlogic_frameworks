@@ -1,9 +1,13 @@
 package com.droidlogic.app.tv;
 
+import java.util.List;
+
+import android.content.Context;
 import android.content.UriMatcher;
 import android.media.tv.TvContract;
-import android.media.tv.TvContract.Channels;
+import android.media.tv.TvInputHardwareInfo;
 import android.media.tv.TvInputInfo;
+import android.media.tv.TvInputManager;
 import android.net.Uri;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -11,6 +15,8 @@ import android.util.SparseArray;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.HashMap;
 
 public class DroidLogicTvUtils
 {
@@ -148,14 +154,27 @@ public class DroidLogicTvUtils
 
     public static final String ACTION_ATV_AUTO_SCAN = "atv_auto_scan";
     public static final String ACTION_DTV_AUTO_SCAN = "dtv_auto_scan";
+    public static final String ACTION_ATV_MANUAL_SCAN = "atv_manual_scan";
     public static final String ACTION_DTV_MANUAL_SCAN = "dtv_manual_scan";
     public static final String ACTION_ATV_PAUSE_SCAN = "atv_pause_scan";
     public static final String ACTION_ATV_RESUME_SCAN = "atv_resume_scan";
     public static final String ACTION_STOP_SCAN = "stop_scan";
     public static final String PARA_MANUAL_SCAN = "scan_freq";
+    public static final String PARA_SCAN_MODE = "scan_mode";
+    public static final String PARA_SCAN_TYPE = "scan_type";
+    public static final String PARA_SCAN_PARA1 = "scan_para1";
+    public static final String PARA_SCAN_PARA2 = "scan_para2";
+    public static final String PARA_SCAN_PARA3 = "scan_para3";
+    public static final String PARA_SCAN_PARA4 = "scan_para4";
+
+    /*auto tracks call*/
     public static final String ACTION_DTV_AUTO_TRACKS = "dtv_auto_tracks";
-    public static final String ACTION_DTV_SET_MODE = "dtv_set_mode";
-    public static final String PARA_MODE = "dtv_mode";
+
+    /*set type call*/
+    public static final String ACTION_DTV_SET_TYPE = "dtv_set_type";
+    public static final String PARA_TYPE = "dtv_type";
+
+    /*ad audio call*/
     public static final String ACTION_DTV_ENABLE_AUDIO_AD = "dtv_enable_audio_ad";
     public static final String PARA_ENABLE = "enable";
     public static final String PARA_VALUE1 = "value1";
@@ -177,6 +196,7 @@ public class DroidLogicTvUtils
 
     public static final String EXTRA_SWITCH_VALUE = "switch_val";
 
+    public static final String EXTRA_MORE = "bundle";
 
     /**
      * used for TvSettings to switch hdmi source
@@ -204,7 +224,7 @@ public class DroidLogicTvUtils
     public static final String TV_CURRENT_CHANNEL_IS_RADIO = "tv_current_channel_is_radio";
 
     public static final String TV_KEY_DTV_NUMBER_MODE = "tv_dtv_number_mode";
-    public static final String TV_KEY_DTV_MODE = "tv_dtv_mode";
+    public static final String TV_KEY_DTV_TYPE = "tv_dtv_type";
 
     private static final UriMatcher sUriMatcher;
     public static final int NO_MATCH = UriMatcher.NO_MATCH;
@@ -391,5 +411,41 @@ public class DroidLogicTvUtils
         return false;
     }
 
+    private static final Map<String, String> HEIGHT_TO_VIDEO_FORMAT_MAP = new HashMap<>();
+
+    static {
+        HEIGHT_TO_VIDEO_FORMAT_MAP.put("240", "VIDEO_FORMAT_240");
+        HEIGHT_TO_VIDEO_FORMAT_MAP.put("320", "VIDEO_FORMAT_320");
+        HEIGHT_TO_VIDEO_FORMAT_MAP.put("480", "VIDEO_FORMAT_480");
+        HEIGHT_TO_VIDEO_FORMAT_MAP.put("576", "VIDEO_FORMAT_576");
+        HEIGHT_TO_VIDEO_FORMAT_MAP.put("720", "VIDEO_FORMAT_720");
+        HEIGHT_TO_VIDEO_FORMAT_MAP.put("1080", "VIDEO_FORMAT_1080");
+        HEIGHT_TO_VIDEO_FORMAT_MAP.put("2160", "VIDEO_FORMAT_2160");
+        HEIGHT_TO_VIDEO_FORMAT_MAP.put("4320", "VIDEO_FORMAT_4320");
+    }
+
+    private static final Map<String, String> PI_TO_VIDEO_FORMAT_MAP = new HashMap<>();
+
+    static {
+        PI_TO_VIDEO_FORMAT_MAP.put("interlace", "I");
+        PI_TO_VIDEO_FORMAT_MAP.put("progressive", "P");
+    }
+
+    public static String convertVideoFormat(String height, String pi) {
+        return HEIGHT_TO_VIDEO_FORMAT_MAP.get(height) + PI_TO_VIDEO_FORMAT_MAP.get(pi);
+    }
+
+    public static boolean isHardwareExisted(Context context, int deviceId) {
+        TvInputManager tim = (TvInputManager) context.getSystemService(Context.TV_INPUT_SERVICE);
+        List<TvInputHardwareInfo> hardwareList = tim.getHardwareList();
+        if (hardwareList == null || hardwareList.size() == 0)
+            return false;
+
+        for (TvInputHardwareInfo hardwareInfo : hardwareList) {
+            if (deviceId == hardwareInfo.getDeviceId())
+                return true;
+        }
+        return false;
+    }
 
 }

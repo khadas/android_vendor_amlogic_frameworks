@@ -68,6 +68,7 @@ public class OutputModeManager {
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
     public static final String PROP_DEEPCOLOR               = "sys.open.deepcolor";
+    public static final String PROP_DTSDRCSCALE             = "persist.sys.dtsdrcscale";
 
     public static final String FULL_WIDTH_480               = "720";
     public static final String FULL_HEIGHT_480              = "480";
@@ -88,6 +89,7 @@ public class OutputModeManager {
     public static final String SPDIF                        = "SPDIF";
     public static final String HDMI_RAW                     = "HDMI passthrough";
     public static final String SPDIF_RAW                    = "SPDIF passthrough";
+    public static final String DTSDRCSCALE_DEFAULT          = "0";
     public static final int IS_AUTO                         = 0x10;
     public static final int IS_PCM                          = 0x01;
     public static final int IS_HDMI                         = 0x02;
@@ -457,6 +459,15 @@ public class OutputModeManager {
         }
     }
 
+    public void setDtsDrcScale (String drcscale) {
+        //10 one step,100 highest; default use "0"
+        int i = Integer.parseInt(drcscale);
+        if (i >= 0 && i <= 100) {
+            setProperty(PROP_DTSDRCSCALE, drcscale);
+        } else {
+            setProperty(PROP_DTSDRCSCALE, DTSDRCSCALE_DEFAULT);
+        }
+    }
     public void setDTS_DownmixMode(String mode) {
         // 0: Lo/Ro;   1: Lt/Rt;  default 0
         int i = Integer.parseInt(mode);

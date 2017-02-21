@@ -496,6 +496,7 @@ enum tvcmd_e {
     TV_CLEAR_FRONTEND = 1485,
 
     GET_ALL_TV_DEVICES = 1490,
+    GET_HDMI_PORTS = 1491,
 };
 
 #endif  //ANDROID_AMLOGIC_TVCMD_H

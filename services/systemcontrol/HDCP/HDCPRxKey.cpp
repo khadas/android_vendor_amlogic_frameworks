@@ -404,7 +404,6 @@ int HDCPRxKey::setHdcpRX22key(const char *value, const int size)
             ret = 0;
         }
     }
-    SYS_LOGI("hdcp_rx22 start success\n");
     writeBufSys(HDCP_RX_DEBUG_PATH, "load22key", 10);
 _exit:
     return ret;

@@ -60,6 +60,8 @@ void HDCPRxAuth::initKey() {
     //init HDCP 2.2 key
     HDCPRxKey hdcpRx22(HDCP_RX_22_KEY);
     hdcpRx22.refresh();
+    startVer22();
+    SYS_LOGI("Starting hdcp_rx22 finished after firmware.le generated\n");
 /*
 #ifndef RECOVERY_MODE
 #ifdef IMPDATA_HDCP_RX_KEY//used for tcl

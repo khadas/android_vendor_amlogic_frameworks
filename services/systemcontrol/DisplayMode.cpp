@@ -494,7 +494,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
 
     char curDisplayMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
-    if (!strcmp(finalMode, curDisplayMode)) {
+    if (OUPUT_MODE_STATE_INIT != state && !strcmp(finalMode, curDisplayMode)) {
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
     }
     if (state == OUPUT_MODE_STATE_SWITCH_ADAPTER) {
@@ -540,7 +540,9 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     setVideoPlayingAxis();
 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn off TMDS PHY */
+    if (OUPUT_MODE_STATE_INIT != state) {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn off TMDS PHY */
+   }
     pTxAuth->stop();
     //only HDMI mode need HDCP authenticate
     if (!cvbsMode) {
@@ -952,6 +954,7 @@ void* DisplayMode::bootanimDetect(void* data) {
 
         int delayMs = pThiz->pSysWrite->getPropertyInt(PROP_BOOTANIM_DELAY, 100);
         usleep(delayMs * 1000);
+        usleep(1000 * 1000);
     }
 
     pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "-1");

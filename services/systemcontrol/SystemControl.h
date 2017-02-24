@@ -104,6 +104,7 @@ public:
     virtual bool getSupportDispModeList(std::vector<std::string> *supportDispModes) ;
     virtual bool getActiveDispMode(std::string *activeDispMode) ;
     virtual bool setActiveDispMode(std::string& activeDispMode) ;
+    virtual void isHDCPTxAuthSuccess(int &status);
 private:
     int permissionCheck();
     void setLogLevel(int level);

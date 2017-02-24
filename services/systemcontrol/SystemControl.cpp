@@ -443,6 +443,12 @@ void SystemControl::getPosition(const String16& mode, int &x, int &y, int &w, in
     }
 }
 
+void SystemControl::isHDCPTxAuthSuccess(int &status) {
+    int value=0;
+    pDisplayMode->isHDCPTxAuthSuccess(&value);
+    status = value;
+}
+
 void SystemControl::reInit() {
     bootenv_reinit();
 }

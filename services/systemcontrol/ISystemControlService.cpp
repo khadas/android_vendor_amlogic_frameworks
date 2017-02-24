@@ -685,6 +685,7 @@ public:
             return;
         }
     }
+
     virtual bool getSupportDispModeList(std::vector<std::string> *supportDispModes){
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -736,6 +737,19 @@ public:
             return false;
         }
         return true;
+    }
+    virtual void isHDCPTxAuthSuccess(int &status)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+
+        if (remote()->transact(IS_AUTHSUCCESS, data, &reply) != NO_ERROR) {
+            ALOGE("get is auth success not contact remote\n");
+            return;
+        }
+
+        status = reply.readInt32();
+        ALOGV("is auth success  status :%d\n", status);
     }
 };
 
@@ -1087,6 +1101,13 @@ status_t BnISystemControlService::onTransact(
             std::string value = std::string(String8(mode).string());
             int result =setActiveDispMode(value);
             reply->writeInt32(result);
+            return NO_ERROR;
+        }
+        case IS_AUTHSUCCESS: {
+            int status;
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            isHDCPTxAuthSuccess(status);
+            reply->writeInt32(status);
             return NO_ERROR;
         }
         default: {

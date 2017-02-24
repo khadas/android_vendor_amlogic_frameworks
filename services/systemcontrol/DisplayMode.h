@@ -354,6 +354,7 @@ public:
     void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
+    void isHDCPTxAuthSuccess( int *status);
     static void* bootanimDetect(void *data);
 
     void setMboxDisplay(char* hpdstate, output_mode_state state);

@@ -1258,7 +1258,10 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             break;
     }
 }
+void DisplayMode::isHDCPTxAuthSuccess(int *status) {
 
+    pTxAuth->isAuthSuccess(status);
+}
 void DisplayMode::setPosition(int left, int top, int width, int height) {
     char x[512] = {0};
     char y[512] = {0};

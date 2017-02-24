@@ -367,4 +367,20 @@ void HDCPTxAuth::sfRepaintEverything() {
         sf->transact(1004, data, NULL);
     }
 }
+
+void HDCPTxAuth::isAuthSuccess(int *status) {
+    *status =0;
+    int ret = pthread_mutex_trylock(&pthreadTxMutex);
+    if (ret != 0) {
+         SYS_LOGE("try lock pthreadTxMutex return status: %d\n",ret);
+         *status = -1;
+    }
+   char auth[MODE_LEN] = {0};
+   mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
+   if (strstr(auth, (char *)"1")) {//Authenticate is OK
+       *status = 1;
+   }
+   pthread_mutex_unlock(&pthreadTxMutex);
+   SYS_LOGI("HDCPTx Auth status is: %d",*status);
+}
 #endif

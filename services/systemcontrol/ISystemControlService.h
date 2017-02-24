@@ -89,6 +89,7 @@ enum {
     GET_SUPPORTED_DISPLAYMODE_LIST     = IBinder::FIRST_CALL_TRANSACTION + 42,
     GET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 43,
     SET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 44,
+    IS_AUTHSUCCESS           =IBinder::FIRST_CALL_TRANSACTION + 45,
 };
 
 // ----------------------------------------------------------------------------
@@ -154,6 +155,9 @@ public:
     virtual bool getSupportDispModeList(std::vector<std::string> *supportDispModes) = 0;
     virtual bool getActiveDispMode(std::string* activeDispMode) = 0;
     virtual bool setActiveDispMode(std::string& activeDispMode) = 0;
+
+    virtual void isHDCPTxAuthSuccess(int &status) = 0;
+
 };
 
 // ----------------------------------------------------------------------------

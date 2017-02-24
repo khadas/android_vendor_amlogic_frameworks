@@ -57,6 +57,7 @@ public:
     int start();
     int stop();
     void stopVerAll();
+    void isAuthSuccess(int *status);
 
     #ifndef RECOVERY_MODE
     void sfRepaintEverything();

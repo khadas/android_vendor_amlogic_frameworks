@@ -79,6 +79,7 @@ public class SystemControlManager {
     private static final int GET_SUPPORTED_DISPLAYMODE_LIST       = IBinder.FIRST_CALL_TRANSACTION + 42;
     private static final int GET_ACTIVE_DISPLAYMODE      = IBinder.FIRST_CALL_TRANSACTION + 43;
     private static final int SET_ACTIVE_DISPLAYMODE        = IBinder.FIRST_CALL_TRANSACTION + 44;
+    private static final int IS_AUTHSUCCESS        = IBinder.FIRST_CALL_TRANSACTION + 45;
 
     private Context mContext;
     private IBinder mIBinder = null;

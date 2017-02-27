@@ -491,7 +491,6 @@ public class DroidLogicTvInputService extends TvInputService implements
     private int stopTvPlay(int sessionId) {
         if (mHardware != null) {
             mHardware.setSurface(null, mConfigs[0]);
-        } else {
             tvPlayStopped(sessionId);
         }
         disconnectHdmiCec(mDeviceId);

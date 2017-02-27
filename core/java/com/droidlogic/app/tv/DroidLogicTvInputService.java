@@ -450,14 +450,17 @@ public class DroidLogicTvInputService extends TvInputService implements
             Log.d(TAG, "onSetSurface get invalid surface");
             return;
         } else if (surface != null) {
+            if (mHardware != null && mSurface != null && mCurrentInputId.contains("Hdmi")) {
+                stopTvPlay(mSession.mId);
+            }
             registerInputSession(session);
             setCurrentSessionById(mSession.mId);
+            mSurface = surface;
         }
-
-        mSurface = surface;
 
         if (mSurface == null && mHardware != null && session.mId == mSession.mId) {
             Log.d(TAG, "surface is null, so stop TV play");
+            mSurface = null;
             stopTvPlay(session.mId);
         }
     }

@@ -450,7 +450,9 @@ public class DroidLogicTvInputService extends TvInputService implements
             Log.d(TAG, "onSetSurface get invalid surface");
             return;
         } else if (surface != null) {
-            if (mHardware != null && mSurface != null && mCurrentInputId.contains("Hdmi")) {
+            if (mHardware != null && mSurface != null
+                && (mSourceType >= DroidLogicTvUtils.DEVICE_ID_HDMI1)
+                && (mSourceType <= DroidLogicTvUtils.DEVICE_ID_HDMI3)) {
                 stopTvPlay(mSession.mId);
             }
             registerInputSession(session);
@@ -458,7 +460,7 @@ public class DroidLogicTvInputService extends TvInputService implements
             mSurface = surface;
         }
 
-        if (mSurface == null && mHardware != null && session.mId == mSession.mId) {
+        if (surface == null && mHardware != null && session.mId == mSession.mId) {
             Log.d(TAG, "surface is null, so stop TV play");
             mSurface = null;
             stopTvPlay(session.mId);

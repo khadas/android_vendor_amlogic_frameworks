@@ -178,6 +178,7 @@ void DisplayMode::init() {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
+        pFmtColorDepth = new FormatColorDepth(mDisplayType);
         setMboxDisplay(NULL, OUPUT_MODE_STATE_INIT);
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
@@ -185,7 +186,7 @@ void DisplayMode::init() {
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
         pRxAuth = new HDCPRxAuth(pTxAuth);
-
+        pFmtColorDepth = new FormatColorDepth(mDisplayType);
         setTVDisplay(true);
     }
 }
@@ -456,6 +457,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
 void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state state) {
     char value[MAX_STR_LEN] = {0};
     char finalMode[MODE_LEN] = {0};
+    char colorAttribute[MODE_LEN] = {0};
     int outputx = 0;
     int outputy = 0;
     int outputwidth = 0;
@@ -469,11 +471,16 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     if (state == OUPUT_MODE_STATE_SWITCH  && (strcmp(value, "0") == 0)) {
         char curDisplayMode[MODE_LEN] = {0};
         pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
-        if (!strcmp(finalMode, curDisplayMode)) {
+        char curColorAttribute[MODE_LEN] = {0};
+        char saveColorAttribute[MODE_LEN] = {0};
+        pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, saveColorAttribute);
+        getBootEnv(UBOOTENV_COLORATTRIBUTE, curColorAttribute);
+        SYS_LOGI("curColorAttribute:%s  saveColorAttribute: %s\n", curColorAttribute,saveColorAttribute);
+        if (!strcmp(finalMode, curDisplayMode) && !strcmp(curColorAttribute, saveColorAttribute)) {
             return;
         }
     }
-
+    // 1.set avmute and close phy
     if (OUPUT_MODE_STATE_INIT != state) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         if (OUPUT_MODE_STATE_POWER != state) {
@@ -483,6 +490,16 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
             pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); /* Turn off TMDS PHY */
             usleep(50000);//50ms
         }
+    }
+
+    // 2.stop hdcp tx
+    pTxAuth->stop();
+
+    // 3. set deep color and displaymode
+    pFmtColorDepth->getHdmiColorAttribute(finalMode,colorAttribute,(int)state);
+    if (OUPUT_MODE_STATE_INIT != state) {
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+        pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
     }
 
     getPosition(finalMode, position);
@@ -539,12 +556,14 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
     setVideoPlayingAxis();
 
-    SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
-    if (OUPUT_MODE_STATE_INIT != state) {
-        pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn off TMDS PHY */
-   }
-    pTxAuth->stop();
-    //only HDMI mode need HDCP authenticate
+    //4. turn on phy and clear avmute
+    if (OUPUT_MODE_STATE_INIT != state && !cvbsMode) {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
+        usleep(20000);
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+    }
+
+    //5. start HDMI HDCP authenticate
     if (!cvbsMode) {
         pTxAuth->start();
     }
@@ -565,10 +584,6 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     memset(value, 0, sizeof(0));
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
     setDigitalMode(value);
-
-    if (OUPUT_MODE_STATE_INIT != state) {
-        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-    }
 
     setBootEnv(UBOOTENV_OUTPUTMODE, finalMode);
     if (strstr(finalMode, "cvbs") != NULL) {

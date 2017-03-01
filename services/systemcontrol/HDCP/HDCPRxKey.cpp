@@ -71,6 +71,7 @@ using namespace android;
 #define HDCP_RX22_KEY_CRC_LEN               4
 
 #define HDCP_RX_DEBUG_PATH              "/sys/class/hdmirx/hdmirx0/debug"
+#define HDMI_RX_HPD_OK_FLAG                "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
 
 #define HDCP_RX22_STORAGE_KEY_SIZE          (10U<<10)//10K
 
@@ -420,12 +421,15 @@ bool HDCPRxKey::setHDCP22Key() {
     long lastCrcValue = 0;
 
     char existKey[10] = {0};
-
+    int countNum = 0;
+    int newFwSize =0;
+    int fwFd = -1;
     char *pKeyBuf = new char[HDCP_RX22_STORAGE_KEY_SIZE];
     if (!pKeyBuf) {
         SYS_LOGE("Exception: fail to alloc buffer size:%d\n", HDCP_RX22_STORAGE_KEY_SIZE);
         goto _exit;
     }
+_reGenetate:
     memset(pKeyBuf, 0, HDCP_RX22_STORAGE_KEY_SIZE);
 
     writeSys(HDCP_RX_KEY_ATTACH_DEV_PATH, "1");
@@ -491,7 +495,28 @@ bool HDCPRxKey::setHDCP22Key() {
             ret = true;
         }
     }
-    SYS_LOGI("hdcp_rx22 start success\n");
+    if ((fwFd = open(HDCP_RX22_DES_FW_PATH, O_RDONLY))<0) {
+        SYS_LOGE("open %s error(%s)", HDCP_RX22_DES_FW_PATH, strerror(errno));
+        goto _exit;
+    }
+    newFwSize= lseek(fwFd, 0, SEEK_END);
+    lseek(fwFd, 0, SEEK_SET);
+    close(fwFd);
+    fwFd = -1;
+    if (newFwSize < 100 && countNum <2) {
+        SYS_LOGI("regenerate firmware.le for the %d time",countNum);
+        remove(HDCP_RX22_DES_FW_PATH);
+        newFwSize =0;
+        countNum++;
+        goto _reGenetate;
+    }
+   if (newFwSize < 100) {
+      SYS_LOGI("Regenerate firmware.le fail, Write 0 to HDMI_RX_HPD_OK_FLAG.");
+      writeSys(HDMI_RX_HPD_OK_FLAG, "0");
+   }
+   usleep(100*1000);
+   sysWrite.setProperty("ctl.start", "hdcp_rx22");
+   SYS_LOGI("Starting hdcp_rx22 finished after firmware.le generated\n");
 _exit:
     if (pKeyBuf) delete[] pKeyBuf;
     return ret;
@@ -570,7 +595,7 @@ bool HDCPRxKey::combineFirmware() {
     char *pInsertData = NULL;
     int srcSize = 0;
     int insertSize = 0;
-
+    int writeSize =0;
     //read origin firmware.le to buffer
     srcFd = open(HDCP_RX22_SRC_FW_PATH, O_RDONLY);
     srcSize = lseek(srcFd, 0, SEEK_END);
@@ -610,10 +635,11 @@ bool HDCPRxKey::combineFirmware() {
     }
 
     //write firmware.le buffer to file
-    write(desFd, pSrcData, srcSize);
+    if ((writeSize = write(desFd, pSrcData, srcSize)) <= 0)
+        SYS_LOGE("write firmware.le data error,write size: %d",writeSize);
     close(desFd);
     desFd = -1;
-
+    SYS_LOGI("the pSrcData is  %s, srcSize is %d ", pSrcData,srcSize);
     ret= true;
 exit:
     if (srcFd >= 0)

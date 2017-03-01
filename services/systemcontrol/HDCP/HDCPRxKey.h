@@ -24,7 +24,7 @@
 
 #include <assert.h>
 #include "common.h"
-
+#include "../SysWrite.h"
 enum {
     HDCP_RX_14_KEY                  = 0,
     HDCP_RX_22_KEY                  = 1
@@ -56,6 +56,7 @@ private:
     bool esmSwap();
     bool genKeyImg();
     bool combineFirmware();
+    SysWrite sysWrite;
 };
 
 #endif // _HDCP_RX_KEY_H

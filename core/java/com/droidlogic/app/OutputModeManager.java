@@ -45,6 +45,10 @@ public class OutputModeManager {
 
     public static final String HDMI_STATE                   = "/sys/class/amhdmitx/amhdmitx0/hpd_state";
     public static final String HDMI_SUPPORT_LIST            = "/sys/class/amhdmitx/amhdmitx0/disp_cap";
+    public static final String HDMI_COLOR_SUPPORT_LIST      = "/sys/class/amhdmitx/amhdmitx0/dc_cap";
+
+    public static final String COLOR_ATTRIBUTE              = "/sys/class/amhdmitx/amhdmitx0/attr";
+    public static final String DISPLAY_HDMI_VALID_MODE      = "/sys/class/amhdmitx/amhdmitx0/valid_mode";//test if tv support this mode
 
     public static final String DISPLAY_MODE                 = "/sys/class/display/mode";
     public static final String DISPLAY_AXIS                 = "/sys/class/display/axis";
@@ -64,6 +68,7 @@ public class OutputModeManager {
     public static final String ENV_OUTPUT_MODE              = "ubootenv.var.outputmode";
     public static final String ENV_DIGIT_AUDIO              = "ubootenv.var.digitaudiooutput";
     public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
+    public static final String ENV_COLORATTRIBUTE           = "ubootenv.var.colorattribute";
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
@@ -107,6 +112,9 @@ public class OutputModeManager {
     public static final String HDMI_SMPTE                   = "smpte";
 
     private String DEFAULT_OUTPUT_MODE                      = "720p60hz";
+    private String DEFAULT_COLOR_ATTRIBUTE                  = "444,8bit";
+
+    private static String currentColorAttribute = null;
     private static String currentOutputmode = null;
     private boolean ifModeSetting = false;
     private final Context mContext;
@@ -159,6 +167,36 @@ public class OutputModeManager {
         setOutputModeNowLocked(getCurrentOutputMode());
     }
 
+    public void setDeepColorAttribute(final String colorValue) {
+        mSystenControl.setBootenv(ENV_IS_BEST_MODE, "false");
+        mSystenControl.setBootenv(ENV_COLORATTRIBUTE, colorValue);
+        setOutputModeNowLocked(getCurrentOutputMode());
+    }
+
+    public String getCurrentColorAttribute(){
+       String colorValue = getBootenv(ENV_COLORATTRIBUTE, DEFAULT_COLOR_ATTRIBUTE);
+       return colorValue;
+    }
+
+    public String getHdmiColorSupportList() {
+        String list = readSupportList(HDMI_COLOR_SUPPORT_LIST);
+
+        if (DEBUG)
+            Log.d(TAG, "getHdmiColorSupportList :" + list);
+        return list;
+    }
+
+    public boolean isModeSupportColor(final String curMode, final String curValue){
+         boolean ret =false;
+         curMode.replace("444", "").replace("422", "").replace("420", "").replace("rgb", "");
+         writeSysfs(DISPLAY_HDMI_VALID_MODE, curMode+curValue);
+         String isSupport = readSysfs(DISPLAY_HDMI_VALID_MODE).trim();
+         Log.d("SystemControl", "at OutputModeManager if this mode: " + curMode+curValue+"is support or not:"+isSupport);
+         if ("1".equals(isSupport))
+            ret = true;
+         return  ret;
+    }
+
     public void setOutputModeNowLocked(final String newMode){
         synchronized (mLock) {
             String oldMode = currentOutputmode;
@@ -192,8 +230,8 @@ public class OutputModeManager {
     }
 
     public String getCurrentOutputMode(){
-        return readSysfs(DISPLAY_MODE).replace("10bit", "").replace("12bit", "")
-                .replace("14bit", "").replace("rgb", "");
+        return readSysfs(DISPLAY_MODE).replace("444", "").replace("422", "").replace("420", "").replace("rgb", "").replace("12bit", "").replace("10bit", "")
+                .replace("8bit", "");
     }
 
     public int[] getPosition(String mode) {

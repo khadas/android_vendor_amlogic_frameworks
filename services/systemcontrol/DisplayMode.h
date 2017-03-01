@@ -29,7 +29,7 @@
 #include "HDCP/HDCPRx22ImgKey.h"
 #include "HDCP/HDCPRxKey.h"
 #include "FrameRateAutoAdaption.h"
-
+#include <FormatColorDepth.h>
 #include <map>
 #include <cmath>
 #include <string>
@@ -432,6 +432,8 @@ private:
 
     HDCPTxAuth *pTxAuth = NULL;
     HDCPRxAuth *pRxAuth = NULL;
+
+    FormatColorDepth *pFmtColorDepth= NULL;
 
 #ifndef RECOVERY_MODE
     sp<ISystemControlNotify> mNotifyListener;

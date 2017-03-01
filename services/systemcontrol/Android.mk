@@ -55,7 +55,8 @@ LOCAL_SRC_FILES:= \
   HDCP/HDCPTxAuth.cpp \
   HDCP/sha1.cpp \
   HDCP/HDCPRx22ImgKey.cpp \
-  FrameRateAutoAdaption.cpp
+  FrameRateAutoAdaption.cpp \
+  FormatColorDepth.cpp
 
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \
@@ -108,7 +109,8 @@ LOCAL_SRC_FILES:= \
   HDCP/HDCPRxKey.cpp \
   HDCP/HDCPRxAuth.cpp \
   HDCP/HDCPTxAuth.cpp \
-  FrameRateAutoAdaption.cpp
+  FrameRateAutoAdaption.cpp \
+  FormatColorDepth.cpp
 
 LOCAL_STATIC_LIBRARIES := \
   libcutils \
@@ -156,7 +158,8 @@ LOCAL_SRC_FILES:= \
   HDCP/HDCPRxKey.cpp \
   HDCP/HDCPRxAuth.cpp \
   HDCP/HDCPTxAuth.cpp \
-  FrameRateAutoAdaption.cpp
+  FrameRateAutoAdaption.cpp \
+  FormatColorDepth.cpp
 
 LOCAL_STATIC_LIBRARIES := \
   libcutils \

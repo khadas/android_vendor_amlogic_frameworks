@@ -467,7 +467,7 @@ void SystemControl::setVideoPlayingAxis() {
 }
 
 void SystemControl::traceValue(const String16& type, const String16& key, const String16& value) {
-    if (mLogLevel > LOG_LEVEL_0) {
+    if (mLogLevel > LOG_LEVEL_1) {
         String16 procName;
         int pid = IPCThreadState::self()->getCallingPid();
         int uid = IPCThreadState::self()->getCallingUid();
@@ -482,7 +482,7 @@ void SystemControl::traceValue(const String16& type, const String16& key, const 
 }
 
 void SystemControl::traceValue(const String16& type, const String16& key, const int size) {
-    if (mLogLevel > LOG_LEVEL_0) {
+    if (mLogLevel > LOG_LEVEL_1) {
         String16 procName;
         int pid = IPCThreadState::self()->getCallingPid();
         int uid = IPCThreadState::self()->getCallingUid();

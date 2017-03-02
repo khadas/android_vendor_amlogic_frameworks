@@ -2612,6 +2612,55 @@ public class TvControlManager {
         int val[] = new int[]{l_vol, r_vol};
         return sendCmdIntArray(SET_LINE_IN_CAPTURE_VOL, val);
     }
+
+   /**
+     * @Function: SetAudioVirtualizer
+     * @Description: set audio virtualizer parameters
+     * @Param: enable : 1, EffectLevel (0~100)
+     * @Return: 0 success, -1 fail
+     */
+     public int SetAudioVirtualizer(int enable, int EffectLevel) {
+        libtv_log_open();
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        int tmpRet;
+        cmd.writeInt(SET_AUDIO_VIRTUAL);
+        cmd.writeInt(enable);
+        cmd.writeInt(EffectLevel);
+        sendCmdToTv(cmd, r);
+        tmpRet = r.readInt();
+        return tmpRet;
+    }
+
+  /**
+    * @Function: GetAudioVirtualizerEnable
+    * @Description: get audio virtualizer enable
+    * @Return: enable : 1, disable: 0
+    */
+    public int GetAudioVirtualizerEnable() {
+        libtv_log_open();
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        cmd.writeInt(GET_AUDIO_VIRTUAL_ENABLE);
+        sendCmdToTv(cmd, r);
+        int ret = r.readInt();
+        return ret;
+    }
+
+  /**
+    * @Function: GetAudioVirtualizerLevel
+    * @Description: get audio virtualizer level
+    * @Return: level (0~100)
+    */
+    public int GetAudioVirtualizerLevel() {
+        libtv_log_open();
+        Parcel cmd = Parcel.obtain();
+        Parcel r = Parcel.obtain();
+        cmd.writeInt(GET_AUDIO_VIRTUAL_LEVEL);
+        sendCmdToTv(cmd, r);
+        int ret = r.readInt();
+        return ret;
+    }
     // AUDIO END
 
     // SSM

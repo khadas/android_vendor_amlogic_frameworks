@@ -1120,6 +1120,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     SYS_LOGI("set osd mouse x:%d y:%d w:%d h:%d", x, y, w, h);
 
     const char* displaySize = "1920 1080";
+    int display_w, display_h;
     if (!strncmp(mDefaultUI, "720", 3)) {
         displaySize = "1280 720";
     } else if (!strncmp(mDefaultUI, "1080", 4)) {
@@ -1142,11 +1143,12 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
     pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
 
     sprintf(axis, "%s %d %d", displaySize, w, h);
+    sscanf(displaySize,"%d %d",&display_w,&display_h);
     pSysWrite->writeSysfs(DISPLAY_FB1_SCALE_AXIS, axis);
-    if (DISPLAY_TYPE_TV == mDisplayType && !strncmp(cur_mode, "1080", 4)) {
-        pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0");
-    } else {
+    if ((display_w != w) || (display_h != h)) {
         pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
+    } else {
+        pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0");
     }
 }
 

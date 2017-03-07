@@ -94,6 +94,7 @@ private:
     int isFileExist(const char* path);
     int isSupportSystemBak();
     int isInitMountDataFail();
+    int isABupdate();
     void doRestoreSystem();
     void HanldeSysChksumError(char* error_file_path);
     void doReboot();

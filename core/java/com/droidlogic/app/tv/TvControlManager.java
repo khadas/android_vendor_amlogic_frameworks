@@ -92,7 +92,7 @@ public class TvControlManager {
         System.loadLibrary("tv_jni");
     }
 
-    private int mNativeContext; // accessed by native methods
+    private long mNativeContext; // accessed by native methods
     private EventHandler mEventHandler;
     private TVInSignalInfo.SigInfoChangeListener mSigInfoChangeLister = null;
     private TVInSignalInfo.SigChannelSearchListener mSigChanSearchListener = null;

@@ -75,7 +75,7 @@ sp<TvClient> get_native_tv(JNIEnv *env, jobject thiz, JNITvContext **pContext)
 {
     sp<TvClient> tv;
     Mutex::Autolock _l(sLock);
-    JNITvContext *context = reinterpret_cast<JNITvContext *>(env->GetIntField(thiz, fields.context));
+    JNITvContext *context = reinterpret_cast<JNITvContext *>(env->GetLongField(thiz, fields.context));
     if (context != NULL) {
         tv = context->getTv();
     }
@@ -148,7 +148,7 @@ static void com_droidlogic_app_tv_TvControlManager_native_setup(JNIEnv *env, job
     context->incStrong(thiz);
     tv->setListener(context);
 
-    env->SetIntField(thiz, fields.context, (int)context.get());
+    env->SetLongField(thiz, fields.context, (long)context.get());
 }
 
 
@@ -159,10 +159,10 @@ static void com_droidlogic_app_tv_TvControlManager_release(JNIEnv *env, jobject 
     sp<TvClient> tv;
     {
         Mutex::Autolock _l(sLock);
-        context = reinterpret_cast<JNITvContext *>(env->GetIntField(thiz, fields.context));
+        context = reinterpret_cast<JNITvContext *>(env->GetLongField(thiz, fields.context));
 
         // Make sure we do not attempt to callback on a deleted Java object.
-        env->SetIntField(thiz, fields.context, 0);
+        env->SetLongField(thiz, fields.context, 0);
     }
 
     ALOGD("release tv");
@@ -252,7 +252,7 @@ static jint com_droidlogic_app_tv_TvControlManager_processCmd(JNIEnv *env, jobje
 
 static void com_droidlogic_app_tv_TvControlManager_addCallbackBuffer(JNIEnv *env, jobject thiz, jbyteArray bytes)
 {
-    JNITvContext *context = reinterpret_cast<JNITvContext *>(env->GetIntField(thiz, fields.context));
+    JNITvContext *context = reinterpret_cast<JNITvContext *>(env->GetLongField(thiz, fields.context));
 
     ALOGD("addCallbackBuffer");
     if (context != NULL) {
@@ -298,7 +298,7 @@ static void com_droidlogic_app_tv_TvControlManager_unlock(JNIEnv *env, jobject t
 static void com_droidlogic_app_tv_TvControlManager_create_subtitle_bitmap(JNIEnv *env, jobject thiz, jobject bmpobj)
 {
     ALOGD("create subtitle bmp");
-    JNITvContext *context = reinterpret_cast<JNITvContext *>(env->GetIntField(thiz, fields.context));
+    JNITvContext *context = reinterpret_cast<JNITvContext *>(env->GetLongField(thiz, fields.context));
     sp<TvClient> tv = get_native_tv(env, thiz, NULL);
     if (tv == 0) return;
 
@@ -545,7 +545,7 @@ static int find_fields(JNIEnv *env, field *fields, int count)
 int register_com_droidlogic_app_tv_TvControlManager(JNIEnv *env)
 {
     field fields_to_find[] = {
-        { "com/droidlogic/app/tv/TvControlManager", "mNativeContext",   "I", &fields.context }
+        { "com/droidlogic/app/tv/TvControlManager", "mNativeContext",   "J", &fields.context }
     };
 
     ALOGD("register_com_droidlogic_app_tv_TvControlManager.");

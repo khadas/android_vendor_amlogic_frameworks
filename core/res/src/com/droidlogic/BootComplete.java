@@ -7,12 +7,14 @@ import android.content.Intent;
 import android.hardware.hdmi.HdmiDeviceInfo;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.content.ContentResolver;
 import android.util.Log;
 import android.view.IWindowManager;
 import android.media.AudioManager;
+import android.media.AudioSystem;
 import android.provider.Settings;
 
 import com.droidlogic.app.HdrManager;
@@ -43,13 +45,21 @@ public class BootComplete extends BroadcastReceiver {
             sm.setListener(new SystemControlEvent(context));
 
             ContentResolver resolver = context.getContentResolver();
+            AudioManager audioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
             int speakervalue = Settings.System.getInt(resolver,"volume_music_speaker",-1);
             if (speakervalue == -1) {
                 Settings.System.putInt(resolver,"volume_music_speaker", SPEAKER_DEFAULT_VOLUME);
-                AudioManager speakmanager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
-                int current = speakmanager.getStreamVolume( AudioManager.STREAM_MUSIC);
-                speakmanager.setStreamVolume(AudioManager.STREAM_MUSIC,current,0);
-                Log.d(TAG,"boot complete set volume: "+current);
+                if (AudioSystem.PLATFORM_TELEVISION != AudioSystem.getPlatformType(context)) {
+                    int current = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC);
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,current,0);
+                }
+            }
+
+            if (AudioSystem.PLATFORM_TELEVISION == AudioSystem.getPlatformType(context)) {
+                int maxVolume = SystemProperties.getInt("ro.config.media_vol_steps", 100);
+                int streamMaxVolume = audioManager.getStreamMaxVolume(AudioSystem.STREAM_MUSIC);
+                int defaultVolume = maxVolume == streamMaxVolume ? (maxVolume * 3) / 10 : (streamMaxVolume * 3) / 4;
+                audioManager.setStreamVolume(AudioSystem.STREAM_MUSIC, defaultVolume, 0);
             }
 
             OutputModeManager drcomm = new OutputModeManager(context);

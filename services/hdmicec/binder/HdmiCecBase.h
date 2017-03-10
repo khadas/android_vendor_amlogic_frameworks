@@ -89,8 +89,6 @@ public:
 
 private:
     const char *getResult(int result);
-
-    static int debugLevel;
 };
 
 

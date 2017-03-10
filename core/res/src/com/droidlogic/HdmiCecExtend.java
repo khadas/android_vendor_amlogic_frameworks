@@ -22,6 +22,7 @@ import android.os.UserHandle;
 import android.os.ServiceManager;
 import android.os.Handler;
 import com.android.internal.app.LocalePicker;
+import com.android.internal.app.LocalePicker.LocaleInfo;
 
 import java.util.Locale;
 import java.util.List;
@@ -325,13 +326,46 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         }
     }
 
-    public void onLanguageChange(String lan) {
-        Slog.d(TAG, "onLanguageChange:" + lan);
-        HdmiCecLanguageHelp cecLanguage = new HdmiCecLanguageHelp(lan);
-        Locale l = new Locale(cecLanguage.LanguageCode(), cecLanguage.CountryCode());
-        mLanguangeChanged = updateLanguage(l);
-        Slog.w(TAG, "set menu launage:" + lan + ", " + l.getLanguage() +
-                "." + l.getCountry() + ":" + mLanguangeChanged);
+    public void onLanguageChange(String iso3Language) {
+        Slog.d(TAG, "onLanguageChange, iso3Language: " + iso3Language);
+
+        if (iso3Language.equals("chi") || iso3Language.equals("zho")) {
+            HdmiCecLanguageHelp cecLanguage = new HdmiCecLanguageHelp(iso3Language);
+            Locale l = new Locale(cecLanguage.LanguageCode(), cecLanguage.CountryCode());
+            mLanguangeChanged = updateLanguage(l);
+            return;
+        }
+
+        Locale currentLocale = mContext.getResources().getConfiguration().locale;
+        if (currentLocale.getISO3Language().equals(iso3Language)) {
+            // Do not switch language if the new language is the same as the
+            // current one.
+            // This helps avoid accidental country variant switching from
+            // en_US to en_AU
+            // due to the limitation of CEC. See the warning below.
+            return;
+        }
+        Slog.d(TAG, "onLanguageChange, change language");
+
+        // Don't use Locale.getAvailableLocales() since it returns a locale
+        // which is not available on Settings.
+        final List<LocaleInfo> localeInfos = LocalePicker.getAllAssetLocales(mContext, false);
+        for (LocaleInfo localeInfo : localeInfos) {
+            if (localeInfo.getLocale().getISO3Language().equals(iso3Language)) {
+                // WARNING: CEC adopts ISO/FDIS-2 for language code, while
+                // Android requires
+                // additional country variant to pinpoint the locale. This
+                // keeps the right
+                // locale from being chosen. 'eng' in the CEC command, for
+                // instance,
+                // will always be mapped to en-AU among other variants like
+                // en-US, en-GB,
+                // an en-IN, which may not be the expected one.
+                LocalePicker.updateLocale(localeInfo.getLocale());
+                mLanguangeChanged = true;
+            }
+        }
+        mLanguangeChanged = false;
     }
 
     private void onCecMessageRx(byte[] msg) {
@@ -444,78 +478,6 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         body[0] = (byte)(MESSAGE_DECK_STATUS & 0xff);
         body[1] = (byte)(status & 0xff);
         SendCecMessage(dest, body);
-    }
-
-    class HdmiCecLanguageHelp {
-        private final String [][] mCecLanguage = {
-            {"chi", "zh", "CN"},
-            {"zho", "zh", "TW"},
-            {"eng", "en", "US"},
-            {"jpn", "ja", "JP"},
-            {"kor", "ko", "KR"},
-            {"fra", "fr", "FR"},
-            {"fre", "fr", "FR"},
-            {"ger", "de", "DE"},
-            {"deu", "de", "DE"},
-            {"cpp", "pt", "PT"},
-            {"spa", "es", "ES"},
-            {"rus", "ru", "RU"},
-            {"ara", "ar", "SA"},
-            {"hin", "en", "IN"}
-        };
-
-        private int mIndex;
-
-        HdmiCecLanguageHelp(String str) {
-            int size;
-            for (size = 0; size < mCecLanguage.length; size++) {
-                if (mCecLanguage[size][0].equals(str)) {
-                    mIndex = size;
-                    break;
-                }
-            }
-            if (size == mCecLanguage.length) {
-                mIndex = -1;
-            }
-        }
-
-        public String LanguageCode() {
-            if (mIndex != -1) {
-                return mCecLanguage[mIndex][1];
-            }
-            return null;
-        }
-
-        public String CountryCode() {
-            if (mIndex != -1) {
-                return mCecLanguage[mIndex][2];
-            }
-            return null;
-        }
-
-        /*
-         * get android language code for cec language code
-         */
-        public final String getCecLanguageCode(String cecLanguage) {
-            int size;
-            for (size = 0; size < mCecLanguage.length; size++) {
-                if (mCecLanguage[size][0].equals(cecLanguage))
-                    return mCecLanguage[size][1];
-            }
-            return null;
-        }
-
-        /*
-         * get android country code for cec language code
-         */
-        public final String getCecCountryCode(String cecLanguage) {
-            int size;
-            for (size = 0; size < mCecLanguage.length; size++) {
-                if (mCecLanguage[size][0].equals(cecLanguage))
-                    return mCecLanguage[size][2];
-            }
-            return null;
-        }
     }
 
     public int SendCecMessage(int dest, byte[] body) {
@@ -640,6 +602,66 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
             }
         }
         return s.toString();
+    }
+
+    class HdmiCecLanguageHelp {
+        private final String [][] mCecLanguage = {
+            {"chi", "zh", "CN"},
+            {"zho", "zh", "TW"}
+        };
+
+        private int mIndex;
+
+        HdmiCecLanguageHelp(String str) {
+            int size;
+            for (size = 0; size < mCecLanguage.length; size++) {
+                if (mCecLanguage[size][0].equals(str)) {
+                    mIndex = size;
+                    break;
+                }
+            }
+            if (size == mCecLanguage.length) {
+                mIndex = -1;
+            }
+        }
+
+        public String LanguageCode() {
+            if (mIndex != -1) {
+                return mCecLanguage[mIndex][1];
+            }
+            return null;
+        }
+
+        public String CountryCode() {
+            if (mIndex != -1) {
+                return mCecLanguage[mIndex][2];
+            }
+            return null;
+        }
+
+        /*
+         * get android language code for cec language code
+         */
+        public final String getCecLanguageCode(String cecLanguage) {
+            int size;
+            for (size = 0; size < mCecLanguage.length; size++) {
+                if (mCecLanguage[size][0].equals(cecLanguage))
+                    return mCecLanguage[size][1];
+            }
+            return null;
+        }
+
+        /*
+         * get android country code for cec language code
+         */
+        public final String getCecCountryCode(String cecLanguage) {
+            int size;
+            for (size = 0; size < mCecLanguage.length; size++) {
+                if (mCecLanguage[size][0].equals(cecLanguage))
+                    return mCecLanguage[size][2];
+            }
+            return null;
+        }
     }
 
     /* for native */

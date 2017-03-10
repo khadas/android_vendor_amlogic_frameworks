@@ -339,8 +339,8 @@ void HdmiCecControl::setOption(int flag, int value)
 
         default:
             break;
-        }
-        LOGD("flag:0x%x, value:0x%x, ret:%d, isCecControlled:%x", flag, value, ret, mCecDevice->isCecControlled);
+    }
+    LOGD("%s, flag:0x%x, value:0x%x, ret:%d, isCecControlled:%x", __FUNCTION__, flag, value, ret, mCecDevice->isCecControlled);
 }
 
 void HdmiCecControl::setAudioReturnChannel(int port, bool flag)
@@ -349,7 +349,7 @@ void HdmiCecControl::setAudioReturnChannel(int port, bool flag)
         return;
 
     int ret = ioctl(mCecDevice->mFd, CEC_IOC_SET_ARC_ENABLE, flag);
-    LOGD("port id:%d, flag:%x, ret:%d\n", port, flag, ret);
+    LOGD("%s, port id:%d, flag:%x, ret:%d\n", __FUNCTION__, port, flag, ret);
 }
 
 bool HdmiCecControl::isConnected(int port)
@@ -363,7 +363,7 @@ bool HdmiCecControl::isConnected(int port)
     ret = ioctl(mCecDevice->mFd, CEC_IOC_GET_CONNECT_STATUS, &status);
     if (ret)
         return false;
-    LOGD("port:%d, connected:%s", port, status ? "yes" : "no");
+    LOGD("%s, port:%d, connected:%s", __FUNCTION__, port, status ? "yes" : "no");
     return status;
 }
 

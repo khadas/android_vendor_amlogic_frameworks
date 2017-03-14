@@ -66,7 +66,7 @@ public:
 
 private:
     bool authInit(bool *pHdcp22, bool *pHdcp14);
-    void authLoop(bool useHdcp22, bool useHdcp14);
+    bool authLoop(bool useHdcp22, bool useHdcp14);
     void startVer22();
     void startVer14();
 

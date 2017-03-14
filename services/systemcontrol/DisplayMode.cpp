@@ -178,7 +178,7 @@ void DisplayMode::init() {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
-        pFmtColorDepth = new FormatColorDepth(mDisplayType);
+        pFmtColorDepth = new FormatColorDepth(DISPLAY_TYPE_MBOX);
         setMboxDisplay(NULL, OUPUT_MODE_STATE_INIT);
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
@@ -186,7 +186,7 @@ void DisplayMode::init() {
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
         pRxAuth = new HDCPRxAuth(pTxAuth);
-        pFmtColorDepth = new FormatColorDepth(mDisplayType);
+        pFmtColorDepth = new FormatColorDepth(DISPLAY_TYPE_TV);
         setTVDisplay(true);
     }
 }
@@ -456,27 +456,23 @@ void DisplayMode::setMboxOutputMode(const char* outputmode){
 
 void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state state) {
     char value[MAX_STR_LEN] = {0};
-    char finalMode[MODE_LEN] = {0};
-    char colorAttribute[MODE_LEN] = {0};
-    int outputx = 0;
-    int outputy = 0;
-    int outputwidth = 0;
-    int outputheight = 0;
-    int position[4] = { 0, 0, 0, 0 };
+
+    int position[4] = { 0, 0, 0, 0 };//x,y,w,h
     bool cvbsMode = false;
 
-    strcpy(finalMode, outputmode);
-    addSuffixForMode(finalMode, state);
-    pSysWrite->readSysfs(HDMI_TX_FRAMRATE_POLY, value);
-    if (state == OUPUT_MODE_STATE_SWITCH  && (strcmp(value, "0") == 0)) {
+    pSysWrite->readSysfs(HDMI_TX_FRAMRATE_POLICY, value);
+    if ((OUPUT_MODE_STATE_SWITCH == state) && (strcmp(value, "0") == 0)) {
         char curDisplayMode[MODE_LEN] = {0};
-        pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
         char curColorAttribute[MODE_LEN] = {0};
         char saveColorAttribute[MODE_LEN] = {0};
-        pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, saveColorAttribute);
-        getBootEnv(UBOOTENV_COLORATTRIBUTE, curColorAttribute);
-        SYS_LOGI("curColorAttribute:%s  saveColorAttribute: %s\n", curColorAttribute,saveColorAttribute);
-        if (!strcmp(finalMode, curDisplayMode) && !strcmp(curColorAttribute, saveColorAttribute)) {
+
+        pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, curColorAttribute);
+        getBootEnv(UBOOTENV_COLORATTRIBUTE, saveColorAttribute);
+
+        pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
+
+        SYS_LOGI("curColorAttribute:%s ,saveColorAttribute: %s\n", curColorAttribute, saveColorAttribute);
+        if (!strcmp(outputmode, curDisplayMode) && !strcmp(saveColorAttribute, curColorAttribute)) {
             return;
         }
     }
@@ -496,38 +492,27 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     pTxAuth->stop();
 
     // 3. set deep color and displaymode
-    pFmtColorDepth->getHdmiColorAttribute(finalMode,colorAttribute,(int)state);
     if (OUPUT_MODE_STATE_INIT != state) {
+        char colorAttribute[MODE_LEN] = {0};
+        pFmtColorDepth->getHdmiColorAttribute(outputmode, colorAttribute, (int)state);
+
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
+
+        //save to ubootenv
+        setBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
     }
 
-    getPosition(finalMode, position);
-    outputx = position[0];
-    outputy = position[1];
-    outputwidth = position[2];
-    outputheight = position[3];
+    //write framerate policy
+    pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, (state == OUPUT_MODE_STATE_SWITCH_ADAPTER)?"1":"0");
 
-
-    char curDisplayMode[MODE_LEN] = {0};
-    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
-    if (OUPUT_MODE_STATE_INIT != state && !strcmp(finalMode, curDisplayMode)) {
-        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-    }
-    if (state == OUPUT_MODE_STATE_SWITCH_ADAPTER) {
-        pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLY, "1");
-    }
-    else {
-        pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLY, "0");
-    }
-
-    if ((!strcmp(finalMode, MODE_480I) || !strcmp(finalMode, MODE_576I)) &&
+    if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&
             (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {
         const char *mode = "";
-        if (!strcmp(finalMode, MODE_480I)) {
+        if (!strcmp(outputmode, MODE_480I)) {
             mode = MODE_480CVBS;
         }
-        else if (!strcmp(finalMode, MODE_576I)) {
+        else if (!strcmp(outputmode, MODE_576I)) {
             mode = MODE_576CVBS;
         }
 
@@ -537,13 +522,11 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, "null");
     }
     else {
-        if (!strcmp(finalMode, MODE_480CVBS) || !strcmp(finalMode, MODE_576CVBS)) {
-            //close deepcolor if HDMI not plugged in, because the next TV maybe not support deepcolor
-            pSysWrite->setProperty(PROP_DEEPCOLOR, "false");
+        if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)) {
             cvbsMode = true;
         }
 
-        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, finalMode);
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
     }
 
     char axis[MAX_STR_LEN] = {0};
@@ -551,11 +534,13 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
             0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
 
+    getPosition(outputmode, position);
     sprintf(axis, "%d %d %d %d",
-            outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
+            position[0], position[1], position[0] + position[2] - 1, position[1] + position[3] -1);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
     setVideoPlayingAxis();
 
+    SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
     //4. turn on phy and clear avmute
     if (OUPUT_MODE_STATE_INIT != state && !cvbsMode) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
@@ -573,7 +558,7 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     } else {
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-        setOsdMouse(finalMode);
+        setOsdMouse(outputmode);
     }
 
 #ifndef RECOVERY_MODE
@@ -585,13 +570,13 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
     getBootEnv(UBOOTENV_DIGITAUDIO, value);
     setDigitalMode(value);
 
-    setBootEnv(UBOOTENV_OUTPUTMODE, finalMode);
-    if (strstr(finalMode, "cvbs") != NULL) {
-        setBootEnv(UBOOTENV_CVBSMODE, finalMode);
+    setBootEnv(UBOOTENV_OUTPUTMODE, (char *)outputmode);
+    if (strstr(outputmode, "cvbs") != NULL) {
+        setBootEnv(UBOOTENV_CVBSMODE, (char *)outputmode);
     } else {
-        setBootEnv(UBOOTENV_HDMIMODE, finalMode);
+        setBootEnv(UBOOTENV_HDMIMODE, (char *)outputmode);
     }
-    SYS_LOGI("set output mode:%s done\n", finalMode);
+    SYS_LOGI("set output mode:%s done\n", outputmode);
 }
 
 void DisplayMode::setDigitalMode(const char* mode) {
@@ -618,7 +603,7 @@ void DisplayMode::setNativeWindowRect(int x, int y, int w, int h) {
 
 void DisplayMode::setVideoPlayingAxis() {
     char currMode[MODE_LEN] = {0};
-    int currPos[4] = {0};
+    int currPos[4] = {0};//x,y,w,h
     char videoPlaying[MODE_LEN] = {0};
 
     pSysWrite->readSysfs(SYSFS_VIDEO_LAYER_STATE, videoPlaying);
@@ -778,7 +763,7 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
             lenmode = len;
             higmode = intmode;
             strncpy(mode, start, len);
-            if (mode[len - 1] == '*')  mode[len - 1] = '\0';
+            if (mode[len - 1] == '*') mode[len - 1] = '\0';
             else mode[len] = '\0';
         }
     } while (strlen(pos) > 0);
@@ -787,7 +772,7 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
         pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
     }
 
-    SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
+    //SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
 }
 
 //check if the edid support current hdmi mode
@@ -824,68 +809,6 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
 #endif
 }
 
-void DisplayMode::standardMode(char* mode) {
-    char* p;
-    if ((p = strstr(mode, SUFFIX_10BIT)) != NULL) {
-    } else if ((p = strstr(mode, SUFFIX_12BIT)) != NULL) {
-    } else if ((p = strstr(mode, SUFFIX_14BIT)) != NULL) {
-    } else if ((p = strstr(mode, SUFFIX_RGB)) != NULL) {
-    }
-
-    if (p != NULL) {
-        memset(p, 0, strlen(p));
-    }
-}
-
-void DisplayMode::addSuffixForMode(char* mode, output_mode_state state) {
-    char save_mode[MODE_LEN] = {0};
-
-    strcpy(save_mode, mode);
-    standardMode(mode);
-    int index = modeToIndex(mode);
-    //only support 4 modes for 10bit now
-    switch (index) {
-        case DISPLAY_MODE_4K2K24HZ:
-        case DISPLAY_MODE_4K2K30HZ:
-        case DISPLAY_MODE_4K2K50HZ420:
-        case DISPLAY_MODE_4K2K60HZ420:
-            if (OUPUT_MODE_STATE_INIT != state)
-                pSysWrite->writeSysfs(DISPLAY_HDMI_VIC, "0");
-            if (isDeepColor()) {
-#if 0
-                char deepColor[MAX_STR_LEN];
-                pSysWrite->readSysfsOriginal(DISPLAY_HDMI_DEEP_COLOR, deepColor);
-                char *pCmp = deepColor;
-                while ((pCmp - deepColor) < (int)strlen(deepColor)) {
-                    char *pos = strchr(pCmp, 0x0a);
-                    if (NULL == pos) {
-                        break;
-                    } else {
-                        *pos = 0;
-                    }
-                    if ((strstr(pCmp, "420") != NULL && strstr(pCmp, SUFFIX_10BIT) != NULL && strstr(mode, "420") != NULL)
-                            ||(strstr(pCmp, "422") != NULL && strstr(pCmp, SUFFIX_10BIT) != NULL && strstr(mode, "422") != NULL)
-                            ||(strstr(pCmp, "444") != NULL && strstr(pCmp, SUFFIX_10BIT) != NULL)) {
-                        strcat(mode, SUFFIX_10BIT);
-                        break;
-                    }
-                    *pos = 0x0a;
-                    pCmp = pos + 1;
-                }
-#else
-                strcat(mode, SUFFIX_10BIT);
-#endif
-            }
-            break;
-      case DISPLAY_MODE_4K2K50HZ422:
-            strcat(mode, SUFFIX_10BIT);
-            break;
-      case DISPLAY_MODE_4K2K60HZ422:
-            strcat(mode, SUFFIX_10BIT);
-            break;
-    }
-}
-
 void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
     if (strstr(data->edid, "null") != NULL) {
         pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
@@ -903,7 +826,7 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
             filterHdmiMode(mode, data);
         }
     }
-    SYS_LOGI("set HDMI mode to %s\n", mode);
+    //SYS_LOGI("set HDMI mode to %s\n", mode);
 }
 
 void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
@@ -930,7 +853,6 @@ void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
     }
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, data->current_mode);
     getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
-    standardMode(data->ubootenv_hdmimode);
 }
 
 void DisplayMode::startBootanimDetectThread() {
@@ -1021,24 +943,11 @@ bool DisplayMode::isBestOutputmode() {
     return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
 }
 
-bool DisplayMode::isDeepColor() {
-    char isDeepColor[MODE_LEN] = {0};
-    return pSysWrite->getProperty(PROP_DEEPCOLOR, isDeepColor) && strcmp(isDeepColor, "true") == 0;
-}
-
 //this function only running in bootup time
 void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
-    int outputx = 0;
-    int outputy = 0;
-    int outputwidth = 0;
-    int outputheight = 0;
-    int position[4] = { 0, 0, 0, 0 };
+    int position[4] = { 0, 0, 0, 0 };//x,y,w,h
 
     getPosition(outputmode, position);
-    outputx = position[0];
-    outputy = position[1];
-    outputwidth = position[2];
-    outputheight = position[3];
 
     pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
     char axis[MAX_STR_LEN] = {0};
@@ -1047,7 +956,7 @@ void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
 
     sprintf(axis, "%d %d %d %d",
-            outputx, outputy, outputx + outputwidth - 1, outputy + outputheight -1);
+            position[0], position[1], position[0] + position[2] - 1, position[1] + position[3] -1);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
 
     if (initState)
@@ -1126,7 +1035,7 @@ int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
 void DisplayMode::setOsdMouse(const char* curMode) {
     //SYS_LOGI("set osd mouse mode: %s", curMode);
 
-    int position[4] = { 0, 0, 0, 0 };
+    int position[4] = { 0, 0, 0, 0 };//x,y,w,h
     getPosition(curMode, position);
     setOsdMouse(position[0], position[1], position[2], position[3]);
 }
@@ -1168,11 +1077,7 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {
-    char std_mode[MODE_LEN] = {0};
-    strcpy(std_mode, curMode);
-    standardMode(std_mode);
-
-    int index = modeToIndex(std_mode);
+    int index = modeToIndex(curMode);
     switch (index) {
         case DISPLAY_MODE_480I:
         case DISPLAY_MODE_480CVBS: // 480cvbs
@@ -1275,10 +1180,7 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
             break;
     }
 }
-void DisplayMode::isHDCPTxAuthSuccess(int *status) {
 
-    pTxAuth->isAuthSuccess(status);
-}
 void DisplayMode::setPosition(int left, int top, int width, int height) {
     char x[512] = {0};
     char y[512] = {0};
@@ -1291,7 +1193,6 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
 
     char curMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
-    standardMode(curMode);
     int index = modeToIndex(curMode);
     switch (index) {
         case DISPLAY_MODE_480I: // 480i
@@ -1406,8 +1307,11 @@ int DisplayMode::modeToIndex(const char *mode) {
     return index;
 }
 
-void DisplayMode::onTxEvent (char* hpdstate, int outputState) {
+void DisplayMode::isHDCPTxAuthSuccess(int *status) {
+    pTxAuth->isAuthSuccess(status);
+}
 
+void DisplayMode::onTxEvent (char* hpdstate, int outputState) {
     SYS_LOGI("onTxEvent hpdstate:%s state: %d\n", hpdstate, outputState);
     setMboxDisplay(hpdstate, (output_mode_state)outputState);
 }

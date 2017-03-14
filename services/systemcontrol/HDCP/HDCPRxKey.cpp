@@ -70,8 +70,8 @@ using namespace android;
 #define HDCP_RX22_KEY_CRC_PATH              "/param/hdcprx22.crc"
 #define HDCP_RX22_KEY_CRC_LEN               4
 
-#define HDCP_RX_DEBUG_PATH              "/sys/class/hdmirx/hdmirx0/debug"
-#define HDMI_RX_HPD_OK_FLAG                "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
+#define HDCP_RX_DEBUG_PATH                  "/sys/class/hdmirx/hdmirx0/debug"
+#define HDMI_RX_HPD_OK_FLAG                 "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
 
 #define HDCP_RX22_STORAGE_KEY_SIZE          (10U<<10)//10K
 
@@ -286,7 +286,6 @@ int HDCPRxKey::setHdcpRX14key(const char *value, const int size) {
     return 0;
 }
 
-
 bool HDCPRxKey::setHDCP14Key() {
     char keyContentBuf[HDCP_RX14_KEY_CONTENT_SIZE] = { 0 };
     char keyTotalBuf[HDCP_RX14_KEY_TOTAL_SIZE];
@@ -410,7 +409,6 @@ _exit:
     return ret;
 }
 
-
 bool HDCPRxKey::setHDCP22Key() {
     int ret = false;
     int keyLen = 0;
@@ -422,8 +420,8 @@ bool HDCPRxKey::setHDCP22Key() {
 
     char existKey[10] = {0};
     int countNum = 0;
-    int newFwSize =0;
-    int fwFd = -1;
+    struct stat st;
+
     char *pKeyBuf = new char[HDCP_RX22_STORAGE_KEY_SIZE];
     if (!pKeyBuf) {
         SYS_LOGE("Exception: fail to alloc buffer size:%d\n", HDCP_RX22_STORAGE_KEY_SIZE);
@@ -436,8 +434,8 @@ _reGenetate:
     writeSys(HDCP_RX_KEY_NAME_DEV_PATH, HDCP_RX22_KEY_NAME);
 
     readSys(HDCP_RX_KEY_DATA_EXIST, (char*)existKey, 10);
-    if (0 == strcmp(existKey, "0")) {
-        SYS_LOGE("do not write key to the storage");
+    if (!strcmp(existKey, "0")) {
+        SYS_LOGE("do not write key to the secure storage");
         goto _exit;
     }
 
@@ -495,28 +493,29 @@ _reGenetate:
             ret = true;
         }
     }
-    if ((fwFd = open(HDCP_RX22_DES_FW_PATH, O_RDONLY))<0) {
-        SYS_LOGE("open %s error(%s)", HDCP_RX22_DES_FW_PATH, strerror(errno));
+
+    if (stat(HDCP_RX22_DES_FW_PATH, &st) != 0) {
+        SYS_LOGE("Error stating file that we just created %s, error:%s", HDCP_RX22_DES_FW_PATH, strerror(errno));
         goto _exit;
     }
-    newFwSize= lseek(fwFd, 0, SEEK_END);
-    lseek(fwFd, 0, SEEK_SET);
-    close(fwFd);
-    fwFd = -1;
-    if (newFwSize < 100 && countNum <2) {
-        SYS_LOGI("regenerate firmware.le for the %d time",countNum);
+
+    if (st.st_size < 100) {
         remove(HDCP_RX22_DES_FW_PATH);
-        newFwSize =0;
-        countNum++;
-        goto _reGenetate;
+
+        SYS_LOGE("generate firmware.le error, for the %d time", countNum);
+        if (countNum < 2) {
+            countNum++;
+            goto _reGenetate;
+        }
+        else {
+            writeSys(HDMI_RX_HPD_OK_FLAG, "0");
+            goto _exit;
+        }
     }
-   if (newFwSize < 100) {
-      SYS_LOGI("Regenerate firmware.le fail, Write 0 to HDMI_RX_HPD_OK_FLAG.");
-      writeSys(HDMI_RX_HPD_OK_FLAG, "0");
-   }
-   usleep(100*1000);
-   sysWrite.setProperty("ctl.start", "hdcp_rx22");
-   SYS_LOGI("Starting hdcp_rx22 finished after firmware.le generated\n");
+
+    usleep(100*1000);
+    sysWrite.setProperty("ctl.start", "hdcp_rx22");
+    SYS_LOGI("firmware.le generated success, start hdcp rx22\n");
 _exit:
     if (pKeyBuf) delete[] pKeyBuf;
     return ret;
@@ -636,10 +635,10 @@ bool HDCPRxKey::combineFirmware() {
 
     //write firmware.le buffer to file
     if ((writeSize = write(desFd, pSrcData, srcSize)) <= 0)
-        SYS_LOGE("write firmware.le data error,write size: %d",writeSize);
+        SYS_LOGE("write firmware.le data error,write size: %d", writeSize);
     close(desFd);
     desFd = -1;
-    SYS_LOGI("the pSrcData is  %s, srcSize is %d ", pSrcData,srcSize);
+
     ret= true;
 exit:
     if (srcFd >= 0)

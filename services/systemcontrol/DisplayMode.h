@@ -109,7 +109,7 @@ using namespace android;
 #define AV_HDMI_CONFIG                  "/sys/class/amhdmitx/amhdmitx0/config"
 #define AV_HDMI_3D_SUPPORT              "/sys/class/amhdmitx/amhdmitx0/support_3d"
 
-#define HDMI_TX_PLUG_UEVENT             "DEVPATH=/devices/virtual/switch/hdmi"
+#define HDMI_TX_PLUG_UEVENT             "DEVPATH=/devices/virtual/switch/hdmi"//hdmi hot plug event
 #define HDMI_TX_POWER_UEVENT            "DEVPATH=/devices/virtual/switch/hdmi_power"
 #define HDMI_TX_PLUG_STATE              "/sys/devices/virtual/switch/hdmi/state"
 #define HDMI_TX_HDR_UEVENT              "DEVPATH=/devices/virtual/switch/hdmi_hdr"
@@ -154,7 +154,6 @@ using namespace android;
 #define PROP_FS_MODE                    "const.filesystem.mode"
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
-#define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
 
 #define ENV_480I_X                      "ubootenv.var.480i_x"
 #define ENV_480I_Y                      "ubootenv.var.480i_y"
@@ -310,9 +309,9 @@ enum {
 
 typedef enum {
     OUPUT_MODE_STATE_INIT               = 0,
-    OUPUT_MODE_STATE_POWER              = 1,
-    OUPUT_MODE_STATE_SWITCH             = 2,
-    OUPUT_MODE_STATE_SWITCH_ADAPTER     = 3,
+    OUPUT_MODE_STATE_POWER              = 1,//hot plug
+    OUPUT_MODE_STATE_SWITCH             = 2,//user switch the mode
+    OUPUT_MODE_STATE_SWITCH_ADAPTER     = 3,//video auto switch the mode
     OUPUT_MODE_STATE_RESERVE            = 4
 }output_mode_state;
 
@@ -388,12 +387,9 @@ private:
     void getBestHdmiMode(char * mode, hdmi_data_t* data);
     void getHighestHdmiMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
-    void standardMode(char* mode);
-    void addSuffixForMode(char* mode, output_mode_state state);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
     bool isEdidChange();
     bool isBestOutputmode();
-    bool isDeepColor();
     void initHdmiData(hdmi_data_t* data, char* hpdstate);
     void setMboxOutputMode(const char* outputmode, output_mode_state state);
     void setTVOutputMode(const char* outputmode, bool initState);
@@ -433,7 +429,7 @@ private:
     HDCPTxAuth *pTxAuth = NULL;
     HDCPRxAuth *pRxAuth = NULL;
 
-    FormatColorDepth *pFmtColorDepth= NULL;
+    FormatColorDepth *pFmtColorDepth = NULL;
 
 #ifndef RECOVERY_MODE
     sp<ISystemControlNotify> mNotifyListener;

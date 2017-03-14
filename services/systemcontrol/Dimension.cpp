@@ -41,16 +41,15 @@ using namespace android;
 #endif
 
 Dimension::Dimension(DisplayMode *displayMode, SysWrite *sysWrite)
-    :mDisplay3DFormat(0),
-    mInitDone(false),
-    mLogLevel(LOG_LEVEL_DEFAULT) {
+    :mInitDone(false),
+    mLogLevel(LOG_LEVEL_DEFAULT),
+    mDisplay3DFormat(0) {
+
     pDisplayMode = displayMode;
     pSysWrite = sysWrite;
     pTxAuth = displayMode->geTxAuth();
 
     strcpy(mMode3d, VIDEO_3D_OFF);
-
-    ALOGI("init");
 }
 
 Dimension::~Dimension() {
@@ -103,7 +102,6 @@ void Dimension::getLine(int idx, int total, char* src, char* dst) {
             pBuf += (offset + 1);
         }
         else { //last line
-            ALOGE("[getLine]pBuf:%x, pBuf:%s\n", pBuf, pBuf);
             if (strlen(pBuf) > 0) {
                 strcpy(dst, pBuf);
             }
@@ -755,29 +753,23 @@ void Dimension::get3DFormatStr(int format, char *str) {
         return;
     }
 
-    char *formatStr = "3doff";
     switch (format) {
-        case FORMAT_3D_OFF:
-            formatStr = "3doff";
-            break;
         case FORMAT_3D_AUTO:
-            formatStr = "3dauto";
+            strcpy(str, "3dauto");
             break;
         case FORMAT_3D_SIDE_BY_SIDE:
-            formatStr = "3dlr";
+            strcpy(str, "3dlr");
             break;
         case FORMAT_3D_TOP_AND_BOTTOM:
-            formatStr = "3dtb";
+            strcpy(str, "3dtb");
             break;
+        case FORMAT_3D_OFF:
         case FORMAT_3D_LINE_ALTERNATIVE:
-            break;
         case FORMAT_3D_FRAME_ALTERNATIVE:
-            break;
         default:
-            formatStr = "3doff";
+            strcpy(str, "3doff");
             break;
     }
-    strcpy(str, formatStr);
 }
 
 int Dimension::dump(char *result) {

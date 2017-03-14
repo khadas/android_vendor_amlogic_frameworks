@@ -317,7 +317,7 @@ int setImgPath(const char *path)
     int actualReadSz = 0;
     actualReadSz = fread(itemReadBuf, 1, IMG_HEAD_SZ, fdImg);
     if (actualReadSz != IMG_HEAD_SZ) {
-        errorP("Want to read %d, but only read %d\n", IMG_HEAD_SZ, actualReadSz);
+        errorP("Want to read %lu, but only read %d\n", IMG_HEAD_SZ, actualReadSz);
         fclose(fdImg);
         free(itemReadBuf);
         return -1;

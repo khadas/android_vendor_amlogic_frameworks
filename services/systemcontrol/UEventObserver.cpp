@@ -37,16 +37,6 @@
 #include "common.h"
 #include "UEventObserver.h"
 
-#ifndef RECOVERY_MODE
-#include <utils/Vector.h>
-#include <utils/String8.h>
-#include <utils/Mutex.h>
-
-using namespace android;
-
-static Mutex gMatchesMutex;
-static Vector<String8> gMatches;
-#endif
 
 UEventObserver::UEventObserver()
     :mFd(-1), mLogLevel(LOG_LEVEL_DEFAULT) {
@@ -71,7 +61,8 @@ int UEventObserver::ueventInit() {
 
     memset(&addr, 0, sizeof(addr));
     addr.nl_family = AF_NETLINK;
-    addr.nl_pid = getpid();
+    //addr.nl_pid = pthread_self() << 16 | getpid();
+    addr.nl_pid = gettid();
     addr.nl_groups = 0xffffffff;
 
     s = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);
@@ -122,7 +113,7 @@ bool UEventObserver::isMatch(const char* buffer, size_t length,
     const char* field = buffer;
     const char* end = buffer + length + 1;
     do {
-        if (strstr(field, matchStr)) {
+        if (!strcmp(field, matchStr)) {
             SYS_LOGI("Matched uevent message with pattern: %s", matchStr);
 
             strcpy(ueventData->matchName, matchStr);

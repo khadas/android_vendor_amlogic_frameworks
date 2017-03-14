@@ -151,6 +151,7 @@ private:
     void setDiBypassAll(int format);
 
     char mMode3d[32];//this used for video 3d set
+    bool mInitDone;
     int mLogLevel;
     int mDisplay3DFormat;
     DisplayMode *pDisplayMode;
@@ -182,8 +183,6 @@ private:
         axis_t dst;
     };
     window_axis_t mWindowAxis;
-
-    bool mInitDone;
 };
 // ----------------------------------------------------------------------------
 } // namespace android

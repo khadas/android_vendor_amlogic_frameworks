@@ -138,5 +138,4 @@ LOCAL_STATIC_LIBRARIES := \
 
 include $(BUILD_SHARED_LIBRARY)
 
-include $(CURRENT_PATH)/tv/Android.mk
 include $(CURRENT_PATH)/hdmi_cec/Android.mk

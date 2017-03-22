@@ -651,6 +651,10 @@ bool DigManager::isRebooting() {
     if (strstr(powerctl, "reboot") != NULL) {
         return true;
     }
+
+    if (!strcmp(powerctl, "shutdown")) {
+        return true;
+    }
     return false;
 }
 

@@ -23,11 +23,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+
+import com.droidlogic.app.MediaPlayerExt;
 
 public class SubtitleManager {
         private String TAG = "SubtitleManager";
         private boolean mDebug = false;
-        private MediaPlayer mMediaPlayer = null;
+        private MediaPlayerExt mMediaPlayer = null;
         private ISubTitleService mService = null;
         private boolean mInvokeFromMp = false;
         private boolean mThreadStop = false;
@@ -35,9 +38,12 @@ public class SubtitleManager {
         private Thread mThread = null;
         private int RETRY_MAX = 10;
         private boolean mOpen = false;
+        private int mIOType = 0;//default 0 means dev
+        private ArrayList<Integer> mInnerTrackIdx = null;
 
-        public SubtitleManager (MediaPlayer mp) {
+        public SubtitleManager (MediaPlayerExt mp) {
             mMediaPlayer = mp;
+            mInnerTrackIdx = new ArrayList<Integer>();
             mDebug = false;
             checkDebug();
             if (!disable()) {
@@ -139,7 +145,7 @@ public class SubtitleManager {
             }
 
             final Uri uri = Uri.parse (path);
-            if ("file".equals (uri.getScheme() ) ) {
+            if ("file".equals (uri.getScheme())) {
                 path = uri.getPath();
             }
             mPath = path;
@@ -161,6 +167,10 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
 
+            if (innerTotal() > 0 && mIOType == 1 && mMediaPlayer != null) {
+                mMediaPlayer.selectTrack(mInnerTrackIdx.get(0));
+            }
+
             return ret;
         }
 
@@ -177,6 +187,10 @@ public class SubtitleManager {
             } catch (RemoteException e) {
                 throw new RuntimeException (e);
             }
+
+            if (idx < innerTotal() && mIOType == 1 && mMediaPlayer != null) {
+                mMediaPlayer.selectTrack(mInnerTrackIdx.get(idx));
+            }
         }
 
         public void start() {
@@ -184,6 +198,7 @@ public class SubtitleManager {
             mThreadStop = false;
             if (mPath != null) {
                 if (!mOpen) {
+                    setIOType();//first set io type to distinguish subtitle buffer source from dev or socket
                     mOpen = (open (mPath) == 0) ? true : false;
                 }
                 if (mOpen) {
@@ -246,6 +261,21 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
             LOGI("[total]ret:" + ret);
+            return ret;
+        }
+
+        public int innerTotal() {
+            LOGI("[innerTotal]mService:" + mService);
+            int ret = 0;
+
+            try {
+                if (mService != null) {
+                    ret = mService.getInnerSubTotal();
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+            LOGI("[innerTotal]ret:" + ret);
             return ret;
         }
 
@@ -520,6 +550,42 @@ public class SubtitleManager {
             } catch (RemoteException e) {
                 throw new RuntimeException (e);
             }
+        }
+
+        public void resetTrackIdx() {
+            if (mInnerTrackIdx != null) {
+                mInnerTrackIdx.clear();
+            }
+        }
+
+        public void storeTrackIdx(int idx) {
+            LOGI("[storeTrackIdx] idx:" + idx);
+            mInnerTrackIdx.add(idx);
+        }
+
+        private void setIOType(int type) {
+            LOGI("[setIOType] type:" + type);
+            try {
+                if (mService != null) {
+                    mService.setIOType(type);
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+        }
+
+        private void setIOType() {
+            LOGI("[setIOType]mMediaPlayer:" + mMediaPlayer);
+
+            mIOType = 0;
+            if (mMediaPlayer != null) {
+                String typeStr = mMediaPlayer.getStringParameter(mMediaPlayer.KEY_PARAMETER_AML_PLAYER_TYPE_STR);
+                LOGI("[setIOType]typeStr:" + typeStr);
+                if (typeStr.equals("AMNU_PLAYER")) {
+                    mIOType = 1;//type_socket, should sync with \vendor\amlogic\apps\SubTitle\jni\subtitle\sub_io.h IOType
+                }
+            }
+            setIOType(mIOType);
         }
 
         private static final int AML_SUBTITLE_START = 800; // random value

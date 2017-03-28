@@ -82,7 +82,7 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := \
 	droid_logic_SurfaceOverlay.cpp
 
-LOCAL_C_INCLUDES := $(JNI_H_INCLUDE)
+LOCAL_C_INCLUDES := $(JNI_H_INCLUDE) hardware/amlogic/gralloc
 
 LOCAL_MODULE    := libsurfaceoverlay_jni
 

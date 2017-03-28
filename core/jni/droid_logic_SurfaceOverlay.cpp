@@ -38,6 +38,7 @@
 #include <gui/Surface.h>
 #include <gui/IGraphicBufferProducer.h>
 #include <ui/GraphicBuffer.h>
+#include <gralloc_usage_ext.h>
 
 namespace android
 {

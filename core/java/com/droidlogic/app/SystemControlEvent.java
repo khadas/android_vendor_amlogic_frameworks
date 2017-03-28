@@ -27,6 +27,6 @@ public class SystemControlEvent extends ISystemControlNotify.Stub {
 
         Intent intent = new Intent(ACTION_SYSTEM_CONTROL_EVENT);
         intent.putExtra(EVENT_TYPE, event);
-        mContext.sendStickyBroadcast(intent);
+        mContext.sendStickyBroadcastAsUser(intent, android.os.UserHandle.ALL);
     }
 }

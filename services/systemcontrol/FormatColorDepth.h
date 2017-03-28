@@ -16,26 +16,20 @@
  *  @version  2.0
  *  @date     2017/01/24
  *  @par function description:
- *  - 1 write property or sysfs in daemon
+ *  - 1 HDMI deep color attribute
  */
-
-
 
 #ifndef FORMATCOLORDEPTH_H
 #define FORMATCOLORDEPTH_H
 
 #include "SysWrite.h"
 
+
 #define DISPLAY_HDMI_COLOR_ATTR         "/sys/class/amhdmitx/amhdmitx0/attr"//set deep color fmt and dept
 #define DISPLAY_HDMI_VALID_MODE         "/sys/class/amhdmitx/amhdmitx0/valid_mode"//testing if tv support this displaymode and  deepcolor combination, then if cat result is 1: support, 0: not
-#define SYSFS_DISPLAY_MODE              "/sys/class/display/mode"
-#define PROP_HDMIONLY                   "ro.platform.hdmionly"
-#define DISPLAY_HDMI_DEEP_COLOR         "/sys/class/amhdmitx/amhdmitx0/dc_cap"//RX supoort deep color
-
 #define PROP_DEFAULT_COLOR              "ro.platform.default_color"
 #define UBOOTENV_COLORATTRIBUTE         "ubootenv.var.colorattribute"
-#define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
-#define UBOOTENV_HDMIMODE             "ubootenv.var.hdmimode"
+
 
 #define COLOR_YCBCR444_12BIT             "444,12bit"
 #define COLOR_YCBCR444_10BIT             "444,10bit"
@@ -50,30 +44,21 @@
 #define COLOR_RGB_10BIT                  "rgb,10bit"
 #define COLOR_RGB_8BIT                   "rgb,8bit"
 
-#define TYPE_DISPLAY_TV                  3
-
-#define MODE_4K2K50HZ                   "2160p50hz"
-#define MODE_4K2K60HZ                   "2160p60hz"
-#define MODE_4K2KSMPTE50HZ              "smpte50hz"
-#define MODE_4K2KSMPTE60HZ              "smpte60hz"
 
 class FormatColorDepth
 {
 public:
-     typedef enum {
-         OUPUT_MODE_STATE_SWITCH             = 2
-     }output_mode_state;
-
     FormatColorDepth(int displayType);
     ~FormatColorDepth();
-    void getHdmiColorAttribute(char * outputmode,char * colorAttribute, int state);
+    void getHdmiColorAttribute(const char *outputmode, char * colorAttribute, int state);
+
 private:
     bool isBestOutputmode();
     bool getBootEnv(const char* key, char* value);
-    void setBootEnv(const char* key, char* value);
-    void getBestHdmiColorArrtibute(const char * outputmode, char* supportedColorList,char * colorAttribute);
-    void searchBestHdmiColorArrtibute(const char* outputmode, char* supportedColorList,  const char* selectList[], int listLenth, char* colorAttribute);
-    void initColorAttribute(char* supportedColorList, int lenth);
+
+    void getBestHdmiColorArrtibute(const char * outputmode, char* supportedColorList, char * colorAttribute);
+    bool initColorAttribute(char* supportedColorList, int len);
+
     int mDisplayType;
     SysWrite mSysWrite;
 };

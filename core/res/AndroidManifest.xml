@@ -16,6 +16,7 @@
         android:label="@string/droidlogic_perm_system_control_label"
         android:description="@string/droidlogic_perm_system_control_description" />
 
+    <protected-broadcast android:name="android.intent.action.SYSTEM_CONTROL_EVENT" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="droidlogic.permission.SYSTEM_CONTROL" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />

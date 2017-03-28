@@ -22,6 +22,14 @@
  #ifndef _SYSTEM_CONTROL_UEVENT_OBSERVER_H
 #define _SYSTEM_CONTROL_UEVENT_OBSERVER_H
 
+#ifndef RECOVERY_MODE
+#include <utils/Vector.h>
+#include <utils/String8.h>
+#include <utils/Mutex.h>
+
+using namespace android;
+#endif
+
 typedef struct uevent_data {
     int len;
     char buf[1024];
@@ -64,6 +72,11 @@ private:
     int mLogLevel;
 
     match_item_t mMatchStr;//for none recovery mode
+
+#ifndef RECOVERY_MODE
+    Mutex gMatchesMutex;
+    Vector<String8> gMatches;
+#endif
 };
 // ----------------------------------------------------------------------------
 #endif /*_SYSTEM_CONTROL_UEVENT_OBSERVER_H*/

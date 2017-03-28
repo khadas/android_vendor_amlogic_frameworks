@@ -85,7 +85,7 @@ int HDCPTxAuth::start() {
     int ret;
     pthread_t thread_id;
 
-    SYS_LOGI("hdcp_tx thread start\n");
+    //SYS_LOGI("hdcp_tx thread start\n");
     if (pthread_mutex_trylock(&pthreadTxMutex) == EDEADLK) {
         SYS_LOGE("hdcp_tx create thread, Mutex is deadlock\n");
         return -1;
@@ -147,13 +147,17 @@ void* HDCPTxAuth::authThread(void* data) {
         //first close osd, after HDCP authenticate completely, then open osd
         pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_BLANK, "1");
 
-        pThiz->authLoop(hdcp22, hdcp14);
+        bool ret = pThiz->authLoop(hdcp22, hdcp14);
+        if (!pThiz->authLoop(hdcp22, hdcp14)) {
+            SYS_LOGE("HDCP authenticate fail, need black screen \n");
+            return NULL;
+        }
         pThiz->mSysWrite.writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
 
         pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_BLANK, "0");
         pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
     }
-    else{
+    else {
         pThiz->mSysWrite.writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
     }
     return NULL;
@@ -220,9 +224,10 @@ bool HDCPTxAuth::authInit(bool *pHdcp22, bool *pHdcp14) {
     return true;
 }
 
-void HDCPTxAuth::authLoop(bool useHdcp22, bool useHdcp14) {
+bool HDCPTxAuth::authLoop(bool useHdcp22, bool useHdcp14) {
     SYS_LOGI("hdcp_tx begin to authenticate hdcp22:%d, hdcp14:%d\n", useHdcp22, useHdcp14);
 
+    bool success = false;
 #ifdef HDCP_AUTHENTICATION
     int count = 0;
     while (!mExitHdcpTxThread) {
@@ -231,7 +236,7 @@ void HDCPTxAuth::authLoop(bool useHdcp22, bool useHdcp14) {
         char auth[MODE_LEN] = {0};
         mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
         if (strstr(auth, (char *)"1")) {//Authenticate is OK
-            SYS_LOGI("hdcp_tx authenticate succeed\n");
+            bool success = true;
             mSysWrite.writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
             break;
         }
@@ -256,8 +261,9 @@ void HDCPTxAuth::authLoop(bool useHdcp22, bool useHdcp14) {
             break;
         }
     }
-    SYS_LOGI("hdcp_tx authenticate finish\n");
 #endif
+    SYS_LOGI("hdcp_tx authenticate success: %d\n", success?1:0);
+    return success;
 }
 
 void HDCPTxAuth::startVer22() {
@@ -271,14 +277,14 @@ void HDCPTxAuth::startVer22() {
 
 void HDCPTxAuth::startVer14() {
     //start hdcp_tx 1.4
-    SYS_LOGI("hdcp_tx 1.4 start\n");
+    //SYS_LOGI("hdcp_tx 1.4 start\n");
     mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_MODE, DISPLAY_HDMI_HDCP_14);
 }
 
 void HDCPTxAuth::stopVerAll() {
     char hdcpRxVer[MODE_LEN] = {0};
     //stop hdcp_tx 2.2 & 1.4
-    SYS_LOGI("hdcp_tx 2.2 & 1.4 stop hdcppwr\n");
+    SYS_LOGI("hdcp_tx 2.2 & 1.4 stop hdcp pwr\n");
     mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
     usleep(20000);
     mSysWrite.setProperty("ctl.stop", "hdcp_tx22");
@@ -307,12 +313,13 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
 
     while (true) {
         ueventObserver.waitForNextEvent(&ueventData);
+        SYS_LOGI("HDCP TX switch_name: %s ,switch_state: %s\n", ueventData.switchName, ueventData.switchState);
+
+        //hot plug string is the hdmi audio, hdmi power, hdmi hdr substring
         if (!strcmp(ueventData.matchName, HDMI_TX_PLUG_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI) && (NULL != pThiz->mpCallback)) {
-            SYS_LOGI("tx switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
             pThiz->mpCallback->onTxEvent(ueventData.switchState, OUPUT_MODE_STATE_POWER);
         }
         else if (!strcmp(ueventData.matchName, HDMI_TX_POWER_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI_POWER)) {
-            SYS_LOGI("tx switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
             //0: hdmi suspend  1: hdmi resume
             if (!strcmp(ueventData.switchState, HDMI_TX_RESUME) && (NULL != pThiz->mpCallback)) {
                 pThiz->mpCallback->onTxEvent(ueventData.switchState, OUPUT_MODE_STATE_POWER);
@@ -322,8 +329,6 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
             }
         }
         else if (!strcmp(ueventData.matchName, HDMI_TX_HDR_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI_HDR)) {
-            SYS_LOGI("tx switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
-
             //0: exit hdr mode  1: enter hdr mode
             char hdrState[MODE_LEN] = {0};
             pThiz->mSysWrite.readSysfs(HDMI_TX_SWITCH_HDR, hdrState);
@@ -338,7 +343,7 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
                 pThiz->start();
             }
         }
-       if (!strcmp(ueventData.matchName, HDMI_VIDEO_FRAME_RATE_UEVENT)
+        else if (!strcmp(ueventData.matchName, HDMI_VIDEO_FRAME_RATE_UEVENT)
             ||!strcmp(ueventData.matchName, HDMI_IONVIDEO_FRAME_RATE_UEVENT)) {
                pThiz->mFRAutoAdpt->onTxUeventReceived(&ueventData);
         }
@@ -369,18 +374,17 @@ void HDCPTxAuth::sfRepaintEverything() {
 }
 
 void HDCPTxAuth::isAuthSuccess(int *status) {
-    *status =0;
     int ret = pthread_mutex_trylock(&pthreadTxMutex);
     if (ret != 0) {
          SYS_LOGE("try lock pthreadTxMutex return status: %d\n",ret);
          *status = -1;
     }
-   char auth[MODE_LEN] = {0};
-   mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
-   if (strstr(auth, (char *)"1")) {//Authenticate is OK
-       *status = 1;
-   }
-   pthread_mutex_unlock(&pthreadTxMutex);
-   SYS_LOGI("HDCPTx Auth status is: %d",*status);
+    char auth[MODE_LEN] = {0};
+    mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
+    if (strstr(auth, (char *)"1")) {//Authenticate is OK
+        *status = 1;
+    }
+    pthread_mutex_unlock(&pthreadTxMutex);
+    SYS_LOGI("HDCPTx Auth status is: %d",*status);
 }
 #endif

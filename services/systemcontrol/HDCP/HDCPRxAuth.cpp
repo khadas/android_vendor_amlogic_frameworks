@@ -131,8 +131,9 @@ void* HDCPRxAuth::RxUenventThreadLoop(void* data) {
 
     while (true) {
         ueventObserver.waitForNextEvent(&ueventData);
+        SYS_LOGI("HDCP RX switch_name: %s ,switch_state: %s\n", ueventData.switchName, ueventData.switchState);
+
         if (!strcmp(ueventData.matchName, HDMI_RX_PLUG_UEVENT)) {
-            SYS_LOGI("HDCP RX, switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
             if (!strcmp(ueventData.switchState, HDMI_RX_PLUG_IN)) {
                 pThiz->pTxAuth->stop();
                 pThiz->stopVer22();
@@ -145,8 +146,6 @@ void* HDCPRxAuth::RxUenventThreadLoop(void* data) {
             }
         }
         else if (!strcmp(ueventData.matchName, HDMI_RX_AUTH_UEVENT)) {
-            SYS_LOGI("HDCP RX, switch_name: %s switch_state: %s\n", ueventData.switchName, ueventData.switchState);
-
             if (!strcmp(ueventData.switchState, HDMI_RX_AUTH_FAIL)) {
                 SYS_LOGI("HDCP RX, switch_state: %s error\n", ueventData.switchState);
                 continue;

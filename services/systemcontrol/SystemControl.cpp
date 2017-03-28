@@ -166,7 +166,7 @@ bool SystemControl::writeSysfs(const String16& path, const char *value, const in
     return false;
 }
 
-int32_t SystemControl::readHdcpRX22Key(char *value, int size) {
+int32_t SystemControl::readHdcpRX22Key(char *value __attribute__((unused)), int size __attribute__((unused))) {
     /*if (NO_ERROR == permissionCheck()) {
         traceValue(String16("readHdcpRX22Key"), size);
         int len = pDisplayMode->readHdcpRX22Key(value, size);
@@ -185,7 +185,7 @@ bool SystemControl::writeHdcpRX22Key(const char *value, const int size) {
     return false;
 }
 
-int32_t SystemControl::readHdcpRX14Key(char *value, int size) {
+int32_t SystemControl::readHdcpRX14Key(char *value __attribute__((unused)), int size __attribute__((unused))) {
     /*if (NO_ERROR == permissionCheck()) {
         traceValue(String16("readHdcpRX14Key"), size);
         int len = pDisplayMode->readHdcpRX14Key(value, size);

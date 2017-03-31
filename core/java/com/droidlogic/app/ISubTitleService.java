@@ -284,6 +284,15 @@ public interface ISubTitleService extends android.os.IInterface {
                         reply.writeNoException();
                         return true;
                     }
+
+                    case TRANSACTION_setIOType: {
+                        data.enforceInterface (DESCRIPTOR);
+                        int _arg0;
+                        _arg0 = data.readInt();
+                        this.setIOType (_arg0);
+                        reply.writeNoException();
+                        return true;
+                    }
                 }
 
                 return super.onTransact (code, data, reply, flags);
@@ -801,6 +810,23 @@ public interface ISubTitleService extends android.os.IInterface {
                             _data.recycle();
                         }
                     }
+
+                    @Override
+                    public void setIOType (int type) throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+
+                        try {
+                            _data.writeInterfaceToken (DESCRIPTOR);
+                            _data.writeInt (type);
+                            mRemote.transact (Stub.TRANSACTION_setIOType, _data, _reply, 0);
+                            _reply.readException();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                    }
             }
 
             static final int TRANSACTION_open = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
@@ -831,6 +857,7 @@ public interface ISubTitleService extends android.os.IInterface {
             static final int TRANSACTION_getSubLanguage = (android.os.IBinder.FIRST_CALL_TRANSACTION + 25);
             static final int TRANSACTION_load = (android.os.IBinder.FIRST_CALL_TRANSACTION + 26);
             static final int TRANSACTION_setSurfaceViewParam = (android.os.IBinder.FIRST_CALL_TRANSACTION + 27);
+            static final int TRANSACTION_setIOType = (android.os.IBinder.FIRST_CALL_TRANSACTION + 28);
     }
 
     public void open (java.lang.String path) throws android.os.RemoteException;
@@ -864,4 +891,5 @@ public interface ISubTitleService extends android.os.IInterface {
     public java.lang.String getSubLanguage (int idx) throws android.os.RemoteException;
     public boolean load (java.lang.String path) throws android.os.RemoteException;
     public void setSurfaceViewParam(int x, int y, int w, int h) throws android.os.RemoteException;
+    public void setIOType (int type) throws android.os.RemoteException;
 }

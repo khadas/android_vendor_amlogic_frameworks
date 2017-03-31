@@ -236,7 +236,7 @@ bool HDCPTxAuth::authLoop(bool useHdcp22, bool useHdcp14) {
         char auth[MODE_LEN] = {0};
         mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_AUTH, auth);
         if (strstr(auth, (char *)"1")) {//Authenticate is OK
-            bool success = true;
+            success = true;
             mSysWrite.writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
             break;
         }

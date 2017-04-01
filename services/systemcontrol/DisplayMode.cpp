@@ -79,6 +79,39 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2KSMPTE60HZ420,
 };
 
+// Sink reference table, sorted by priority, per CDF
+static const char* MODES_SINK[] = {
+    "2160p60hz420",
+    "2160p60hz",
+    "2160p50hz420",
+    "2160p50hz",
+    "2160p30hz",
+    "2160p25hz",
+    "2160p24hz",
+    "1080p60hz",
+    "1080p50hz",
+    "1080p30hz",
+    "1080p25hz",
+    "1080p24hz",
+    "720p60hz",
+    "720p50hz",
+    "480p60hz",
+    "576p50hz",
+};
+
+// Repeater reference table, sorted by priority, per CDF
+static const char* MODES_REPEATER[] = {
+    "1080p60hz",
+    "1080p50hz",
+    "1080p30hz",
+    "1080p25hz",
+    "1080p24hz",
+    "720p60hz",
+    "720p50hz",
+    "480p60hz",
+    "576p50hz",
+};
+
 /**
  * strstr - Find the first substring in a %NUL terminated string
  * @s1: The string to be searched
@@ -178,16 +211,15 @@ void DisplayMode::init() {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
-        pFmtColorDepth = new FormatColorDepth(DISPLAY_TYPE_MBOX);
-        setMboxDisplay(NULL, OUPUT_MODE_STATE_INIT);
+        setSourceDisplay(NULL, OUPUT_MODE_STATE_INIT);
+        dumpCaps();
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
         pRxAuth = new HDCPRxAuth(pTxAuth);
-        pFmtColorDepth = new FormatColorDepth(DISPLAY_TYPE_TV);
-        setTVDisplay(true);
+        setSinkDisplay(true);
     }
 }
 
@@ -209,10 +241,10 @@ void DisplayMode::reInit() {
             setTabletDisplay();
         }
         else if (DISPLAY_TYPE_MBOX == mDisplayType) {
-            setMboxDisplay(NULL, OUPUT_MODE_STATE_POWER);
+            setSourceDisplay(NULL, OUPUT_MODE_STATE_POWER);
         }
         else if (DISPLAY_TYPE_TV == mDisplayType) {
-            setTVDisplay(false);
+            setSinkDisplay(false);
         }
     }
 
@@ -373,18 +405,18 @@ void DisplayMode::setTabletDisplay() {
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
-void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
+void DisplayMode::setSourceDisplay(char* hpdstate, output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
-    memset(&data, 0, sizeof(hdmi_data_t));
 
     if (mDisplayType == DISPLAY_TYPE_TV) {
         pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_DISABLE);
     }
 
+    memset(&data, 0, sizeof(hdmi_data_t));
     initHdmiData(&data, hpdstate);
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
-        if (!strcmp(data.hpd_state, "1")) {
+        if (HDMI_SINK_TYPE_NONE != data.sinkType) {
             if ((!strcmp(data.current_mode, MODE_480CVBS) || !strcmp(data.current_mode, MODE_576CVBS))
                     && (OUPUT_MODE_STATE_INIT == state)) {
                 pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
@@ -400,17 +432,19 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
     }
 
     //if the tv don't support current outputmode,then switch to best outputmode
-    if (strcmp(data.hpd_state, "1")) {
+    if (HDMI_SINK_TYPE_NONE == data.sinkType) {
         pSysWrite->writeSysfs(H265_DOUBLE_WRITE_MODE, "3");
-        if (strcmp(outputmode, MODE_480CVBS) && strcmp(outputmode, MODE_576CVBS)) {
-            strcpy(outputmode, MODE_576CVBS);
-        }
+        //if (strcmp(outputmode, MODE_480CVBS) && strcmp(outputmode, MODE_576CVBS))
+        //    strcpy(outputmode, MODE_576CVBS);
+
+        if (strlen(outputmode) == 0)
+            strcpy(outputmode, "none");
     } else {
         pSysWrite->writeSysfs(H265_DOUBLE_WRITE_MODE, "0");
     }
 
-    SYS_LOGI("init mbox display hpdstate:%s, old outputmode:%s, new outputmode:%s\n",
-            data.hpd_state,
+    SYS_LOGI("display sink type:%d [0:none, 1:sink, 2:repeater], old outputmode:%s, new outputmode:%s\n",
+            data.sinkType,
             data.current_mode,
             outputmode);
     if (strlen(outputmode) == 0)
@@ -447,33 +481,47 @@ void DisplayMode::setMboxDisplay(char* hpdstate, output_mode_state state) {
             pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
         }
     }
-    setMboxOutputMode(outputmode, state);
+    setSourceOutputMode(outputmode, state);
 }
 
-void DisplayMode::setMboxOutputMode(const char* outputmode){
-    setMboxOutputMode(outputmode, OUPUT_MODE_STATE_SWITCH);
+void DisplayMode::setSourceOutputMode(const char* outputmode){
+    setSourceOutputMode(outputmode, OUPUT_MODE_STATE_SWITCH);
 }
 
-void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state state) {
+void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state state) {
     char value[MAX_STR_LEN] = {0};
 
     int position[4] = { 0, 0, 0, 0 };//x,y,w,h
     bool cvbsMode = false;
 
+    if (!strcmp(outputmode, "auto")) {
+        hdmi_data_t data;
+
+        SYS_LOGI("outputmode is [auto] mode, need find the best mode\n");
+        initHdmiData(&data, (char *)"1");
+        getHdmiOutputMode((char *)outputmode, &data);
+    }
+
+    bool deepColorEnabled = pSysWrite->getPropertyBoolean(PROP_DEEPCOLOR, false);
     pSysWrite->readSysfs(HDMI_TX_FRAMRATE_POLICY, value);
     if ((OUPUT_MODE_STATE_SWITCH == state) && (strcmp(value, "0") == 0)) {
         char curDisplayMode[MODE_LEN] = {0};
-        char curColorAttribute[MODE_LEN] = {0};
-        char saveColorAttribute[MODE_LEN] = {0};
-
-        pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, curColorAttribute);
-        getBootEnv(UBOOTENV_COLORATTRIBUTE, saveColorAttribute);
 
         pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
+        if (!strcmp(outputmode, curDisplayMode)) {
+            //deep color disabled, only need check output mode same or not
+            if (!deepColorEnabled)
+                return;
 
-        SYS_LOGI("curColorAttribute:%s ,saveColorAttribute: %s\n", curColorAttribute, saveColorAttribute);
-        if (!strcmp(outputmode, curDisplayMode) && !strcmp(saveColorAttribute, curColorAttribute)) {
-            return;
+            //deep color enabled, check the deep color same or not
+            char curColorAttribute[MODE_LEN] = {0};
+            char saveColorAttribute[MODE_LEN] = {0};
+            pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, curColorAttribute);
+            getBootEnv(UBOOTENV_COLORATTRIBUTE, saveColorAttribute);
+
+            SYS_LOGI("curColorAttribute:%s ,saveColorAttribute: %s\n", curColorAttribute, saveColorAttribute);
+            if (!strcmp(saveColorAttribute, curColorAttribute))
+                return;
         }
     }
     // 1.set avmute and close phy
@@ -493,14 +541,21 @@ void DisplayMode::setMboxOutputMode(const char* outputmode, output_mode_state st
 
     // 3. set deep color and displaymode
     if (OUPUT_MODE_STATE_INIT != state) {
-        char colorAttribute[MODE_LEN] = {0};
-        pFmtColorDepth->getHdmiColorAttribute(outputmode, colorAttribute, (int)state);
-
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-        pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
 
-        //save to ubootenv
-        setBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
+        if (deepColorEnabled) {
+            char colorAttribute[MODE_LEN] = {0};
+
+            FormatColorDepth deepColor;
+            deepColor.getHdmiColorAttribute(outputmode, colorAttribute, (int)state);
+
+            pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
+            //save to ubootenv
+            setBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
+        }
+        else {
+            pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, "default");
+        }
     }
 
     //write framerate policy
@@ -810,8 +865,13 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
 }
 
 void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
-    if (strstr(data->edid, "null") != NULL) {
-        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
+    char edidParsing[MODE_LEN] = {0};
+    pSysWrite->readSysfs(DISPLAY_EDID_STATUS, edidParsing);
+
+    /* Fall back to 480p if EDID can't be parsed */
+    if (strcmp(edidParsing, "ok")) {
+        strcpy(mode, DEFAULT_OUTPUT_MODE);
+        SYS_LOGE("EDID parsing error detected\n");
         return;
     }
 
@@ -829,14 +889,21 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
     //SYS_LOGI("set HDMI mode to %s\n", mode);
 }
 
-void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
-    if (hpdstate == NULL) {
-        pSysWrite->readSysfs(DISPLAY_HPD_STATE, data->hpd_state);
-    } else {
-        strcpy(data->hpd_state, hpdstate);
-    }
+void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate __attribute__((unused))) {
+    char sinkType[MODE_LEN] = {0};
+    char edidParsing[MODE_LEN] = {0};
 
-    if (!strcmp(data->hpd_state, "1")) {
+    //three sink types: sink, repeater, none
+    pSysWrite->readSysfsOriginal(DISPLAY_HDMI_SINK_TYPE, sinkType);
+    pSysWrite->readSysfs(DISPLAY_EDID_STATUS, edidParsing);
+
+    data->sinkType = HDMI_SINK_TYPE_NONE;
+    if (NULL != strstr(sinkType, "sink"))
+        data->sinkType = HDMI_SINK_TYPE_SINK;
+    else if (NULL != strstr(sinkType, "repeater"))
+        data->sinkType = HDMI_SINK_TYPE_REPEATER;
+
+    if (HDMI_SINK_TYPE_NONE != data->sinkType) {
         int count = 0;
         while (true) {
             pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, data->edid);
@@ -853,6 +920,58 @@ void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate){
     }
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, data->current_mode);
     getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
+
+    //filter mode defined by CDF, default disable this
+    if (!strcmp(edidParsing, "ok") && false) {
+        const char *delim= "\n";
+        char filterEdid[MAX_STR_LEN] = {0};
+
+        char *ptr = strtok(data->edid, delim);
+        while (ptr != NULL) {
+            //recommend mode or not
+            bool recomMode = false;
+            int len = strlen(ptr);
+            if (ptr[len - 1] == '*') {
+                ptr[len - 1] = '\0';
+                recomMode = true;
+            }
+
+            if (modeSupport(ptr, data->sinkType)) {
+                strcat(filterEdid, ptr);
+                if (recomMode)
+                    strcat(filterEdid, "*");
+                strcat(filterEdid, delim);
+            }
+            ptr = strtok(NULL, delim);
+        }
+
+        //this is the real support edid filter by CDF
+        strcpy(data->edid, filterEdid);
+
+        SYS_LOGI("CDF filtered modes:\n%s", data->edid);
+    }
+}
+
+bool DisplayMode::modeSupport(char *mode, int sinkType) {
+    char **pMode = NULL;
+    int modeSize = 0;
+
+    if (HDMI_SINK_TYPE_SINK == sinkType) {
+        pMode= (char **)MODES_SINK;
+        modeSize = ARRAY_SIZE(MODES_SINK);
+    }
+    else if (HDMI_SINK_TYPE_REPEATER == sinkType) {
+        pMode= (char **)MODES_REPEATER;
+        modeSize = ARRAY_SIZE(MODES_REPEATER);
+    }
+
+    for (int i = 0; i < modeSize; i++) {
+        //SYS_LOGI("modeSupport mode=%s, filerMode:%s, size:%d\n", mode, pMode[i], modeSize);
+        if (!strcmp(mode, pMode[i]))
+            return true;
+    }
+
+    return false;
 }
 
 void DisplayMode::startBootanimDetectThread() {
@@ -944,7 +1063,7 @@ bool DisplayMode::isBestOutputmode() {
 }
 
 //this function only running in bootup time
-void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
+void DisplayMode::setSinkOutputMode(const char* outputmode, bool initState) {
     int position[4] = { 0, 0, 0, 0 };//x,y,w,h
 
     getPosition(outputmode, position);
@@ -972,7 +1091,7 @@ void DisplayMode::setTVOutputMode(const char* outputmode, bool initState) {
     }
 }
 
-void DisplayMode::setTVDisplay(bool initState) {
+void DisplayMode::setSinkDisplay(bool initState) {
     char current_mode[MODE_LEN] = {0};
     char outputmode[MODE_LEN] = {0};
 
@@ -1009,7 +1128,7 @@ void DisplayMode::setTVDisplay(bool initState) {
         pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
     }
 
-    setTVOutputMode(outputmode, initState);
+    setSinkOutputMode(outputmode, initState);
 }
 
 void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set) {
@@ -1313,12 +1432,16 @@ void DisplayMode::isHDCPTxAuthSuccess(int *status) {
 
 void DisplayMode::onTxEvent (char* hpdstate, int outputState) {
     SYS_LOGI("onTxEvent hpdstate:%s state: %d\n", hpdstate, outputState);
-    setMboxDisplay(hpdstate, (output_mode_state)outputState);
+
+    if (hpdstate && hpdstate[0] == '1')
+        dumpCaps();
+
+    setSourceDisplay(hpdstate, (output_mode_state)outputState);
 }
 
 void DisplayMode::onDispModeSyncEvent (const char* outputmode, int state) {
     SYS_LOGI("onDispModeSyncEvent outputmode:%s state: %d\n", outputmode, state);
-    setMboxOutputMode(outputmode, (output_mode_state)state);
+    setSourceOutputMode(outputmode, (output_mode_state)state);
 }
 
 //for debug
@@ -1337,6 +1460,31 @@ void DisplayMode::setListener(const sp<ISystemControlNotify>& listener) {
     mNotifyListener = listener;
 }
 #endif
+
+void DisplayMode::dumpCap(const char * path, const char * hint, char *result) {
+    char logBuf[MAX_STR_LEN];
+    pSysWrite->readSysfsOriginal(path, logBuf);
+
+    if (mLogLevel > LOG_LEVEL_0)
+        SYS_LOGI("%s%s", hint, logBuf);
+
+    if (NULL != result) {
+        strcat(result, hint);
+        strcat(result, logBuf);
+        strcat(result, "\n");
+    }
+}
+
+void DisplayMode::dumpCaps(char *result) {
+    dumpCap(DISPLAY_EDID_STATUS, "\nEDID parsing status: ", result);
+    dumpCap(DISPLAY_EDID_VALUE, "General caps\n", result);
+    dumpCap(DISPLAY_HDMI_DEEP_COLOR, "Deep color\n", result);
+    dumpCap(DISPLAY_HDMI_HDR, "HDR\n", result);
+    dumpCap(DISPLAY_HDMI_MODE_PREF, "Preferred mode: ", result);
+    dumpCap(DISPLAY_HDMI_SINK_TYPE, "Sink type: ", result);
+    dumpCap(DISPLAY_HDMI_AUDIO, "Audio caps\n", result);
+    dumpCap(DISPLAY_EDID_RAW, "Raw EDID\n", result);
+}
 
 int DisplayMode::dump(char *result) {
     if (NULL == result)
@@ -1359,6 +1507,7 @@ int DisplayMode::dump(char *result) {
     if (DISPLAY_TYPE_MBOX == mDisplayType) {
         sprintf(buf, "default ui:%s\n", mDefaultUI);
         strcat(result, buf);
+        dumpCaps(result);
     }
     return 0;
 }

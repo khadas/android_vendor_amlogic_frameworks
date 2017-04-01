@@ -43,7 +43,11 @@
 using namespace android;
 #endif
 
-//#define USE_BEST_MODE
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
+//frame rate auto adatper feature
+#define FRAME_RATE_AUTO_ADAPTER
+
 #define TEST_UBOOT_MODE
 
 #define DEVICE_STR_MID                  "MID"
@@ -55,7 +59,7 @@ using namespace android;
 #define DESITY_2160P                    "480"
 
 #define DEFAULT_EDID_CRCHEAD            "checkvalue: "
-#define DEFAULT_OUTPUT_MODE             "720p60hz"
+#define DEFAULT_OUTPUT_MODE             "480p60hz"
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
@@ -99,10 +103,16 @@ using namespace android;
 #define DISPLAY_HDMI_EDID               "/sys/class/amhdmitx/amhdmitx0/disp_cap"//RX support display mode
 #define DISPLAY_HDMI_DISP_CAP_3D        "/sys/class/amhdmitx/amhdmitx0/disp_cap_3d"//RX support display 3d mode
 #define DISPLAY_HDMI_DEEP_COLOR         "/sys/class/amhdmitx/amhdmitx0/dc_cap"//RX supoort deep color
+#define DISPLAY_HDMI_HDR                "/sys/class/amhdmitx/amhdmitx0/hdr_cap"
+#define DISPLAY_HDMI_AUDIO              "/sys/class/amhdmitx/amhdmitx0/aud_cap"
+#define DISPLAY_HDMI_MODE_PREF          "/sys/class/amhdmitx/amhdmitx0/preferred_mode"
+#define DISPLAY_HDMI_SINK_TYPE          "/sys/class/amhdmitx/amhdmitx0/sink_type"
 #define DISPLAY_HDMI_VIC                "/sys/class/amhdmitx/amhdmitx0/vic"//if switch between 8bit and 10bit, clear mic first
 
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
 #define DISPLAY_EDID_VALUE              "/sys/class/amhdmitx/amhdmitx0/edid"
+#define DISPLAY_EDID_STATUS             "/sys/class/amhdmitx/amhdmitx0/edid_parsing"
+#define DISPLAY_EDID_RAW                "/sys/class/amhdmitx/amhdmitx0/rawedid"
 #define DISPLAY_HDMI_PHY                "/sys/class/amhdmitx/amhdmitx0/phy"
 
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
@@ -113,11 +123,13 @@ using namespace android;
 #define HDMI_TX_POWER_UEVENT            "DEVPATH=/devices/virtual/switch/hdmi_power"
 #define HDMI_TX_PLUG_STATE              "/sys/devices/virtual/switch/hdmi/state"
 #define HDMI_TX_HDR_UEVENT              "DEVPATH=/devices/virtual/switch/hdmi_hdr"
+#define HDMI_TX_HDCP_UEVENT             "DEVPATH=/devices/virtual/switch/hdcp"
 #define HDMI_TX_SWITCH_HDR              "/sys/class/switch/hdmi_hdr/state"
 
 #define HDMI_UEVENT_HDMI                "hdmi"
 #define HDMI_UEVENT_HDMI_POWER          "hdmi_power"
 #define HDMI_UEVENT_HDMI_HDR            "hdmi_hdr"
+#define HDMI_UEVENT_HDCP                "hdcp"
 
 #define HDMI_TX_PLUG_OUT                "0"
 #define HDMI_TX_PLUG_IN                 "1"
@@ -154,6 +166,7 @@ using namespace android;
 #define PROP_FS_MODE                    "const.filesystem.mode"
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
+#define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
 
 #define ENV_480I_X                      "ubootenv.var.480i_x"
 #define ENV_480I_Y                      "ubootenv.var.480i_y"
@@ -315,9 +328,16 @@ typedef enum {
     OUPUT_MODE_STATE_RESERVE            = 4
 }output_mode_state;
 
+typedef enum {
+    HDMI_SINK_TYPE_NONE                 = 0,
+    HDMI_SINK_TYPE_SINK                 = 1,
+    HDMI_SINK_TYPE_REPEATER             = 2,
+    HDMI_SINK_TYPE_RESERVE              = 3
+}hdmi_sink_type;
+
 typedef struct hdmi_data {
     char edid[MAX_STR_LEN];
-    char hpd_state[10];//"0" or "1", hdmi pluged or not
+    int sinkType;
     char current_mode[MODE_LEN];
     char ubootenv_hdmimode[MODE_LEN];
 }hdmi_data_t;
@@ -347,7 +367,7 @@ public:
 
     void setLogLevel(int level);
     int dump(char *result);
-    void setMboxOutputMode(const char* outputmode);
+    void setSourceOutputMode(const char* outputmode);
     void setDigitalMode(const char* mode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
@@ -356,7 +376,7 @@ public:
     void isHDCPTxAuthSuccess( int *status);
     static void* bootanimDetect(void *data);
 
-    void setMboxDisplay(char* hpdstate, output_mode_state state);
+    void setSourceDisplay(char* hpdstate, output_mode_state state);
 
     void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
@@ -391,15 +411,18 @@ private:
     bool isEdidChange();
     bool isBestOutputmode();
     void initHdmiData(hdmi_data_t* data, char* hpdstate);
-    void setMboxOutputMode(const char* outputmode, output_mode_state state);
-    void setTVOutputMode(const char* outputmode, bool initState);
+    bool modeSupport(char *mode, int sinkType);
+    void setSourceOutputMode(const char* outputmode, output_mode_state state);
+    void setSinkOutputMode(const char* outputmode, bool initState);
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
     static void* HdmiUenventThreadLoop(void* data);
-    void setTVDisplay(bool initState);
+    void setSinkDisplay(bool initState);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
     int getBootenvInt(const char* key, int defaultVal);
+    void dumpCap(const char * path, const char * hint, char *result);
+    void dumpCaps(char *result=NULL);
 
     const char* pConfigPath;
     int mDisplayType;
@@ -421,15 +444,13 @@ private:
     int mDisplayWidth;
     int mDisplayHeight;
 
-    char mSocType[MAX_STR_LEN];
-    char mDefaultUI[MAX_STR_LEN];//this used for mbox
+    char mSocType[64];
+    char mDefaultUI[64];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
 
     HDCPTxAuth *pTxAuth = NULL;
     HDCPRxAuth *pRxAuth = NULL;
-
-    FormatColorDepth *pFmtColorDepth = NULL;
 
 #ifndef RECOVERY_MODE
     sp<ISystemControlNotify> mNotifyListener;

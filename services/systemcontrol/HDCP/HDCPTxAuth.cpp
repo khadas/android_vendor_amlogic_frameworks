@@ -149,7 +149,9 @@ void* HDCPTxAuth::authThread(void* data) {
 
         bool ret = pThiz->authLoop(hdcp22, hdcp14);
         if (!pThiz->authLoop(hdcp22, hdcp14)) {
-            SYS_LOGE("HDCP authenticate fail, need black screen \n");
+            SYS_LOGE("HDCP authenticate fail, need black screen and disable audio\n");
+
+            pThiz->mSysWrite.writeSysfs(AV_HDMI_CONFIG, "audio_off");
             return NULL;
         }
         pThiz->mSysWrite.writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
@@ -308,8 +310,11 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
     ueventObserver.addMatch(HDMI_TX_PLUG_UEVENT);
     ueventObserver.addMatch(VIDEO_LAYER1_UEVENT);
     ueventObserver.addMatch(HDMI_TX_HDR_UEVENT);
+    ueventObserver.addMatch(HDMI_TX_HDCP_UEVENT);
+#ifdef FRAME_RATE_AUTO_ADAPTER
     ueventObserver.addMatch(HDMI_VIDEO_FRAME_RATE_UEVENT);
     ueventObserver.addMatch(HDMI_IONVIDEO_FRAME_RATE_UEVENT);
+#endif
 
     while (true) {
         ueventObserver.waitForNextEvent(&ueventData);
@@ -341,6 +346,11 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
                 usleep(200000);//200ms
                 pThiz->mSysWrite.writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
                 pThiz->start();
+            }
+        }
+        else if (!strcmp(ueventData.matchName, HDMI_TX_HDCP_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDCP)) {
+            //0: hdcp authenticate fail  1: hdcp authenticate success
+            if (!strcmp(ueventData.switchState, "0")) {
             }
         }
         else if (!strcmp(ueventData.matchName, HDMI_VIDEO_FRAME_RATE_UEVENT)

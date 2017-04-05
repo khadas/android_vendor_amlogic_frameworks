@@ -293,6 +293,14 @@ public interface ISubTitleService extends android.os.IInterface {
                         reply.writeNoException();
                         return true;
                     }
+
+                    case TRANSACTION_getPcrscr: {
+                        data.enforceInterface(DESCRIPTOR);
+                        java.lang.String _result = this.getPcrscr();
+                        reply.writeNoException();
+                        reply.writeString(_result);
+                        return true;
+                    }
                 }
 
                 return super.onTransact (code, data, reply, flags);
@@ -827,6 +835,25 @@ public interface ISubTitleService extends android.os.IInterface {
                             _data.recycle();
                         }
                     }
+
+                    @Override
+                    public java.lang.String getPcrscr() throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+                        java.lang.String _result;
+
+                        try {
+                            _data.writeInterfaceToken (DESCRIPTOR);
+                            mRemote.transact (Stub.TRANSACTION_getPcrscr, _data, _reply, 0);
+                            _reply.readException();
+                            _result = _reply.readString();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                        return _result;
+                    }
             }
 
             static final int TRANSACTION_open = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
@@ -858,6 +885,7 @@ public interface ISubTitleService extends android.os.IInterface {
             static final int TRANSACTION_load = (android.os.IBinder.FIRST_CALL_TRANSACTION + 26);
             static final int TRANSACTION_setSurfaceViewParam = (android.os.IBinder.FIRST_CALL_TRANSACTION + 27);
             static final int TRANSACTION_setIOType = (android.os.IBinder.FIRST_CALL_TRANSACTION + 28);
+            static final int TRANSACTION_getPcrscr = (android.os.IBinder.FIRST_CALL_TRANSACTION + 29);
     }
 
     public void open (java.lang.String path) throws android.os.RemoteException;
@@ -891,5 +919,6 @@ public interface ISubTitleService extends android.os.IInterface {
     public java.lang.String getSubLanguage (int idx) throws android.os.RemoteException;
     public boolean load (java.lang.String path) throws android.os.RemoteException;
     public void setSurfaceViewParam(int x, int y, int w, int h) throws android.os.RemoteException;
-    public void setIOType (int type) throws android.os.RemoteException;
+    public void setIOType(int type) throws android.os.RemoteException;
+    public java.lang.String getPcrscr() throws android.os.RemoteException;
 }

@@ -38,7 +38,11 @@ public class SubtitleManager {
         private Thread mThread = null;
         private int RETRY_MAX = 10;
         private boolean mOpen = false;
-        private int mIOType = 0;//default 0 means dev
+
+        //IOType, should sync with \vendor\amlogic\apps\SubTitle\jni\subtitle\sub_io.h IOType
+        public static final int IO_TYPE_DEV = 0;
+        public static final int IO_TYPE_SOCKET = 1;
+        private int mIOType = IO_TYPE_DEV;
         private ArrayList<Integer> mInnerTrackIdx = null;
 
         public SubtitleManager (MediaPlayerExt mp) {
@@ -167,7 +171,7 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
 
-            if (innerTotal() > 0 && mIOType == 1 && mMediaPlayer != null) {
+            if (innerTotal() > 0 && mIOType == IO_TYPE_SOCKET && mMediaPlayer != null) {
                 mMediaPlayer.selectTrack(mInnerTrackIdx.get(0));
             }
 
@@ -188,7 +192,7 @@ public class SubtitleManager {
                 throw new RuntimeException (e);
             }
 
-            if (idx < innerTotal() && mIOType == 1 && mMediaPlayer != null) {
+            if (idx < innerTotal() && mIOType == IO_TYPE_SOCKET && mMediaPlayer != null) {
                 mMediaPlayer.selectTrack(mInnerTrackIdx.get(idx));
             }
         }
@@ -577,15 +581,19 @@ public class SubtitleManager {
         private void setIOType() {
             LOGI("[setIOType]mMediaPlayer:" + mMediaPlayer);
 
-            mIOType = 0;
+            mIOType = IO_TYPE_DEV;
             if (mMediaPlayer != null) {
                 String typeStr = mMediaPlayer.getStringParameter(mMediaPlayer.KEY_PARAMETER_AML_PLAYER_TYPE_STR);
                 LOGI("[setIOType]typeStr:" + typeStr);
                 if (typeStr.equals("AMNU_PLAYER")) {
-                    mIOType = 1;//type_socket, should sync with \vendor\amlogic\apps\SubTitle\jni\subtitle\sub_io.h IOType
+                    mIOType = IO_TYPE_SOCKET;
                 }
             }
             setIOType(mIOType);
+        }
+
+        private int getIOType() {
+            return mIOType;
         }
 
         private static final int AML_SUBTITLE_START = 800; // random value
@@ -657,8 +665,22 @@ public class SubtitleManager {
         private int getCurrentPcr() {
             int pcr = 0;
             long pcrl = 0;
-            String str = readSysfs ("/sys/class/tsync/pts_pcrscr");
-            LOGI("[getCurrentPcr]readSysfs str:" + str);
+            String str = null;
+
+            if (mIOType == IO_TYPE_DEV) {
+                str = readSysfs ("/sys/class/tsync/pts_pcrscr");
+            }
+            else if (mIOType == IO_TYPE_SOCKET) {
+                try {
+                    if (mService != null) {
+                        str = mService.getPcrscr();
+                    }
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            LOGI("[getCurrentPcr]str:" + str);
             str = str.substring (2); // skip 0x
 
             if (str != null) {

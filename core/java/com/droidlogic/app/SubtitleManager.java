@@ -585,7 +585,7 @@ public class SubtitleManager {
             if (mMediaPlayer != null) {
                 String typeStr = mMediaPlayer.getStringParameter(mMediaPlayer.KEY_PARAMETER_AML_PLAYER_TYPE_STR);
                 LOGI("[setIOType]typeStr:" + typeStr);
-                if (typeStr.equals("AMNU_PLAYER")) {
+                if (typeStr != null && typeStr.equals("AMNU_PLAYER")) {
                     mIOType = IO_TYPE_SOCKET;
                 }
             }

@@ -16,6 +16,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
+import android.os.SystemProperties;
 
 //this service used to kill esm when sleep
 public class EsmService extends Service {
@@ -30,6 +31,10 @@ public class EsmService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            if (Intent.ACTION_SCREEN_ON.equals(action)) {
+                writeSysfsStr(KILL_ESM_PATH, "0");
+                Log.d(TAG, "when resume set N to Kill_ESM_PATH");
+            }
             if ( Intent.ACTION_SCREEN_OFF.equals(action) && ( mHandler != null ) ) {
                 mHandler.removeCallbacks(mKillRunnable);
                 mHandler.post(mKillRunnable);
@@ -48,6 +53,7 @@ public class EsmService extends Service {
         if (!register) {
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
+            intentFilter.addAction(Intent.ACTION_SCREEN_ON);
             registerReceiver(mScreenReceiver, intentFilter);
             register = true;
         }
@@ -140,6 +146,7 @@ public class EsmService extends Service {
 
         Log.d(TAG, "forceExitEsm /sys/power/state:" + powerState);
         writeSysfsStr(KILL_ESM_PATH, "1");
+        int count =0;
         while (true) {
             try {
                 Thread.sleep(500);//500ms
@@ -148,9 +155,9 @@ public class EsmService extends Service {
             }
 
             String esmValue = readSysfsStr(KILL_ESM_PATH);
-
-            Log.w(TAG, "hdcp22_kill_esm value:" + esmValue);
-            if ("Y".equals(esmValue))
+            String state = SystemProperties.get("init.svc.hdcp_rx22");
+            Log.w(TAG, "hdcp22_kill_esm value:" + esmValue +"rx22 is:"+state);
+            if (("Y".equals(esmValue)) && ("running".equals(state)) && (count < 10))
                 Log.w(TAG, "esm still is running, we need it be killed");
             else break;
         }

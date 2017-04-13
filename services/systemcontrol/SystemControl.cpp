@@ -269,7 +269,7 @@ void SystemControl::setMboxOutputMode(const String16& mode) {
         ALOGI("set output mode :%s", String8(mode).string());
     }
 
-    pDisplayMode->setMboxOutputMode(String8(mode).string());
+    pDisplayMode->setSourceOutputMode(String8(mode).string());
 }
 
 bool SystemControl::getSupportDispModeList(std::vector<std::string> *supportDispModes) {

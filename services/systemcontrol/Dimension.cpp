@@ -341,7 +341,7 @@ void Dimension::setDispMode(const char* mode3d) {
     if (strlen(mode) > 0 &&
         strcmp(mode, "0fp0hz") &&
         strcmp(mode, mode_tmp)) {//skip 0fp0hz and same mode
-        pDisplayMode->setMboxOutputMode(mode);
+        pDisplayMode->setSourceOutputMode(mode);
     }
 }
 

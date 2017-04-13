@@ -48,18 +48,16 @@
 class FormatColorDepth
 {
 public:
-    FormatColorDepth(int displayType);
+    FormatColorDepth();
     ~FormatColorDepth();
     void getHdmiColorAttribute(const char *outputmode, char * colorAttribute, int state);
 
 private:
-    bool isBestOutputmode();
     bool getBootEnv(const char* key, char* value);
 
     void getBestHdmiColorArrtibute(const char * outputmode, char* supportedColorList, char * colorAttribute);
     bool initColorAttribute(char* supportedColorList, int len);
 
-    int mDisplayType;
     SysWrite mSysWrite;
 };
 #endif //FORMATCOLORDEPTH_H

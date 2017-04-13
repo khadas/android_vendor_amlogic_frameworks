@@ -56,13 +56,6 @@ public class BootComplete extends BroadcastReceiver {
                 }
             }
 
-            if (AudioSystem.PLATFORM_TELEVISION == AudioSystem.getPlatformType(context)) {
-                int maxVolume = SystemProperties.getInt("ro.config.media_vol_steps", 100);
-                int streamMaxVolume = audioManager.getStreamMaxVolume(AudioSystem.STREAM_MUSIC);
-                int defaultVolume = maxVolume == streamMaxVolume ? (maxVolume * 3) / 10 : (streamMaxVolume * 3) / 4;
-                audioManager.setStreamVolume(AudioSystem.STREAM_MUSIC, defaultVolume, 0);
-            }
-
             OutputModeManager drcomm = new OutputModeManager(context);
             int drcvalue = Settings.Global.getInt(context.getContentResolver(), DRC_MODE, DRC_LINE);
             Log.d(TAG,"read drcmode value: "+drcvalue);
@@ -90,6 +83,12 @@ public class BootComplete extends BroadcastReceiver {
                             Settings.Secure.SHOW_IME_WITH_HARD_KEYBOARD, 1);
                     Settings.Global.putInt(context.getContentResolver(),
                             Settings.Global.CAPTIVE_PORTAL_DETECTION_ENABLED, 0);
+                    if (AudioSystem.PLATFORM_TELEVISION == AudioSystem.getPlatformType(context)) {
+                        int maxVolume = SystemProperties.getInt("ro.config.media_vol_steps", 100);
+                        int streamMaxVolume = audioManager.getStreamMaxVolume(AudioSystem.STREAM_MUSIC);
+                        int defaultVolume = maxVolume == streamMaxVolume ? (maxVolume * 3) / 10 : (streamMaxVolume * 3) / 4;
+                        audioManager.setStreamVolume(AudioSystem.STREAM_MUSIC, defaultVolume, 0);
+                    }
                 } catch (NumberFormatException e) {
                     Log.e(TAG, "could not find hard keyboard ", e);
                 }

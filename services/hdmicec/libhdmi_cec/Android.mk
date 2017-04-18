@@ -10,7 +10,8 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_SHARED_LIBRARIES := \
     libcutils \
-    libutils
+    libutils \
+    liblog
 
 LOCAL_MODULE:= libhdmi_cec_static
 

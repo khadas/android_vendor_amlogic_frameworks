@@ -42,6 +42,7 @@ public class UsbCameraManager {
     }
 
     private void usbCameraAttach(boolean isAttach){
+        /*
         try {
             if (null == mCameraService) {
                 IBinder cameraServiceBinder = ServiceManager.getService("media.camera");
@@ -65,6 +66,7 @@ public class UsbCameraManager {
         } catch (Exception ex) {
             Log.e(TAG, "USB camera attach:" + ex);
         }
+        */
     }
 
     public void bootReady(){

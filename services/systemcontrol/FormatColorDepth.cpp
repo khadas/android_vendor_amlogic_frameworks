@@ -33,7 +33,6 @@
 #include "DisplayMode.h"
 #include "FormatColorDepth.h"
 #include "common.h"
-#include "ubootenv.h"
 
 //this is prior selected list  of 4k2k50hz, 4k2k60hz
 static const char* COLOR_ATTRIBUTE_LIST1[] = {
@@ -112,9 +111,8 @@ void FormatColorDepth::getHdmiColorAttribute(const char* outputmode, char* color
         char curMode[MODE_LEN] = {0};
         mSysWrite.readSysfs(SYSFS_DISPLAY_MODE, curMode);
 
-        if ((state == OUPUT_MODE_STATE_SWITCH) && (!strcmp(curMode, outputmode))) {
-            //note: "outputmode" should be the second parameter of "strcmp", because it maybe prefix of "curMode".
-            getBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
+        if ((state == OUPUT_MODE_STATE_SWITCH) && (!strcmp(outputmode, curMode))) {
+            //get from uboot env as the default value
         }
         else {
             getBestHdmiColorArrtibute(outputmode, supportedColorList, colorAttribute);
@@ -164,12 +162,3 @@ void FormatColorDepth::getBestHdmiColorArrtibute(const char* outputmode, char* s
     //SYS_LOGI("get best hdmi color attribute %s\n", colorAttribute);
 }
 
-bool FormatColorDepth::getBootEnv(const char* key, char* value) {
-    const char* p_value = bootenv_get(key);
-    //SYS_LOGI("getBootEnv key:%s value:%s", key, p_value);
-    if (p_value) {
-        strcpy(value, p_value);
-        return true;
-    }
-    return false;
-}

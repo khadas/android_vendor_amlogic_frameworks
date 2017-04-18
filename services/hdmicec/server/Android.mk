@@ -14,7 +14,8 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
     libbinder \
-    libhdmicec
+    libhdmicec \
+    liblog
 
 LOCAL_STATIC_LIBRARIES := \
     libhdmi_cec_static

@@ -37,6 +37,7 @@
 #include <linux/fb.h>
 #include <semaphore.h>
 
+#include "ubootenv/Ubootenv.h"
 #ifndef RECOVERY_MODE
 #include "ISystemControlNotify.h"
 
@@ -59,7 +60,7 @@ using namespace android;
 #define DESITY_2160P                    "480"
 
 #define DEFAULT_EDID_CRCHEAD            "checkvalue: "
-#define DEFAULT_OUTPUT_MODE             "480p60hz"
+#define DEFAULT_OUTPUT_MODE             "1080p60hz"
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
@@ -358,6 +359,7 @@ class DisplayMode : public HDCPTxAuth::TxUevntCallbak,
 {
 public:
     DisplayMode(const char *path);
+    DisplayMode(const char *path, Ubootenv *ubootenv);
     ~DisplayMode();
 
     void init();
@@ -451,6 +453,7 @@ private:
     char mDefaultUI[64];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
+    Ubootenv *mUbootenv = NULL;
 
     HDCPTxAuth *pTxAuth = NULL;
     HDCPRxAuth *pRxAuth = NULL;

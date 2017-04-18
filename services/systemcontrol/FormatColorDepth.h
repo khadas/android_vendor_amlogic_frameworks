@@ -53,7 +53,6 @@ public:
     void getHdmiColorAttribute(const char *outputmode, char * colorAttribute, int state);
 
 private:
-    bool getBootEnv(const char* key, char* value);
 
     void getBestHdmiColorArrtibute(const char * outputmode, char* supportedColorList, char * colorAttribute);
     bool initColorAttribute(char* supportedColorList, int len);

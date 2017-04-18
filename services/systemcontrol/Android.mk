@@ -8,6 +8,7 @@ LOCAL_SRC_FILES:= \
 LOCAL_SHARED_LIBRARIES := \
   libutils \
   libcutils \
+  liblog \
   libbinder
 
 LOCAL_MODULE:= libsystemcontrolservice
@@ -40,7 +41,7 @@ LOCAL_CPPFLAGS += -std=c++14
 
 LOCAL_SRC_FILES:= \
   main_systemcontrol.cpp \
-  ubootenv.c \
+  ubootenv/Ubootenv.cpp \
   VdcLoop.c \
   SysWrite.cpp \
   SystemControl.cpp \
@@ -99,7 +100,7 @@ LOCAL_CFLAGS += -DRECOVERY_MODE
 LOCAL_CPPFLAGS += -std=c++14
 LOCAL_SRC_FILES:= \
   main_recovery.cpp \
-  ubootenv.c \
+  ubootenv/Ubootenv.cpp \
   SysWrite.cpp \
   DisplayMode.cpp \
   SysTokenizer.cpp \
@@ -148,7 +149,7 @@ LOCAL_CFLAGS += -DRECOVERY_MODE
 
 LOCAL_SRC_FILES:= \
   main_recovery.cpp \
-  ubootenv.c \
+  ubootenv/Ubootenv.cpp \
   SysWrite.cpp \
   DisplayMode.cpp \
   SysTokenizer.cpp \

@@ -25,7 +25,7 @@
 #include <string.h>
 #include <cutils/properties.h>
 #include <utils/Errors.h>
-#include <SkImageDecoder.h>
+//#include <SkImageDecoder.h>
 #include <SkData.h>
 
 #include <SkCanvas.h>
@@ -1297,6 +1297,7 @@ int ImagePlayerService::release() {
         mDisplayFd = -1;
     }
 
+#if 0
     if (NULL != mSkMovie) {
         if (mMovieThread->isRunning())
             mMovieThread->requestExitAndWait();
@@ -1304,6 +1305,7 @@ int ImagePlayerService::release() {
         delete mSkMovie;
         mSkMovie = NULL;
     }
+#endif
 
     resetRotateScale();
     resetTranslate();
@@ -2267,6 +2269,7 @@ bool ImagePlayerService::MovieInit(const char path[]) {
     mMovieDegree = 0;
     mMovieScale = 1.0f;
 
+#if 0
     if (NULL != mSkMovie)
         delete mSkMovie;
 
@@ -2280,6 +2283,7 @@ bool ImagePlayerService::MovieInit(const char path[]) {
     else {
         ALOGE("MovieInit decodeFile '%s' (%d)", strerror(errno), errno);
     }
+#endif
 
     return false;
 }
@@ -2289,6 +2293,7 @@ bool ImagePlayerService::MovieShow() {
     if (0 == mMovieTime)
         mMovieTime = sysTime;
 
+#if 0
     if (mSkMovie) {
         if (mSkMovie->duration()) {
             mSkMovie->setTime((sysTime-mMovieTime) % mSkMovie->duration());
@@ -2348,7 +2353,7 @@ bool ImagePlayerService::MovieShow() {
         }
         return true;
     }
-
+#endif
     return false;
 }
 
@@ -2486,6 +2491,7 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                     }
                 }
 
+                #if 0
                 if (NULL != mSkMovie) {
                     char bufPath[256] = {0};
                     strcat(bufPath, path.string());
@@ -2506,6 +2512,7 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                             bufPath, copy.width(), copy.height());
                     }
                 }
+                #endif
             }
         }
     }

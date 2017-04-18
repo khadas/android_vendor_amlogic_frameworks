@@ -9,6 +9,7 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_C_INCLUDES += \
     $(JNI_H_INCLUDE) \
+    system/core/base/include \
     $(HDMI_CEC_NATIVE_PATH)/binder
 
 LOCAL_SHARED_LIBRARIES := \

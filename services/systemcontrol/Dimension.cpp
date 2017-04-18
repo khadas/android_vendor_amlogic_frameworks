@@ -364,7 +364,7 @@ void Dimension::mode3DImpl(const char* mode3d) {
         ALOGI("[mode3DImpl]mode3d = %s, format = %d\n", mode3d, format);
     }
 
-#ifndef RECOVERY_MODE
+#if 0//ndef RECOVERY_MODE
     SurfaceComposerClient::openGlobalTransaction();
     SurfaceComposerClient::setDisplay2Stereoscopic(0, format);
     SurfaceComposerClient::closeGlobalTransaction();

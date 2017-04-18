@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "ubootenv.h"
+#include "ubootenv/Ubootenv.h"
 #include "DisplayMode.h"
 
 int main(int argc, char** argv)
@@ -33,11 +33,10 @@ int main(int argc, char** argv)
         path = argv[1];
     }
 
+    Ubootenv *pUbootenv = new Ubootenv();
     SysWrite *pSysWrite = new SysWrite();
 
-    bootenv_init();
-
-    DisplayMode displayMode(path);
+    DisplayMode displayMode(path, pUbootenv);
     pSysWrite->setProperty(PROP_FS_MODE, "recovery");
     displayMode.init();
 

@@ -35,6 +35,8 @@
 #include <string>
 #include <vector>
 
+#include "ubootenv/Ubootenv.h"
+
 extern "C" int vdc_loop(int argc, char **argv);
 
 namespace android {
@@ -119,6 +121,7 @@ private:
     SysWrite *pSysWrite;
     DisplayMode *pDisplayMode;
     Dimension *pDimension;
+    Ubootenv *mUbootenv;
 };
 
 // ----------------------------------------------------------------------------

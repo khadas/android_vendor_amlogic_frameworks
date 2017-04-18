@@ -27,7 +27,7 @@
 #include <media/MediaPlayerInterface.h>
 #include <SkBitmap.h>
 #include <SkStream.h>
-#include <SkMovie.h>
+//#include <SkMovie.h>
 //#include <binder/MemoryDealer.h>
 #include <IImagePlayerService.h>
 #include "ISystemControlService.h"
@@ -183,7 +183,7 @@ class ImagePlayerService :  public BnImagePlayerService {
     float mScalingStep;
     SkBitmap *mScalingBitmap;
     SkBitmap *mRotateBitmap;
-    SkMovie *mSkMovie;
+    //SkMovie *mSkMovie;
     bool mMovieImage;
     int mMovieTime;
     int mMovieDegree;

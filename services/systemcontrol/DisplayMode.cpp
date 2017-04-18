@@ -36,7 +36,7 @@
 #include <sys/types.h>
 #include <linux/netlink.h>
 #include <cutils/properties.h>
-#include "ubootenv.h"
+
 #include "DisplayMode.h"
 #include "SysTokenizer.h"
 
@@ -169,7 +169,11 @@ static void copy_changed_values(
     copy_if_gt0(&set->pixclock, &base->pixclock, 9);
 }
 
-DisplayMode::DisplayMode(const char *path)
+DisplayMode::DisplayMode(const char *path) {
+    DisplayMode(path, NULL);
+}
+
+DisplayMode::DisplayMode(const char *path, Ubootenv *ubootenv)
     :mDisplayType(DISPLAY_TYPE_MBOX),
     mFb0Width(-1),
     mFb0Height(-1),
@@ -184,12 +188,15 @@ DisplayMode::DisplayMode(const char *path)
     mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT) {
 
-    if (NULL == path) {
+    if (NULL == path)
         pConfigPath = DISPLAY_CFG_FILE;
-    }
-    else {
+    else
         pConfigPath = path;
-    }
+
+    if (NULL == ubootenv)
+        mUbootenv = new Ubootenv();
+    else
+        mUbootenv = ubootenv;
 
     SYS_LOGI("display mode config path: %s", pConfigPath);
     pSysWrite = new SysWrite();
@@ -284,7 +291,7 @@ void DisplayMode::setLogLevel(int level){
 }
 
 bool DisplayMode::getBootEnv(const char* key, char* value) {
-    const char* p_value = bootenv_get(key);
+    const char* p_value = mUbootenv->getValue(key);
 
     if (mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("getBootEnv key:%s value:%s", key, p_value);
@@ -300,7 +307,7 @@ void DisplayMode::setBootEnv(const char* key, char* value) {
     if (mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("setBootEnv key:%s value:%s", key, value);
 
-    bootenv_update(key, value);
+    mUbootenv->updateValue(key, value);
 }
 
 int DisplayMode::parseConfigFile(){
@@ -544,6 +551,9 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
         char colorAttribute[MODE_LEN] = {0};
         if (deepColorEnabled) {
+            //get value from ubootenv as the default value
+            getBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
+
             FormatColorDepth deepColor;
             deepColor.getHdmiColorAttribute(outputmode, colorAttribute, (int)state);
         }
@@ -923,7 +933,7 @@ void DisplayMode::getHdmiData(hdmi_data_t* data) {
     pSysWrite->readSysfsOriginal(DISPLAY_HDMI_SINK_TYPE, sinkType);
     pSysWrite->readSysfs(DISPLAY_EDID_STATUS, edidParsing);
 
-    data->sinkType = HDMI_SINK_TYPE_NONE;
+    data->sinkType = HDMI_SINK_TYPE_SINK;
     if (NULL != strstr(sinkType, "sink"))
         data->sinkType = HDMI_SINK_TYPE_SINK;
     else if (NULL != strstr(sinkType, "repeater"))
@@ -1170,7 +1180,7 @@ void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var
 
 int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
     int value = defaultVal;
-    const char* p_value = bootenv_get(key);
+    const char* p_value = mUbootenv->getValue(key);
     if (p_value) {
         value = atoi(p_value);
     }

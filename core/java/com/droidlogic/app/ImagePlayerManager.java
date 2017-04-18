@@ -112,7 +112,8 @@ public class ImagePlayerManager {
         return null;
         */
 
-        return (new android.media.MediaHTTPService()).asBinder();
+        //return (new android.media.MediaHTTPService()).asBinder();
+        return null;
     }
 
     //url start with http:// or https://

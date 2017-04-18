@@ -120,7 +120,7 @@ public class BootComplete extends BroadcastReceiver {
             new PlayBackManager(context).initHdmiSelfadaption();
 
             if (needCecExtend(sm, context)) {
-                new HdmiCecExtend(context);
+                //new HdmiCecExtend(context);
             }
 
             new HdrManager(context).initHdrMode();
@@ -128,7 +128,7 @@ public class BootComplete extends BroadcastReceiver {
             new SdrManager(context).initSdrMode();
             new DolbyVisionSettingManager(context).initDolbyVision();
             //start optimization service
-            context.startService(new Intent(context, Optimization.class));
+            //context.startService(new Intent(context, Optimization.class));
 
             if (context.getPackageManager().hasSystemFeature(NetflixService.FEATURE_SOFTWARE_NETFLIX)) {
                 context.startService(new Intent(context, NetflixService.class));

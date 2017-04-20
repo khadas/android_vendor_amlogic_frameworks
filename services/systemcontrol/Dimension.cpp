@@ -322,9 +322,9 @@ void Dimension::setDispMode(const char* mode3d) {
         }
 
         //set display mode if stored is different with destination mode
-        if (strcmp(mSupport.dst, mSupport.stored)) {
+        //if (strcmp(mSupport.dst, mSupport.stored)) {
             strcpy(mode, mSupport.dst);
-        }
+        //}
     }
     else {
         if (strlen(mSupport.stored) != 0) {

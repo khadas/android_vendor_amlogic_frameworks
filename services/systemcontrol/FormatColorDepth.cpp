@@ -112,7 +112,8 @@ void FormatColorDepth::getHdmiColorAttribute(const char* outputmode, char* color
         char curMode[MODE_LEN] = {0};
         mSysWrite.readSysfs(SYSFS_DISPLAY_MODE, curMode);
 
-        if ((state == OUPUT_MODE_STATE_SWITCH) && (!strcmp(outputmode, curMode))) {
+        if ((state == OUPUT_MODE_STATE_SWITCH) && (!strcmp(curMode, outputmode))) {
+            //note: "outputmode" should be the second parameter of "strcmp", because it maybe prefix of "curMode".
             getBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
         }
         else {

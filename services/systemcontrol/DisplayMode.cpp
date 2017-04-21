@@ -541,21 +541,20 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     // 3. set deep color and displaymode
     if (OUPUT_MODE_STATE_INIT != state) {
-        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
 
+        char colorAttribute[MODE_LEN] = {0};
         if (deepColorEnabled) {
-            char colorAttribute[MODE_LEN] = {0};
 
             FormatColorDepth deepColor;
             deepColor.getHdmiColorAttribute(outputmode, colorAttribute, (int)state);
-
-            pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
-            //save to ubootenv
-            setBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
         }
         else {
-            pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, "default");
+            strcpy(colorAttribute, "default");
         }
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+        pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
+        //save to ubootenv
+        setBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
     }
 
     //write framerate policy

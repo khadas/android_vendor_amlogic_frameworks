@@ -32,12 +32,12 @@ public class EsmService extends Service {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (Intent.ACTION_SCREEN_ON.equals(action)) {
-                writeSysfsStr(KILL_ESM_PATH, "0");
-                Log.d(TAG, "when resume set N to Kill_ESM_PATH");
+                //writeSysfsStr(KILL_ESM_PATH, "0");
+                //Log.d(TAG, "when resume set N to Kill_ESM_PATH");
             }
             if ( Intent.ACTION_SCREEN_OFF.equals(action) && ( mHandler != null ) ) {
-                mHandler.removeCallbacks(mKillRunnable);
-                mHandler.post(mKillRunnable);
+                //mHandler.removeCallbacks(mKillRunnable);
+                //mHandler.post(mKillRunnable);
             }
         }
     };

@@ -527,6 +527,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     // 1.set avmute and close phy
     if (OUPUT_MODE_STATE_INIT != state) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "1");
         if (OUPUT_MODE_STATE_POWER != state) {
             usleep(50000);//50ms
             pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1");
@@ -599,6 +600,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     if (OUPUT_MODE_STATE_INIT != state && !cvbsMode) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
         usleep(20000);
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "0");
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
 

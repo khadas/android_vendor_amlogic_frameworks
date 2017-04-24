@@ -110,6 +110,7 @@ using namespace android;
 #define DISPLAY_HDMI_VIC                "/sys/class/amhdmitx/amhdmitx0/vic"//if switch between 8bit and 10bit, clear mic first
 
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
+#define DISPLAY_HDMI_AUDIO_MUTE         "/sys/devices/virtual/amhdmitx/amhdmitx0/aud_mute"
 #define DISPLAY_EDID_VALUE              "/sys/class/amhdmitx/amhdmitx0/edid"
 #define DISPLAY_EDID_STATUS             "/sys/class/amhdmitx/amhdmitx0/edid_parsing"
 #define DISPLAY_EDID_RAW                "/sys/class/amhdmitx/amhdmitx0/rawedid"

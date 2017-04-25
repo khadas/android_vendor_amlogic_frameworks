@@ -5,14 +5,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.hdmi.HdmiDeviceInfo;
-import android.os.RemoteException;
-import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.content.ContentResolver;
 import android.util.Log;
-import android.view.IWindowManager;
 import android.media.AudioManager;
 import android.media.AudioSystem;
 import android.provider.Settings;
@@ -117,8 +114,6 @@ public class BootComplete extends BroadcastReceiver {
                 context.startService(new Intent(context, NetflixService.class));
             }
 
-            initDefaultAnimationSettings(context);
-
             context.startService(new Intent(context,NtpService.class));
 
             if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false))
@@ -145,22 +140,6 @@ public class BootComplete extends BroadcastReceiver {
 
     private boolean needCecExtend(SystemControlManager sm, Context context) {
         return sm.getPropertyInt("ro.hdmi.device_type", -1) == HdmiDeviceInfo.DEVICE_PLAYBACK;
-    }
-
-    //this function fix setting database not load AnimationSettings bug
-    private static final int INDEX_WINDOW_ANIMATION_SCALE = 0;
-    private static final int INDEX_TRANSITION_ANIMATION_SCALE = 1;
-    private void initDefaultAnimationSettings(Context context) {
-        try {
-            IWindowManager wm = IWindowManager.Stub.asInterface(ServiceManager.getService("window"));
-            if (wm.getAnimationScale(INDEX_WINDOW_ANIMATION_SCALE) != 0.0f) {
-                wm.setAnimationScale(INDEX_WINDOW_ANIMATION_SCALE, 0);
-            }
-            if (wm.getAnimationScale(INDEX_TRANSITION_ANIMATION_SCALE) != 0.0f) {
-                wm.setAnimationScale(INDEX_TRANSITION_ANIMATION_SCALE, 0);
-            }
-        } catch (RemoteException e) {
-        }
     }
 }
 

@@ -17,21 +17,17 @@ import android.provider.Settings;
 import com.droidlogic.app.HdrManager;
 import com.droidlogic.app.SdrManager;
 import com.droidlogic.app.DolbyVisionSettingManager;
+import com.droidlogic.app.OutputModeManager;
 import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
 import com.droidlogic.HdmiCecExtend;
-import com.droidlogic.app.OutputModeManager;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
     private static final String FIRST_RUN       = "first_run";
     private static final int SPEAKER_DEFAULT_VOLUME = 11;
-    private static final String DRC_MODE = "drc_mode";
-    private static final int DRC_OFF = 0;
-    private static final int DRC_LINE = 1;
-    private static final int DRC_RF = 2;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -39,48 +35,24 @@ public class BootComplete extends BroadcastReceiver {
         Log.i(TAG, "action: " + action);
 
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
-            SystemControlManager sm = new SystemControlManager(context);
+            final ContentResolver resolver = context.getContentResolver();
+            final SystemControlManager sm = new SystemControlManager(context);
             //register system control callback
             sm.setListener(new SystemControlEvent(context));
 
-            ContentResolver resolver = context.getContentResolver();
-            AudioManager audioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
-            int speakervalue = Settings.System.getInt(resolver,"volume_music_speaker",-1);
-            if (speakervalue == -1) {
-                Settings.System.putInt(resolver,"volume_music_speaker", SPEAKER_DEFAULT_VOLUME);
-                if (AudioSystem.PLATFORM_TELEVISION != AudioSystem.getPlatformType(context)) {
-                    int current = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC);
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,current,0);
-                }
-            }
+            final AudioManager audioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
+            final OutputModeManager outputModeManager = new OutputModeManager(context);
 
-            OutputModeManager drcomm = new OutputModeManager(context);
-            int drcvalue = Settings.Global.getInt(context.getContentResolver(), DRC_MODE, DRC_LINE);
-            Log.d(TAG,"read drcmode value: "+drcvalue);
-            switch (drcvalue) {
-                case DRC_OFF:
-                    drcomm.enableDobly_DRC(false);
-                    Settings.Global.putInt(context.getContentResolver(),DRC_MODE, drcvalue);
-                    break;
-                case DRC_LINE:
-                    drcomm.enableDobly_DRC(true);
-                    drcomm.setDoblyMode(String.valueOf(DRC_LINE));
-                    Settings.Global.putInt(context.getContentResolver(),DRC_MODE, drcvalue);
-                    break;
-                case DRC_RF:
-                    drcomm.setDoblyMode(String.valueOf(DRC_RF));
-                    Settings.Global.putInt(context.getContentResolver(),DRC_MODE, drcvalue);
-                    break;
-            }
-
-            //set default show_ime_with_hard_keyboard 1, then first boot can show the ime.
             if (SettingsPref.getFirstRun(context)) {
                 Log.i(TAG, "first running: " + context.getPackageName());
                 try {
-                    Settings.Secure.putInt(context.getContentResolver(),
-                            Settings.Secure.SHOW_IME_WITH_HARD_KEYBOARD, 1);
-                    Settings.Global.putInt(context.getContentResolver(),
-                            Settings.Global.CAPTIVE_PORTAL_DETECTION_ENABLED, 0);
+                    Settings.Global.putInt(resolver,
+                            OutputModeManager.DIGITAL_SOUND, OutputModeManager.IS_PCM);
+                    Settings.Global.putInt(resolver,
+                            OutputModeManager.DRC_MODE, OutputModeManager.IS_DRC_LINE);
+                    Settings.Global.putInt(resolver, Settings.Global.CAPTIVE_PORTAL_DETECTION_ENABLED, 0);
+                    //set default show_ime_with_hard_keyboard 1, then first boot can show the ime.
+                    Settings.Secure.putInt(resolver, Settings.Secure.SHOW_IME_WITH_HARD_KEYBOARD, 1);
                     if (AudioSystem.PLATFORM_TELEVISION == AudioSystem.getPlatformType(context)) {
                         int maxVolume = SystemProperties.getInt("ro.config.media_vol_steps", 100);
                         int streamMaxVolume = audioManager.getStreamMaxVolume(AudioSystem.STREAM_MUSIC);
@@ -92,6 +64,54 @@ public class BootComplete extends BroadcastReceiver {
                 }
 
                 SettingsPref.setFirstRun(context, false);
+            }
+
+            int speakervalue = Settings.System.getInt(resolver,"volume_music_speaker",-1);
+            if (speakervalue == -1) {
+                Settings.System.putInt(resolver,"volume_music_speaker", SPEAKER_DEFAULT_VOLUME);
+                if (AudioSystem.PLATFORM_TELEVISION != AudioSystem.getPlatformType(context)) {
+                    int current = audioManager.getStreamVolume( AudioManager.STREAM_MUSIC);
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,current,0);
+                }
+            }
+
+            final int digitalSoundValue = Settings.Global.getInt(resolver,
+                    OutputModeManager.DIGITAL_SOUND, OutputModeManager.IS_PCM);
+            switch (digitalSoundValue) {
+            case OutputModeManager.IS_PCM:
+            case OutputModeManager.IS_HDMI_RAW:
+            default:
+                AudioSystem.setDeviceConnectionState(
+                        AudioSystem.DEVICE_OUT_SPDIF,
+                        AudioSystem.DEVICE_STATE_UNAVAILABLE,
+                        "Amlogic", "Amlogic-S/PDIF");
+                break;
+            case OutputModeManager.IS_SPDIF_RAW:
+                AudioSystem.setDeviceConnectionState(
+                        AudioSystem.DEVICE_OUT_SPDIF,
+                        AudioSystem.DEVICE_STATE_AVAILABLE,
+                        "Amlogic", "Amlogic-S/PDIF");
+                break;
+            }
+
+            final int drcModeValue = Settings.Global.getInt(resolver,
+                    OutputModeManager.DRC_MODE, OutputModeManager.IS_DRC_LINE);
+            switch (drcModeValue) {
+            case OutputModeManager.IS_DRC_OFF:
+                outputModeManager.enableDobly_DRC(false);
+                outputModeManager.setDoblyMode(OutputModeManager.LINE_DRCMODE);
+                outputModeManager.setDtsDrcScale(OutputModeManager.MIN_DRC_SCALE);
+                break;
+            case OutputModeManager.IS_DRC_LINE:
+            default:
+                outputModeManager.enableDobly_DRC(true);
+                outputModeManager.setDoblyMode(OutputModeManager.LINE_DRCMODE);
+                outputModeManager.setDtsDrcScale(OutputModeManager.MAX_DRC_SCALE);
+                break;
+            case OutputModeManager.IS_DRC_RF:
+                outputModeManager.enableDobly_DRC(false);
+                outputModeManager.setDoblyMode(OutputModeManager.RF_DRCMODE);
+                break;
             }
 
             //use to check whether disable camera or not
@@ -142,4 +162,3 @@ public class BootComplete extends BroadcastReceiver {
         return sm.getPropertyInt("ro.hdmi.device_type", -1) == HdmiDeviceInfo.DEVICE_PLAYBACK;
     }
 }
-

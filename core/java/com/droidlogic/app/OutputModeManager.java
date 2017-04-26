@@ -74,6 +74,7 @@ public class OutputModeManager {
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
     public static final String PROP_DEEPCOLOR               = "sys.open.deepcolor";
     public static final String PROP_DTSDRCSCALE             = "persist.sys.dtsdrcscale";
+    public static final String PROP_DTSEDID                 = "persist.sys.dts.edid";
 
     public static final String FULL_WIDTH_480               = "720";
     public static final String FULL_HEIGHT_480              = "480";
@@ -88,17 +89,30 @@ public class OutputModeManager {
     public static final String FULL_WIDTH_4K2KSMPTE         = "4096";
     public static final String FULL_HEIGHT_4K2KSMPTE        = "2160";
 
+    public static final String DIGITAL_SOUND                = "digital_sound";
     public static final String PCM                          = "PCM";
     public static final String RAW                          = "RAW";
     public static final String HDMI                         = "HDMI";
     public static final String SPDIF                        = "SPDIF";
     public static final String HDMI_RAW                     = "HDMI passthrough";
     public static final String SPDIF_RAW                    = "SPDIF passthrough";
-    public static final String DTSDRCSCALE_DEFAULT          = "0";
-    public static final int IS_AUTO                         = 0x10;
-    public static final int IS_PCM                          = 0x01;
-    public static final int IS_HDMI                         = 0x02;
-    public static final int IS_SPDIF                        = 0x04;
+    public static final int IS_PCM                          = 0;
+    public static final int IS_SPDIF_RAW                    = 1;
+    public static final int IS_HDMI_RAW                     = 2;
+
+    public static final String DRC_MODE                     = "drc_mode";
+    public static final String DTSDRC_MODE                  = "dtsdrc_mode";
+    public static final String CUSTOM_0_DRCMODE             = "0";
+    public static final String CUSTOM_1_DRCMODE             = "1";
+    public static final String LINE_DRCMODE                 = "2";
+    public static final String RF_DRCMODE                   = "3";
+    public static final String DEFAULT_DRCMODE              = LINE_DRCMODE;
+    public static final String MIN_DRC_SCALE                = "0";
+    public static final String MAX_DRC_SCALE                = "100";
+    public static final String DEFAULT_DRC_SCALE            = MIN_DRC_SCALE;
+    public static final int IS_DRC_OFF                      = 0;
+    public static final int IS_DRC_LINE                     = 1;
+    public static final int IS_DRC_RF                       = 2;
 
     public static final String REAL_OUTPUT_SOC              = "meson8,meson8b,meson8m2,meson9b";
     public static final String UI_720P                      = "720p";
@@ -461,13 +475,14 @@ public class OutputModeManager {
         String mAudioCapInfo = readSysfsTotal(SYS_AUDIO_CAP);
         if (mAudioCapInfo.contains("Dobly_Digital+")) {
             setDigitalMode(HDMI_RAW);
-            return 2;
-        } else if (mAudioCapInfo.contains("AC-3")) {
+            return IS_HDMI_RAW;
+        } else if (mAudioCapInfo.contains("AC-3")
+                || (getPropertyBoolean(PROP_DTSEDID, false) && mAudioCapInfo.contains("DTS"))) {
             setDigitalMode(SPDIF_RAW);
-            return 1;
+            return IS_SPDIF_RAW;
         } else {
             setDigitalMode(PCM);
-            return 0;
+            return IS_PCM;
         }
     }
 
@@ -493,7 +508,7 @@ public class OutputModeManager {
         if (i >= 0 && i <= 3) {
             writeSysfs(AUIDO_DSP_AC3_DRC, "drcmode" + " " + mode);
         } else {
-            writeSysfs(AUIDO_DSP_AC3_DRC, "drcmode" + " " + "2");
+            writeSysfs(AUIDO_DSP_AC3_DRC, "drcmode" + " " + DEFAULT_DRCMODE);
         }
     }
 
@@ -503,7 +518,7 @@ public class OutputModeManager {
         if (i >= 0 && i <= 100) {
             setProperty(PROP_DTSDRCSCALE, drcscale);
         } else {
-            setProperty(PROP_DTSDRCSCALE, DTSDRCSCALE_DEFAULT);
+            setProperty(PROP_DTSDRCSCALE, DEFAULT_DRC_SCALE);
         }
     }
     public void setDTS_DownmixMode(String mode) {

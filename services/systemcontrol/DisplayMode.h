@@ -409,6 +409,7 @@ private:
     void setTabletDisplay();
     void getBestHdmiMode(char * mode, hdmi_data_t* data);
     void getHighestHdmiMode(char* mode, hdmi_data_t* data);
+    void getHighestPriorityMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
     bool isEdidChange();

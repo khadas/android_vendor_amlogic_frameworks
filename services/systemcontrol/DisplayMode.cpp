@@ -830,6 +830,30 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
     //SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
 }
 
+//get the highest priority mode defined by CDF table
+void DisplayMode::getHighestPriorityMode(char* mode, hdmi_data_t* data) {
+    char **pMode = NULL;
+    int modeSize = 0;
+
+    if (HDMI_SINK_TYPE_SINK == data->sinkType) {
+        pMode= (char **)MODES_SINK;
+        modeSize = ARRAY_SIZE(MODES_SINK);
+    }
+    else if (HDMI_SINK_TYPE_REPEATER == data->sinkType) {
+        pMode= (char **)MODES_REPEATER;
+        modeSize = ARRAY_SIZE(MODES_REPEATER);
+    }
+
+    for (int i = 0; i < modeSize; i++) {
+        if (strstr(data->edid, pMode[i]) != NULL) {
+            strcpy(mode, pMode[i]);
+            return;
+        }
+    }
+
+    pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
+}
+
 //check if the edid support current hdmi mode
 void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
     char *pCmp = data->edid;
@@ -861,6 +885,7 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
     getBestHdmiMode(mode, data);
 #else
     getHighestHdmiMode(mode, data);
+    //getHighestPriorityMode(mode, data);
 #endif
 }
 
@@ -881,6 +906,7 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
             getBestHdmiMode(mode, data);
         #else
             getHighestHdmiMode(mode, data);
+            //getHighestPriorityMode(mode, data);
         #endif
         } else {
             filterHdmiMode(mode, data);

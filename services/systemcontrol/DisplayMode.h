@@ -105,12 +105,13 @@ using namespace android;
 #define DISPLAY_HDMI_DEEP_COLOR         "/sys/class/amhdmitx/amhdmitx0/dc_cap"//RX supoort deep color
 #define DISPLAY_HDMI_HDR                "/sys/class/amhdmitx/amhdmitx0/hdr_cap"
 #define DISPLAY_HDMI_AUDIO              "/sys/class/amhdmitx/amhdmitx0/aud_cap"
+#define DISPLAY_HDMI_AUDIO_MUTE         "/sys/class/amhdmitx/amhdmitx0/aud_mute"
+#define DISPLAY_HDMI_VIDEO_MUTE         "/sys/class/amhdmitx/amhdmitx0/vid_mute"
 #define DISPLAY_HDMI_MODE_PREF          "/sys/class/amhdmitx/amhdmitx0/preferred_mode"
 #define DISPLAY_HDMI_SINK_TYPE          "/sys/class/amhdmitx/amhdmitx0/sink_type"
 #define DISPLAY_HDMI_VIC                "/sys/class/amhdmitx/amhdmitx0/vic"//if switch between 8bit and 10bit, clear mic first
 
 #define DISPLAY_HDMI_AVMUTE             "/sys/devices/virtual/amhdmitx/amhdmitx0/avmute"
-#define DISPLAY_HDMI_AUDIO_MUTE         "/sys/devices/virtual/amhdmitx/amhdmitx0/aud_mute"
 #define DISPLAY_EDID_VALUE              "/sys/class/amhdmitx/amhdmitx0/edid"
 #define DISPLAY_EDID_STATUS             "/sys/class/amhdmitx/amhdmitx0/edid_parsing"
 #define DISPLAY_EDID_RAW                "/sys/class/amhdmitx/amhdmitx0/rawedid"
@@ -377,10 +378,11 @@ public:
     void isHDCPTxAuthSuccess( int *status);
     static void* bootanimDetect(void *data);
 
-    void setSourceDisplay(char* hpdstate, output_mode_state state);
+    void setSourceDisplay(output_mode_state state);
 
     void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
+    void getHdmiData(hdmi_data_t* data);
 
     int readHdcpRX22Key(char *value, int size);
     bool writeHdcpRX22Key(const char *value, const int size);
@@ -411,7 +413,6 @@ private:
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
     bool isEdidChange();
     bool isBestOutputmode();
-    void initHdmiData(hdmi_data_t* data, char* hpdstate);
     bool modeSupport(char *mode, int sinkType);
     void setSourceOutputMode(const char* outputmode, output_mode_state state);
     void setSinkOutputMode(const char* outputmode, bool initState);

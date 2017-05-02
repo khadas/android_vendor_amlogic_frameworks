@@ -273,31 +273,22 @@ void SystemControl::setMboxOutputMode(const String16& mode) {
 }
 
 bool SystemControl::getSupportDispModeList(std::vector<std::string> *supportDispModes) {
-    bool ret = false;
-    char edid[MAX_STR_LEN] = {0};
-    ret = pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, edid);
+    const char *delim = "\n";
     char value[MODE_LEN] = {0};
-    char* start = edid;
-    char* pos =edid;
-    do {
-        pos = strstr(pos, "\n");
-        if (pos == NULL)
-            break;
-        if (pos == start) {
-            pos++;
-            start = pos;
-            continue;
-        }
+    hdmi_data_t data;
 
-        strncpy(value, start, pos - start);
-        if (value[pos - start - 1] == '*')
-            value[pos - start - 1] = '\0';
-        pos++;
-        start = pos;
-        (*supportDispModes).push_back(std::string(value));
-        memset(value,0,strlen(value));
-    } while (strlen(pos) > 0);
-    return ret;
+    pDisplayMode->getHdmiData(&data);
+    char *ptr = strtok(data.edid, delim);
+    while (ptr != NULL) {
+        int len = strlen(ptr);
+        if (ptr[len - 1] == '*')
+            ptr[len - 1] = '\0';
+
+        (*supportDispModes).push_back(std::string(ptr));
+        ptr = strtok(NULL, delim);
+    }
+
+    return true;
 }
 
 bool SystemControl::getActiveDispMode(std::string *activeDispMode) {

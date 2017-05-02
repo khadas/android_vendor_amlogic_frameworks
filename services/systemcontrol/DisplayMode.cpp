@@ -211,7 +211,7 @@ void DisplayMode::init() {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
-        setSourceDisplay(NULL, OUPUT_MODE_STATE_INIT);
+        setSourceDisplay(OUPUT_MODE_STATE_INIT);
         dumpCaps();
     }
     else if (DISPLAY_TYPE_TV == mDisplayType) {
@@ -241,7 +241,7 @@ void DisplayMode::reInit() {
             setTabletDisplay();
         }
         else if (DISPLAY_TYPE_MBOX == mDisplayType) {
-            setSourceDisplay(NULL, OUPUT_MODE_STATE_POWER);
+            setSourceDisplay(OUPUT_MODE_STATE_POWER);
         }
         else if (DISPLAY_TYPE_TV == mDisplayType) {
             setSinkDisplay(false);
@@ -405,7 +405,7 @@ void DisplayMode::setTabletDisplay() {
     pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
-void DisplayMode::setSourceDisplay(char* hpdstate, output_mode_state state) {
+void DisplayMode::setSourceDisplay(output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
 
@@ -414,7 +414,7 @@ void DisplayMode::setSourceDisplay(char* hpdstate, output_mode_state state) {
     }
 
     memset(&data, 0, sizeof(hdmi_data_t));
-    initHdmiData(&data, hpdstate);
+    getHdmiData(&data);
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (HDMI_SINK_TYPE_NONE != data.sinkType) {
             if ((!strcmp(data.current_mode, MODE_480CVBS) || !strcmp(data.current_mode, MODE_576CVBS))
@@ -498,7 +498,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         hdmi_data_t data;
 
         SYS_LOGI("outputmode is [auto] mode, need find the best mode\n");
-        initHdmiData(&data, (char *)"1");
+        getHdmiData(&data);
         getHdmiOutputMode((char *)outputmode, &data);
     }
 
@@ -544,7 +544,6 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
         char colorAttribute[MODE_LEN] = {0};
         if (deepColorEnabled) {
-
             FormatColorDepth deepColor;
             deepColor.getHdmiColorAttribute(outputmode, colorAttribute, (int)state);
         }
@@ -890,7 +889,7 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
     //SYS_LOGI("set HDMI mode to %s\n", mode);
 }
 
-void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate __attribute__((unused))) {
+void DisplayMode::getHdmiData(hdmi_data_t* data) {
     char sinkType[MODE_LEN] = {0};
     char edidParsing[MODE_LEN] = {0};
 
@@ -924,7 +923,7 @@ void DisplayMode::initHdmiData(hdmi_data_t* data, char* hpdstate __attribute__((
 
     //filter mode defined by CDF, default disable this
     if (!strcmp(edidParsing, "ok") && false) {
-        const char *delim= "\n";
+        const char *delim = "\n";
         char filterEdid[MAX_STR_LEN] = {0};
 
         char *ptr = strtok(data->edid, delim);
@@ -1437,7 +1436,7 @@ void DisplayMode::onTxEvent (char* hpdstate, int outputState) {
     if (hpdstate && hpdstate[0] == '1')
         dumpCaps();
 
-    setSourceDisplay(hpdstate, (output_mode_state)outputState);
+    setSourceDisplay((output_mode_state)outputState);
 }
 
 void DisplayMode::onDispModeSyncEvent (const char* outputmode, int state) {

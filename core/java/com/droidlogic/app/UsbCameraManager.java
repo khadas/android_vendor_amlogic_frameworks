@@ -150,6 +150,10 @@ public class UsbCameraManager {
                 return true;
             }*/
 
+            if (intf == null) {
+                Log.e(TAG,"intf is null , return");
+                continue;
+            }
             if (intf.getInterfaceClass() == UsbConstants.USB_CLASS_VIDEO) {
                 return true;
             }

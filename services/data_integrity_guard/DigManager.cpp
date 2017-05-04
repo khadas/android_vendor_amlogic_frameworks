@@ -99,11 +99,13 @@ void* DigManager::workThread() {
         }
 
         //check cache ro
-        int ret = -1;
-        if ((ret = isVolumeRo("/cache")) > 0) {
-            handleCacheRo();
-        } else if (ret < 0) {
-            handleCacheNull();
+        if (isABupdate() == 0) {
+            int ret = -1;
+            if ((ret = isVolumeRo("/cache")) > 0) {
+                handleCacheRo();
+            } else if (ret < 0) {
+                handleCacheNull();
+            }
         }
 
         //check data ro
@@ -261,6 +263,17 @@ int DigManager::isInitMountDataFail() {
     return mount_fail;
 }
 
+int DigManager::isABupdate() {
+    int AB_update = 0;
+    char prop_AB[PROPERTY_VALUE_MAX];
+    property_get("ro.build.ab_update", prop_AB, "false");
+    if (strcmp( prop_AB, "true" ) == 0) {
+        AB_update = 1;
+        //ERROR("AB_update = 1\n");
+    }
+    return AB_update;
+}
+
 void DigManager::doRestoreSystem()
 {
     ERROR("do_restore_system!\n");
@@ -291,7 +304,8 @@ void DigManager::HanldeSysChksumError(char* error_file_path) {
     if (!mBootCompleted) {
         //reboot into recovery to restore system
         ERROR("HanldeSysChksumError doRestoreSystem\n");
-        doRestoreSystem();
+        if (isABupdate() == 0)
+            doRestoreSystem();
     } else {
         //start notify activity,RestoreSystemActivity
         ERROR("HanldeSysChksumError start notify activity,RestoreSystemActivity\n");
@@ -393,7 +407,8 @@ void DigManager::handleDataRo() {
         } else {
             //data ro too much time,run into recovery mode
             setDataRoCount(0);
-            doRebootRecoveryTipDataro();
+            if (isABupdate() == 0)
+                doRebootRecoveryTipDataro();
         }
     } else {
         //start notify activity,RebootActivity

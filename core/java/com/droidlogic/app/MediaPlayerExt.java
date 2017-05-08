@@ -625,17 +625,16 @@ public class MediaPlayerExt extends MediaPlayer {
             int duration = getDuration ();
             int sleepTime = BASE_SLEEP_TIME;
             int seekPos = 0;
+            int stepMini = getDuration() / 100;//100 should sync with ProgressBar.java mMax, separate progress bar to 100 slices
             superPause();
             while (!mStopFast) {
                 if (mStep < 1) {
                     mStopFast = true;
-                    superStart();
                     break;
                 }
                 pos = getCurrentPosition();
-                if (pos == 0) {
+                if (pos <= 1000 || pos <= stepMini) {//1000 means position smaller than 1s
                     mStopFast = true;
-                    superStart();
                     break;
                 }
                 if (pos == duration || pos == mPos) {
@@ -670,6 +669,7 @@ public class MediaPlayerExt extends MediaPlayer {
                     Thread.currentThread().interrupt();
                 }
             }
+            superStart();
         }
     };
     private MediaPlayer.OnSeekCompleteListener mMediaPlayerSeekCompleteListener =

@@ -1091,8 +1091,15 @@ bool DisplayMode::isBestOutputmode() {
 //this function only running in bootup time
 void DisplayMode::setSinkOutputMode(const char* outputmode, bool initState) {
     int position[4] = { 0, 0, 0, 0 };//x,y,w,h
+    bool cvbsMode = false;
 
     getPosition(outputmode, position);
+
+    if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)) {
+        cvbsMode = true;
+    }
+
+    pTxAuth->stop();
 
     pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
     char axis[MAX_STR_LEN] = {0};
@@ -1103,6 +1110,11 @@ void DisplayMode::setSinkOutputMode(const char* outputmode, bool initState) {
     sprintf(axis, "%d %d %d %d",
             position[0], position[1], position[0] + position[2] - 1, position[1] + position[3] -1);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
+
+    //HDMI mode need HDCP authenticate, When MBOX use TV-SOC
+    if (!cvbsMode) {
+        pTxAuth->start();
+    }
 
     if (initState)
         startBootanimDetectThread();

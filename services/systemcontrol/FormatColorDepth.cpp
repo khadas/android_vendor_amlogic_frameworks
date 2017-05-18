@@ -69,6 +69,15 @@ static const char* COLOR_ATTRIBUTE_LIST3[] = {
     COLOR_RGB_8BIT,
 };
 
+//this is prior selected list  of 4k2k50hz420, 4k2k60hz420, smpte50hz420, smpte60hz420
+static const char* COLOR_ATTRIBUTE_LIST4[] = {
+    COLOR_YCBCR420_12BIT,
+    COLOR_YCBCR420_10BIT,
+    COLOR_YCBCR420_8BIT,
+    COLOR_YCBCR422_8BIT,
+    COLOR_RGB_8BIT,
+};
+
 FormatColorDepth::FormatColorDepth() {
 }
 
@@ -103,8 +112,9 @@ void FormatColorDepth::getHdmiColorAttribute(const char* outputmode, char* color
     char supportedColorList[MAX_STR_LEN];
 
     if (!initColorAttribute(supportedColorList, MAX_STR_LEN)) {
-        mSysWrite.getPropertyString(PROP_DEFAULT_COLOR, colorAttribute, COLOR_YCBCR444_8BIT);
-        SYS_LOGE("do not find sink color list, use default color attribute:%s\n", colorAttribute);
+        mSysWrite.getPropertyString(PROP_DEFAULT_COLOR, colorAttribute,
+                (strstr(outputmode, "420") != NULL) ? COLOR_YCBCR420_8BIT : COLOR_YCBCR444_8BIT);
+        SYS_LOGE("Error!!! Do not find sink color list, use default color attribute:%s\n", colorAttribute);
         return;
     }
 
@@ -114,20 +124,33 @@ void FormatColorDepth::getHdmiColorAttribute(const char* outputmode, char* color
 
         if ((state == OUPUT_MODE_STATE_SWITCH) && (!strcmp(curMode, outputmode))) {
             //note: "outputmode" should be the second parameter of "strcmp", because it maybe prefix of "curMode".
+            SYS_LOGI("Only modify deep color mode, get colorAttr from ubootenv.var.colorattribute\n");
             getBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
-        }
-        else {
+        } else {
             getBestHdmiColorArrtibute(outputmode, supportedColorList, colorAttribute);
         }
     }
 
-    SYS_LOGI("get hdmi color attribute : %s, outputmode is: %s , and support color list is: %s\n", colorAttribute, outputmode, supportedColorList);
+    SYS_LOGI("get hdmi color attribute : [%s], outputmode is: [%s] , and support color list is: [%s]\n",
+        colorAttribute, outputmode, supportedColorList);
 }
 
 void FormatColorDepth::getBestHdmiColorArrtibute(const char* outputmode, char* supportedColorList, char* colorAttribute) {
     char *pos = NULL;
     const char **colorList = NULL;
     int length = 0;
+    char ubootvar[MODE_LEN] = {0};
+    char tmpValue[MODE_LEN] = {0};
+    char isBestMode[MODE_LEN] = {0};
+
+    if (getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) && strcmp(isBestMode, "false") == 0) {
+        SYS_LOGI("get color attr from ubootenv.var.%s_deepcolor When is not best mode\n", outputmode);
+        sprintf(ubootvar, "ubootenv.var.%s_deepcolor", outputmode);
+        if (getBootEnv(ubootvar, tmpValue) && isModeSupportDeepColorAttr(outputmode, tmpValue)) {
+            strcpy(colorAttribute, tmpValue);
+            return;
+        }
+    }
 
     if (!strcmp(outputmode, MODE_4K2K60HZ) || !strcmp(outputmode, MODE_4K2K50HZ)) {
         colorList = COLOR_ATTRIBUTE_LIST1;
@@ -136,6 +159,10 @@ void FormatColorDepth::getBestHdmiColorArrtibute(const char* outputmode, char* s
     else if (!strcmp(outputmode, MODE_4K2KSMPTE60HZ) || !strcmp(outputmode, MODE_4K2KSMPTE50HZ)) {
         colorList = COLOR_ATTRIBUTE_LIST2;
         length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST2);
+    } else if (!strcmp(outputmode, MODE_4K2K50HZ420) || !strcmp(outputmode, MODE_4K2K60HZ420) ||
+        !strcmp(outputmode, MODE_4K2KSMPTE50HZ420) || !strcmp(outputmode, MODE_4K2KSMPTE60HZ420)) {
+        colorList = COLOR_ATTRIBUTE_LIST4;
+        length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST4);
     }
     else {
         colorList = COLOR_ATTRIBUTE_LIST3;
@@ -144,16 +171,8 @@ void FormatColorDepth::getBestHdmiColorArrtibute(const char* outputmode, char* s
 
     for (int i = 0; i < length; i++) {
         if ((pos = strstr(supportedColorList, colorList[i])) != NULL) {
-            char valueStr[10] = {0};
-            char mode[MODE_LEN] = {0};
-            strcpy(mode, outputmode);
-            strcat(mode, colorList[i]);
-            //try support or not
-            mSysWrite.writeSysfs(DISPLAY_HDMI_VALID_MODE, mode);
-            mSysWrite.readSysfs(DISPLAY_HDMI_VALID_MODE, valueStr);
-
-            if (atoi(valueStr)) {
-                SYS_LOGI("support current color mode:%s\n", mode);
+            if (isModeSupportDeepColorAttr(outputmode, colorList[i])) {
+                SYS_LOGI("support current mode:[%s], deep color:[%s]\n", outputmode, colorList[i]);
 
                 strcpy(colorAttribute, colorList[i]);
                 break;
@@ -162,6 +181,17 @@ void FormatColorDepth::getBestHdmiColorArrtibute(const char* outputmode, char* s
     }
 
     //SYS_LOGI("get best hdmi color attribute %s\n", colorAttribute);
+}
+
+bool FormatColorDepth::isModeSupportDeepColorAttr(const char *mode, const char * color) {
+    char valueStr[10] = {0};
+    char outputmode[MODE_LEN] = {0};
+    strcpy(outputmode, mode);
+    strcat(outputmode, color);
+    //try support or not
+    mSysWrite.writeSysfs(DISPLAY_HDMI_VALID_MODE, outputmode);
+    mSysWrite.readSysfs(DISPLAY_HDMI_VALID_MODE, valueStr);
+    return atoi(valueStr) ? true : false;
 }
 
 bool FormatColorDepth::getBootEnv(const char* key, char* value) {

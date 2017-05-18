@@ -223,10 +223,42 @@ using namespace android;
 #define ENV_4K2KSMPTE_W                 "ubootenv.var.4k2ksmpte_w"
 #define ENV_4K2KSMPTE_H                 "ubootenv.var.4k2ksmpte_h"
 
+
+#define ENV_480P60_DV                    "ubootenv.var.480p60hz_deepcolor"
+#define ENV_576P50_DV                    "ubootenv.var.576p50hz_deepcolor"
+#define ENV_720P50_DV                    "ubootenv.var.720p50hz_deepcolor"
+#define ENV_720P60_DV                    "ubootenv.var.720p60hz_deepcolor"
+#define ENV_1080I50_DV                   "ubootenv.var.1080i50hz_deepcolor"
+#define ENV_1080I60_DV                   "ubootenv.var.1080i60hz_deepcolor"
+#define ENV_1080P24_DV                   "ubootenv.var.1080p24hz_deepcolor"
+#define ENV_1080P25_DV                   "ubootenv.var.1080p25hz_deepcolor"
+#define ENV_1080P30_DV                   "ubootenv.var.1080p30hz_deepcolor"
+#define ENV_1080P50_DV                   "ubootenv.var.1080p50hz_deepcolor"
+#define ENV_1080P60_DV                   "ubootenv.var.1080p60hz_deepcolor"
+#define ENV_4K2KP24_DV                   "ubootenv.var.2160p24hz_deepcolor"
+#define ENV_4K2KP25_DV                   "ubootenv.var.2160p25hz_deepcolor"
+#define ENV_4K2KP30_DV                   "ubootenv.var.2160p30hz_deepcolor"
+#define ENV_4K2KP50_DV                   "ubootenv.var.2160p50hz_deepcolor"
+#define ENV_4K2KP60_DV                   "ubootenv.var.2160p60hz_deepcolor"
+#define ENV_4K2KP50_420_DV               "ubootenv.var.2160p50hz420_deepcolor"
+#define ENV_4K2KP60_420_DV               "ubootenv.var.2160p60hz420_deepcolor"
+#define ENV_SMPTE24_DV                   "ubootenv.var.smpte24hz_deepcolor"
+#define ENV_SMPTE25_DV                   "ubootenv.var.smpte25hz_deepcolor"
+#define ENV_SMPTE30_DV                   "ubootenv.var.smpte30hz_deepcolor"
+#define ENV_SMPTE50_DV                   "ubootenv.var.smpte50hz_deepcolor"
+#define ENV_SMPTE60_DV                   "ubootenv.var.smpte60hz_deepcolor"
+#define ENV_SMPTE50_420_DV               "ubootenv.var.smpte50hz420_deepcolor"
+#define ENV_SMPTE60_420_DV               "ubootenv.var.smpte60hz420_deepcolor"
+
+
 #define SUFFIX_10BIT                    "10bit"
 #define SUFFIX_12BIT                    "12bit"
 #define SUFFIX_14BIT                    "14bit"
 #define SUFFIX_RGB                      "rgb"
+
+#define DEFAULT_DEEP_COLOR_ATTR         "444,8bit"
+#define DEFAULT_420_DEEP_COLOR_ATTR     "420,8bit"
+
 
 #define UBOOTENV_DIGITAUDIO             "ubootenv.var.digitaudiooutput"
 #define UBOOTENV_HDMIMODE               "ubootenv.var.hdmimode"
@@ -375,6 +407,8 @@ public:
     void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
+    void getDeepColorAttr(const char* mode, char *value);
+    void saveDeepColorAttr(const char* mode, const char* dcValue);
     void isHDCPTxAuthSuccess( int *status);
     static void* bootanimDetect(void *data);
 

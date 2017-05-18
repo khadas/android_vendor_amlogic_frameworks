@@ -440,6 +440,26 @@ void SystemControl::isHDCPTxAuthSuccess(int &status) {
     status = value;
 }
 
+void SystemControl::saveDeepColorAttr(const String16& mode, const String16& dcValue) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set deep color attr %s\n", String8(dcValue).string());
+    }
+    char outputmode[64];
+    char value[64];
+    strcpy(outputmode, String8(mode).string());
+    strcpy(value, String8(dcValue).string());
+    pDisplayMode->saveDeepColorAttr(outputmode, value);
+}
+
+void SystemControl::getDeepColorAttr(const String16& mode, String16& value) {
+    char buf[PROPERTY_VALUE_MAX] = {0};
+    pDisplayMode->getDeepColorAttr(String8(mode).string(), buf);
+    value.setTo(String16(buf));
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("get deep color attr mode %s, value %s ", String8(mode).string(), String8(value).string());
+    }
+}
+
 void SystemControl::reInit() {
     bootenv_reinit();
 }

@@ -81,6 +81,8 @@ public:
     virtual void setOsdMousePara(int x, int y, int w, int h);
     virtual void setPosition(int left, int top, int width, int height);
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h);
+    virtual void getDeepColorAttr(const String16& mode, String16& value);
+    virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue);
     virtual void reInit();
     virtual void instabootResetDisplay(void);
     virtual void setNativeWindowRect(int x, int y, int w, int h);

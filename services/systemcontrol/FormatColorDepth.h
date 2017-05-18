@@ -54,6 +54,7 @@ public:
 
 private:
     bool getBootEnv(const char* key, char* value);
+    bool isModeSupportDeepColorAttr(const char *mode, const char * color);
 
     void getBestHdmiColorArrtibute(const char * outputmode, char* supportedColorList, char * colorAttribute);
     bool initColorAttribute(char* supportedColorList, int len);

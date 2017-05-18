@@ -90,6 +90,10 @@ enum {
     GET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 43,
     SET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 44,
     IS_AUTHSUCCESS           =IBinder::FIRST_CALL_TRANSACTION + 45,
+
+    //add get/save deep color
+    SAVE_DEEP_COLOR_ATTR            = IBinder::FIRST_CALL_TRANSACTION + 46,
+    GET_DEEP_COLOR_ATTR             = IBinder::FIRST_CALL_TRANSACTION + 47,
 };
 
 // ----------------------------------------------------------------------------
@@ -134,6 +138,8 @@ public:
     virtual void setOsdMousePara(int x, int y, int w, int h) = 0;
     virtual void setPosition(int left, int top, int width, int height) = 0;
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h) = 0;
+    virtual void getDeepColorAttr(const String16& mode, String16& value) = 0;
+    virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue) = 0;
     virtual void reInit(void) = 0;
     virtual void instabootResetDisplay(void) = 0;
 

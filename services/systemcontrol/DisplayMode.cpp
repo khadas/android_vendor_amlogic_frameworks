@@ -540,8 +540,13 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     pTxAuth->stop();
 
     // 3. set deep color and displaymode
-    if (OUPUT_MODE_STATE_INIT != state) {
-
+    char displaymode[MODE_LEN] = {0};
+    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, displaymode);
+    //two case, all must plug HDMI
+    //1. mbox not supports display/mode(uboot.var.outputmode) when boot, need update set color
+    //2. state is not OUPUT_MODE_STATE_INIT
+    if (!cvbsMode && ((OUPUT_MODE_STATE_INIT == state && strcmp(displaymode, outputmode)) ||
+            OUPUT_MODE_STATE_INIT != state)) {
         char colorAttribute[MODE_LEN] = {0};
         if (deepColorEnabled) {
             FormatColorDepth deepColor;
@@ -553,6 +558,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
         //save to ubootenv
+        saveDeepColorAttr(outputmode, colorAttribute);
         setBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
     }
 
@@ -1449,6 +1455,21 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
         default:
             break;
     }
+}
+
+void DisplayMode::saveDeepColorAttr(const char* mode, const char* dcValue) {
+    char ubootvar[100] = {0};
+    sprintf(ubootvar, "ubootenv.var.%s_deepcolor", mode);
+    setBootEnv(ubootvar, (char *)dcValue);
+}
+
+void DisplayMode::getDeepColorAttr(const char* mode, char* value) {
+    char ubootvar[100];
+    sprintf(ubootvar, "ubootenv.var.%s_deepcolor", mode);
+    if (!getBootEnv(ubootvar, value)) {
+        //strcpy(value, (strstr(mode, "420") != NULL) ? DEFAULT_420_DEEP_COLOR_ATTR : DEFAULT_DEEP_COLOR_ATTR);
+    }
+    SYS_LOGI(": getDeepColorAttr [%s]", value);
 }
 
 int DisplayMode::modeToIndex(const char *mode) {

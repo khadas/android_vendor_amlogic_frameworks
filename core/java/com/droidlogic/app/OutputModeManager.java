@@ -150,7 +150,7 @@ public class OutputModeManager {
         currentOutputmode = readSysfs(DISPLAY_MODE);
     }
 
-    public void setOutputMode(final String mode) {
+    private void setOutputMode(final String mode) {
         setOutputModeNowLocked(mode);
     }
 
@@ -202,7 +202,7 @@ public class OutputModeManager {
 
     public boolean isModeSupportColor(final String curMode, final String curValue){
          boolean ret =false;
-         curMode.replace("444", "").replace("422", "").replace("420", "").replace("rgb", "");
+         //curMode.replace("444", "").replace("422", "").replace("420", "").replace("rgb", "");
          writeSysfs(DISPLAY_HDMI_VALID_MODE, curMode+curValue);
          String isSupport = readSysfs(DISPLAY_HDMI_VALID_MODE).trim();
          Log.d("SystemControl", "at OutputModeManager if this mode: " + curMode+curValue+"is support or not:"+isSupport);
@@ -211,7 +211,7 @@ public class OutputModeManager {
          return  ret;
     }
 
-    public void setOutputModeNowLocked(final String newMode){
+    private void setOutputModeNowLocked(final String newMode){
         synchronized (mLock) {
             String oldMode = currentOutputmode;
             currentOutputmode = newMode;
@@ -244,8 +244,7 @@ public class OutputModeManager {
     }
 
     public String getCurrentOutputMode(){
-        return readSysfs(DISPLAY_MODE).replace("444", "").replace("422", "").replace("420", "").replace("rgb", "").replace("12bit", "").replace("10bit", "")
-                .replace("8bit", "");
+        return readSysfs(DISPLAY_MODE);
     }
 
     public int[] getPosition(String mode) {

@@ -81,6 +81,10 @@ public class SystemControlManager {
     private static final int SET_ACTIVE_DISPLAYMODE        = IBinder.FIRST_CALL_TRANSACTION + 44;
     private static final int IS_AUTHSUCCESS        = IBinder.FIRST_CALL_TRANSACTION + 45;
 
+    //add get/save deep color
+    private static final int SAVE_DEEP_COLOR_ATTR           = IBinder.FIRST_CALL_TRANSACTION + 46;
+    private static final int GET_DEEP_COLOR_ATTR            = IBinder.FIRST_CALL_TRANSACTION + 47;
+
     private Context mContext;
     private IBinder mIBinder = null;
     public SystemControlManager(Context context){
@@ -888,6 +892,42 @@ public class SystemControlManager {
             Log.e(TAG, "get position:" + ex);
         }
         return curPosition;
+    }
+
+    public String getDeepColorAttr(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(GET_DEEP_COLOR_ATTR, data, reply, 0);
+                String dcValue = reply.readString();
+                reply.recycle();
+                data.recycle();
+                return dcValue;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "get deep color attr:" + ex);
+        }
+        return null;
+    }
+
+    public void saveDeepColorAttr(String mode, String dcValue) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                data.writeString(dcValue);
+                mIBinder.transact(SAVE_DEEP_COLOR_ATTR, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set deep color attr:" + ex);
+        }
     }
 
     public void setListener(ISystemControlNotify listener) {

@@ -626,6 +626,35 @@ public:
         ALOGV("get position x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
     }
 
+    virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+        data.writeString16(dcValue);
+        ALOGV("set deep color attr %s\n", String8(dcValue).string());
+
+        if (remote()->transact(SAVE_DEEP_COLOR_ATTR, data, &reply) != NO_ERROR) {
+            ALOGE("set deep color attr could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void getDeepColorAttr(const String16& mode, String16& value)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+
+        if (remote()->transact(GET_DEEP_COLOR_ATTR, data, &reply) != NO_ERROR) {
+            ALOGE("get deep color attr could not contact remote\n");
+            return;
+        }
+
+        value = reply.readString16();
+        ALOGV("get deep color attr %s\n", String8(value).string());
+    }
+
     virtual void reInit(void) {
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -1108,6 +1137,21 @@ status_t BnISystemControlService::onTransact(
             CHECK_INTERFACE(ISystemControlService, data, reply);
             isHDCPTxAuthSuccess(status);
             reply->writeInt32(status);
+            return NO_ERROR;
+        }
+        case SAVE_DEEP_COLOR_ATTR: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            String16 value = data.readString16();
+            saveDeepColorAttr(mode, value);
+            return NO_ERROR;
+        }
+        case GET_DEEP_COLOR_ATTR: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            String16 value;
+            getDeepColorAttr(mode, value);
+            reply->writeString16(value);
             return NO_ERROR;
         }
         default: {

@@ -126,12 +126,15 @@ using namespace android;
 #define HDMI_TX_PLUG_STATE              "/sys/devices/virtual/switch/hdmi/state"
 #define HDMI_TX_HDR_UEVENT              "DEVPATH=/devices/virtual/switch/hdmi_hdr"
 #define HDMI_TX_HDCP_UEVENT             "DEVPATH=/devices/virtual/switch/hdcp"
+#define HDMI_TX_HDCP14_LOG_UEVENT       "DEVPATH=/devices/virtual/switch/hdcp_log"
+#define HDMI_TX_HDCP14_LOG_SYS          "/sys/kernel/debug/hdcp/log"
 #define HDMI_TX_SWITCH_HDR              "/sys/class/switch/hdmi_hdr/state"
 
 #define HDMI_UEVENT_HDMI                "hdmi"
 #define HDMI_UEVENT_HDMI_POWER          "hdmi_power"
 #define HDMI_UEVENT_HDMI_HDR            "hdmi_hdr"
 #define HDMI_UEVENT_HDCP                "hdcp"
+#define HDMI_UEVENT_HDCP_LOG            "hdcp_log"
 
 #define HDMI_TX_PLUG_OUT                "0"
 #define HDMI_TX_PLUG_IN                 "1"

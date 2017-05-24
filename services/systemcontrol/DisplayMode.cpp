@@ -688,8 +688,13 @@ void DisplayMode::setVideoPlayingAxis() {
     int outputheight = mNativeWinH*scaleH;
 
     char axis[MAX_STR_LEN] = {0};
-    sprintf(axis, "%d %d %d %d",
+    if ((outputx == 0) && (outputy == 0) &&
+            (outputx + outputwidth - 1 == -1) && (outputy + outputheight - 1)) {
+        sprintf (axis, "%d %d %d %d",currPos[0], currPos[1], currPos[2] - 1, currPos[3] - 1);
+    } else {
+        sprintf(axis, "%d %d %d %d",
             outputx, outputy, outputx + outputwidth - 1, outputy + outputheight - 1);
+    }
     SYS_LOGD("write %s: %s\n", SYSFS_VIDEO_AXIS, axis);
     pSysWrite->writeSysfs(SYSFS_VIDEO_AXIS, axis);
 }

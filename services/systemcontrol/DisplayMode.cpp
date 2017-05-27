@@ -1252,108 +1252,52 @@ void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {
-    int index = modeToIndex(curMode);
-    switch (index) {
-        case DISPLAY_MODE_480I:
-        case DISPLAY_MODE_480CVBS: // 480cvbs
-            position[0] = getBootenvInt(ENV_480I_X, 0);
-            position[1] = getBootenvInt(ENV_480I_Y, 0);
-            position[2] = getBootenvInt(ENV_480I_W, FULL_WIDTH_480);
-            position[3] = getBootenvInt(ENV_480I_H, FULL_HEIGHT_480);
-            break;
-        case DISPLAY_MODE_480P: // 480p
-            position[0] = getBootenvInt(ENV_480P_X, 0);
-            position[1] = getBootenvInt(ENV_480P_Y, 0);
-            position[2] = getBootenvInt(ENV_480P_W, FULL_WIDTH_480);
-            position[3] = getBootenvInt(ENV_480P_H, FULL_HEIGHT_480);
-            break;
-        case DISPLAY_MODE_576I: // 576i
-        case DISPLAY_MODE_576CVBS: // 576cvbs
-            position[0] = getBootenvInt(ENV_576I_X, 0);
-            position[1] = getBootenvInt(ENV_576I_Y, 0);
-            position[2] = getBootenvInt(ENV_576I_W, FULL_WIDTH_576);
-            position[3] = getBootenvInt(ENV_576I_H, FULL_HEIGHT_576);
-            break;
-        case DISPLAY_MODE_576P: // 576p
-            position[0] = getBootenvInt(ENV_576P_X, 0);
-            position[1] = getBootenvInt(ENV_576P_Y, 0);
-            position[2] = getBootenvInt(ENV_576P_W, FULL_WIDTH_576);
-            position[3] = getBootenvInt(ENV_576P_H, FULL_HEIGHT_576);
-            break;
-        case DISPLAY_MODE_720P: // 720p
-        case DISPLAY_MODE_720P50HZ: // 720p50hz
-            position[0] = getBootenvInt(ENV_720P_X, 0);
-            position[1] = getBootenvInt(ENV_720P_Y, 0);
-            position[2] = getBootenvInt(ENV_720P_W, FULL_WIDTH_720);
-            position[3] = getBootenvInt(ENV_720P_H, FULL_HEIGHT_720);
-            break;
-        case DISPLAY_MODE_1080I: // 1080i
-        case DISPLAY_MODE_1080I50HZ: // 1080i50hz
-            position[0] = getBootenvInt(ENV_1080I_X, 0);
-            position[1] = getBootenvInt(ENV_1080I_Y, 0);
-            position[2] = getBootenvInt(ENV_1080I_W, FULL_WIDTH_1080);
-            position[3] = getBootenvInt(ENV_1080I_H, FULL_HEIGHT_1080);
-            break;
-        case DISPLAY_MODE_1080P: // 1080p
-        case DISPLAY_MODE_1080P50HZ: // 1080p50hz
-        case DISPLAY_MODE_1080P24HZ://1080p24hz
-            position[0] = getBootenvInt(ENV_1080P_X, 0);
-            position[1] = getBootenvInt(ENV_1080P_Y, 0);
-            position[2] = getBootenvInt(ENV_1080P_W, FULL_WIDTH_1080);
-            position[3] = getBootenvInt(ENV_1080P_H, FULL_HEIGHT_1080);
-            break;
-        case DISPLAY_MODE_4K2K24HZ: // 4k2k24hz
-            position[0] = getBootenvInt(ENV_4K2K24HZ_X, 0);
-            position[1] = getBootenvInt(ENV_4K2K24HZ_Y, 0);
-            position[2] = getBootenvInt(ENV_4K2K24HZ_W, FULL_WIDTH_4K2K);
-            position[3] = getBootenvInt(ENV_4K2K24HZ_H, FULL_HEIGHT_4K2K);
-            break;
-        case DISPLAY_MODE_4K2K25HZ: // 4k2k25hz
-            position[0] = getBootenvInt(ENV_4K2K25HZ_X, 0);
-            position[1] = getBootenvInt(ENV_4K2K25HZ_Y, 0);
-            position[2] = getBootenvInt(ENV_4K2K25HZ_W, FULL_WIDTH_4K2K);
-            position[3] = getBootenvInt(ENV_4K2K25HZ_H, FULL_HEIGHT_4K2K);
-            break;
-        case DISPLAY_MODE_4K2K30HZ: // 4k2k30hz
-            position[0] = getBootenvInt(ENV_4K2K30HZ_X, 0);
-            position[1] = getBootenvInt(ENV_4K2K30HZ_Y, 0);
-            position[2] = getBootenvInt(ENV_4K2K30HZ_W, FULL_WIDTH_4K2K);
-            position[3] = getBootenvInt(ENV_4K2K30HZ_H, FULL_HEIGHT_4K2K);
-            break;
-        case DISPLAY_MODE_4K2K50HZ: // 4k2k50hz
-        case DISPLAY_MODE_4K2K50HZ420: // 4k2k50hz420
-        case DISPLAY_MODE_4K2K50HZ422: // 4k2k50hz422
-            position[0] = getBootenvInt(ENV_4K2K50HZ_X, 0);
-            position[1] = getBootenvInt(ENV_4K2K50HZ_Y, 0);
-            position[2] = getBootenvInt(ENV_4K2K50HZ_W, FULL_WIDTH_4K2K);
-            position[3] = getBootenvInt(ENV_4K2K50HZ_H, FULL_HEIGHT_4K2K);
-            break;
-        case DISPLAY_MODE_4K2K60HZ: // 4k2k60hz
-        case DISPLAY_MODE_4K2K60HZ420: // 4k2k60hz420
-        case DISPLAY_MODE_4K2K60HZ422: // 4k2k60hz422
-            position[0] = getBootenvInt(ENV_4K2K60HZ_X, 0);
-            position[1] = getBootenvInt(ENV_4K2K60HZ_Y, 0);
-            position[2] = getBootenvInt(ENV_4K2K60HZ_W, FULL_WIDTH_4K2K);
-            position[3] = getBootenvInt(ENV_4K2K60HZ_H, FULL_HEIGHT_4K2K);
-            break;
-        case DISPLAY_MODE_4K2KSMPTE: // 4k2ksmpte
-        case DISPLAY_MODE_4K2KSMPTE30HZ: // 4k2ksmpte30hz
-        case DISPLAY_MODE_4K2KSMPTE50HZ: // 4k2ksmpte50hz
-        case DISPLAY_MODE_4K2KSMPTE50HZ420: // 4k2ksmpte50hz420
-        case DISPLAY_MODE_4K2KSMPTE60HZ: // 4k2ksmpte60hz
-        case DISPLAY_MODE_4K2KSMPTE60HZ420: // 4k2ksmpte60hz320
-            position[0] = getBootenvInt(ENV_4K2KSMPTE_X, 0);
-            position[1] = getBootenvInt(ENV_4K2KSMPTE_Y, 0);
-            position[2] = getBootenvInt(ENV_4K2KSMPTE_W, FULL_WIDTH_4K2KSMPTE);
-            position[3] = getBootenvInt(ENV_4K2KSMPTE_H, FULL_HEIGHT_4K2KSMPTE);
-            break;
-        default: //1080p
-            position[0] = getBootenvInt(ENV_1080P_X, 0);
-            position[1] = getBootenvInt(ENV_1080P_Y, 0);
-            position[2] = getBootenvInt(ENV_1080P_W, FULL_WIDTH_1080);
-            position[3] = getBootenvInt(ENV_1080P_H, FULL_HEIGHT_1080);
-            break;
+    char keyValue[20] = {0};
+    char ubootvar[100] = {0};
+    int defaultWidth = 0;
+    int defaultHeight = 0;
+    if (strstr(curMode, "480")) {
+        strcpy(keyValue, strstr(curMode, MODE_480P_PREFIX) ? MODE_480P_PREFIX : MODE_480I_PREFIX);
+        defaultWidth = FULL_WIDTH_480;
+        defaultHeight = FULL_HEIGHT_480;
+    } else if (strstr(curMode, "576")) {
+        strcpy(keyValue, strstr(curMode, MODE_576P_PREFIX) ? MODE_576P_PREFIX : MODE_576I_PREFIX);
+        defaultWidth = FULL_WIDTH_576;
+        defaultHeight = FULL_HEIGHT_576;
+    } else if (strstr(curMode, MODE_720P_PREFIX)) {
+        strcpy(keyValue, MODE_720P_PREFIX);
+        defaultWidth = FULL_WIDTH_720;
+        defaultHeight = FULL_HEIGHT_720;
+    } else if (strstr(curMode, MODE_1080I_PREFIX)) {
+        strcpy(keyValue, MODE_1080I_PREFIX);
+        defaultWidth = FULL_WIDTH_1080;
+        defaultHeight = FULL_HEIGHT_1080;
+    } else if (strstr(curMode, MODE_1080P_PREFIX)) {
+        strcpy(keyValue, MODE_1080P_PREFIX);
+        defaultWidth = FULL_WIDTH_1080;
+        defaultHeight = FULL_HEIGHT_1080;
+    } else if (strstr(curMode, MODE_4K2K_PREFIX)) {
+        strcpy(keyValue, MODE_4K2K_PREFIX);
+        defaultWidth = FULL_WIDTH_4K2K;
+        defaultHeight = FULL_HEIGHT_4K2K;
+    } else if (strstr(curMode, MODE_4K2KSMPTE_PREFIX)) {
+        strcpy(keyValue, "4k2ksmpte");
+        defaultWidth = FULL_WIDTH_4K2KSMPTE;
+        defaultHeight = FULL_HEIGHT_4K2KSMPTE;
+    } else {
+        strcpy(keyValue, MODE_1080P_PREFIX);
+        defaultWidth = FULL_WIDTH_1080;
+        defaultHeight = FULL_HEIGHT_1080;
     }
+
+    sprintf(ubootvar, "ubootenv.var.%s_x", keyValue);
+    position[0] = getBootenvInt(ubootvar, 0);
+    sprintf(ubootvar, "ubootenv.var.%s_y", keyValue);
+    position[1] = getBootenvInt(ubootvar, 0);
+    sprintf(ubootvar, "ubootenv.var.%s_w", keyValue);
+    position[2] = getBootenvInt(ubootvar, defaultWidth);
+    sprintf(ubootvar, "ubootenv.var.%s_h", keyValue);
+    position[3] = getBootenvInt(ubootvar, defaultHeight);
 }
 
 void DisplayMode::setPosition(int left, int top, int width, int height) {
@@ -1368,105 +1312,32 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
 
     char curMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
-    int index = modeToIndex(curMode);
-    switch (index) {
-        case DISPLAY_MODE_480I: // 480i
-        case DISPLAY_MODE_480CVBS: //480cvbs
-            setBootEnv(ENV_480I_X, x);
-            setBootEnv(ENV_480I_Y, y);
-            setBootEnv(ENV_480I_W, w);
-            setBootEnv(ENV_480I_H, h);
-            break;
-        case DISPLAY_MODE_480P: // 480p
-            setBootEnv(ENV_480P_X, x);
-            setBootEnv(ENV_480P_Y, y);
-            setBootEnv(ENV_480P_W, w);
-            setBootEnv(ENV_480P_H, h);
-            break;
-        case DISPLAY_MODE_576I: // 576i
-        case DISPLAY_MODE_576CVBS:    //576cvbs
-            setBootEnv(ENV_576I_X, x);
-            setBootEnv(ENV_576I_Y, y);
-            setBootEnv(ENV_576I_W, w);
-            setBootEnv(ENV_576I_H, h);
-            break;
-        case DISPLAY_MODE_576P: // 576p
-            setBootEnv(ENV_576P_X, x);
-            setBootEnv(ENV_576P_Y, y);
-            setBootEnv(ENV_576P_W, w);
-            setBootEnv(ENV_576P_H, h);
-            break;
-        case DISPLAY_MODE_720P: // 720p
-        case DISPLAY_MODE_720P50HZ: // 720p50hz
-            setBootEnv(ENV_720P_X, x);
-            setBootEnv(ENV_720P_Y, y);
-            setBootEnv(ENV_720P_W, w);
-            setBootEnv(ENV_720P_H, h);
-            break;
-        case DISPLAY_MODE_1080I: // 1080i
-        case DISPLAY_MODE_1080I50HZ: // 1080i50hz
-            setBootEnv(ENV_1080I_X, x);
-            setBootEnv(ENV_1080I_Y, y);
-            setBootEnv(ENV_1080I_W, w);
-            setBootEnv(ENV_1080I_H, h);
-            break;
-        case DISPLAY_MODE_1080P: // 1080p
-        case DISPLAY_MODE_1080P50HZ: // 1080p50hz
-        case DISPLAY_MODE_1080P24HZ: //1080p24hz
-            setBootEnv(ENV_1080P_X, x);
-            setBootEnv(ENV_1080P_Y, y);
-            setBootEnv(ENV_1080P_W, w);
-            setBootEnv(ENV_1080P_H, h);
-            break;
-        case DISPLAY_MODE_4K2K24HZ:      //4k2k24hz
-            setBootEnv(ENV_4K2K24HZ_X, x);
-            setBootEnv(ENV_4K2K24HZ_Y, y);
-            setBootEnv(ENV_4K2K24HZ_W, w);
-            setBootEnv(ENV_4K2K24HZ_H, h);
-            break;
-        case DISPLAY_MODE_4K2K25HZ:    //4k2k25hz
-            setBootEnv(ENV_4K2K25HZ_X, x);
-            setBootEnv(ENV_4K2K25HZ_Y, y);
-            setBootEnv(ENV_4K2K25HZ_W, w);
-            setBootEnv(ENV_4K2K25HZ_H, h);
-            break;
-        case DISPLAY_MODE_4K2K30HZ:    //4k2k30hz
-            setBootEnv(ENV_4K2K30HZ_X, x);
-            setBootEnv(ENV_4K2K30HZ_Y, y);
-            setBootEnv(ENV_4K2K30HZ_W, w);
-            setBootEnv(ENV_4K2K30HZ_H, h);
-            break;
-        case DISPLAY_MODE_4K2K50HZ:    //4k2k50hz
-        case DISPLAY_MODE_4K2K50HZ420: //4k2k50hz420
-        case DISPLAY_MODE_4K2K50HZ422: //4k2k50hz422
-            setBootEnv(ENV_4K2K50HZ_X, x);
-            setBootEnv(ENV_4K2K50HZ_Y, y);
-            setBootEnv(ENV_4K2K50HZ_W, w);
-            setBootEnv(ENV_4K2K50HZ_H, h);
-            break;
-        case DISPLAY_MODE_4K2K60HZ:    //4k2k60hz
-        case DISPLAY_MODE_4K2K60HZ420: //4k2k60hz420
-        case DISPLAY_MODE_4K2K60HZ422: //4k2k60hz422
-            setBootEnv(ENV_4K2K60HZ_X, x);
-            setBootEnv(ENV_4K2K60HZ_Y, y);
-            setBootEnv(ENV_4K2K60HZ_W, w);
-            setBootEnv(ENV_4K2K60HZ_H, h);
-            break;
-        case DISPLAY_MODE_4K2KSMPTE:    //4k2ksmpte
-        case DISPLAY_MODE_4K2KSMPTE30HZ: // 4k2ksmpte30hz
-        case DISPLAY_MODE_4K2KSMPTE50HZ: // 4k2ksmpte50hz
-        case DISPLAY_MODE_4K2KSMPTE50HZ420: // 4k2ksmpte50hz420
-        case DISPLAY_MODE_4K2KSMPTE60HZ: // 4k2ksmpte60hz
-        case DISPLAY_MODE_4K2KSMPTE60HZ420: // 4k2ksmpte60hz320
-            setBootEnv(ENV_4K2KSMPTE_X, x);
-            setBootEnv(ENV_4K2KSMPTE_Y, y);
-            setBootEnv(ENV_4K2KSMPTE_W, w);
-            setBootEnv(ENV_4K2KSMPTE_H, h);
-            break;
 
-        default:
-            break;
+    char keyValue[20] = {0};
+    char ubootvar[100] = {0};
+    if (strstr(curMode, "480")) {
+        strcpy(keyValue, strstr(curMode, MODE_480P_PREFIX) ? MODE_480P_PREFIX : MODE_480I_PREFIX);
+    } else if (strstr(curMode, "576")) {
+        strcpy(keyValue, strstr(curMode, MODE_576P_PREFIX) ? MODE_576P_PREFIX : MODE_576I_PREFIX);
+    } else if (strstr(curMode, MODE_720P_PREFIX)) {
+        strcpy(keyValue, MODE_720P_PREFIX);
+    } else if (strstr(curMode, MODE_1080I_PREFIX)) {
+        strcpy(keyValue, MODE_1080I_PREFIX);
+    } else if (strstr(curMode, MODE_1080P_PREFIX)) {
+        strcpy(keyValue, MODE_1080P_PREFIX);
+    } else if (strstr(curMode, MODE_4K2K_PREFIX)) {
+        strcpy(keyValue, MODE_4K2K_PREFIX);
+    } else if (strstr(curMode, MODE_4K2KSMPTE_PREFIX)) {
+        strcpy(keyValue, "4k2ksmpte");
     }
+    sprintf(ubootvar, "ubootenv.var.%s_x", keyValue);
+    setBootEnv(ubootvar, x);
+    sprintf(ubootvar, "ubootenv.var.%s_y", keyValue);
+    setBootEnv(ubootvar, y);
+    sprintf(ubootvar, "ubootenv.var.%s_w", keyValue);
+    setBootEnv(ubootvar, w);
+    sprintf(ubootvar, "ubootenv.var.%s_h", keyValue);
+    setBootEnv(ubootvar, h);
 }
 
 void DisplayMode::saveDeepColorAttr(const char* mode, const char* dcValue) {

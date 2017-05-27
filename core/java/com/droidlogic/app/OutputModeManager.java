@@ -10,6 +10,8 @@ import java.io.IOException;
 
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.hdmi.HdmiControlManager;
+import android.hardware.hdmi.HdmiHotplugEvent;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
@@ -136,6 +138,7 @@ public class OutputModeManager {
 
     private SystemControlManager mSystenControl;
     SystemControlManager.DisplayInfo mDisplayInfo;
+    private HdmiControlManager mHdmiControlManager;
 
     public OutputModeManager(Context context) {
         mContext = context;
@@ -148,6 +151,19 @@ public class OutputModeManager {
         }
 
         currentOutputmode = readSysfs(DISPLAY_MODE);
+
+        mHdmiControlManager = (HdmiControlManager) context.getSystemService(Context.HDMI_CONTROL_SERVICE);
+        if (mHdmiControlManager != null) {
+            mHdmiControlManager.addHotplugEventListener(new HdmiControlManager.HotplugEventListener() {
+
+                @Override
+                public void onReceived(HdmiHotplugEvent event) {
+                    if (Settings.Global.getInt(context.getContentResolver(), DIGITAL_SOUND, IS_PCM) == IS_HDMI_RAW) {
+                        autoSwitchHdmiPassthough();
+                    }
+                }
+            });
+        }
     }
 
     private void setOutputMode(final String mode) {

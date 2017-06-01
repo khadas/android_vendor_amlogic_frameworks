@@ -57,6 +57,10 @@ endif
 
 LOCAL_MODULE:= libhdmiin
 
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
+LOCAL_PROPRIETARY_MODULE := true
+endif
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -73,6 +77,10 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libgui \
     libnativehelper
+
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
+LOCAL_PROPRIETARY_MODULE := true
+endif
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -99,6 +107,11 @@ LOCAL_C_INCLUDES += \
     frameworks/base/include \
     frameworks/native/include \
     $(JNI_H_INCLUDE)
+
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
+LOCAL_PROPRIETARY_MODULE := true
+endif
+
 
 include $(BUILD_SHARED_LIBRARY)
 

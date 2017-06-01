@@ -15,6 +15,9 @@ LOCAL_MODULE:= libsystemcontrolservice
 
 LOCAL_MODULE_TAGS := optional
 
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
+LOCAL_PROPRIETARY_MODULE := true
+endif
 include $(BUILD_SHARED_LIBRARY)
 
 
@@ -38,6 +41,7 @@ endif
 
 LOCAL_CFLAGS += -DHDCP_AUTHENTICATION
 LOCAL_CPPFLAGS += -std=c++14
+LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 
 LOCAL_SRC_FILES:= \
   main_systemcontrol.cpp \
@@ -77,6 +81,9 @@ LOCAL_MODULE:= systemcontrol
 LOCAL_STATIC_LIBRARIES := \
   libz
 
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
+LOCAL_PROPRIETARY_MODULE := true
+endif
 include $(BUILD_EXECUTABLE)
 
 
@@ -98,6 +105,8 @@ endif
 
 LOCAL_CFLAGS += -DRECOVERY_MODE
 LOCAL_CPPFLAGS += -std=c++14
+LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
+
 LOCAL_SRC_FILES:= \
   main_recovery.cpp \
   ubootenv/Ubootenv.cpp \
@@ -128,6 +137,9 @@ LOCAL_FORCE_STATIC_EXECUTABLE := true
 LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
 LOCAL_MODULE:= systemcontrol_static
 
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
+LOCAL_PROPRIETARY_MODULE := true
+endif
 include $(BUILD_EXECUTABLE)
 
 
@@ -146,6 +158,7 @@ LOCAL_CFLAGS += -DGXTVBB_ENVSIZE
 endif
 
 LOCAL_CFLAGS += -DRECOVERY_MODE
+LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 
 LOCAL_SRC_FILES:= \
   main_recovery.cpp \
@@ -174,5 +187,9 @@ LOCAL_C_INCLUDES := \
   external/libcxx/include
 
 LOCAL_MODULE:= libsystemcontrol_static
+
+ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
+LOCAL_PROPRIETARY_MODULE := true
+endif
 
 include $(BUILD_STATIC_LIBRARY)

@@ -630,11 +630,13 @@ public class MediaPlayerExt extends MediaPlayer {
             while (!mStopFast) {
                 if (mStep < 1) {
                     mStopFast = true;
+                    superStart();
                     break;
                 }
                 pos = getCurrentPosition();
-                if (pos <= 1000 || pos <= stepMini) {//1000 means position smaller than 1s
+                if (!mIsFF && (pos <= 1000 || pos <= stepMini)) {//1000 means position smaller than 1s
                     mStopFast = true;
+                    superStart();
                     break;
                 }
                 if (pos == duration || pos == mPos) {
@@ -669,7 +671,6 @@ public class MediaPlayerExt extends MediaPlayer {
                     Thread.currentThread().interrupt();
                 }
             }
-            superStart();
         }
     };
     private MediaPlayer.OnSeekCompleteListener mMediaPlayerSeekCompleteListener =

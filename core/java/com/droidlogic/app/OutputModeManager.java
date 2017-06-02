@@ -74,6 +74,7 @@ public class OutputModeManager {
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
+    public static final String PROP_SUPPORT_4K              = "ro.platform.support.4k";
     public static final String PROP_DEEPCOLOR               = "sys.open.deepcolor";
     public static final String PROP_DTSDRCSCALE             = "persist.sys.dtsdrcscale";
     public static final String PROP_DTSEDID                 = "persist.sys.dts.edid";
@@ -383,8 +384,13 @@ public class OutputModeManager {
         try {
             BufferedReader br = new BufferedReader(new FileReader(path));
             while ((str = br.readLine()) != null) {
-                if (str != null)
+                if (str != null) {
+                    if (!getPropertyBoolean(PROP_SUPPORT_4K, true)
+                        && (str.contains("2160") || str.contains("smpte"))) {
+                        continue;
+                    }
                     value += str + ",";
+                }
             }
             br.close();
 

@@ -162,6 +162,7 @@ using namespace android;
 #define VIDEO_LAYER_AUTO_ENABLE         "2"//2:enable video layer when first frame data come
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
+#define PROP_SUPPORT_4K                 "ro.platform.support.4k"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
 #define PROP_WINDOW_WIDTH               "const.window.w"
 #define PROP_WINDOW_HEIGHT              "const.window.h"
@@ -386,6 +387,18 @@ typedef struct axis_s {
     int h;
 } axis_t;
 
+typedef struct resolution {
+//       resolution       standard frequency deepcolor
+//          2160             p       50hz      420   //2160p50hz420
+//          1080             p       60hz        0   //1080p60hz
+//0x00 0000 0000 0000 0000 | 0 | 0000 0000 | 0 0000 0000 //resolution_num
+    int resolution;
+    char standard;
+    int frequency;
+    int deepcolor;
+    unsigned int resolution_num;
+} resolution_t;
+
 // ----------------------------------------------------------------------------
 
 class DisplayMode : public HDCPTxAuth::TxUevntCallbak,
@@ -449,6 +462,7 @@ private:
     void getHighestPriorityMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
+    void resolveResolution(char *mode, resolution_t* resol_t);
     bool isEdidChange();
     bool isBestOutputmode();
     bool modeSupport(char *mode, int sinkType);

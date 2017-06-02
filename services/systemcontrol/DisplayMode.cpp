@@ -794,51 +794,58 @@ void DisplayMode::getBestHdmiMode(char* mode, hdmi_data_t* data) {
 
 //get the highest hdmi mode by edid
 void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
-    const char PMODE = 'p';
-    const char IMODE = 'i';
-    const char* FREQ = "hz";
-    int lenmode = 0, intmode = 0, higmode = 0;
     char value[MODE_LEN] = {0};
-    char* type;
-    char* start;
-    char* pos = data->edid;
-    do {
-        pos = strstr(pos, FREQ);
-        if (pos == NULL) break;
-        start = pos;
-        while (*start != '\n' && start >= data->edid) {
-            start--;
-        }
-        start++;
-        int len = pos - start;
-        strncpy(value, start, len);
-        pos = strstr(pos, "\n");
+    char tempMode[MODE_LEN] = {0};
 
-        if ((type = strchr(value, PMODE)) != NULL && type - value >= 3) {
-            value[type - value] = '1';
-        } else if ((type = strchr(value, IMODE)) != NULL) {
-            value[type - value] = '0';
-        } else {
+    resolution_t value_resol_t;
+    resolution_t tempmode_resol_t;
+
+    char* startpos;
+    char* destpos;
+
+    startpos = data->edid;
+    strcpy(value, DEFAULT_OUTPUT_MODE);
+    do {
+        //get edid resolution to tempMode in order.
+        destpos = strstr(startpos, "\n");
+        strncpy(tempMode, startpos, destpos - startpos);
+        startpos = destpos + 1;
+        if (!pSysWrite->getPropertyBoolean(PROP_SUPPORT_4K, true)
+            &&(strstr(tempMode, "2160") || strstr(tempMode, "smpte"))) {
+                SYS_LOGE("This platform not support : %s\n", tempMode);
             continue;
         }
-        value[len] = '\0';
 
-        if ((intmode = atoi(value)) >= higmode) {
-            len = pos - start;
-            if (intmode == higmode && lenmode >= len) continue;
-            lenmode = len;
-            higmode = intmode;
-            strncpy(mode, start, len);
-            if (mode[len - 1] == '*') mode[len - 1] = '\0';
-            else mode[len] = '\0';
+        if (tempMode[strlen(tempMode) - 1] == '*') {
+            tempMode[strlen(tempMode) - 1] = '\0';
         }
-    } while (strlen(pos) > 0);
 
-    if (higmode == 0) {
-        pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
-    }
+        resolveResolution(value, &value_resol_t);
+        resolveResolution(tempMode, &tempmode_resol_t);
 
-    //SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
+        if (tempmode_resol_t.resolution_num > value_resol_t.resolution_num) {
+            strcpy(value, tempMode);
+        }
+    } while(strlen(startpos) > 0);
+    strcpy(mode, value);
+    SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
+}
+
+void DisplayMode::resolveResolution(char *mode, resolution_t* resol_t) {
+    resol_t->resolution = atoi(mode);
+    resol_t->standard = strstr(mode, "p") == NULL ? 'i' : 'p';
+    char* position = strstr(mode, resol_t->standard == 'p' ? "p" : "i");
+    resol_t->frequency = atoi(position + 1);
+    position = strstr(mode, "hz");
+    resol_t->deepcolor = strlen(position + 2) == 0 ? 0 : atoi(position + 2);
+
+    int i = strstr(mode, "p") == NULL ? 0 : 1;
+    //[ 0: 8]bit : resolution deepcolor
+    //[ 9:16]bit : frequency
+    //[   17]bit : standard 'p' is 1, and 'i' is 0.
+    //[18:31]bit : resolution
+    resol_t->resolution_num = resol_t->deepcolor + (resol_t->frequency<< 9)
+        + (i << 17) + (resol_t->resolution << 18);
 }
 
 //get the highest priority mode defined by CDF table

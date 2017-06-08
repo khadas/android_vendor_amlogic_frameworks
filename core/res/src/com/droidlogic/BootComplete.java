@@ -100,13 +100,11 @@ public class BootComplete extends BroadcastReceiver {
             case OutputModeManager.IS_DRC_OFF:
                 outputModeManager.enableDobly_DRC(false);
                 outputModeManager.setDoblyMode(OutputModeManager.LINE_DRCMODE);
-                outputModeManager.setDtsDrcScale(OutputModeManager.MIN_DRC_SCALE);
                 break;
             case OutputModeManager.IS_DRC_LINE:
             default:
                 outputModeManager.enableDobly_DRC(true);
                 outputModeManager.setDoblyMode(OutputModeManager.LINE_DRCMODE);
-                outputModeManager.setDtsDrcScale(OutputModeManager.MAX_DRC_SCALE);
                 break;
             case OutputModeManager.IS_DRC_RF:
                 outputModeManager.enableDobly_DRC(false);

@@ -274,6 +274,7 @@ bool HDCPTxAuth::authLoop(bool useHdcp22, bool useHdcp14) {
                 count = 0;
                 useHdcp22 = false;
                 useHdcp14 = true;
+                stopVerAll();
                 //if support hdcp22, must support hdcp14
                 startVer14();
                 continue;

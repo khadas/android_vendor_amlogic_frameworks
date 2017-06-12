@@ -173,6 +173,7 @@ using namespace android;
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
 #define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
+#define PROP_BOOTCOMPLETE               "dev.bootcomplete"
 
 #define SUFFIX_10BIT                    "10bit"
 #define SUFFIX_12BIT                    "12bit"
@@ -359,7 +360,6 @@ public:
 
     void setSourceDisplay(output_mode_state state);
 
-    void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
     void getHdmiData(hdmi_data_t* data);
 
@@ -419,10 +419,6 @@ private:
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
     bool mVideoPlaying;
-    int mNativeWinX;
-    int mNativeWinY;
-    int mNativeWinW;
-    int mNativeWinH;
 
     int mDisplayWidth;
     int mDisplayHeight;

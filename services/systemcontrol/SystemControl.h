@@ -85,7 +85,6 @@ public:
     virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue);
     virtual void reInit();
     virtual void instabootResetDisplay(void);
-    virtual void setNativeWindowRect(int x, int y, int w, int h);
     virtual void setVideoPlayingAxis();
     virtual void init3DSetting(void);
     virtual int32_t getVideo3DFormat(void);

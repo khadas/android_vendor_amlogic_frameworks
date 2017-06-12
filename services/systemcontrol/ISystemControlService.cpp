@@ -675,22 +675,6 @@ public:
         }
     }
 
-    virtual void setNativeWindowRect(int x, int y, int w, int h)
-    {
-        Parcel data, reply;
-        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
-        data.writeInt32(x);
-        data.writeInt32(y);
-        data.writeInt32(w);
-        data.writeInt32(h);
-        ALOGV("set native window rect x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
-
-        if (remote()->transact(SET_NATIVE_WIN_RECT, data, &reply) != NO_ERROR) {
-            ALOGE("set native window rect could not contact remote\n");
-            return;
-        }
-    }
-
     virtual void setVideoPlayingAxis(void)
     {
         Parcel data, reply;
@@ -1018,15 +1002,6 @@ status_t BnISystemControlService::onTransact(
         case INSTABOOT_RESET_DISPLAY: {
             CHECK_INTERFACE(ISystemControlService, data, reply);
             instabootResetDisplay();
-            return NO_ERROR;
-        }
-        case SET_NATIVE_WIN_RECT:{
-            CHECK_INTERFACE(ISystemControlService, data, reply);
-            int32_t x = data.readInt32();
-            int32_t y = data.readInt32();
-            int32_t w = data.readInt32();
-            int32_t h = data.readInt32();
-            setNativeWindowRect(x, y, w, h);
             return NO_ERROR;
         }
         case SET_VIDEO_PLAYING:{

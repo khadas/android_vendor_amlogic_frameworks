@@ -468,14 +468,6 @@ void SystemControl::instabootResetDisplay() {
     pDisplayMode->reInit();
 }
 
-
-void SystemControl::setNativeWindowRect(int x, int y, int w, int h) {
-    if (mLogLevel > LOG_LEVEL_1) {
-        ALOGI("set native window rect x:%d y:%d w:%d h:%d", x, y, w, h);
-    }
-    pDisplayMode->setNativeWindowRect(x, y, w, h);
-}
-
 void SystemControl::setVideoPlayingAxis() {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set video playing axis");

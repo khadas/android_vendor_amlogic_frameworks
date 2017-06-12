@@ -35,25 +35,20 @@
 #include "common.h"
 #include "ubootenv.h"
 
-//this is prior selected list  of 4k2k50hz, 4k2k60hz
+//this is prior selected list  of 4k2k50hz, 4k2k60hz smpte50hz, smpte60hz
 static const char* COLOR_ATTRIBUTE_LIST1[] = {
     COLOR_YCBCR422_12BIT,
-    COLOR_YCBCR420_12BIT,
     COLOR_YCBCR422_10BIT,
-    COLOR_YCBCR420_10BIT,
     COLOR_YCBCR444_8BIT,
     COLOR_YCBCR422_8BIT,
-    COLOR_YCBCR420_8BIT,
     COLOR_RGB_8BIT,
 };
 
-//this is prior selected list  of smpte50hz, smpte60hz
+//this is prior selected list  of 4k2k50hz420, 4k2k60hz420, smpte50hz420, smpte60hz420
 static const char* COLOR_ATTRIBUTE_LIST2[] = {
-    COLOR_YCBCR422_12BIT,
-    COLOR_YCBCR422_10BIT,
-    COLOR_YCBCR444_8BIT,
-    COLOR_YCBCR422_8BIT,
-    COLOR_RGB_8BIT,
+    COLOR_YCBCR420_12BIT,
+    COLOR_YCBCR420_10BIT,
+    COLOR_YCBCR420_8BIT,
 };
 
 //this is prior selected list  of other display mode
@@ -65,15 +60,6 @@ static const char* COLOR_ATTRIBUTE_LIST3[] = {
     COLOR_YCBCR422_10BIT,
     COLOR_RGB_10BIT,
     COLOR_YCBCR444_8BIT,
-    COLOR_YCBCR422_8BIT,
-    COLOR_RGB_8BIT,
-};
-
-//this is prior selected list  of 4k2k50hz420, 4k2k60hz420, smpte50hz420, smpte60hz420
-static const char* COLOR_ATTRIBUTE_LIST4[] = {
-    COLOR_YCBCR420_12BIT,
-    COLOR_YCBCR420_10BIT,
-    COLOR_YCBCR420_8BIT,
     COLOR_YCBCR422_8BIT,
     COLOR_RGB_8BIT,
 };
@@ -152,19 +138,15 @@ void FormatColorDepth::getBestHdmiColorArrtibute(const char* outputmode, char* s
         }
     }
 
-    if (!strcmp(outputmode, MODE_4K2K60HZ) || !strcmp(outputmode, MODE_4K2K50HZ)) {
+    if (!strcmp(outputmode, MODE_4K2K60HZ) || !strcmp(outputmode, MODE_4K2K50HZ)
+        || !strcmp(outputmode, MODE_4K2KSMPTE60HZ) || !strcmp(outputmode, MODE_4K2KSMPTE50HZ)) {
         colorList = COLOR_ATTRIBUTE_LIST1;
         length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST1);
-    }
-    else if (!strcmp(outputmode, MODE_4K2KSMPTE60HZ) || !strcmp(outputmode, MODE_4K2KSMPTE50HZ)) {
-        colorList = COLOR_ATTRIBUTE_LIST2;
-        length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST2);
     } else if (!strcmp(outputmode, MODE_4K2K50HZ420) || !strcmp(outputmode, MODE_4K2K60HZ420) ||
         !strcmp(outputmode, MODE_4K2KSMPTE50HZ420) || !strcmp(outputmode, MODE_4K2KSMPTE60HZ420)) {
-        colorList = COLOR_ATTRIBUTE_LIST4;
-        length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST4);
-    }
-    else {
+        colorList = COLOR_ATTRIBUTE_LIST2;
+        length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST2);
+    } else {
         colorList = COLOR_ATTRIBUTE_LIST3;
         length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST3);
     }

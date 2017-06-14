@@ -51,14 +51,14 @@ public class SystemControlManager {
     private static final int SET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 15;
     private static final int GET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 16;
 
-    private static final int REINIT                 = IBinder.FIRST_CALL_TRANSACTION + 17;
-    private static final int SET_NATIVE_WIN_RECT     = IBinder.FIRST_CALL_TRANSACTION + 18;
-    private static final int SET_VIDEO_PLAYING       = IBinder.FIRST_CALL_TRANSACTION + 19;
-    private static final int SET_POWER_MODE          = IBinder.FIRST_CALL_TRANSACTION + 20;
-    private static final int INSTABOOT_RESET_DISPLAY = IBinder.FIRST_CALL_TRANSACTION + 21;
-    private static final int SET_DIGITAL_MODE        = IBinder.FIRST_CALL_TRANSACTION + 22;
-    private static final int SET_3D_MODE             = IBinder.FIRST_CALL_TRANSACTION + 23;
-    private static final int SET_LISTENER            = IBinder.FIRST_CALL_TRANSACTION + 24;
+    private static final int REINIT                     = IBinder.FIRST_CALL_TRANSACTION + 17;
+    private static final int SET_NATIVE_WIN_RECT        = IBinder.FIRST_CALL_TRANSACTION + 18;
+    private static final int SET_VIDEO_PLAYING          = IBinder.FIRST_CALL_TRANSACTION + 19;
+    private static final int SET_POWER_MODE             = IBinder.FIRST_CALL_TRANSACTION + 20;
+    private static final int INSTABOOT_RESET_DISPLAY    = IBinder.FIRST_CALL_TRANSACTION + 21;
+    private static final int SET_DIGITAL_MODE           = IBinder.FIRST_CALL_TRANSACTION + 22;
+    private static final int SET_3D_MODE                = IBinder.FIRST_CALL_TRANSACTION + 23;
+    private static final int SET_LISTENER               = IBinder.FIRST_CALL_TRANSACTION + 24;
     private static final int INIT_3D_SETTING                = IBinder.FIRST_CALL_TRANSACTION + 25;
     private static final int GET_VIDEO_3D_FORMAT            = IBinder.FIRST_CALL_TRANSACTION + 26;
     private static final int GET_VIDEO_3DTO2D_FORMAT        = IBinder.FIRST_CALL_TRANSACTION + 27;
@@ -76,14 +76,15 @@ public class SystemControlManager {
     private static final int READ_HDCPRX14_KEY       = IBinder.FIRST_CALL_TRANSACTION + 39;
     private static final int WRITE_HDCPRX14_KEY      = IBinder.FIRST_CALL_TRANSACTION + 40;
     private static final int WRITE_HDCPRX_IMG        = IBinder.FIRST_CALL_TRANSACTION + 41;
-    private static final int GET_SUPPORTED_DISPLAYMODE_LIST       = IBinder.FIRST_CALL_TRANSACTION + 42;
-    private static final int GET_ACTIVE_DISPLAYMODE      = IBinder.FIRST_CALL_TRANSACTION + 43;
-    private static final int SET_ACTIVE_DISPLAYMODE        = IBinder.FIRST_CALL_TRANSACTION + 44;
-    private static final int IS_AUTHSUCCESS        = IBinder.FIRST_CALL_TRANSACTION + 45;
+    private static final int GET_SUPPORTED_DISPLAYMODE_LIST     = IBinder.FIRST_CALL_TRANSACTION + 42;
+    private static final int GET_ACTIVE_DISPLAYMODE             = IBinder.FIRST_CALL_TRANSACTION + 43;
+    private static final int SET_ACTIVE_DISPLAYMODE             = IBinder.FIRST_CALL_TRANSACTION + 44;
+    private static final int IS_AUTHSUCCESS                     = IBinder.FIRST_CALL_TRANSACTION + 45;
 
     //add get/save deep color
     private static final int SAVE_DEEP_COLOR_ATTR           = IBinder.FIRST_CALL_TRANSACTION + 46;
     private static final int GET_DEEP_COLOR_ATTR            = IBinder.FIRST_CALL_TRANSACTION + 47;
+    private static final int SINK_OUTPUT_MODE               = IBinder.FIRST_CALL_TRANSACTION + 48;
 
     private Context mContext;
     private IBinder mIBinder = null;

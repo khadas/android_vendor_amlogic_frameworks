@@ -170,7 +170,6 @@ void* HDCPTxAuth::authThread(void* data) {
         //first close osd, after HDCP authenticate completely, then open osd
         pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_BLANK, "1");
 
-        bool ret = pThiz->authLoop(hdcp22, hdcp14);
         if (!pThiz->authLoop(hdcp22, hdcp14)) {
             SYS_LOGE("HDCP authenticate fail, need black screen and disable audio\n");
 

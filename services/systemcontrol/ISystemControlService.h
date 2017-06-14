@@ -80,20 +80,21 @@ enum {
     SWITCH_2DTO3D                  = IBinder::FIRST_CALL_TRANSACTION + 34,
     AUTO_DETECT_3D                 = IBinder::FIRST_CALL_TRANSACTION + 35,
 
-    WRITE_SYSFS_BIN         = IBinder::FIRST_CALL_TRANSACTION + 36,
-    READ_HDCPRX22_KEY       = IBinder::FIRST_CALL_TRANSACTION + 37,
-    WRITE_HDCPRX22_KEY      = IBinder::FIRST_CALL_TRANSACTION + 38,
-    READ_HDCPRX14_KEY       = IBinder::FIRST_CALL_TRANSACTION + 39,
-    WRITE_HDCPRX14_KEY      = IBinder::FIRST_CALL_TRANSACTION + 40,
-    WRITE_HDCPRX_IMG        = IBinder::FIRST_CALL_TRANSACTION + 41,
+    WRITE_SYSFS_BIN                 = IBinder::FIRST_CALL_TRANSACTION + 36,
+    READ_HDCPRX22_KEY               = IBinder::FIRST_CALL_TRANSACTION + 37,
+    WRITE_HDCPRX22_KEY              = IBinder::FIRST_CALL_TRANSACTION + 38,
+    READ_HDCPRX14_KEY               = IBinder::FIRST_CALL_TRANSACTION + 39,
+    WRITE_HDCPRX14_KEY              = IBinder::FIRST_CALL_TRANSACTION + 40,
+    WRITE_HDCPRX_IMG                = IBinder::FIRST_CALL_TRANSACTION + 41,
     GET_SUPPORTED_DISPLAYMODE_LIST     = IBinder::FIRST_CALL_TRANSACTION + 42,
-    GET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 43,
-    SET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 44,
-    IS_AUTHSUCCESS           =IBinder::FIRST_CALL_TRANSACTION + 45,
+    GET_ACTIVE_DISPLAYMODE          = IBinder::FIRST_CALL_TRANSACTION + 43,
+    SET_ACTIVE_DISPLAYMODE          = IBinder::FIRST_CALL_TRANSACTION + 44,
+    IS_AUTHSUCCESS                  =IBinder::FIRST_CALL_TRANSACTION + 45,
 
     //add get/save deep color
     SAVE_DEEP_COLOR_ATTR            = IBinder::FIRST_CALL_TRANSACTION + 46,
     GET_DEEP_COLOR_ATTR             = IBinder::FIRST_CALL_TRANSACTION + 47,
+    SINK_OUTPUT_MODE                = IBinder::FIRST_CALL_TRANSACTION + 48,
 };
 
 // ----------------------------------------------------------------------------
@@ -162,6 +163,7 @@ public:
     virtual bool setActiveDispMode(std::string& activeDispMode) = 0;
 
     virtual void isHDCPTxAuthSuccess(int &status) = 0;
+    virtual void setSinkOutputMode(const String16& mode) = 0;
 
 };
 

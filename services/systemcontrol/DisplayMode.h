@@ -348,6 +348,7 @@ public:
     void setLogLevel(int level);
     int dump(char *result);
     void setSourceOutputMode(const char* outputmode);
+    void setSinkOutputMode(const char* outputmode);
     void setDigitalMode(const char* mode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);

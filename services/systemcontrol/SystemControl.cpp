@@ -440,6 +440,14 @@ void SystemControl::isHDCPTxAuthSuccess(int &status) {
     status = value;
 }
 
+void SystemControl::setSinkOutputMode(const String16& mode) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set sink output mode :%s", String8(mode).string());
+    }
+
+    pDisplayMode->setSinkOutputMode(String8(mode).string());
+}
+
 void SystemControl::saveDeepColorAttr(const String16& mode, const String16& dcValue) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set deep color attr %s\n", String8(dcValue).string());

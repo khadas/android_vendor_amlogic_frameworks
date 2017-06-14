@@ -602,7 +602,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
     //4. turn on phy and clear avmute
-    if (OUPUT_MODE_STATE_INIT != state  && !cvbsMode) {
+    if (OUPUT_MODE_STATE_INIT != state && !cvbsMode) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
         usleep(20000);
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "1");
@@ -1086,45 +1086,14 @@ bool DisplayMode::isBestOutputmode() {
     return !getBootEnv(UBOOTENV_ISBESTMODE, isBestMode) || strcmp(isBestMode, "true") == 0;
 }
 
-//this function only running in bootup time
+void DisplayMode::setSinkOutputMode(const char* outputmode) {
+    setSinkOutputMode(outputmode, false);
+}
+
 void DisplayMode::setSinkOutputMode(const char* outputmode, bool initState) {
-    int position[4] = { 0, 0, 0, 0 };//x,y,w,h
-    bool cvbsMode = false;
+    SYS_LOGI("set sink output mode:%s, init state:%d\n", outputmode, initState?1:0);
 
-    getPosition(outputmode, position);
-
-    if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)) {
-        cvbsMode = true;
-    }
-
-    pTxAuth->stop();
-
-    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
-    char axis[MAX_STR_LEN] = {0};
-    sprintf(axis, "%d %d %d %d",
-            0, 0, mDisplayWidth - 1, mDisplayHeight - 1);
-    pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_AXIS, axis);
-
-    sprintf(axis, "%d %d %d %d",
-            position[0], position[1], position[0] + position[2] - 1, position[1] + position[3] -1);
-    pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
-
-    //HDMI mode need HDCP authenticate, When MBOX use TV-SOC
-    if (!cvbsMode) {
-        pTxAuth->start();
-    }
-
-    if (initState)
-        startBootanimDetectThread();
-    else {
-        pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "-1");
-        pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
-        //need close fb1, because uboot logo show in fb1
-        pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
-        pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
-        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-        setOsdMouse(outputmode);
-    }
+    setSourceOutputMode(outputmode, initState?OUPUT_MODE_STATE_INIT:OUPUT_MODE_STATE_SWITCH);
 }
 
 void DisplayMode::setSinkDisplay(bool initState) {

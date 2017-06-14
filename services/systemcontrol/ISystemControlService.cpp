@@ -718,6 +718,7 @@ public:
        }
        return true;
     }
+
     virtual bool getActiveDispMode(std::string* activeDispMode){
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -731,10 +732,11 @@ public:
             return false;
         }
         String16 curDisplayMode = reply.readString16();
-       *activeDispMode  = std::string(String8(curDisplayMode).string());
-       ALOGV("get active displaymode:%s\n", curDisplayMode.string());
-       return true;
+        *activeDispMode = std::string(String8(curDisplayMode).string());
+        ALOGV("get active displaymode:%s\n", curDisplayMode.string());
+        return true;
     }
+
     virtual bool setActiveDispMode(std::string& activeDispMode)
     {
         Parcel data, reply;
@@ -751,6 +753,7 @@ public:
         }
         return true;
     }
+
     virtual void isHDCPTxAuthSuccess(int &status)
     {
         Parcel data, reply;
@@ -763,6 +766,19 @@ public:
 
         status = reply.readInt32();
         ALOGV("is auth success  status :%d\n", status);
+    }
+
+    virtual void setSinkOutputMode(const String16& mode)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+        ALOGV("set sink output mode:%s\n", String8(mode).string());
+
+        if (remote()->transact(SINK_OUTPUT_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set sink output mode could not contact remote\n");
+            return;
+        }
     }
 };
 
@@ -1127,6 +1143,12 @@ status_t BnISystemControlService::onTransact(
             String16 value;
             getDeepColorAttr(mode, value);
             reply->writeString16(value);
+            return NO_ERROR;
+        }
+        case SINK_OUTPUT_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setSinkOutputMode(mode);
             return NO_ERROR;
         }
         default: {

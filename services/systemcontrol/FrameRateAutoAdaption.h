@@ -38,8 +38,7 @@ FRAME_RATE_DURATION_23.97 = 96000/23.976 = 4004
 #define HDMI_TX_FRAMRATE_POLICY                 "/sys/class/amhdmitx/amhdmitx0/frac_rate_policy"
 
 //Frame rate switch
-#define HDMI_VIDEO_FRAME_RATE_UEVENT            "DEVPATH=/devices/virtual/video/amvideo"
-#define HDMI_IONVIDEO_FRAME_RATE_UEVENT         "DEVPATH=/devices/virtual/video4linux/video13"
+#define HDMI_TVOUT_FRAME_RATE_UEVENT            "DEVPATH=/devices/virtual/tv/tv"
 #define HDMI_FRAME_RATE_AUTO                    "/sys/class/tv/policy_fr_auto"
 #define FRAME_RATE_DURATION_2397                4004
 #define FRAME_RATE_DURATION_2398                4003

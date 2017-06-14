@@ -336,8 +336,7 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
     ueventObserver.addMatch(HDMI_TX_HDCP_UEVENT);
     ueventObserver.addMatch(HDMI_TX_HDCP14_LOG_UEVENT);
 #ifdef FRAME_RATE_AUTO_ADAPTER
-    ueventObserver.addMatch(HDMI_VIDEO_FRAME_RATE_UEVENT);
-    ueventObserver.addMatch(HDMI_IONVIDEO_FRAME_RATE_UEVENT);
+    ueventObserver.addMatch(HDMI_TVOUT_FRAME_RATE_UEVENT);
 #endif
 
     while (true) {
@@ -386,8 +385,7 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
 
             //SYS_LOGI("HDCP log:%s", logBuf);
         }
-        else if (!strcmp(ueventData.matchName, HDMI_VIDEO_FRAME_RATE_UEVENT)
-            ||!strcmp(ueventData.matchName, HDMI_IONVIDEO_FRAME_RATE_UEVENT)) {
+        else if (!strcmp(ueventData.matchName, HDMI_TVOUT_FRAME_RATE_UEVENT)) {
                pThiz->mFRAutoAdpt->onTxUeventReceived(&ueventData);
         }
 #ifndef RECOVERY_MODE

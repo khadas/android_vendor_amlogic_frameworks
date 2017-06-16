@@ -545,7 +545,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     //1. mbox not supports display/mode(uboot.var.outputmode) when boot, need update set color
     //2. state is not OUPUT_MODE_STATE_INIT
     if (!cvbsMode && ((OUPUT_MODE_STATE_INIT == state && strcmp(displaymode, outputmode)) ||
-            OUPUT_MODE_STATE_INIT != state)) {
+            OUPUT_MODE_STATE_INIT != state) && (mDisplayType != DISPLAY_TYPE_TV)) {
         char colorAttribute[MODE_LEN] = {0};
         if (deepColorEnabled) {
             FormatColorDepth deepColor;

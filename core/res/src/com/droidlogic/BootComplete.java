@@ -134,6 +134,9 @@ public class BootComplete extends BroadcastReceiver {
 
             context.startService(new Intent(context,NtpService.class));
 
+            if (sm.getPropertyBoolean("net.wifi.suspend", false))
+                context.startService(new Intent(context, WifiSuspendService.class));
+
             if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false))
                 context.startService(new Intent(context, EsmService.class));
 

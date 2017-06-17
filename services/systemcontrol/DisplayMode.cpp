@@ -554,7 +554,6 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         else {
             strcpy(colorAttribute, "default");
         }
-        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
         //save to ubootenv
         saveDeepColorAttr(outputmode, colorAttribute);
@@ -562,6 +561,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     }
 
     //write framerate policy
+    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
     pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, (state == OUPUT_MODE_STATE_SWITCH_ADAPTER)?"1":"0");
 
     if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&

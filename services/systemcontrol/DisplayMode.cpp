@@ -559,8 +559,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     }
 
     //write framerate policy
-    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-    pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, (state == OUPUT_MODE_STATE_SWITCH_ADAPTER)?"1":"0");
+    setAutoSwitchFrameRate(state);
 
     if ((!strcmp(outputmode, MODE_480I) || !strcmp(outputmode, MODE_576I)) &&
             (pSysWrite->getPropertyBoolean(PROP_HAS_CVBS_MODE, false))) {
@@ -1153,6 +1152,27 @@ int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
         value = atoi(p_value);
     }
     return value;
+}
+
+/*
+ * *
+ * @Description: select diff policy base on output mode state.
+ * @params: outputmode state.
+ * author: luan.yuan@amlogic.com
+ *
+ * only set 'null' to display/mode in switch adaper state.
+ * auto switch frame rate need set 1 to /sys/class/amhdmitx/amhdmitx0/frac_rate_policy, to get CLK 0.1% offset.
+ * But only change frac_rate_policy can not update CLOCK, unless mode and frac_rate_policy.
+ * and can not set same mode to mode node. so need like 1080p60hz--->null--->1080p60hz.
+ * this function will set mode to 'null', policy to 1, and set mode to previous value later.
+ */
+void DisplayMode::setAutoSwitchFrameRate(int state) {
+    if (state == OUPUT_MODE_STATE_SWITCH_ADAPTER) {
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+        pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "1");
+    } else {
+        pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "0");
+    }
 }
 
 void DisplayMode::setOsdMouse(const char* curMode) {

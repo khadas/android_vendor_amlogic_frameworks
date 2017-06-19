@@ -393,6 +393,7 @@ private:
     void filterHdmiMode(char * mode, hdmi_data_t* data);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
     void resolveResolution(char *mode, resolution_t* resol_t);
+    void setAutoSwitchFrameRate(int state);
     bool isEdidChange();
     bool isBestOutputmode();
     bool modeSupport(char *mode, int sinkType);

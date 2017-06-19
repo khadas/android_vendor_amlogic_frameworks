@@ -408,9 +408,7 @@ void DisplayMode::setSourceDisplay(output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
 
-    if (mDisplayType == DISPLAY_TYPE_TV) {
-        pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_DISABLE);
-    }
+    pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_DISABLE);
 
     memset(&data, 0, sizeof(hdmi_data_t));
     getHdmiData(&data);
@@ -618,6 +616,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     if (OUPUT_MODE_STATE_INIT == state) {
         startBootanimDetectThread();
     } else {
+        pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
         setOsdMouse(outputmode);

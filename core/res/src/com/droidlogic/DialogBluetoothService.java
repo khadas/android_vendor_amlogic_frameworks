@@ -148,6 +148,18 @@ public class DialogBluetoothService extends Service {
 
             final String action = intent.getAction();
             final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            if (BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED.equals(action)) {
+                  int state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, -1);
+                   if ( state == BluetoothProfile.STATE_CONNECTED && device != null ) {
+                         Log.i(TAG, ">STATE_ON CONNECTED ["+device.getName()+"] - checking for supported devices after delay");
+                         if (isRemoteAudioCapable(device)) {
+                            pending.add(device);
+                            mHandler.removeCallbacks(mConnRunnable);
+                            mHandler.postDelayed(mConnRunnable, CONNECTION_DELAY_MS);
+                            // waiting some time to not overload BLE device with requests
+                        }
+                   }
+            }
             if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
                 Log.i(TAG, ">ACL LINK CONNECTED ["+device.getName()+"] - checking for supported devices after delay");
                 if (isRemoteAudioCapable(device)) {
@@ -267,7 +279,7 @@ public class DialogBluetoothService extends Service {
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
         filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-        //filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        filter.addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
         registerReceiver(receiver, filter);
 
         // On service start, check for supported devices

@@ -299,10 +299,14 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
             Slog.d(TAG, "oneTouchPlay:" + result);
             switch (result) {
             case HdmiControlManager.RESULT_SUCCESS:
-            case HdmiControlManager.RESULT_TIMEOUT:
                 if (mLanguangeChanged == false) {
                     SendGetMenuLanguage(ADDR_TV);
                 }
+                break;
+
+            /* if timeout, restart one touch play */
+            case HdmiControlManager.RESULT_TIMEOUT:
+                mHandler.postDelayed(mDelayedRun, 1500);
                 break;
             }
         }
@@ -410,6 +414,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
                 @Override
                 public void run() {
                     if (isOneTouchPlayOn() && mPlayback != null) {
+                        Slog.d(TAG, "start one touch play");
                         mPlayback.oneTouchPlay(mOneTouchPlayCallback);
                     } else {//need update menu language
                         updateMenuLanguage();

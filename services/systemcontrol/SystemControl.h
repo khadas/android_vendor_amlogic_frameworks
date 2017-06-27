@@ -83,6 +83,11 @@ public:
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h);
     virtual void getDeepColorAttr(const String16& mode, String16& value);
     virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue);
+    virtual int64_t resolveResolutionValue(const String16& mode);
+    virtual void setDolbyVisionEnable(int state);
+    virtual bool isTvSupportDolbyVision(String16& mode);
+    virtual void setHdrMode(const String16& mode);
+    virtual void setSdrMode(const String16& mode);
     virtual void reInit();
     virtual void instabootResetDisplay(void);
     virtual void setVideoPlayingAxis();

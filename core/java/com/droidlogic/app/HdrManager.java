@@ -1,3 +1,23 @@
+/*
+ * Copyright (C) 2011 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *  @author   Luan.Yuan
+ *  @version  2.0
+ *  @date     2017/07/05
+ *  @par function description:
+ *  - This is HDR Manager, control HDR feature.
+ */
 package com.droidlogic.app;
 
 import android.content.Context;
@@ -7,69 +27,30 @@ import android.util.Log;
 public class HdrManager {
     private static final String TAG                 = "HdrManager";
 
-    private static final String KEY_HDR_MODE        = "key_hdr_mode";
-    private static final String SYSF_HDR_MODE       = "/sys/module/am_vecm/parameters/hdr_mode";
+    private static final String KEY_HDR_MODE        = "persist.sys.hdr.state";
 
-    public static final int MODE_OFF = 0;
-    public static final int MODE_ON = 1;
+    public static final int MODE_OFF  = 0;
+    public static final int MODE_ON   = 1;
     public static final int MODE_AUTO = 2;
 
     private Context mContext;
-    private SystemControlManager mSystenControl;
+    private SystemControlManager mSystemControl;
 
     public HdrManager(Context context){
         mContext = context;
-        mSystenControl = new SystemControlManager(context);
-    }
-
-    public void initHdrMode() {
-        switch (Settings.System.getInt(mContext.getContentResolver(), KEY_HDR_MODE, MODE_AUTO)) {
-            case MODE_OFF:
-                mSystenControl.writeSysFs(SYSF_HDR_MODE, Integer.toString(MODE_OFF));
-                break;
-            case MODE_ON:
-                mSystenControl.writeSysFs(SYSF_HDR_MODE, Integer.toString(MODE_ON));
-                break;
-            case MODE_AUTO:
-                mSystenControl.writeSysFs(SYSF_HDR_MODE, Integer.toString(MODE_AUTO));
-                break;
-            default:
-                mSystenControl.writeSysFs(SYSF_HDR_MODE, Integer.toString(MODE_AUTO));
-                break;
-        }
+        mSystemControl = new SystemControlManager(context);
     }
 
     public int getHdrMode() {
-        switch (Settings.System.getInt(mContext.getContentResolver(), KEY_HDR_MODE, MODE_AUTO)) {
-            case 0:
-                return MODE_OFF;
-            case 1:
-                return MODE_ON;
-            case 2:
-                return MODE_AUTO;
-            default:
-                return MODE_AUTO;
-        }
+        String value = mSystemControl.getPropertyString(KEY_HDR_MODE, "0");
+        return Integer.parseInt(value);
     }
 
     public void setHdrMode(int mode) {
-        switch (mode) {
-            case MODE_OFF:
-                mSystenControl.writeSysFs(SYSF_HDR_MODE, Integer.toString(MODE_OFF));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_HDR_MODE, MODE_OFF);
-                break;
-            case MODE_ON:
-                mSystenControl.writeSysFs(SYSF_HDR_MODE, Integer.toString(MODE_ON));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_HDR_MODE, MODE_ON);
-                break;
-            case MODE_AUTO:
-                mSystenControl.writeSysFs(SYSF_HDR_MODE, Integer.toString(MODE_AUTO));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_HDR_MODE, MODE_AUTO);
-                break;
-            default:
-                mSystenControl.writeSysFs(SYSF_HDR_MODE, Integer.toString(MODE_AUTO));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_HDR_MODE, MODE_AUTO);
-                break;
+        if ((mode >=0) && (mode <= 2)) {
+            mSystemControl.setHdrMode(String.valueOf(mode));
+        } else {
+            mSystemControl.setHdrMode(String.valueOf(MODE_AUTO));
         }
     }
 }

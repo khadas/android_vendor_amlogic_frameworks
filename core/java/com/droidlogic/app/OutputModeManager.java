@@ -218,14 +218,10 @@ public class OutputModeManager {
     }
 
     public boolean isModeSupportColor(final String curMode, final String curValue){
-         boolean ret =false;
-         //curMode.replace("444", "").replace("422", "").replace("420", "").replace("rgb", "");
          writeSysfs(DISPLAY_HDMI_VALID_MODE, curMode+curValue);
          String isSupport = readSysfs(DISPLAY_HDMI_VALID_MODE).trim();
-         Log.d("SystemControl", "at OutputModeManager if this mode: " + curMode+curValue+"is support or not:"+isSupport);
-         if ("1".equals(isSupport))
-            ret = true;
-         return  ret;
+         Log.d("SystemControl", "In OutputModeManager, " + curMode+curValue+" is "+ " supported or not:"+isSupport);
+         return isSupport.equals("1") ? true : false;
     }
 
     private void setOutputModeNowLocked(final String newMode){

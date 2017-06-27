@@ -31,6 +31,8 @@ public class DolbyVisionSettingManager {
     private static final String KEY_DV_POLICY        = "key_dv_policy";
     private static final String KEY_DV_MODE          = "key_dv_mode";
 
+    private static final String PROP_DOLBY_VISION_ENABLE  = "persist.sys.dolbyvision.enable";
+
     private static final String SYSF_DV_ENABLE       = "/sys/module/am_vecm/parameters/dolby_vision_enable";
     private static final String SYSF_DV_POLICY       = "/sys/module/am_vecm/parameters/dolby_vision_policy";
     private static final String SYSF_DV_MODE         = "/sys/class/amvecm/dv_mode";
@@ -119,6 +121,39 @@ public class DolbyVisionSettingManager {
             return true;
         }
         return false;
+    }
+
+    /* *
+     * @Description: Enable/Disable Dolby Vision
+     * @params: state: 1:Enable  DV
+     *                 0:Disable DV
+     */
+    public void setDolbyVisionEnable(int state) {
+        mSystenControl.setDolbyVisionEnable(state);
+    }
+
+    /* *
+     * @Description: Determine Whether TV support Dolby Vision
+     * @return: if TV support Dolby Vision
+     *              return the Highest resolution Tv supported.
+     *          else
+     *              return ""
+     */
+    public String isTvSupportDolbyVision() {
+        return mSystenControl.isTvSupportDolbyVision();
+    }
+
+    /* *
+     * @Description: get current state of Dolby Vision
+     * @return: if DV is Enable  return true
+     *                   Disable return false
+     */
+    public boolean isDolbyVisionEnable() {
+        return mSystenControl.getPropertyBoolean(PROP_DOLBY_VISION_ENABLE, false);
+    }
+
+    public long resolveResolutionValue(String mode) {
+        return mSystenControl.resolveResolutionValue(mode);
     }
 
     public int getDolbyVisionPolicy() {

@@ -14,9 +14,6 @@ import android.media.AudioManager;
 import android.media.AudioSystem;
 import android.provider.Settings;
 
-import com.droidlogic.app.HdrManager;
-import com.droidlogic.app.SdrManager;
-import com.droidlogic.app.DolbyVisionSettingManager;
 import com.droidlogic.app.OutputModeManager;
 import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
@@ -121,10 +118,6 @@ public class BootComplete extends BroadcastReceiver {
                 new HdmiCecExtend(context);
             }
 
-            new HdrManager(context).initHdrMode();
-
-            new SdrManager(context).initSdrMode();
-            new DolbyVisionSettingManager(context).initDolbyVision();
             //start optimization service
             context.startService(new Intent(context, Optimization.class));
 

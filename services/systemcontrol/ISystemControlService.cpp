@@ -655,6 +655,60 @@ public:
         ALOGV("get deep color attr %s\n", String8(value).string());
     }
 
+    virtual void setDolbyVisionEnable(int state) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(state);
+        ALOGV("set dolby vision state:%d\n", state);
+
+        if (remote()->transact(SET_DOLBY_VISION, data, &reply) != NO_ERROR) {
+            ALOGE("set dolby vision could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual bool isTvSupportDolbyVision(String16& mode) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(TV_SUPPORT_DOLBY_VISION, data, &reply) != NO_ERROR) {
+            ALOGE("get tv support dolby vision could not contact remote\n");
+            return false;
+        }
+        mode = reply.readString16();
+        return reply.readBool();
+    }
+
+    virtual int64_t resolveResolutionValue(const String16& mode) {
+        Parcel data, reply;
+        data.writeString16(mode);
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(RESOLVE_RESOLUTION_VALUE, data, &reply) != NO_ERROR) {
+            ALOGE("get resolve resolution value could not contact remote\n");
+            return -1;
+        }
+        return reply.readInt64();
+    }
+
+    virtual void setHdrMode(const String16& mode) {
+        Parcel data, reply;
+        data.writeString16(mode);
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(SET_HDR_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set hdr mode could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void setSdrMode(const String16& mode) {
+        Parcel data, reply;
+        data.writeString16(mode);
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(SET_SDR_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set sdr mode could not contact remote\n");
+            return;
+        }
+    }
+
     virtual void reInit(void) {
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -1010,6 +1064,20 @@ status_t BnISystemControlService::onTransact(
             reply->writeInt32(h);
             return NO_ERROR;
         }
+        case SET_DOLBY_VISION: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t state = data.readInt32();
+            setDolbyVisionEnable(state);
+            return NO_ERROR;
+        }
+        case TV_SUPPORT_DOLBY_VISION: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 value;
+            bool state = isTvSupportDolbyVision(value);
+            reply->writeString16(value);
+            reply->writeBool(state);
+            return NO_ERROR;
+        }
         case REINIT: {
             CHECK_INTERFACE(ISystemControlService, data, reply);
             reInit();
@@ -1143,6 +1211,26 @@ status_t BnISystemControlService::onTransact(
             String16 value;
             getDeepColorAttr(mode, value);
             reply->writeString16(value);
+            return NO_ERROR;
+        }
+        case RESOLVE_RESOLUTION_VALUE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            int64_t value;
+            value = resolveResolutionValue(mode);
+            reply->writeInt64(value);
+            return NO_ERROR;
+        }
+        case SET_HDR_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setHdrMode(mode);
+            return NO_ERROR;
+        }
+        case SET_SDR_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setSdrMode(mode);
             return NO_ERROR;
         }
         case SINK_OUTPUT_MODE: {

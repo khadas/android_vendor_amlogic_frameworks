@@ -434,6 +434,17 @@ void SystemControl::getPosition(const String16& mode, int &x, int &y, int &w, in
     }
 }
 
+void SystemControl::setDolbyVisionEnable(int state) {
+    pDisplayMode->setDolbyVisionEnable(state);
+}
+
+bool SystemControl::isTvSupportDolbyVision(String16& mode) {
+    char value[MODE_LEN] = {0};
+    bool ret = pDisplayMode->isTvSupportDolbyVision(value);
+    mode.setTo(String16(value));
+    return ret;
+}
+
 void SystemControl::isHDCPTxAuthSuccess(int &status) {
     int value=0;
     pDisplayMode->isHDCPTxAuthSuccess(&value);
@@ -446,6 +457,11 @@ void SystemControl::setSinkOutputMode(const String16& mode) {
     }
 
     pDisplayMode->setSinkOutputMode(String8(mode).string());
+}
+
+int64_t SystemControl::resolveResolutionValue(const String16& mode) {
+    int64_t value = pDisplayMode->resolveResolutionValue(String8(mode).string());
+    return value;
 }
 
 void SystemControl::saveDeepColorAttr(const String16& mode, const String16& dcValue) {
@@ -466,6 +482,14 @@ void SystemControl::getDeepColorAttr(const String16& mode, String16& value) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("get deep color attr mode %s, value %s ", String8(mode).string(), String8(value).string());
     }
+}
+
+void SystemControl::setHdrMode(const String16& mode) {
+    pDisplayMode->setHdrMode(String8(mode).string());
+}
+
+void SystemControl::setSdrMode(const String16& mode) {
+    pDisplayMode->setSdrMode(String8(mode).string());
 }
 
 void SystemControl::reInit() {

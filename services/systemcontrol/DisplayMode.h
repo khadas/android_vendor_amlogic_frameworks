@@ -104,6 +104,8 @@ using namespace android;
 #define DISPLAY_HDMI_DISP_CAP_3D        "/sys/class/amhdmitx/amhdmitx0/disp_cap_3d"//RX support display 3d mode
 #define DISPLAY_HDMI_DEEP_COLOR         "/sys/class/amhdmitx/amhdmitx0/dc_cap"//RX supoort deep color
 #define DISPLAY_HDMI_HDR                "/sys/class/amhdmitx/amhdmitx0/hdr_cap"
+#define DISPLAY_HDMI_HDR_MODE           "/sys/module/am_vecm/parameters/hdr_mode"
+#define DISPLAY_HDMI_SDR_MODE           "/sys/module/am_vecm/parameters/sdr_mode"
 #define DISPLAY_HDMI_AUDIO              "/sys/class/amhdmitx/amhdmitx0/aud_cap"
 #define DISPLAY_HDMI_AUDIO_MUTE         "/sys/class/amhdmitx/amhdmitx0/aud_mute"
 #define DISPLAY_HDMI_VIDEO_MUTE         "/sys/class/amhdmitx/amhdmitx0/vid_mute"
@@ -129,6 +131,27 @@ using namespace android;
 #define HDMI_TX_HDCP14_LOG_UEVENT       "DEVPATH=/devices/virtual/switch/hdcp_log"
 #define HDMI_TX_HDCP14_LOG_SYS          "/sys/kernel/debug/hdcp/log"
 #define HDMI_TX_SWITCH_HDR              "/sys/class/switch/hdmi_hdr/state"
+
+//dolby vision sysfs
+#define DOLBY_VISION_POLICY             "/sys/module/am_vecm/parameters/dolby_vision_policy"
+#define DOLBY_VISION_HDR10_POLICY       "/sys/module/am_vecm/parameters/dolby_vision_hdr10_policy"
+#define DOLBY_VISION_ENABLE             "/sys/module/am_vecm/parameters/dolby_vision_enable"
+#define DOLBY_VISION_MODE               "/sys/class/amvecm/dv_mode"
+#define DOLBY_VISION_IS_SUPPORT         "/sys/class/amhdmitx/amhdmitx0/dv_cap"
+
+#define DOLBY_VISION_SET_ENABLE         1
+#define DOLBY_VISION_SET_DISABLE        0
+
+#define DV_ENABLE                       "Y"
+#define DV_DISABLE                      "N"
+
+#define DV_POLICY_FOLLOW_SINK           "0"
+#define DV_POLICY_FOLLOW_SOURCE         "1"
+#define DV_POLICY_FORCE_MODE            "2"
+#define DV_HDR10_POLICY                 "1"
+
+#define DV_MODE_BYPASS                  "0x0"
+#define DV_MODE_IPT_TUNNEL              "0x2"
 
 #define HDMI_UEVENT_HDMI                "hdmi"
 #define HDMI_UEVENT_HDMI_POWER          "hdmi_power"
@@ -174,6 +197,16 @@ using namespace android;
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
 #define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
 #define PROP_BOOTCOMPLETE               "dev.bootcomplete"
+#define PROP_DOLBY_VISION_ENABLE        "persist.sys.dolbyvision.enable"
+#define PROP_HDR_MODE_STATE             "persist.sys.hdr.state"
+#define PROP_SDR_MODE_STATE             "persist.sys.sdr.state"
+
+#define HDR_MODE_OFF                    "0"
+#define HDR_MODE_ON                     "1"
+#define HDR_MODE_AUTO                   "2"
+
+#define SDR_MODE_OFF                    "0"
+#define SDR_MODE_AUTO                   "2"
 
 #define SUFFIX_10BIT                    "10bit"
 #define SUFFIX_12BIT                    "12bit"
@@ -326,7 +359,7 @@ typedef struct resolution {
     char standard;
     int frequency;
     int deepcolor;
-    unsigned int resolution_num;
+    long resolution_num;
 } resolution_t;
 
 // ----------------------------------------------------------------------------
@@ -354,8 +387,15 @@ public:
     void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
+    void setDolbyVisionEnable(int state);
+    bool isDolbyVisionEnable();
+    bool isTvSupportDolbyVision(char *mode);
+    void DetectDolbyVisionOutputMode(output_mode_state state, char* outputmode);
     void getDeepColorAttr(const char* mode, char *value);
     void saveDeepColorAttr(const char* mode, const char* dcValue);
+    long resolveResolutionValue(const char *mode);
+    void setHdrMode(const char* mode);
+    void setSdrMode(const char* mode);
     void isHDCPTxAuthSuccess( int *status);
     static void* bootanimDetect(void *data);
 
@@ -392,8 +432,13 @@ private:
     void getHighestPriorityMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
-    void resolveResolution(char *mode, resolution_t* resol_t);
+    void resolveResolution(const char *mode, resolution_t* resol_t);
     void setAutoSwitchFrameRate(int state);
+    void updateDefaultUI();
+    void updateDeepColor(bool cvbsMode, output_mode_state state, const char* outputmode);
+    void updateFreeScaleAxis();
+    void updateWindowAxis(const char* outputmode);
+    void initHdrSdrMode();
     bool isEdidChange();
     bool isBestOutputmode();
     bool modeSupport(char *mode, int sinkType);

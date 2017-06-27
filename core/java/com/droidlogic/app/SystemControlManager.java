@@ -86,6 +86,19 @@ public class SystemControlManager {
     private static final int GET_DEEP_COLOR_ATTR            = IBinder.FIRST_CALL_TRANSACTION + 47;
     private static final int SINK_OUTPUT_MODE               = IBinder.FIRST_CALL_TRANSACTION + 48;
 
+    private static final int WRITE_UNIFY_KEY               = IBinder.FIRST_CALL_TRANSACTION + 49;
+    private static final int READ_UNIFY_KEY               = IBinder.FIRST_CALL_TRANSACTION + 50;
+
+    //set deep color
+    private static final int SET_DOLBY_VISION               = IBinder.FIRST_CALL_TRANSACTION + 51;
+    private static final int TV_SUPPORT_DOLBY_VISION        = IBinder.FIRST_CALL_TRANSACTION + 52;
+
+    private static final int RESOLVE_RESOLUTION_VALUE       = IBinder.FIRST_CALL_TRANSACTION + 53;
+
+    //set HDR mode and SDR mode
+    private static final int SET_HDR_MODE                   = IBinder.FIRST_CALL_TRANSACTION + 54;
+    private static final int SET_SDR_MODE                   = IBinder.FIRST_CALL_TRANSACTION + 55;
+
     private Context mContext;
     private IBinder mIBinder = null;
     public SystemControlManager(Context context){
@@ -914,6 +927,59 @@ public class SystemControlManager {
         return null;
     }
 
+    public long resolveResolutionValue(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(RESOLVE_RESOLUTION_VALUE, data, reply, 0);
+                long value = reply.readLong();
+                reply.recycle();
+                data.recycle();
+                return value;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "get resolve Resolution value error:" + ex);
+        }
+        return -1;
+    }
+
+    public String isTvSupportDolbyVision() {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                mIBinder.transact(TV_SUPPORT_DOLBY_VISION, data, reply, 0);
+                String mode = reply.readString();
+                reply.recycle();
+                data.recycle();
+                return mode;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set dolby vision:" + ex);
+        }
+        return null;
+    }
+
+    public void setDolbyVisionEnable(int state) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(state);
+                mIBinder.transact(SET_DOLBY_VISION, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set dolby vision:" + ex);
+        }
+    }
+
     public void saveDeepColorAttr(String mode, String dcValue) {
         try {
             if (null != mIBinder) {
@@ -928,6 +994,38 @@ public class SystemControlManager {
             }
         } catch (RemoteException ex) {
             Log.e(TAG, "set deep color attr:" + ex);
+        }
+    }
+
+    public void setHdrMode(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(SET_HDR_MODE, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set hdr mode:" + ex);
+        }
+    }
+
+    public void setSdrMode(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(SET_SDR_MODE, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set sdr mode:" + ex);
         }
     }
 

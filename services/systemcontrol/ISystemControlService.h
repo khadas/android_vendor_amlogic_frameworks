@@ -95,6 +95,19 @@ enum {
     SAVE_DEEP_COLOR_ATTR            = IBinder::FIRST_CALL_TRANSACTION + 46,
     GET_DEEP_COLOR_ATTR             = IBinder::FIRST_CALL_TRANSACTION + 47,
     SINK_OUTPUT_MODE                = IBinder::FIRST_CALL_TRANSACTION + 48,
+
+    WRITE_UNIFY_KEY                 = IBinder::FIRST_CALL_TRANSACTION + 49,
+    READ_UNIFY_KEY                  = IBinder::FIRST_CALL_TRANSACTION + 50,
+
+    //set dolby vision
+    SET_DOLBY_VISION                = IBinder::FIRST_CALL_TRANSACTION + 51,
+    TV_SUPPORT_DOLBY_VISION         = IBinder::FIRST_CALL_TRANSACTION + 52,
+
+    RESOLVE_RESOLUTION_VALUE        = IBinder::FIRST_CALL_TRANSACTION + 53,
+
+    //set HDR mode and SDR mode
+    SET_HDR_MODE                    = IBinder::FIRST_CALL_TRANSACTION + 54,
+    SET_SDR_MODE                    = IBinder::FIRST_CALL_TRANSACTION + 55,
 };
 
 // ----------------------------------------------------------------------------
@@ -141,6 +154,11 @@ public:
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h) = 0;
     virtual void getDeepColorAttr(const String16& mode, String16& value) = 0;
     virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue) = 0;
+    virtual int64_t resolveResolutionValue(const String16& mode) = 0;
+    virtual void setDolbyVisionEnable(int state) = 0;
+    virtual bool isTvSupportDolbyVision(String16& mode) = 0;
+    virtual void setHdrMode(const String16& mode) = 0;
+    virtual void setSdrMode(const String16& mode) = 0;
     virtual void reInit(void) = 0;
     virtual void instabootResetDisplay(void) = 0;
 

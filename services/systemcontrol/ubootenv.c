@@ -157,7 +157,9 @@ int read_bootenv() {
             close(fd);
             return -3;
         }
+        mutex_lock(&env_lock);
         attr = env_parse_attribute();
+        mutex_unlock(&env_lock);
         if (attr == NULL) {
             close(fd);
             return -4;
@@ -516,6 +518,7 @@ int bootenv_update(const char* name, const char* value) {
     if (!strcmp(value, varible_value))
         return 0;
 
+    mutex_lock(&env_lock);
     bootenv_set_value(varible_name, value, 1);
 
     int i = 0;
@@ -544,6 +547,7 @@ int bootenv_update(const char* name, const char* value) {
             write_args_to_file();
     }
 #endif
+    mutex_unlock(&env_lock);
     return ret;
 }
 
@@ -553,8 +557,12 @@ const char * bootenv_get(const char * key) {
         ERROR("[ubootenv] %s is not a ubootenv varible.\n", key);
         return NULL;
     }
+
+    mutex_lock(&env_lock);
     const char* varible_name = key + strlen(PROFIX_UBOOTENV_VAR);
-    return bootenv_get_value(varible_name);
+    const char* envValue = bootenv_get_value(varible_name);
+    mutex_unlock(&env_lock);
+    return envValue;
 }
 
 #if BOOT_ARGS_CHECK

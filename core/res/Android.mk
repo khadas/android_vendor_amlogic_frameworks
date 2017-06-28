@@ -12,11 +12,12 @@ LOCAL_CERTIFICATE := platform
 LOCAL_MODULE_TAGS := optional
 
 # Install thie to system/priv-app
-LOCAL_PRIVILEGED_MODULE := true
 LOCAL_PROGUARD_ENABLED := disabled
 
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
 LOCAL_PROPRIETARY_MODULE := true
+else
+LOCAL_PRIVILEGED_MODULE := true
 endif
 
 include $(BUILD_PACKAGE)

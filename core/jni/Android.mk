@@ -115,4 +115,4 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
-
+include $(CURRENT_PATH)/hdmi_cec/Android.mk

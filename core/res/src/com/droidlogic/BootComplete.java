@@ -118,9 +118,9 @@ public class BootComplete extends BroadcastReceiver {
             new UsbCameraManager(context).bootReady();
 
             new PlayBackManager(context).initHdmiSelfadaption();
-
+            Log.d(TAG,"bootcomplete & start cecextend");
             if (needCecExtend(sm, context)) {
-                //new HdmiCecExtend(context);
+                new HdmiCecExtend(context);
             }
 
             new HdrManager(context).initHdrMode();

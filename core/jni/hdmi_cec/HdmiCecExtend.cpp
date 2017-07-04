@@ -9,6 +9,7 @@
 
 #include <HdmiCecBase.h>
 #include <HdmiCecClient.h>
+#include <android/log.h>
 
 namespace android {
 
@@ -19,6 +20,10 @@ namespace android {
 #define GET_METHOD_ID(var, clazz, methodName, methodDescriptor) \
         var = env->GetMethodID(clazz, methodName, methodDescriptor); \
         LOG_FATAL_IF(! var, "Unable to find method " methodName);
+
+#define LOG_TAG "HdmiCecExtend"
+#define LOGE(...) __android_log_print(ANDORID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
 static struct {
     jmethodID onCecMessageRx;
@@ -72,6 +77,7 @@ int JHdmiCecExtend::getPhysicalAddress(uint16_t* addr) {
     return 0;
 }
 
+
 int JHdmiCecExtend::getVendorId(uint32_t* vendorId) {
     if (mHdmiCecClient != NULL)
         return mHdmiCecClient->getVendorId(vendorId);
@@ -93,7 +99,6 @@ int JHdmiCecExtend::sendMessage(const cec_message_t* message, bool isExtend) {
 void JHdmiCecExtend::onEventUpdate(const hdmi_cec_event_t* event)
 {
     printCecEvent(event);
-
     JNIEnv* env = AndroidRuntime::getJNIEnv();
     if ((event->eventType & HDMI_EVENT_RECEIVE_MESSAGE) != 0) {
         char msg_buf[CEC_MESSAGE_BODY_MAX_LENGTH];

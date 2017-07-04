@@ -1,6 +1,8 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
+LOCAL_LDLIBS := -lm -llog
+
 HDMI_CEC_NATIVE_PATH := $(TOP)/vendor/amlogic/frameworks/services/hdmicec
 
 LOCAL_MODULE_TAGS := optional

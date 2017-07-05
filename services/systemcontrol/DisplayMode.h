@@ -184,6 +184,8 @@ using namespace android;
 #define VIDEO_LAYER_DISABLE             "1"
 #define VIDEO_LAYER_AUTO_ENABLE         "2"//2:enable video layer when first frame data come
 
+#define PROP_TVSOC_AS_MBOX              "ro.tvsoc.as.mbox"
+
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_SUPPORT_4K                 "ro.platform.support.4k"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
@@ -247,7 +249,8 @@ enum {
     DISPLAY_TYPE_NONE                   = 0,
     DISPLAY_TYPE_TABLET                 = 1,
     DISPLAY_TYPE_MBOX                   = 2,
-    DISPLAY_TYPE_TV                     = 3
+    DISPLAY_TYPE_TV                     = 3,
+    DISPLAY_TYPE_REPEATER               = 4
 };
 
 #define MODE_480I                       "480i60hz"
@@ -359,7 +362,7 @@ typedef struct resolution {
     char standard;
     int frequency;
     int deepcolor;
-    long resolution_num;
+    int64_t resolution_num;
 } resolution_t;
 
 // ----------------------------------------------------------------------------
@@ -393,7 +396,7 @@ public:
     void DetectDolbyVisionOutputMode(output_mode_state state, char* outputmode);
     void getDeepColorAttr(const char* mode, char *value);
     void saveDeepColorAttr(const char* mode, const char* dcValue);
-    long resolveResolutionValue(const char *mode);
+    int64_t resolveResolutionValue(const char *mode);
     void setHdrMode(const char* mode);
     void setSdrMode(const char* mode);
     void isHDCPTxAuthSuccess( int *status);

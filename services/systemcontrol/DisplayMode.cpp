@@ -205,20 +205,25 @@ void DisplayMode::init() {
         mDisplayType, mSocType, mDefaultUI);
     if (DISPLAY_TYPE_TABLET == mDisplayType) {
         setTabletDisplay();
-    }
-    else if (DISPLAY_TYPE_MBOX == mDisplayType) {
+    } else if (DISPLAY_TYPE_MBOX == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
         setSourceDisplay(OUPUT_MODE_STATE_INIT);
         dumpCaps();
-    }
-    else if (DISPLAY_TYPE_TV == mDisplayType) {
+    } else if (DISPLAY_TYPE_TV == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
         pRxAuth = new HDCPRxAuth(pTxAuth);
         setSinkDisplay(true);
+    } else if (DISPLAY_TYPE_REPEATER == mDisplayType) {
+        pTxAuth = new HDCPTxAuth();
+        pTxAuth->setUevntCallback(this);
+        pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
+        pRxAuth = new HDCPRxAuth(pTxAuth);
+        setSourceDisplay(OUPUT_MODE_STATE_INIT);
+        dumpCaps();
     }
 }
 
@@ -238,11 +243,9 @@ void DisplayMode::reInit() {
             mDisplayType, mSocType, mDefaultUI);
         if (DISPLAY_TYPE_TABLET == mDisplayType) {
             setTabletDisplay();
-        }
-        else if (DISPLAY_TYPE_MBOX == mDisplayType) {
+        } else if ((DISPLAY_TYPE_MBOX == mDisplayType) || (DISPLAY_TYPE_REPEATER == mDisplayType)) {
             setSourceDisplay(OUPUT_MODE_STATE_POWER);
-        }
-        else if (DISPLAY_TYPE_TV == mDisplayType) {
+        } else if (DISPLAY_TYPE_TV == mDisplayType) {
             setSinkDisplay(false);
         }
     }
@@ -366,6 +369,10 @@ int DisplayMode::parseConfigFile(){
             tokenizer->nextLine();
         }
         delete tokenizer;
+    }
+    //if TVSOC as Mbox, change mDisplayType to DISPLAY_TYPE_REPEATER. and it will be in REPEATER process.
+    if ((DISPLAY_TYPE_TV == mDisplayType) && (pSysWrite->getPropertyBoolean(PROP_TVSOC_AS_MBOX, false))) {
+        mDisplayType = DISPLAY_TYPE_REPEATER;
     }
     return status;
 }
@@ -750,7 +757,7 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
     SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
 }
 
-long DisplayMode::resolveResolutionValue(const char *mode) {
+int64_t DisplayMode::resolveResolutionValue(const char *mode) {
     resolution_t resol_t;
     resolveResolution(mode, &resol_t);
     return resol_t.resolution_num;
@@ -791,7 +798,7 @@ void DisplayMode::resolveResolution(const char *mode, resolution_t* resol_t) {
     //[28:31]bit : standard 'p' is 1, and 'i' is 0.
     //[32:63]bit : resolution
     resol_t->resolution_num = resol_t->deepcolor + (resol_t->frequency<< 16)
-        + (((long)i) << 28) + (((long)resol_t->resolution) << 32);
+        + (((int64_t)i) << 28) + (((int64_t)resol_t->resolution) << 32);
 }
 
 //get the highest priority mode defined by CDF table
@@ -1372,7 +1379,7 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         }
 
         //if OTT
-        if (DISPLAY_TYPE_MBOX == mDisplayType) {
+        if ((DISPLAY_TYPE_MBOX == mDisplayType) || (DISPLAY_TYPE_REPEATER == mDisplayType)) {
             pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FOLLOW_SINK);
             pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY, DV_HDR10_POLICY);
         }
@@ -1385,6 +1392,7 @@ void DisplayMode::setDolbyVisionEnable(int state) {
     } else {
         pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FORCE_MODE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE, DV_MODE_BYPASS);
+        usleep(100000);//100ms
         pSysWrite->writeSysfs(DOLBY_VISION_ENABLE, DV_DISABLE);
         pSysWrite->setProperty(PROP_DOLBY_VISION_ENABLE, "false");
         if (DISPLAY_TYPE_TV == mDisplayType) {
@@ -1540,7 +1548,7 @@ int DisplayMode::dump(char *result) {
         strcat(result, buf);
     }
 
-    if (DISPLAY_TYPE_MBOX == mDisplayType) {
+    if ((DISPLAY_TYPE_MBOX == mDisplayType) || (DISPLAY_TYPE_REPEATER == mDisplayType)) {
         sprintf(buf, "default ui:%s\n", mDefaultUI);
         strcat(result, buf);
         dumpCaps(result);

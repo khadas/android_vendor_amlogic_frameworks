@@ -23,7 +23,7 @@
 #include "common.h"
 
 
-const char *PROFIX_UBOOTENV_VAR = "ubootenv.var";
+const char *PROFIX_UBOOTENV_VAR = "ubootenv.var.";
 
 Ubootenv::Ubootenv() :
     mEnvLock(MUTEX_INITIALIZER) {
@@ -308,6 +308,7 @@ env_attribute* Ubootenv::parseAttribute() {
 
 char * Ubootenv::get(const char * key) {
     if (!mEnvInitDone) {
+        SYS_LOGE("[ubootenv] don't init done\n");
         return NULL;
     }
 

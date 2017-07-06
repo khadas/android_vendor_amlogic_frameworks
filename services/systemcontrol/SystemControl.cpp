@@ -51,24 +51,25 @@ void SystemControl::instantiate(const char *cfgpath) {
 SystemControl::SystemControl(const char *path)
     : mLogLevel(LOG_LEVEL_DEFAULT) {
 
-    mUbootenv = new Ubootenv();
+    pUbootenv = new Ubootenv();
     pSysWrite = new SysWrite();
 
-    pDisplayMode = new DisplayMode(path, mUbootenv);
+    pDisplayMode = new DisplayMode(path, pUbootenv);
     pDisplayMode->init();
 
     pDimension = new Dimension(pDisplayMode, pSysWrite);
 
     //if ro.firstboot is true, we should clear first boot flag
-    const char* firstBoot = mUbootenv->getValue("ubootenv.var.firstboot");
+    const char* firstBoot = pUbootenv->getValue("ubootenv.var.firstboot");
     if (firstBoot && (strcmp(firstBoot, "1") == 0)) {
         ALOGI("ubootenv.var.firstboot first_boot:%s, clear it to 0", firstBoot);
-        if ( mUbootenv->updateValue("ubootenv.var.firstboot", "0") < 0 )
+        if ( pUbootenv->updateValue("ubootenv.var.firstboot", "0") < 0 )
             ALOGE("set firstboot to 0 fail");
     }
 }
 
 SystemControl::~SystemControl() {
+    delete pUbootenv;
     delete pSysWrite;
     delete pDisplayMode;
     delete pDimension;
@@ -214,7 +215,7 @@ bool SystemControl::writeHdcpRXImg(const String16& path) {
 
 //set or get uboot env
 bool SystemControl::getBootEnv(const String16& key, String16& value) {
-    const char* p_value = mUbootenv->getValue(String8(key).string());
+    const char* p_value = pUbootenv->getValue(String8(key).string());
 	if (p_value) {
         value.setTo(String16(p_value));
         return true;
@@ -224,7 +225,7 @@ bool SystemControl::getBootEnv(const String16& key, String16& value) {
 
 void SystemControl::setBootEnv(const String16& key, const String16& value) {
     if (NO_ERROR == permissionCheck()) {
-        mUbootenv->updateValue(String8(key).string(), String8(value).string());
+        pUbootenv->updateValue(String8(key).string(), String8(value).string());
         traceValue(String16("setBootEnv"), key, value);
     }
 }
@@ -438,7 +439,7 @@ void SystemControl::isHDCPTxAuthSuccess(int &status) {
 }
 
 void SystemControl::reInit() {
-    mUbootenv->reInit();
+    pUbootenv->reInit();
 }
 
 void SystemControl::instabootResetDisplay() {
@@ -569,7 +570,7 @@ status_t SystemControl::dump(int fd, const Vector<String16>& args) {
                 else if (((i + 2) <= len) && (args[i + 1] == String16("get"))) {
                     if ((i + 2) == len) {
                         result.appendFormat("get all bootenv\n");
-                        mUbootenv->printValues();
+                        pUbootenv->printValues();
                     }
                     else {
                         String16 value;

@@ -121,7 +121,7 @@ private:
     SysWrite *pSysWrite;
     DisplayMode *pDisplayMode;
     Dimension *pDimension;
-    Ubootenv *mUbootenv;
+    Ubootenv *pUbootenv;
 };
 
 // ----------------------------------------------------------------------------

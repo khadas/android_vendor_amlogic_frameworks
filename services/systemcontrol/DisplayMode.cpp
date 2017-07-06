@@ -933,7 +933,7 @@ void DisplayMode::getHdmiData(hdmi_data_t* data) {
     pSysWrite->readSysfsOriginal(DISPLAY_HDMI_SINK_TYPE, sinkType);
     pSysWrite->readSysfs(DISPLAY_EDID_STATUS, edidParsing);
 
-    data->sinkType = HDMI_SINK_TYPE_SINK;
+    data->sinkType = HDMI_SINK_TYPE_NONE;
     if (NULL != strstr(sinkType, "sink"))
         data->sinkType = HDMI_SINK_TYPE_SINK;
     else if (NULL != strstr(sinkType, "repeater"))

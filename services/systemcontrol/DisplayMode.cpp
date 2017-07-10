@@ -496,17 +496,23 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
         if (!strcmp(outputmode, curDisplayMode)) {
             //deep color disabled, only need check output mode same or not
-            if (!deepColorEnabled)
+            if (!deepColorEnabled) {
+                SYS_LOGI("deep color is Disabled, and curDisplayMode is same to outputmode, return\n");
                 return;
+            }
 
             //deep color enabled, check the deep color same or not
             char curColorAttribute[MODE_LEN] = {0};
             char saveColorAttribute[MODE_LEN] = {0};
             pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, curColorAttribute);
             getBootEnv(UBOOTENV_COLORATTRIBUTE, saveColorAttribute);
-
-            SYS_LOGI("curColorAttribute:%s ,saveColorAttribute: %s\n", curColorAttribute, saveColorAttribute);
-            if (!strcmp(saveColorAttribute, curColorAttribute))
+            //if bestOutputmode is enable, need change deepcolor to best deepcolor.
+            if (isBestOutputmode()) {
+                FormatColorDepth deepColor;
+                deepColor.getBestHdmiDeepColorAttr(outputmode, saveColorAttribute);
+            }
+            SYS_LOGI("curColorAttribute:[%s] ,saveColorAttribute: [%s]\n", curColorAttribute, saveColorAttribute);
+            if (NULL != strstr(curColorAttribute, saveColorAttribute))
                 return;
         }
     }

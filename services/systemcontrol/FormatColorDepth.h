@@ -52,11 +52,12 @@ public:
     ~FormatColorDepth();
     void getHdmiColorAttribute(const char *outputmode, char * colorAttribute, int state);
     bool isModeSupportDeepColorAttr(const char *mode, const char * color);
+    void getBestHdmiDeepColorAttr(const char *outputmode, char *colorAttribute);
 
 private:
     bool getBootEnv(const char* key, char* value);
 
-    void getBestHdmiColorArrtibute(const char * outputmode, char* supportedColorList, char * colorAttribute);
+    void getProperHdmiColorArrtibute(const char * outputmode, char * colorAttribute);
     bool initColorAttribute(char* supportedColorList, int len);
 
     SysWrite mSysWrite;

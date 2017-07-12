@@ -25,7 +25,7 @@
 #include <string.h>
 #include <cutils/properties.h>
 #include <utils/Errors.h>
-//#include <SkImageDecoder.h>
+#include <SkCodec.h>
 #include <SkData.h>
 
 #include <SkCanvas.h>
@@ -210,47 +210,35 @@ static SkColorType colorTypeForScaledOutput(SkColorType colorType) {
     return colorType;
 }
 
-static bool verifyBySkImageDecoder(SkStream *stream, SkBitmap **bitmap) {
-    SkImageDecoder::Format format = SkImageDecoder::kUnknown_Format;
-
-    SkAutoTDelete<SkStreamRewindable> bufferedStream(
-            SkFrontBufferedStream::Create(stream->duplicate(), BYTES_TO_BUFFER));
-    SkASSERT(bufferedStream.get() != NULL);
-    SkImageDecoder* codec = SkImageDecoder::Factory(bufferedStream);
-
-    if (codec) {
-        //in order to free the pointer
-        //SkAutoTDelete<SkImageDecoder> add(codec);
-        format = codec->getFormat();
-        //ALOGI("verify image format:%d", format);
-        if (format != SkImageDecoder::kUnknown_Format) {
-            if (bitmap != NULL) {
-                *bitmap = new SkBitmap();
-                codec->setSampleSize(1);
-                /*
-                if (SkImageDecoder::kBMP_Format == format ||
-                    SkImageDecoder::kGIF_Format == format ||
-                    SkImageDecoder::kPNG_Format == format)
-                    stream->rewind();*/
-                stream->rewind();
-                int ret = codec->decode(stream, *bitmap,
-                        kN32_SkColorType,
-                        SkImageDecoder::kDecodeBounds_Mode);
-            }
-
-            delete codec;
-            return true;
-        }
-        delete codec;
+static bool verifyBySkCodec(SkStream *stream, SkBitmap **bitmap) {
+    SkCodec* codec(SkCodec::NewFromStream(stream));
+    if (!codec) {
+        return false;
     }
-    return false;
+
+    SkImageInfo imageInfo = codec->getInfo();
+    auto alphaType = imageInfo.isOpaque() ? kOpaque_SkAlphaType : kPremul_SkAlphaType;
+    auto info = SkImageInfo::Make(imageInfo.width(), imageInfo.height(), kN32_SkColorType, alphaType);
+    if (bitmap != NULL) {
+        *bitmap = new SkBitmap();
+    }
+    (*bitmap)->setInfo(info);
+    (*bitmap)->tryAllocPixels(info);
+    SkCodec::Result result = codec->getPixels(info, (*bitmap)->getPixels(), (*bitmap)->rowBytes());
+    switch (result) {
+        case SkCodec::kSuccess:
+        case SkCodec::kIncompleteInput:
+            return true;
+        default:
+            return false;
+    }
 }
 
 static bool isPhotoByExtenName(const char *url) {
     if (!url)
         return false;
 
-    char *ptr = NULL;
+    const char *ptr = NULL;
     ptr = strrchr(url, '.');
     if (ptr == NULL) {
     	ALOGE("isPhotoByExtenName ptr is NULL!!!");
@@ -284,7 +272,7 @@ static bool isTiffByExtenName(const char *url) {
     if (!url)
         return false;
 
-    char *ptr = NULL;
+    const char *ptr = NULL;
     ptr = strrchr(url, '.');
     if (ptr == NULL) {
         ALOGE("isTiffByExtenName ptr is NULL!!!");
@@ -304,7 +292,7 @@ static bool isMovieByExtenName(const char *url) {
     if (!url)
         return false;
 
-    char *ptr = NULL;
+    const char *ptr = NULL;
     ptr = strrchr(url, '.');
     if (ptr == NULL) {
         ALOGE("isMovieByExtenName ptr is NULL!!!");
@@ -352,13 +340,13 @@ static bool isFdSupportedBySkImageDecoder(int fd, SkBitmap **bitmap) {
         return false;
     }
 
-    SkAutoTUnref<SkData> data(SkData::NewFromFD(fd));
+    sk_sp<SkData> data(SkData::MakeFromFD(fd));
     if (data.get() == NULL) {
         return false;
     }
     SkMemoryStream *stream = new SkMemoryStream(data);
 
-    bool ret = verifyBySkImageDecoder(stream, bitmap);
+    bool ret = verifyBySkCodec(stream, bitmap);
     delete stream;
     return ret;
 }
@@ -370,12 +358,12 @@ static bool isSupportedBySkImageDecoder(const char *uri, SkBitmap **bitmap) {
 
     if (!strncasecmp("file://", uri, 7)) {
         SkFILEStream stream(uri + 7);
-        return verifyBySkImageDecoder(&stream, bitmap);
+        return verifyBySkCodec(&stream, bitmap);
     }
 
     if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         SkHttpStream httpStream(uri);
-        return verifyBySkImageDecoder(&httpStream, bitmap);
+        return verifyBySkCodec(&httpStream, bitmap);
     }
 
     return false;
@@ -696,6 +684,9 @@ int ImagePlayerService::init() {
         close(mDisplayFd);
     }
 
+    mSystemControl = interface_cast<ISystemControlService>(
+                defaultServiceManager()->getService(String16("system_control")));
+
     //if video exit with some exception, need restore video attribute
     initVideoAxis();
 
@@ -724,8 +715,6 @@ int ImagePlayerService::init() {
 
     mMovieThread = new MovieThread(this);
     mDeathNotifier = new DeathNotifier(this);
-    mSystemControl = interface_cast<ISystemControlService>(
-            defaultServiceManager()->getService(String16("system_control")));
     ALOGI("init success display fd:%d", mDisplayFd);
 
     return RET_OK;
@@ -1314,96 +1303,40 @@ int ImagePlayerService::release() {
 }
 
 SkBitmap* ImagePlayerService::decode(SkStreamRewindable *stream, InitParameter *mParameter) {
-    SkImageDecoder::Format format = SkImageDecoder::kUnknown_Format;
-    SkImageDecoder* codec = NULL;
-    bool ret = false;
+    SkCodec* codec(SkCodec::NewFromStream(stream));
+    if (!codec) {
+        return NULL;
+    }
+
+    SkImageInfo imageInfo = codec->getInfo();
+    auto alphaType = imageInfo.isOpaque() ? kOpaque_SkAlphaType : kPremul_SkAlphaType;
+    auto info = SkImageInfo::Make(imageInfo.width(), imageInfo.height(), kN32_SkColorType, alphaType);
+
     SkBitmap *bitmap = NULL;
     int imageW = 0, imageH = 0;
-
-    //SkAutoTDelete<SkStreamRewindable> bufferedStream(
-    //        SkFrontBufferedStream::Create(stream->duplicate(), BYTES_TO_BUFFER));
-
-    //SkASSERT(bufferedStream.get() != NULL);
-    codec = SkImageDecoder::Factory(stream);
-    if (codec) {
-       /*
-        ret = codec->buildTileIndex(stream->duplicate(), &imageW, &imageH);
-        if (!ret) {
-            ALOGE("buildTileIndex failed to decode using %s decoder", codec->getFormatName());
-        }
-       */
-        //in order to free the pointer
-        //SkAutoTDelete<SkImageDecoder> add(codec);
-        format = codec->getFormat();
-        ALOGI("decode using %s decoder", codec->getFormatName());
-        if (format != SkImageDecoder::kUnknown_Format) {
-            bitmap = new SkBitmap();
-            if (mSampleSize > 0) {
-                codec->setSampleSize(mSampleSize);
-            } else {
-                codec->setSampleSize(1);
-            }
-
-            SkBitmap decodingBitmap;
-            /*
-            if (SkImageDecoder::kBMP_Format == format ||
-                SkImageDecoder::kGIF_Format == format ||
-                SkImageDecoder::kPNG_Format == format)
-                stream->rewind();*/
-            stream->rewind();
-            ret = codec->decode(stream, &decodingBitmap,
-                    kN32_SkColorType,
-                    SkImageDecoder::kDecodePixels_Mode);
-            if (!ret) {
-                ALOGW("decode fail result:%d, try to use decodeSubset, uri:%s", ret, mImageUrl);
-
-                ret = SkImageDecoder::DecodeStream(stream,&decodingBitmap);
-                /*
-                SkFILEStream fstream(mImageUrl);
-                SkImageDecoder* decoder = SkImageDecoder::Factory(&fstream);
-                if (NULL != decoder) {
-                    if (mSampleSize > 0)
-                        decoder->setSampleSize(mSampleSize);
-                    else
-                        decoder->setSampleSize(1);
-
-                    fstream.rewind();
-                    if (!decoder->buildTileIndex(&fstream, &imageW, &imageH)) {
-                        ALOGE("Image failed to decode using %s decoder", codec->getFormatName());
-                    }
-
-                    ret = decoder->decodeSubset(&decodingBitmap,
-                        SkIRect::MakeWH(imageW, imageH), kN32_SkColorType);
-                    SkDELETE(decoder);
-                }*/
-            }
-            if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
-                ALOGW("decode: bitmap size:%d, request size:%d\n",
-                    (int)decodingBitmap.getSize(), 4*decodingBitmap.width()*decodingBitmap.height());
-            }
-            decodingBitmap.copyTo(bitmap, kN32_SkColorType);
-            if (!ret) {
-                delete bitmap;
-                bitmap = NULL;
-            }
-        } else {
-            ALOGE("format is SkImageDecoder::kUnknown_Format!");
-        }
-        delete codec;
-    } else {
-        ALOGE("decode: codec is NULL!: '%s' (%d)", strerror(errno), errno);
-        return NULL;
+    bitmap = new SkBitmap();
+    SkBitmap decodingBitmap;
+    decodingBitmap.setInfo(info);
+    decodingBitmap.tryAllocPixels(info);
+    SkCodec::Result result = codec->getPixels(info, decodingBitmap.getPixels(), decodingBitmap.rowBytes());
+    switch (result) {
+        case SkCodec::kSuccess:
+        case SkCodec::kIncompleteInput:
+            break;
+        default:
+            delete bitmap;
+            bitmap = NULL;
+            return NULL;
     }
-
-    if (!ret) {
-        ALOGE("error: decode fail!");
-        return NULL;
+    if ((int)decodingBitmap.getSize() < 4*decodingBitmap.width()* decodingBitmap.height()) {
+        ALOGW("decode: bitmap size:%d, request size:%d\n",
+            (int)decodingBitmap.getSize(), 4*decodingBitmap.width()*decodingBitmap.height());
     }
-    //ALOGD("Decode output size, Width: %d, Height: %d", bitmap->width(), bitmap->height());
+    decodingBitmap.copyTo(bitmap, kN32_SkColorType);
 
     if ((bitmap != NULL) && (mParameter != NULL)
-        && ((mParameter->degrees != 0.0f) || (mParameter->scaleX != 1.0f) || (mParameter->scaleY != 1.0f))
-        && (mParameter->scaleX > 0.0f) && (mParameter->scaleY > 0.0f)) {
+            && ((mParameter->degrees != 0.0f) || (mParameter->scaleX != 1.0f) || (mParameter->scaleY != 1.0f))
+            && (mParameter->scaleX > 0.0f) && (mParameter->scaleY > 0.0f)) {
         SkBitmap *dstBitmap = NULL;
         dstBitmap = rotateAndScale(bitmap, mParameter->degrees, mParameter->scaleX, mParameter->scaleY);
 
@@ -1608,7 +1541,7 @@ int ImagePlayerService::prepare() {
 
     SkStreamRewindable *stream;
     if (mFileDescription >= 0) {
-        SkAutoTUnref<SkData> data(SkData::NewFromFD(mFileDescription));
+        sk_sp<SkData> data(SkData::MakeFromFD(mFileDescription));
         if (data.get() == NULL) {
             return RET_ERR_BAD_VALUE;
         }
@@ -2185,12 +2118,12 @@ bool ImagePlayerService::isSupportFromat(const char *uri, SkBitmap **bitmap) {
 
     if (!strncasecmp("file://", uri, 7)) {
         SkFILEStream stream(uri + 7);
-        return verifyBySkImageDecoder(&stream, bitmap);
+        return verifyBySkCodec(&stream, bitmap);
     }
 
     if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
         SkHttpStream httpStream(uri, mHttpService);
-        return verifyBySkImageDecoder(&httpStream, bitmap);
+        return verifyBySkCodec(&httpStream, bitmap);
     }
 
     return false;

@@ -147,7 +147,6 @@ bool SysWrite::writeSysfs(const char *path, const char *value, const int size){
     return true;
 }
 
-
 void SysWrite::setLogLevel(int level){
     mLogLevel = level;
 }
@@ -185,7 +184,6 @@ void SysWrite::writeSys(const char *path, const char *val, const int size){
 exit:
     close(fd);
 }
-
 
 void SysWrite::readSys(const char *path, char *buf, int count, bool needOriginalData){
     int fd, len;

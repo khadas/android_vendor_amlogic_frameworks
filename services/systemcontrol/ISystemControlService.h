@@ -80,16 +80,34 @@ enum {
     SWITCH_2DTO3D                  = IBinder::FIRST_CALL_TRANSACTION + 34,
     AUTO_DETECT_3D                 = IBinder::FIRST_CALL_TRANSACTION + 35,
 
-    WRITE_SYSFS_BIN         = IBinder::FIRST_CALL_TRANSACTION + 36,
-    READ_HDCPRX22_KEY       = IBinder::FIRST_CALL_TRANSACTION + 37,
-    WRITE_HDCPRX22_KEY      = IBinder::FIRST_CALL_TRANSACTION + 38,
-    READ_HDCPRX14_KEY       = IBinder::FIRST_CALL_TRANSACTION + 39,
-    WRITE_HDCPRX14_KEY      = IBinder::FIRST_CALL_TRANSACTION + 40,
-    WRITE_HDCPRX_IMG        = IBinder::FIRST_CALL_TRANSACTION + 41,
+    WRITE_SYSFS_BIN                 = IBinder::FIRST_CALL_TRANSACTION + 36,
+    READ_HDCPRX22_KEY               = IBinder::FIRST_CALL_TRANSACTION + 37,
+    WRITE_HDCPRX22_KEY              = IBinder::FIRST_CALL_TRANSACTION + 38,
+    READ_HDCPRX14_KEY               = IBinder::FIRST_CALL_TRANSACTION + 39,
+    WRITE_HDCPRX14_KEY              = IBinder::FIRST_CALL_TRANSACTION + 40,
+    WRITE_HDCPRX_IMG                = IBinder::FIRST_CALL_TRANSACTION + 41,
     GET_SUPPORTED_DISPLAYMODE_LIST     = IBinder::FIRST_CALL_TRANSACTION + 42,
-    GET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 43,
-    SET_ACTIVE_DISPLAYMODE     = IBinder::FIRST_CALL_TRANSACTION + 44,
-    IS_AUTHSUCCESS           =IBinder::FIRST_CALL_TRANSACTION + 45,
+    GET_ACTIVE_DISPLAYMODE          = IBinder::FIRST_CALL_TRANSACTION + 43,
+    SET_ACTIVE_DISPLAYMODE          = IBinder::FIRST_CALL_TRANSACTION + 44,
+    IS_AUTHSUCCESS                  =IBinder::FIRST_CALL_TRANSACTION + 45,
+
+    //add get/save deep color
+    SAVE_DEEP_COLOR_ATTR            = IBinder::FIRST_CALL_TRANSACTION + 46,
+    GET_DEEP_COLOR_ATTR             = IBinder::FIRST_CALL_TRANSACTION + 47,
+    SINK_OUTPUT_MODE                = IBinder::FIRST_CALL_TRANSACTION + 48,
+
+    WRITE_UNIFY_KEY                 = IBinder::FIRST_CALL_TRANSACTION + 49,
+    READ_UNIFY_KEY                  = IBinder::FIRST_CALL_TRANSACTION + 50,
+
+    //set dolby vision
+    SET_DOLBY_VISION                = IBinder::FIRST_CALL_TRANSACTION + 51,
+    TV_SUPPORT_DOLBY_VISION         = IBinder::FIRST_CALL_TRANSACTION + 52,
+
+    RESOLVE_RESOLUTION_VALUE        = IBinder::FIRST_CALL_TRANSACTION + 53,
+
+    //set HDR mode and SDR mode
+    SET_HDR_MODE                    = IBinder::FIRST_CALL_TRANSACTION + 54,
+    SET_SDR_MODE                    = IBinder::FIRST_CALL_TRANSACTION + 55,
 };
 
 // ----------------------------------------------------------------------------
@@ -134,10 +152,16 @@ public:
     virtual void setOsdMousePara(int x, int y, int w, int h) = 0;
     virtual void setPosition(int left, int top, int width, int height) = 0;
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h) = 0;
+    virtual void getDeepColorAttr(const String16& mode, String16& value) = 0;
+    virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue) = 0;
+    virtual int64_t resolveResolutionValue(const String16& mode) = 0;
+    virtual void setDolbyVisionEnable(int state) = 0;
+    virtual bool isTvSupportDolbyVision(String16& mode) = 0;
+    virtual void setHdrMode(const String16& mode) = 0;
+    virtual void setSdrMode(const String16& mode) = 0;
     virtual void reInit(void) = 0;
     virtual void instabootResetDisplay(void) = 0;
 
-    virtual void setNativeWindowRect(int x, int y, int w, int h) = 0;
     virtual void setVideoPlayingAxis(void) = 0;
     //virtual void setPowerMode(int mode) = 0;
 
@@ -157,6 +181,7 @@ public:
     virtual bool setActiveDispMode(std::string& activeDispMode) = 0;
 
     virtual void isHDCPTxAuthSuccess(int &status) = 0;
+    virtual void setSinkOutputMode(const String16& mode) = 0;
 
 };
 

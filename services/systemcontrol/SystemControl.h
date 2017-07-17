@@ -83,9 +83,15 @@ public:
     virtual void setOsdMousePara(int x, int y, int w, int h);
     virtual void setPosition(int left, int top, int width, int height);
     virtual void getPosition(const String16& mode, int &x, int &y, int &w, int &h);
+    virtual void getDeepColorAttr(const String16& mode, String16& value);
+    virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue);
+    virtual int64_t resolveResolutionValue(const String16& mode);
+    virtual void setDolbyVisionEnable(int state);
+    virtual bool isTvSupportDolbyVision(String16& mode);
+    virtual void setHdrMode(const String16& mode);
+    virtual void setSdrMode(const String16& mode);
     virtual void reInit();
     virtual void instabootResetDisplay(void);
-    virtual void setNativeWindowRect(int x, int y, int w, int h);
     virtual void setVideoPlayingAxis();
     virtual void init3DSetting(void);
     virtual int32_t getVideo3DFormat(void);
@@ -97,16 +103,18 @@ public:
     virtual bool switch3DTo2D(int format);
     virtual bool switch2DTo3D(int format);
     virtual void autoDetect3DForMbox();
+    virtual bool getSupportDispModeList(std::vector<std::string> *supportDispModes) ;
+    virtual bool getActiveDispMode(std::string *activeDispMode) ;
+    virtual bool setActiveDispMode(std::string& activeDispMode) ;
+    virtual void isHDCPTxAuthSuccess(int &status);
+    virtual void setSinkOutputMode(const String16& mode);
 
     static void instantiate(const char *cfgpath);
 
     virtual status_t dump(int fd, const Vector<String16>& args);
 
     int getLogLevel();
-    virtual bool getSupportDispModeList(std::vector<std::string> *supportDispModes) ;
-    virtual bool getActiveDispMode(std::string *activeDispMode) ;
-    virtual bool setActiveDispMode(std::string& activeDispMode) ;
-    virtual void isHDCPTxAuthSuccess(int &status);
+
 private:
     int permissionCheck();
     void setLogLevel(int level);

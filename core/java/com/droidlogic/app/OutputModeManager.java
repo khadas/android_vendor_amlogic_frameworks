@@ -10,6 +10,8 @@ import java.io.IOException;
 
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.hdmi.HdmiControlManager;
+import android.hardware.hdmi.HdmiHotplugEvent;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
@@ -72,6 +74,7 @@ public class OutputModeManager {
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
+    public static final String PROP_SUPPORT_4K              = "ro.platform.support.4k";
     public static final String PROP_DEEPCOLOR               = "sys.open.deepcolor";
     public static final String PROP_DTSDRCSCALE             = "persist.sys.dtsdrcscale";
     public static final String PROP_DTSEDID                 = "persist.sys.dts.edid";
@@ -136,6 +139,7 @@ public class OutputModeManager {
 
     private SystemControlManager mSystenControl;
     SystemControlManager.DisplayInfo mDisplayInfo;
+    private HdmiControlManager mHdmiControlManager;
 
     public OutputModeManager(Context context) {
         mContext = context;
@@ -148,9 +152,22 @@ public class OutputModeManager {
         }
 
         currentOutputmode = readSysfs(DISPLAY_MODE);
+
+        mHdmiControlManager = (HdmiControlManager) context.getSystemService(Context.HDMI_CONTROL_SERVICE);
+        if (mHdmiControlManager != null) {
+            mHdmiControlManager.addHotplugEventListener(new HdmiControlManager.HotplugEventListener() {
+
+                @Override
+                public void onReceived(HdmiHotplugEvent event) {
+                    if (Settings.Global.getInt(context.getContentResolver(), DIGITAL_SOUND, IS_PCM) == IS_HDMI_RAW) {
+                        autoSwitchHdmiPassthough();
+                    }
+                }
+            });
+        }
     }
 
-    public void setOutputMode(final String mode) {
+    private void setOutputMode(final String mode) {
         setOutputModeNowLocked(mode);
     }
 
@@ -201,17 +218,13 @@ public class OutputModeManager {
     }
 
     public boolean isModeSupportColor(final String curMode, final String curValue){
-         boolean ret =false;
-         curMode.replace("444", "").replace("422", "").replace("420", "").replace("rgb", "");
          writeSysfs(DISPLAY_HDMI_VALID_MODE, curMode+curValue);
          String isSupport = readSysfs(DISPLAY_HDMI_VALID_MODE).trim();
-         Log.d("SystemControl", "at OutputModeManager if this mode: " + curMode+curValue+"is support or not:"+isSupport);
-         if ("1".equals(isSupport))
-            ret = true;
-         return  ret;
+         Log.d("SystemControl", "In OutputModeManager, " + curMode+curValue+" is "+ " supported or not:"+isSupport);
+         return isSupport.equals("1") ? true : false;
     }
 
-    public void setOutputModeNowLocked(final String newMode){
+    private void setOutputModeNowLocked(final String newMode){
         synchronized (mLock) {
             String oldMode = currentOutputmode;
             currentOutputmode = newMode;
@@ -244,8 +257,7 @@ public class OutputModeManager {
     }
 
     public String getCurrentOutputMode(){
-        return readSysfs(DISPLAY_MODE).replace("444", "").replace("422", "").replace("420", "").replace("rgb", "").replace("12bit", "").replace("10bit", "")
-                .replace("8bit", "");
+        return readSysfs(DISPLAY_MODE);
     }
 
     public int[] getPosition(String mode) {
@@ -368,8 +380,13 @@ public class OutputModeManager {
         try {
             BufferedReader br = new BufferedReader(new FileReader(path));
             while ((str = br.readLine()) != null) {
-                if (str != null)
+                if (str != null) {
+                    if (!getPropertyBoolean(PROP_SUPPORT_4K, true)
+                        && (str.contains("2160") || str.contains("smpte"))) {
+                        continue;
+                    }
                     value += str + ",";
+                }
             }
             br.close();
 

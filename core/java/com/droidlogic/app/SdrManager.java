@@ -27,59 +27,30 @@ import android.util.Log;
 public class SdrManager {
     private static final String TAG                 = "SdrManager";
 
-    private static final String KEY_SDR_MODE        = "key_sdr_mode";
-    private static final String SYSF_SDR_MODE       = "/sys/module/am_vecm/parameters/sdr_mode";
+    private static final String KEY_SDR_MODE        = "persist.sys.sdr.state";
 
     public static final int MODE_OFF = 0;
     public static final int MODE_AUTO = 2;
 
     private Context mContext;
-    private SystemControlManager mSystenControl;
+    private SystemControlManager mSystemControl;
 
     public SdrManager(Context context){
         mContext = context;
-        mSystenControl = new SystemControlManager(context);
+        mSystemControl = new SystemControlManager(context);
     }
 
-    public void initSdrMode() {
-        switch (Settings.System.getInt(mContext.getContentResolver(), KEY_SDR_MODE, MODE_OFF)) {
-            case MODE_OFF:
-                mSystenControl.writeSysFs(SYSF_SDR_MODE, Integer.toString(MODE_OFF));
-                break;
-            case MODE_AUTO:
-                mSystenControl.writeSysFs(SYSF_SDR_MODE, Integer.toString(MODE_AUTO));
-                break;
-            default:
-                mSystenControl.writeSysFs(SYSF_SDR_MODE, Integer.toString(MODE_OFF));
-                break;
-        }
-    }
 
     public int getSdrMode() {
-        switch (Settings.System.getInt(mContext.getContentResolver(), KEY_SDR_MODE, MODE_OFF)) {
-            case 0:
-                return MODE_OFF;
-            case 2:
-                return MODE_AUTO;
-            default:
-                return MODE_OFF;
-        }
+        String value = mSystemControl.getPropertyString(KEY_SDR_MODE, "0");
+        return Integer.parseInt(value);
     }
 
     public void setSdrMode(int mode) {
-        switch (mode) {
-            case MODE_OFF:
-                mSystenControl.writeSysFs(SYSF_SDR_MODE, Integer.toString(MODE_OFF));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_SDR_MODE, MODE_OFF);
-                break;
-            case MODE_AUTO:
-                mSystenControl.writeSysFs(SYSF_SDR_MODE, Integer.toString(MODE_AUTO));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_SDR_MODE, MODE_AUTO);
-                break;
-            default:
-                mSystenControl.writeSysFs(SYSF_SDR_MODE, Integer.toString(MODE_OFF));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_SDR_MODE, MODE_OFF);
-                break;
+        if ((mode == 0) || (mode == 2)) {
+            mSystemControl.setSdrMode(String.valueOf(mode));
+        } else {
+            mSystemControl.setSdrMode(String.valueOf(MODE_OFF));
         }
     }
 }

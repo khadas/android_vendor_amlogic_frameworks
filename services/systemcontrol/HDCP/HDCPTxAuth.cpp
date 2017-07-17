@@ -46,6 +46,7 @@ using namespace android;
 HDCPTxAuth::HDCPTxAuth() :
     mRepeaterRxVer(REPEATER_RX_VERSION_NONE),
     mpCallback(NULL),
+    mMute(false),
     mBootAnimFinished(false) {
 
     if (sem_init(&pthreadTxSem, 0, 0) < 0) {
@@ -131,6 +132,28 @@ int HDCPTxAuth::stop() {
     return ret;
 }
 
+//Define to force authentiation regardless of keys presence
+//#define HDCP_AUTHENTICATION_NO_KEYS
+
+void HDCPTxAuth::mute(bool mute __unused) {
+
+#if !defined(HDCP_AUTHENTICATION_NO_KEYS)
+    char hdcpTxKey[MODE_LEN] = {0};
+    mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_KEY, hdcpTxKey);
+    if ((strlen(hdcpTxKey) == 0) || !(strcmp(hdcpTxKey, "00")))
+        return;
+#endif
+
+#ifdef HDCP_AUTHENTICATION
+    if (mute != mMute) {
+        //mSysWrite.writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, mute ? "1" : "0");
+        mSysWrite.writeSysfs(DISPLAY_HDMI_VIDEO_MUTE, mute ? "1" : "0");
+        mMute = mute;
+        SYS_LOGI("hdcp_tx mute %s\n", mute ? "on" : "off");
+    }
+#endif
+}
+
 void* HDCPTxAuth::authThread(void* data) {
     bool hdcp22 = false;
     bool hdcp14 = false;
@@ -147,7 +170,6 @@ void* HDCPTxAuth::authThread(void* data) {
         //first close osd, after HDCP authenticate completely, then open osd
         pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_BLANK, "1");
 
-        bool ret = pThiz->authLoop(hdcp22, hdcp14);
         if (!pThiz->authLoop(hdcp22, hdcp14)) {
             SYS_LOGE("HDCP authenticate fail, need black screen and disable audio\n");
 
@@ -251,6 +273,7 @@ bool HDCPTxAuth::authLoop(bool useHdcp22, bool useHdcp14) {
                 count = 0;
                 useHdcp22 = false;
                 useHdcp14 = true;
+                stopVerAll();
                 //if support hdcp22, must support hdcp14
                 startVer14();
                 continue;
@@ -311,9 +334,9 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
     ueventObserver.addMatch(VIDEO_LAYER1_UEVENT);
     ueventObserver.addMatch(HDMI_TX_HDR_UEVENT);
     ueventObserver.addMatch(HDMI_TX_HDCP_UEVENT);
+    ueventObserver.addMatch(HDMI_TX_HDCP14_LOG_UEVENT);
 #ifdef FRAME_RATE_AUTO_ADAPTER
-    ueventObserver.addMatch(HDMI_VIDEO_FRAME_RATE_UEVENT);
-    ueventObserver.addMatch(HDMI_IONVIDEO_FRAME_RATE_UEVENT);
+    ueventObserver.addMatch(HDMI_TVOUT_FRAME_RATE_UEVENT);
 #endif
 
     while (true) {
@@ -349,12 +372,20 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
             }
         }
         else if (!strcmp(ueventData.matchName, HDMI_TX_HDCP_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDCP)) {
-            //0: hdcp authenticate fail  1: hdcp authenticate success
-            if (!strcmp(ueventData.switchState, "0")) {
-            }
+            //0: hdcp failure -> mute a/v
+            if (!strcmp(ueventData.switchState, "0"))
+                pThiz->mute(true);
+            //1:  hdcp success -> unmute a/v
+            else
+                pThiz->mute(false);
         }
-        else if (!strcmp(ueventData.matchName, HDMI_VIDEO_FRAME_RATE_UEVENT)
-            ||!strcmp(ueventData.matchName, HDMI_IONVIDEO_FRAME_RATE_UEVENT)) {
+        else if (!strcmp(ueventData.matchName, HDMI_TX_HDCP14_LOG_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDCP_LOG)) {
+            //char logBuf[MAX_STR_LEN+1] = {0};
+            //pThiz->mSysWrite.readSysfsOriginal(HDMI_TX_HDCP14_LOG_SYS, logBuf);
+
+            //SYS_LOGI("HDCP log:%s", logBuf);
+        }
+        else if (!strcmp(ueventData.matchName, HDMI_TVOUT_FRAME_RATE_UEVENT)) {
                pThiz->mFRAutoAdpt->onTxUeventReceived(&ueventData);
         }
 #ifndef RECOVERY_MODE

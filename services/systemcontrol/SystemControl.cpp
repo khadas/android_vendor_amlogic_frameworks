@@ -432,10 +432,62 @@ void SystemControl::getPosition(const String16& mode, int &x, int &y, int &w, in
     }
 }
 
+void SystemControl::setDolbyVisionEnable(int state) {
+    pDisplayMode->setDolbyVisionEnable(state);
+}
+
+bool SystemControl::isTvSupportDolbyVision(String16& mode) {
+    char value[MODE_LEN] = {0};
+    bool ret = pDisplayMode->isTvSupportDolbyVision(value);
+    mode.setTo(String16(value));
+    return ret;
+}
+
 void SystemControl::isHDCPTxAuthSuccess(int &status) {
     int value=0;
     pDisplayMode->isHDCPTxAuthSuccess(&value);
     status = value;
+}
+
+void SystemControl::setSinkOutputMode(const String16& mode) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set sink output mode :%s", String8(mode).string());
+    }
+
+    pDisplayMode->setSinkOutputMode(String8(mode).string());
+}
+
+int64_t SystemControl::resolveResolutionValue(const String16& mode) {
+    int64_t value = pDisplayMode->resolveResolutionValue(String8(mode).string());
+    return value;
+}
+
+void SystemControl::saveDeepColorAttr(const String16& mode, const String16& dcValue) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("set deep color attr %s\n", String8(dcValue).string());
+    }
+    char outputmode[64];
+    char value[64];
+    strcpy(outputmode, String8(mode).string());
+    strcpy(value, String8(dcValue).string());
+    pDisplayMode->saveDeepColorAttr(outputmode, value);
+}
+
+void SystemControl::getDeepColorAttr(const String16& mode, String16& value) {
+    char buf[PROPERTY_VALUE_MAX] = {0};
+    pDisplayMode->getDeepColorAttr(String8(mode).string(), buf);
+    value.setTo(String16(buf));
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("get deep color attr mode %s, value %s ", String8(mode).string(), String8(value).string());
+    }
+}
+
+void SystemControl::setHdrMode(const String16& mode) {
+    pDisplayMode->setHdrMode(String8(mode).string());
+}
+
+void SystemControl::setSdrMode(const String16& mode) {
+    pDisplayMode->setSdrMode(String8(mode).string());
 }
 
 void SystemControl::reInit() {
@@ -444,14 +496,6 @@ void SystemControl::reInit() {
 
 void SystemControl::instabootResetDisplay() {
     pDisplayMode->reInit();
-}
-
-
-void SystemControl::setNativeWindowRect(int x, int y, int w, int h) {
-    if (mLogLevel > LOG_LEVEL_1) {
-        ALOGI("set native window rect x:%d y:%d w:%d h:%d", x, y, w, h);
-    }
-    pDisplayMode->setNativeWindowRect(x, y, w, h);
 }
 
 void SystemControl::setVideoPlayingAxis() {

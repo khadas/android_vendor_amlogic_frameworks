@@ -23,7 +23,7 @@
 #define FORMATCOLORDEPTH_H
 
 #include "SysWrite.h"
-
+#include "ubootenv/Ubootenv.h"
 
 #define DISPLAY_HDMI_COLOR_ATTR         "/sys/class/amhdmitx/amhdmitx0/attr"//set deep color fmt and dept
 #define DISPLAY_HDMI_VALID_MODE         "/sys/class/amhdmitx/amhdmitx0/valid_mode"//testing if tv support this displaymode and  deepcolor combination, then if cat result is 1: support, 0: not
@@ -51,10 +51,14 @@ public:
     FormatColorDepth();
     ~FormatColorDepth();
     void getHdmiColorAttribute(const char *outputmode, char * colorAttribute, int state);
+    bool isModeSupportDeepColorAttr(const char *mode, const char * color);
+    void getBestHdmiDeepColorAttr(const char *outputmode, char *colorAttribute);
 
 private:
+    bool getBootEnv(const char* key, char* value);
 
-    void getBestHdmiColorArrtibute(const char * outputmode, char* supportedColorList, char * colorAttribute);
+    Ubootenv *mUbootenv;
+    void getProperHdmiColorArrtibute(const char * outputmode, char * colorAttribute);
     bool initColorAttribute(char* supportedColorList, int len);
 
     SysWrite mSysWrite;

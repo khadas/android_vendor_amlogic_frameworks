@@ -69,6 +69,7 @@ private:
     bool authLoop(bool useHdcp22, bool useHdcp14);
     void startVer22();
     void startVer14();
+    void mute(bool mute);
 
     static void* authThread(void* data);
     static void* TxUenventThreadLoop(void* data);
@@ -78,6 +79,7 @@ private:
     TxUevntCallbak *mpCallback;
     FrameRateAutoAdaption *mFRAutoAdpt;
 
+    bool mMute;
     bool mBootAnimFinished;
 
     pthread_mutex_t pthreadTxMutex;

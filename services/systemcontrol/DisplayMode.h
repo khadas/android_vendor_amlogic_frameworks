@@ -61,13 +61,7 @@ using namespace android;
 
 #define DEFAULT_EDID_CRCHEAD            "checkvalue: "
 #define DEFAULT_OUTPUT_MODE             "1080p60hz"
-
-#if ANDROID_PLATFORM_SDK_VERSION >= 26 //8.0
-#define DISPLAY_CFG_FILE                "/vendor/etc/mesondisplay.cfg"
-#else
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
-#endif
-
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
 #define SYSFS_DISPLAY_MODE              "/sys/class/display/mode"
@@ -111,6 +105,8 @@ using namespace android;
 #define DISPLAY_HDMI_DISP_CAP_3D        "/sys/class/amhdmitx/amhdmitx0/disp_cap_3d"//RX support display 3d mode
 #define DISPLAY_HDMI_DEEP_COLOR         "/sys/class/amhdmitx/amhdmitx0/dc_cap"//RX supoort deep color
 #define DISPLAY_HDMI_HDR                "/sys/class/amhdmitx/amhdmitx0/hdr_cap"
+#define DISPLAY_HDMI_HDR_MODE           "/sys/module/am_vecm/parameters/hdr_mode"
+#define DISPLAY_HDMI_SDR_MODE           "/sys/module/am_vecm/parameters/sdr_mode"
 #define DISPLAY_HDMI_AUDIO              "/sys/class/amhdmitx/amhdmitx0/aud_cap"
 #define DISPLAY_HDMI_AUDIO_MUTE         "/sys/class/amhdmitx/amhdmitx0/aud_mute"
 #define DISPLAY_HDMI_VIDEO_MUTE         "/sys/class/amhdmitx/amhdmitx0/vid_mute"
@@ -133,12 +129,36 @@ using namespace android;
 #define HDMI_TX_PLUG_STATE              "/sys/devices/virtual/switch/hdmi/state"
 #define HDMI_TX_HDR_UEVENT              "DEVPATH=/devices/virtual/switch/hdmi_hdr"
 #define HDMI_TX_HDCP_UEVENT             "DEVPATH=/devices/virtual/switch/hdcp"
+#define HDMI_TX_HDCP14_LOG_UEVENT       "DEVPATH=/devices/virtual/switch/hdcp_log"
+#define HDMI_TX_HDCP14_LOG_SYS          "/sys/kernel/debug/hdcp/log"
 #define HDMI_TX_SWITCH_HDR              "/sys/class/switch/hdmi_hdr/state"
+
+//dolby vision sysfs
+#define DOLBY_VISION_POLICY             "/sys/module/am_vecm/parameters/dolby_vision_policy"
+#define DOLBY_VISION_HDR10_POLICY       "/sys/module/am_vecm/parameters/dolby_vision_hdr10_policy"
+#define DOLBY_VISION_ENABLE             "/sys/module/am_vecm/parameters/dolby_vision_enable"
+#define DOLBY_VISION_MODE               "/sys/class/amvecm/dv_mode"
+#define DOLBY_VISION_IS_SUPPORT         "/sys/class/amhdmitx/amhdmitx0/dv_cap"
+
+#define DOLBY_VISION_SET_ENABLE         1
+#define DOLBY_VISION_SET_DISABLE        0
+
+#define DV_ENABLE                       "Y"
+#define DV_DISABLE                      "N"
+
+#define DV_POLICY_FOLLOW_SINK           "0"
+#define DV_POLICY_FOLLOW_SOURCE         "1"
+#define DV_POLICY_FORCE_MODE            "2"
+#define DV_HDR10_POLICY                 "1"
+
+#define DV_MODE_BYPASS                  "0x0"
+#define DV_MODE_IPT_TUNNEL              "0x2"
 
 #define HDMI_UEVENT_HDMI                "hdmi"
 #define HDMI_UEVENT_HDMI_POWER          "hdmi_power"
 #define HDMI_UEVENT_HDMI_HDR            "hdmi_hdr"
 #define HDMI_UEVENT_HDCP                "hdcp"
+#define HDMI_UEVENT_HDCP_LOG            "hdcp_log"
 
 #define HDMI_TX_PLUG_OUT                "0"
 #define HDMI_TX_PLUG_IN                 "1"
@@ -165,7 +185,10 @@ using namespace android;
 #define VIDEO_LAYER_DISABLE             "1"
 #define VIDEO_LAYER_AUTO_ENABLE         "2"//2:enable video layer when first frame data come
 
+#define PROP_TVSOC_AS_MBOX              "ro.tvsoc.as.mbox"
+
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
+#define PROP_SUPPORT_4K                 "ro.platform.support.4k"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
 #define PROP_WINDOW_WIDTH               "const.window.w"
 #define PROP_WINDOW_HEIGHT              "const.window.h"
@@ -176,64 +199,26 @@ using namespace android;
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
 #define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
+#define PROP_BOOTCOMPLETE               "dev.bootcomplete"
+#define PROP_DOLBY_VISION_ENABLE        "persist.sys.dolbyvision.enable"
+#define PROP_HDR_MODE_STATE             "persist.sys.hdr.state"
+#define PROP_SDR_MODE_STATE             "persist.sys.sdr.state"
 
-#define ENV_480I_X                      "ubootenv.var.480i_x"
-#define ENV_480I_Y                      "ubootenv.var.480i_y"
-#define ENV_480I_W                      "ubootenv.var.480i_w"
-#define ENV_480I_H                      "ubootenv.var.480i_h"
-#define ENV_480P_X                      "ubootenv.var.480p_x"
-#define ENV_480P_Y                      "ubootenv.var.480p_y"
-#define ENV_480P_W                      "ubootenv.var.480p_w"
-#define ENV_480P_H                      "ubootenv.var.480p_h"
-#define ENV_576I_X                      "ubootenv.var.576i_x"
-#define ENV_576I_Y                      "ubootenv.var.576i_y"
-#define ENV_576I_W                      "ubootenv.var.576i_w"
-#define ENV_576I_H                      "ubootenv.var.576i_h"
-#define ENV_576P_X                      "ubootenv.var.576p_x"
-#define ENV_576P_Y                      "ubootenv.var.576p_y"
-#define ENV_576P_W                      "ubootenv.var.576p_w"
-#define ENV_576P_H                      "ubootenv.var.576p_h"
-#define ENV_720P_X                      "ubootenv.var.720p_x"
-#define ENV_720P_Y                      "ubootenv.var.720p_y"
-#define ENV_720P_W                      "ubootenv.var.720p_w"
-#define ENV_720P_H                      "ubootenv.var.720p_h"
-#define ENV_1080I_X                     "ubootenv.var.1080i_x"
-#define ENV_1080I_Y                     "ubootenv.var.1080i_y"
-#define ENV_1080I_W                     "ubootenv.var.1080i_w"
-#define ENV_1080I_H                     "ubootenv.var.1080i_h"
-#define ENV_1080P_X                     "ubootenv.var.1080p_x"
-#define ENV_1080P_Y                     "ubootenv.var.1080p_y"
-#define ENV_1080P_W                     "ubootenv.var.1080p_w"
-#define ENV_1080P_H                     "ubootenv.var.1080p_h"
-#define ENV_4K2K24HZ_X                  "ubootenv.var.4k2k24hz_x"
-#define ENV_4K2K24HZ_Y                  "ubootenv.var.4k2k24hz_y"
-#define ENV_4K2K24HZ_W                  "ubootenv.var.4k2k24hz_w"
-#define ENV_4K2K24HZ_H                  "ubootenv.var.4k2k24hz_h"
-#define ENV_4K2K25HZ_X                  "ubootenv.var.4k2k25hz_x"
-#define ENV_4K2K25HZ_Y                  "ubootenv.var.4k2k25hz_y"
-#define ENV_4K2K25HZ_W                  "ubootenv.var.4k2k25hz_w"
-#define ENV_4K2K25HZ_H                  "ubootenv.var.4k2k25hz_h"
-#define ENV_4K2K30HZ_X                  "ubootenv.var.4k2k30hz_x"
-#define ENV_4K2K30HZ_Y                  "ubootenv.var.4k2k30hz_y"
-#define ENV_4K2K30HZ_W                  "ubootenv.var.4k2k30hz_w"
-#define ENV_4K2K30HZ_H                  "ubootenv.var.4k2k30hz_h"
-#define ENV_4K2K50HZ_X                  "ubootenv.var.4k2k50hz_x"
-#define ENV_4K2K50HZ_Y                  "ubootenv.var.4k2k50hz_y"
-#define ENV_4K2K50HZ_W                  "ubootenv.var.4k2k50hz_w"
-#define ENV_4K2K50HZ_H                  "ubootenv.var.4k2k50hz_h"
-#define ENV_4K2K60HZ_X                  "ubootenv.var.4k2k60hz_x"
-#define ENV_4K2K60HZ_Y                  "ubootenv.var.4k2k60hz_y"
-#define ENV_4K2K60HZ_W                  "ubootenv.var.4k2k60hz_w"
-#define ENV_4K2K60HZ_H                  "ubootenv.var.4k2k60hz_h"
-#define ENV_4K2KSMPTE_X                 "ubootenv.var.4k2ksmpte_x"
-#define ENV_4K2KSMPTE_Y                 "ubootenv.var.4k2ksmpte_y"
-#define ENV_4K2KSMPTE_W                 "ubootenv.var.4k2ksmpte_w"
-#define ENV_4K2KSMPTE_H                 "ubootenv.var.4k2ksmpte_h"
+#define HDR_MODE_OFF                    "0"
+#define HDR_MODE_ON                     "1"
+#define HDR_MODE_AUTO                   "2"
+
+#define SDR_MODE_OFF                    "0"
+#define SDR_MODE_AUTO                   "2"
 
 #define SUFFIX_10BIT                    "10bit"
 #define SUFFIX_12BIT                    "12bit"
 #define SUFFIX_14BIT                    "14bit"
 #define SUFFIX_RGB                      "rgb"
+
+#define DEFAULT_DEEP_COLOR_ATTR         "444,8bit"
+#define DEFAULT_420_DEEP_COLOR_ATTR     "420,8bit"
+
 
 #define UBOOTENV_DIGITAUDIO             "ubootenv.var.digitaudiooutput"
 #define UBOOTENV_HDMIMODE               "ubootenv.var.hdmimode"
@@ -265,7 +250,8 @@ enum {
     DISPLAY_TYPE_NONE                   = 0,
     DISPLAY_TYPE_TABLET                 = 1,
     DISPLAY_TYPE_MBOX                   = 2,
-    DISPLAY_TYPE_TV                     = 3
+    DISPLAY_TYPE_TV                     = 3,
+    DISPLAY_TYPE_REPEATER               = 4
 };
 
 #define MODE_480I                       "480i60hz"
@@ -296,6 +282,16 @@ enum {
 #define MODE_4K2KSMPTE50HZ420           "smpte50hz420"
 #define MODE_4K2KSMPTE60HZ              "smpte60hz"
 #define MODE_4K2KSMPTE60HZ420           "smpte60hz420"
+
+#define MODE_480I_PREFIX                "480i"
+#define MODE_480P_PREFIX                "480p"
+#define MODE_576I_PREFIX                "576i"
+#define MODE_576P_PREFIX                "576p"
+#define MODE_720P_PREFIX                "720p"
+#define MODE_1080I_PREFIX               "1080i"
+#define MODE_1080P_PREFIX               "1080p"
+#define MODE_4K2K_PREFIX                "2160p"
+#define MODE_4K2KSMPTE_PREFIX           "smpte"
 
 enum {
     DISPLAY_MODE_480I                   = 0,
@@ -358,6 +354,18 @@ typedef struct axis_s {
     int h;
 } axis_t;
 
+typedef struct resolution {
+//       resolution       standard frequency deepcolor
+//          2160             p       50hz      420   //2160p50hz420
+//          1080             p       60hz        0   //1080p60hz
+//0x00 0000 0000 0000 0000 | 0 | 0000 0000 | 0 0000 0000 //resolution_num
+    int resolution;
+    char standard;
+    int frequency;
+    int deepcolor;
+    int64_t resolution_num;
+} resolution_t;
+
 // ----------------------------------------------------------------------------
 
 class DisplayMode : public HDCPTxAuth::TxUevntCallbak,
@@ -378,17 +386,26 @@ public:
     void setLogLevel(int level);
     int dump(char *result);
     void setSourceOutputMode(const char* outputmode);
+    void setSinkOutputMode(const char* outputmode);
     void setDigitalMode(const char* mode);
     void setOsdMouse(const char* curMode);
     void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
+    void setDolbyVisionEnable(int state);
+    bool isDolbyVisionEnable();
+    bool isTvSupportDolbyVision(char *mode);
+    void DetectDolbyVisionOutputMode(output_mode_state state, char* outputmode);
+    void getDeepColorAttr(const char* mode, char *value);
+    void saveDeepColorAttr(const char* mode, const char* dcValue);
+    int64_t resolveResolutionValue(const char *mode);
+    void setHdrMode(const char* mode);
+    void setSdrMode(const char* mode);
     void isHDCPTxAuthSuccess( int *status);
     static void* bootanimDetect(void *data);
 
     void setSourceDisplay(output_mode_state state);
 
-    void setNativeWindowRect(int x, int y, int w, int h);
     void setVideoPlayingAxis();
     void getHdmiData(hdmi_data_t* data);
 
@@ -420,6 +437,13 @@ private:
     void getHighestPriorityMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
+    void resolveResolution(const char *mode, resolution_t* resol_t);
+    void setAutoSwitchFrameRate(int state);
+    void updateDefaultUI();
+    void updateDeepColor(bool cvbsMode, output_mode_state state, const char* outputmode);
+    void updateFreeScaleAxis();
+    void updateWindowAxis(const char* outputmode);
+    void initHdrSdrMode();
     bool isEdidChange();
     bool isBestOutputmode();
     bool modeSupport(char *mode, int sinkType);
@@ -447,10 +471,6 @@ private:
     int mFb1FbBits;
     bool mFb1TripleEnable;//Triple Buffer enable or not
     bool mVideoPlaying;
-    int mNativeWinX;
-    int mNativeWinY;
-    int mNativeWinW;
-    int mNativeWinH;
 
     int mDisplayWidth;
     int mDisplayHeight;

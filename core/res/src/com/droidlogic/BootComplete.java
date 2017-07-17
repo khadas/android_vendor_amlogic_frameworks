@@ -14,9 +14,6 @@ import android.media.AudioManager;
 import android.media.AudioSystem;
 import android.provider.Settings;
 
-import com.droidlogic.app.HdrManager;
-import com.droidlogic.app.SdrManager;
-import com.droidlogic.app.DolbyVisionSettingManager;
 import com.droidlogic.app.OutputModeManager;
 import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
@@ -100,13 +97,11 @@ public class BootComplete extends BroadcastReceiver {
             case OutputModeManager.IS_DRC_OFF:
                 outputModeManager.enableDobly_DRC(false);
                 outputModeManager.setDoblyMode(OutputModeManager.LINE_DRCMODE);
-                outputModeManager.setDtsDrcScale(OutputModeManager.MIN_DRC_SCALE);
                 break;
             case OutputModeManager.IS_DRC_LINE:
             default:
                 outputModeManager.enableDobly_DRC(true);
                 outputModeManager.setDoblyMode(OutputModeManager.LINE_DRCMODE);
-                outputModeManager.setDtsDrcScale(OutputModeManager.MAX_DRC_SCALE);
                 break;
             case OutputModeManager.IS_DRC_RF:
                 outputModeManager.enableDobly_DRC(false);
@@ -118,23 +113,22 @@ public class BootComplete extends BroadcastReceiver {
             new UsbCameraManager(context).bootReady();
 
             new PlayBackManager(context).initHdmiSelfadaption();
-            Log.d(TAG,"bootcomplete & start cecextend");
+
             if (needCecExtend(sm, context)) {
                 new HdmiCecExtend(context);
             }
 
-            new HdrManager(context).initHdrMode();
-
-            new SdrManager(context).initSdrMode();
-            new DolbyVisionSettingManager(context).initDolbyVision();
             //start optimization service
-            //context.startService(new Intent(context, Optimization.class));
+            context.startService(new Intent(context, Optimization.class));
 
             if (context.getPackageManager().hasSystemFeature(NetflixService.FEATURE_SOFTWARE_NETFLIX)) {
                 context.startService(new Intent(context, NetflixService.class));
             }
 
             context.startService(new Intent(context,NtpService.class));
+
+            if (sm.getPropertyBoolean("net.wifi.suspend", false))
+                context.startService(new Intent(context, WifiSuspendService.class));
 
             if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false))
                 context.startService(new Intent(context, EsmService.class));

@@ -51,14 +51,14 @@ public class SystemControlManager {
     private static final int SET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 15;
     private static final int GET_POSITION           = IBinder.FIRST_CALL_TRANSACTION + 16;
 
-    private static final int REINIT                 = IBinder.FIRST_CALL_TRANSACTION + 17;
-    private static final int SET_NATIVE_WIN_RECT     = IBinder.FIRST_CALL_TRANSACTION + 18;
-    private static final int SET_VIDEO_PLAYING       = IBinder.FIRST_CALL_TRANSACTION + 19;
-    private static final int SET_POWER_MODE          = IBinder.FIRST_CALL_TRANSACTION + 20;
-    private static final int INSTABOOT_RESET_DISPLAY = IBinder.FIRST_CALL_TRANSACTION + 21;
-    private static final int SET_DIGITAL_MODE        = IBinder.FIRST_CALL_TRANSACTION + 22;
-    private static final int SET_3D_MODE             = IBinder.FIRST_CALL_TRANSACTION + 23;
-    private static final int SET_LISTENER            = IBinder.FIRST_CALL_TRANSACTION + 24;
+    private static final int REINIT                     = IBinder.FIRST_CALL_TRANSACTION + 17;
+    private static final int SET_NATIVE_WIN_RECT        = IBinder.FIRST_CALL_TRANSACTION + 18;
+    private static final int SET_VIDEO_PLAYING          = IBinder.FIRST_CALL_TRANSACTION + 19;
+    private static final int SET_POWER_MODE             = IBinder.FIRST_CALL_TRANSACTION + 20;
+    private static final int INSTABOOT_RESET_DISPLAY    = IBinder.FIRST_CALL_TRANSACTION + 21;
+    private static final int SET_DIGITAL_MODE           = IBinder.FIRST_CALL_TRANSACTION + 22;
+    private static final int SET_3D_MODE                = IBinder.FIRST_CALL_TRANSACTION + 23;
+    private static final int SET_LISTENER               = IBinder.FIRST_CALL_TRANSACTION + 24;
     private static final int INIT_3D_SETTING                = IBinder.FIRST_CALL_TRANSACTION + 25;
     private static final int GET_VIDEO_3D_FORMAT            = IBinder.FIRST_CALL_TRANSACTION + 26;
     private static final int GET_VIDEO_3DTO2D_FORMAT        = IBinder.FIRST_CALL_TRANSACTION + 27;
@@ -76,10 +76,28 @@ public class SystemControlManager {
     private static final int READ_HDCPRX14_KEY       = IBinder.FIRST_CALL_TRANSACTION + 39;
     private static final int WRITE_HDCPRX14_KEY      = IBinder.FIRST_CALL_TRANSACTION + 40;
     private static final int WRITE_HDCPRX_IMG        = IBinder.FIRST_CALL_TRANSACTION + 41;
-    private static final int GET_SUPPORTED_DISPLAYMODE_LIST       = IBinder.FIRST_CALL_TRANSACTION + 42;
-    private static final int GET_ACTIVE_DISPLAYMODE      = IBinder.FIRST_CALL_TRANSACTION + 43;
-    private static final int SET_ACTIVE_DISPLAYMODE        = IBinder.FIRST_CALL_TRANSACTION + 44;
-    private static final int IS_AUTHSUCCESS        = IBinder.FIRST_CALL_TRANSACTION + 45;
+    private static final int GET_SUPPORTED_DISPLAYMODE_LIST     = IBinder.FIRST_CALL_TRANSACTION + 42;
+    private static final int GET_ACTIVE_DISPLAYMODE             = IBinder.FIRST_CALL_TRANSACTION + 43;
+    private static final int SET_ACTIVE_DISPLAYMODE             = IBinder.FIRST_CALL_TRANSACTION + 44;
+    private static final int IS_AUTHSUCCESS                     = IBinder.FIRST_CALL_TRANSACTION + 45;
+
+    //add get/save deep color
+    private static final int SAVE_DEEP_COLOR_ATTR           = IBinder.FIRST_CALL_TRANSACTION + 46;
+    private static final int GET_DEEP_COLOR_ATTR            = IBinder.FIRST_CALL_TRANSACTION + 47;
+    private static final int SINK_OUTPUT_MODE               = IBinder.FIRST_CALL_TRANSACTION + 48;
+
+    private static final int WRITE_UNIFY_KEY               = IBinder.FIRST_CALL_TRANSACTION + 49;
+    private static final int READ_UNIFY_KEY               = IBinder.FIRST_CALL_TRANSACTION + 50;
+
+    //set deep color
+    private static final int SET_DOLBY_VISION               = IBinder.FIRST_CALL_TRANSACTION + 51;
+    private static final int TV_SUPPORT_DOLBY_VISION        = IBinder.FIRST_CALL_TRANSACTION + 52;
+
+    private static final int RESOLVE_RESOLUTION_VALUE       = IBinder.FIRST_CALL_TRANSACTION + 53;
+
+    //set HDR mode and SDR mode
+    private static final int SET_HDR_MODE                   = IBinder.FIRST_CALL_TRANSACTION + 54;
+    private static final int SET_SDR_MODE                   = IBinder.FIRST_CALL_TRANSACTION + 55;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -888,6 +906,127 @@ public class SystemControlManager {
             Log.e(TAG, "get position:" + ex);
         }
         return curPosition;
+    }
+
+    public String getDeepColorAttr(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(GET_DEEP_COLOR_ATTR, data, reply, 0);
+                String dcValue = reply.readString();
+                reply.recycle();
+                data.recycle();
+                return dcValue;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "get deep color attr:" + ex);
+        }
+        return null;
+    }
+
+    public long resolveResolutionValue(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(RESOLVE_RESOLUTION_VALUE, data, reply, 0);
+                long value = reply.readLong();
+                reply.recycle();
+                data.recycle();
+                return value;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "get resolve Resolution value error:" + ex);
+        }
+        return -1;
+    }
+
+    public String isTvSupportDolbyVision() {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                mIBinder.transact(TV_SUPPORT_DOLBY_VISION, data, reply, 0);
+                String mode = reply.readString();
+                reply.recycle();
+                data.recycle();
+                return mode;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set dolby vision:" + ex);
+        }
+        return null;
+    }
+
+    public void setDolbyVisionEnable(int state) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeInt(state);
+                mIBinder.transact(SET_DOLBY_VISION, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set dolby vision:" + ex);
+        }
+    }
+
+    public void saveDeepColorAttr(String mode, String dcValue) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                data.writeString(dcValue);
+                mIBinder.transact(SAVE_DEEP_COLOR_ATTR, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set deep color attr:" + ex);
+        }
+    }
+
+    public void setHdrMode(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(SET_HDR_MODE, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set hdr mode:" + ex);
+        }
+    }
+
+    public void setSdrMode(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(SET_SDR_MODE, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set sdr mode:" + ex);
+        }
     }
 
     public void setListener(ISystemControlNotify listener) {

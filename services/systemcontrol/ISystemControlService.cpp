@@ -626,6 +626,89 @@ public:
         ALOGV("get position x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
     }
 
+    virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+        data.writeString16(dcValue);
+        ALOGV("set deep color attr %s\n", String8(dcValue).string());
+
+        if (remote()->transact(SAVE_DEEP_COLOR_ATTR, data, &reply) != NO_ERROR) {
+            ALOGE("set deep color attr could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void getDeepColorAttr(const String16& mode, String16& value)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+
+        if (remote()->transact(GET_DEEP_COLOR_ATTR, data, &reply) != NO_ERROR) {
+            ALOGE("get deep color attr could not contact remote\n");
+            return;
+        }
+
+        value = reply.readString16();
+        ALOGV("get deep color attr %s\n", String8(value).string());
+    }
+
+    virtual void setDolbyVisionEnable(int state) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(state);
+        ALOGV("set dolby vision state:%d\n", state);
+
+        if (remote()->transact(SET_DOLBY_VISION, data, &reply) != NO_ERROR) {
+            ALOGE("set dolby vision could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual bool isTvSupportDolbyVision(String16& mode) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(TV_SUPPORT_DOLBY_VISION, data, &reply) != NO_ERROR) {
+            ALOGE("get tv support dolby vision could not contact remote\n");
+            return false;
+        }
+        mode = reply.readString16();
+        return reply.readBool();
+    }
+
+    virtual int64_t resolveResolutionValue(const String16& mode) {
+        Parcel data, reply;
+        data.writeString16(mode);
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(RESOLVE_RESOLUTION_VALUE, data, &reply) != NO_ERROR) {
+            ALOGE("get resolve resolution value could not contact remote\n");
+            return -1;
+        }
+        return reply.readInt64();
+    }
+
+    virtual void setHdrMode(const String16& mode) {
+        Parcel data, reply;
+        data.writeString16(mode);
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(SET_HDR_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set hdr mode could not contact remote\n");
+            return;
+        }
+    }
+
+    virtual void setSdrMode(const String16& mode) {
+        Parcel data, reply;
+        data.writeString16(mode);
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(SET_SDR_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set sdr mode could not contact remote\n");
+            return;
+        }
+    }
+
     virtual void reInit(void) {
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -642,22 +725,6 @@ public:
 
         if (remote()->transact(INSTABOOT_RESET_DISPLAY, data, &reply) != NO_ERROR) {
             ALOGE("instabootResetDisplay could not contact remote\n");
-            return;
-        }
-    }
-
-    virtual void setNativeWindowRect(int x, int y, int w, int h)
-    {
-        Parcel data, reply;
-        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
-        data.writeInt32(x);
-        data.writeInt32(y);
-        data.writeInt32(w);
-        data.writeInt32(h);
-        ALOGV("set native window rect x:%d, y:%d, w:%d, h:%d\n", x, y, w, h);
-
-        if (remote()->transact(SET_NATIVE_WIN_RECT, data, &reply) != NO_ERROR) {
-            ALOGE("set native window rect could not contact remote\n");
             return;
         }
     }
@@ -705,6 +772,7 @@ public:
        }
        return true;
     }
+
     virtual bool getActiveDispMode(std::string* activeDispMode){
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -718,10 +786,11 @@ public:
             return false;
         }
         String16 curDisplayMode = reply.readString16();
-       *activeDispMode  = std::string(String8(curDisplayMode).string());
-       ALOGV("get active displaymode:%s\n", curDisplayMode.string());
-       return true;
+        *activeDispMode = std::string(String8(curDisplayMode).string());
+        ALOGV("get active displaymode:%s\n", curDisplayMode.string());
+        return true;
     }
+
     virtual bool setActiveDispMode(std::string& activeDispMode)
     {
         Parcel data, reply;
@@ -738,6 +807,7 @@ public:
         }
         return true;
     }
+
     virtual void isHDCPTxAuthSuccess(int &status)
     {
         Parcel data, reply;
@@ -750,6 +820,19 @@ public:
 
         status = reply.readInt32();
         ALOGV("is auth success  status :%d\n", status);
+    }
+
+    virtual void setSinkOutputMode(const String16& mode)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(mode);
+        ALOGV("set sink output mode:%s\n", String8(mode).string());
+
+        if (remote()->transact(SINK_OUTPUT_MODE, data, &reply) != NO_ERROR) {
+            ALOGE("set sink output mode could not contact remote\n");
+            return;
+        }
     }
 };
 
@@ -981,6 +1064,20 @@ status_t BnISystemControlService::onTransact(
             reply->writeInt32(h);
             return NO_ERROR;
         }
+        case SET_DOLBY_VISION: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t state = data.readInt32();
+            setDolbyVisionEnable(state);
+            return NO_ERROR;
+        }
+        case TV_SUPPORT_DOLBY_VISION: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 value;
+            bool state = isTvSupportDolbyVision(value);
+            reply->writeString16(value);
+            reply->writeBool(state);
+            return NO_ERROR;
+        }
         case REINIT: {
             CHECK_INTERFACE(ISystemControlService, data, reply);
             reInit();
@@ -989,15 +1086,6 @@ status_t BnISystemControlService::onTransact(
         case INSTABOOT_RESET_DISPLAY: {
             CHECK_INTERFACE(ISystemControlService, data, reply);
             instabootResetDisplay();
-            return NO_ERROR;
-        }
-        case SET_NATIVE_WIN_RECT:{
-            CHECK_INTERFACE(ISystemControlService, data, reply);
-            int32_t x = data.readInt32();
-            int32_t y = data.readInt32();
-            int32_t w = data.readInt32();
-            int32_t h = data.readInt32();
-            setNativeWindowRect(x, y, w, h);
             return NO_ERROR;
         }
         case SET_VIDEO_PLAYING:{
@@ -1108,6 +1196,47 @@ status_t BnISystemControlService::onTransact(
             CHECK_INTERFACE(ISystemControlService, data, reply);
             isHDCPTxAuthSuccess(status);
             reply->writeInt32(status);
+            return NO_ERROR;
+        }
+        case SAVE_DEEP_COLOR_ATTR: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            String16 value = data.readString16();
+            saveDeepColorAttr(mode, value);
+            return NO_ERROR;
+        }
+        case GET_DEEP_COLOR_ATTR: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            String16 value;
+            getDeepColorAttr(mode, value);
+            reply->writeString16(value);
+            return NO_ERROR;
+        }
+        case RESOLVE_RESOLUTION_VALUE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            int64_t value;
+            value = resolveResolutionValue(mode);
+            reply->writeInt64(value);
+            return NO_ERROR;
+        }
+        case SET_HDR_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setHdrMode(mode);
+            return NO_ERROR;
+        }
+        case SET_SDR_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setSdrMode(mode);
+            return NO_ERROR;
+        }
+        case SINK_OUTPUT_MODE: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setSinkOutputMode(mode);
             return NO_ERROR;
         }
         default: {

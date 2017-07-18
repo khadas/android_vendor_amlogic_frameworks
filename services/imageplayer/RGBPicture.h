@@ -1,17 +1,14 @@
-/** @file RGBPicture.h
- *  @par Copyright:
- *  - Copyright 2011 Amlogic Inc as unpublished work
- *  All Rights Reserved
- *  - The information contained herein is the confidential property
- *  of Amlogic.  The use, copying, transfer or disclosure of such information
- *  is prohibited except by express written agreement with Amlogic Inc.
+/*
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
  *  @author   Tellen Yu
  *  @version  1.0
  *  @date     2014/04/26
  *  @par function description:
  *  - 1 save rgb data to picture
- *  @warning This class may explode in your face.
- *  @note If you inherit anything from this class, you're doomed.
  */
 
 #ifndef _RGB_PICTURE_H_

@@ -1171,13 +1171,12 @@ void DisplayMode::updateDeepColor(bool cvbsMode, output_mode_state state, const 
         } else {
             strcpy(colorAttribute, "default");
         }
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
         SYS_LOGI("setMboxOutputMode colorAttribute = %s\n", colorAttribute);
         //save to ubootenv
         saveDeepColorAttr(outputmode, colorAttribute);
         setBootEnv(UBOOTENV_COLORATTRIBUTE, colorAttribute);
-        //usleep(1000000);//100ms
-        //pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
     }
 }
 

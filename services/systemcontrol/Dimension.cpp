@@ -40,6 +40,8 @@
 using namespace android;
 #endif
 
+#define ARRAY_LEN 32
+
 Dimension::Dimension(DisplayMode *displayMode, SysWrite *sysWrite)
     :mInitDone(false),
     mLogLevel(LOG_LEVEL_DEFAULT),
@@ -121,9 +123,6 @@ void Dimension::parseLine(int idx, char *line) {
         return;// skip no data
     }
 
-    char mostr[8] = {0};
-    char hzstr[8] = {0};
-
     char *ptr = strchr(line, ' ');
     if (ptr != NULL) {
         int offset = (int)(ptr - line);
@@ -135,10 +134,12 @@ void Dimension::parseLine(int idx, char *line) {
         ptr = strchr(mSupport.info[idx].mode, 'p');
         if (ptr != NULL) {
             offset = (int)(ptr - mSupport.info[idx].mode);
-            strncpy(mostr, mSupport.info[idx].mode, offset);//store mode, such as 480, 576, 720, 1080, 2160...
-            strncpy(hzstr, ptr + 1, 2);//store frequency, such as 24, 25, 30, 50, 60...
-            mSupport.info[idx].mo = atoi(mostr);
-            mSupport.info[idx].hz = atoi(hzstr);
+            if (offset < ARRAY_LEN) {
+                char mostr[ARRAY_LEN] = {0};
+                strncpy(mostr, mSupport.info[idx].mode, offset);//store mode, such as 480, 576, 720, 1080, 2160...
+                mSupport.info[idx].mo = atoi(mostr);
+                mSupport.info[idx].hz = atoi(ptr + 1);//store frequency, such as 24, 25, 30, 50, 60...
+            }
         }
         else {
             //do nothing, skip interlace and smpte(4k) mode
@@ -187,8 +188,6 @@ void Dimension::init() {
             ALOGI("[init]mSupport.info[%d].mo:%d, mSupport.info[%d].hz:%d\n", i, mSupport.info[i].mo, i, mSupport.info[i].hz);
         }
     }
-
-    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
 }
 
 void Dimension::setWindowAxis(const char* mode3d) {
@@ -240,6 +239,19 @@ void Dimension::setWindowAxis(const char* mode3d) {
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x0");
     usleep(50 * 1000);
     pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+}
+
+bool Dimension::isSupportFramePacking(const char* mode3d) {
+    char keystr[32] = {0};
+    if (!strcmp(mode3d, VIDEO_3D_FRAME_PACKING)) {
+        strcpy(keystr, KEY_FRAME_PACKING);
+        for (int j = 0; j < mSupport.total; j++) {
+            if (strstr(mSupport.info[j].list, keystr) != NULL) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void Dimension::setDispMode(const char* mode3d) {
@@ -391,6 +403,12 @@ int32_t Dimension::set3DMode(const char* mode3d) {
         return 0;
     }
 
+    //init support list
+    init();
+    if (!strcmp(mode3d, VIDEO_3D_FRAME_PACKING) && !isSupportFramePacking(mode3d)) {
+        ALOGE("[set3DMode]FramePacking is not support.\n");
+        return -1;
+    }
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
     usleep(100 * 1000);
     pTxAuth->stopVerAll();
@@ -398,8 +416,8 @@ int32_t Dimension::set3DMode(const char* mode3d) {
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
 
-    //1. init support list
-    init();
+    //1. set display_mode null
+    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
 
     //2. 3D mode implement
     strcpy(mMode3d, mode3d);

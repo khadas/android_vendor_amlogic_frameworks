@@ -124,6 +124,8 @@ public:
     int32_t getDisplay3DFormat(void);
     bool setDisplay3DFormat(int format);
 
+    bool isSupportFramePacking(const char* mode3d);
+
     //for tv
     void init3DSetting(void);
     int32_t getVideo3DFormat(void);

@@ -40,6 +40,8 @@
 using namespace android;
 #endif
 
+#define ARRAY_LEN 32
+
 Dimension::Dimension(DisplayMode *displayMode, SysWrite *sysWrite)
     :mInitDone(false),
     mLogLevel(LOG_LEVEL_DEFAULT),
@@ -121,9 +123,6 @@ void Dimension::parseLine(int idx, char *line) {
         return;// skip no data
     }
 
-    char mostr[8] = {0};
-    char hzstr[8] = {0};
-
     char *ptr = strchr(line, ' ');
     if (ptr != NULL) {
         int offset = (int)(ptr - line);
@@ -135,10 +134,12 @@ void Dimension::parseLine(int idx, char *line) {
         ptr = strchr(mSupport.info[idx].mode, 'p');
         if (ptr != NULL) {
             offset = (int)(ptr - mSupport.info[idx].mode);
-            strncpy(mostr, mSupport.info[idx].mode, offset);//store mode, such as 480, 576, 720, 1080, 2160...
-            strncpy(hzstr, ptr + 1, 2);//store frequency, such as 24, 25, 30, 50, 60...
-            mSupport.info[idx].mo = atoi(mostr);
-            mSupport.info[idx].hz = atoi(hzstr);
+            if (offset < ARRAY_LEN) {
+                char mostr[ARRAY_LEN] = {0};
+                strncpy(mostr, mSupport.info[idx].mode, offset);//store mode, such as 480, 576, 720, 1080, 2160...
+                mSupport.info[idx].mo = atoi(mostr);
+                mSupport.info[idx].hz = atoi(ptr + 1);//store frequency, such as 24, 25, 30, 50, 60...
+            }
         }
         else {
             //do nothing, skip interlace and smpte(4k) mode

@@ -168,7 +168,9 @@ void* HDCPTxAuth::authThread(void* data) {
 
     if (pThiz->authInit(&hdcp22, &hdcp14)) {
         //first close osd, after HDCP authenticate completely, then open osd
-        pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_BLANK, "1");
+        if (1 == pThiz->mSysWrite.getPropertyInt(PROP_BOOTCOMPLETE, 0)) {
+            pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_BLANK, "1");
+        }
 
         if (!pThiz->authLoop(hdcp22, hdcp14)) {
             SYS_LOGE("HDCP authenticate fail, need black screen and disable audio\n");
@@ -178,7 +180,10 @@ void* HDCPTxAuth::authThread(void* data) {
         }
         pThiz->mSysWrite.writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
 
-        pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_BLANK, "0");
+        //if play bootvideo before boot complete, Do not open OSD0.
+        if (1 == pThiz->mSysWrite.getPropertyInt(PROP_BOOTCOMPLETE, 0)) {
+            pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_BLANK, "0");
+        }
         pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
     }
     else {
@@ -194,13 +199,16 @@ bool HDCPTxAuth::authInit(bool *pHdcp22, bool *pHdcp14) {
     char hdcpRxVer[MODE_LEN] = {0};
     char hdcpTxKey[MODE_LEN] = {0};
 
-    //14 22 00 HDCP TX
+    //in general, MBOX is TX device, need to detect its TX keys.
+    //            TV   is RX device, need to detect its RX keys.
+    //HDCP TX: get current MBOX[TX] device contains which TX keys. Values:[14/22, 00 is no key]
     mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_KEY, hdcpTxKey);
     SYS_LOGI("hdcp_tx key:%s\n", hdcpTxKey);
     if ((strlen(hdcpTxKey) == 0) || !(strcmp(hdcpTxKey, "00")))
         return false;
 
-    //14 22 00 HDCP RX
+    //HDCP RX: get currtent TV[RX] device contains which RX key. Values:[14/22, 00 is no key]
+    //Values is the hightest key. if value is 22, means the devices supports 22 and 14.
     mSysWrite.readSysfs(DISPLAY_HDMI_HDCP_VER, hdcpRxVer);
     SYS_LOGI("hdcp_tx remote version:%s\n", hdcpRxVer);
     if ((strlen(hdcpRxVer) == 0) || !(strcmp(hdcpRxVer, "00")))
@@ -216,8 +224,12 @@ bool HDCPTxAuth::authInit(bool *pHdcp22, bool *pHdcp14) {
         useHdcp22 = true;
     } else if (/*(strstr(cap, (char *)"2160p") != NULL) && */(strstr(hdcpRxVer, (char *)"22") != NULL) &&
         (strstr(hdcpTxKey, (char *)"22") != NULL)) {
-        SYS_LOGI("hdcp_tx 2.2 supported\n");
-        useHdcp22 = true;
+        if (!access("/system/etc/firmware/firmware.le", 0)) {
+            SYS_LOGI("hdcp_tx 2.2 supported\n");
+            useHdcp22 = true;
+        } else {
+            SYS_LOGE("!!!hdcp_tx 2.2 key is burned in This device, But /etc/firmware/fireware.le is not exist\n");
+        }
     }
 
     if (REPEATER_RX_VERSION_14 == mRepeaterRxVer) {

@@ -550,10 +550,6 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     initHdrSdrMode();
 
-    if (!cvbsMode && (OUPUT_MODE_STATE_INIT == state) && isDolbyVisionEnable()) {
-        setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE);
-    }
-
     if (0 == pSysWrite->getPropertyInt(PROP_BOOTCOMPLETE, 0)) {
         setVideoPlayingAxis();
     }

@@ -36,6 +36,7 @@ public class DolbyVisionSettingManager {
     private static final String SYSF_DV_ENABLE       = "/sys/module/am_vecm/parameters/dolby_vision_enable";
     private static final String SYSF_DV_POLICY       = "/sys/module/am_vecm/parameters/dolby_vision_policy";
     private static final String SYSF_DV_MODE         = "/sys/class/amvecm/dv_mode";
+    private static final String SYSF_HDP_STATE         = "/sys/class/amhdmitx/amhdmitx0/hpd_state";
 
     private static final String DV_ENABLE            = "Y";
     private static final String DV_DISABLE           = "N";
@@ -50,6 +51,9 @@ public class DolbyVisionSettingManager {
     public static final int DOLBY_VISION_OUTPUT_MODE_HDR10       = 3;
   //public static final int DOLBY_VISION_OUTPUT_MODE_SDR10       = 4;
     public static final int DOLBY_VISION_OUTPUT_MODE_SDR8        = 5;
+
+    public static final int DOVISION_DISABLE        = 0;
+    public static final int DOVISION_ENABLE        = 1;
 
     private Context mContext;
     private SystemControlManager mSystenControl;
@@ -123,6 +127,12 @@ public class DolbyVisionSettingManager {
         return false;
     }
 
+    public void initSetDolbyVision() {
+       if (mSystenControl.readSysFs(SYSF_HDP_STATE).contains("1")
+                && isDolbyVisionEnable()) {
+            setDolbyVisionEnable(DOVISION_ENABLE);
+        }
+    }
     /* *
      * @Description: Enable/Disable Dolby Vision
      * @params: state: 1:Enable  DV

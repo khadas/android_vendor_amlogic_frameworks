@@ -20,6 +20,7 @@ import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
 import com.droidlogic.HdmiCecExtend;
+import com.droidlogic.app.DolbyVisionSettingManager;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
@@ -111,7 +112,7 @@ public class BootComplete extends BroadcastReceiver {
 
             //use to check whether disable camera or not
             new UsbCameraManager(context).bootReady();
-
+            new DolbyVisionSettingManager(context).initSetDolbyVision();
             new PlayBackManager(context).initHdmiSelfadaption();
 
             if (needCecExtend(sm, context)) {

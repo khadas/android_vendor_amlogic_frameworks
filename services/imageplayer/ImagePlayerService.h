@@ -21,14 +21,9 @@
 #include <utils/String8.h>
 #include <utils/String16.h>
 #include <utils/Vector.h>
-//#include <utils/threads.h>
-//#include <utils/Timers.h>
-//#include <utils/RefBase.h>
 #include <media/MediaPlayerInterface.h>
 #include <SkBitmap.h>
 #include <SkStream.h>
-//#include <SkMovie.h>
-//#include <binder/MemoryDealer.h>
 #include <IImagePlayerService.h>
 #include "ISystemControlService.h"
 #include <binder/Binder.h>
@@ -90,18 +85,6 @@ enum TranslateDirect {
     TRANSLATE_RIGHTDOWN                 = 8,
 };
 
-/*
-enum ParameterKey {
-    KEY_PARAMETER_SET_IMAGE_SAMPLESIZE_SURFACESIZE,
-    KEY_PARAMETER_ROTATE,
-    KEY_PARAMETER_SCALE,
-    KEY_PARAMETER_ROTATE_SCALE,
-    KEY_PARAMETER_CROP_RECT,
-    KEY_PARAMETER_DECODE_NEXT,
-    KEY_PARAMETER_SHOW_NEXT
-};
-*/
-
 class ImagePlayerService :  public BnImagePlayerService {
   public:
     ImagePlayerService();
@@ -130,7 +113,7 @@ class ImagePlayerService :  public BnImagePlayerService {
     virtual int notifyProcessDied(const sp<IBinder> &binder);
 
     //use to show gif etc. images
-    bool MovieInit(const char path[]);
+    bool MovieInit(SkStreamRewindable *stream);
     bool MovieShow();
     void MovieRenderPost(SkBitmap *bitmap);
     int MovieThreadStart();
@@ -147,6 +130,7 @@ class ImagePlayerService :  public BnImagePlayerService {
 
     int post();
     int render(int format, SkBitmap *bitmap);
+    SkStreamRewindable* getSkStream();
     SkBitmap* decode(SkStreamRewindable *stream, InitParameter *parameter);
     SkBitmap* decodeTiff(const char *filePath);
     SkBitmap* scale(SkBitmap *srcBitmap, float sx, float sy);
@@ -183,9 +167,8 @@ class ImagePlayerService :  public BnImagePlayerService {
     float mScalingStep;
     SkBitmap *mScalingBitmap;
     SkBitmap *mRotateBitmap;
-    //SkMovie *mSkMovie;
     bool mMovieImage;
-    int mMovieTime;
+    int mFrameIndex;
     int mMovieDegree;
     bool mNeedResetHWScale;
     //0:normal 1: translate left 2:translate right 3: translate up 4:translate down
@@ -200,8 +183,6 @@ class ImagePlayerService :  public BnImagePlayerService {
     float mMovieScale;
     sp<MovieThread> mMovieThread;
 
-    //sp<ALooper> mLooper;
-
     InitParameter *mParameter;
     int mDisplayFd;
 
@@ -209,7 +190,6 @@ class ImagePlayerService :  public BnImagePlayerService {
     sp<DeathNotifier> mDeathNotifier;
     sp<ISystemControlService> mSystemControl;
 };
-
 class MovieThread : public Thread {
 public:
     MovieThread(const sp<ImagePlayerService>& player);
@@ -221,32 +201,6 @@ private:
     virtual status_t readyToRun();
     virtual bool threadLoop();
 };
-
-#if 0
-struct MovieImageHandler : public AHandler {
-    MovieImageHandler(const sp<ImagePlayerService>& player);
-
-    void startServer(unsigned localPort);
-    void startClient(const char *remoteHost, unsigned remotePort);
-
-protected:
-    virtual ~MovieImageHandler();
-
-    virtual void onMessageReceived(const sp<AMessage> &msg);
-
-private:
-    enum {
-        kWhatInit,
-        kWhatShow,
-        kWhatStop,
-    };
-
-    sp<ImagePlayerService> mPlayer;
-
-    DISALLOW_EVIL_CONSTRUCTORS(MovieImageHandler);
-};
-#endif
-
 }  // namespace android
 
 #endif // ANDROID_IMAGEPLAYERSERVICE_H

@@ -25,13 +25,14 @@
 #include <string.h>
 #include <cutils/properties.h>
 #include <utils/Errors.h>
-#include <SkCodec.h>
-#include <SkData.h>
 
 #include <SkCanvas.h>
+#include <SkCodec.h>
 #include <SkColorPriv.h>
-
+#include <SkData.h>
+#include <SkImageEncoder.h>
 #include "SkFrontBufferedStream.h"
+
 #include <media/IMediaHTTPService.h>
 #include <media/IMediaHTTPConnection.h>
 #include "media/libstagefright/include/NuCachedSource2.h"
@@ -639,14 +640,13 @@ void ImagePlayerService::instantiate() {
 
 ImagePlayerService::ImagePlayerService()
     : mWidth(0), mHeight(0), mBitmap(NULL), mBufBitmap(NULL),
-    mSampleSize(1), mFileDescription(-1),
+    mSampleSize(1), mFileDescription(-1), mFrameIndex(0),
     surfaceWidth(SURFACE_4K_WIDTH), surfaceHeight(SURFACE_4K_HEIGHT),
     mScalingDirect(SCALE_NORMAL), mScalingStep(1.0f), mScalingBitmap(NULL),
-    mRotateBitmap(NULL), mMovieImage(false), mMovieTime(0), mNeedResetHWScale(false),
+    mRotateBitmap(NULL), mMovieImage(false), mMovieThread(NULL), mNeedResetHWScale(false),
     mTranslatingDirect(TRANSLATE_NORMAL), mTranslateImage(false), mTx(0.0f), mTy(0.0f),
     mTranslateToXLEdge(false), mTranslateToXREdge(false), mTranslateToYTEdge(false), mTranslateToYBEdge(false),
-    mMovieDegree(0), mMovieScale(1.0f), mMovieThread(NULL),
-    mParameter(NULL), mDisplayFd(-1), mHttpService(NULL) {
+    mMovieDegree(0), mMovieScale(1.0f), mParameter(NULL), mDisplayFd(-1), mHttpService(NULL) {
 }
 
 ImagePlayerService::~ImagePlayerService() {
@@ -1286,15 +1286,13 @@ int ImagePlayerService::release() {
         mDisplayFd = -1;
     }
 
-#if 0
-    if (NULL != mSkMovie) {
+    if (mMovieImage) {
         if (mMovieThread->isRunning())
             mMovieThread->requestExitAndWait();
         mMovieThread.clear();
-        delete mSkMovie;
-        mSkMovie = NULL;
+        mMovieImage = false;
+        mFrameIndex = 0;
     }
-#endif
 
     resetRotateScale();
     resetTranslate();
@@ -1522,6 +1520,22 @@ SkBitmap* ImagePlayerService::rotateAndScale(SkBitmap *srcBitmap, float degrees,
     return devBitmap;
 }
 
+SkStreamRewindable* ImagePlayerService::getSkStream() {
+    SkStreamRewindable *stream;
+    if (mFileDescription >= 0) {
+        sk_sp<SkData> data(SkData::MakeFromFD(mFileDescription));
+        if (data.get() == NULL) {
+            return NULL;
+        }
+        stream = new SkMemoryStream(data);
+    } else if (!strncasecmp("http://", mImageUrl, 7) || !strncasecmp("https://", mImageUrl, 8)) {
+        stream = new SkHttpStream(mImageUrl, mHttpService);
+    } else {
+        stream = new SkFILEStream(mImageUrl);
+    }
+    return stream;
+}
+
 //render to video layer
 int ImagePlayerService::prepare() {
     Mutex::Autolock autoLock(mLock);
@@ -1540,16 +1554,9 @@ int ImagePlayerService::prepare() {
     }
 
     SkStreamRewindable *stream;
-    if (mFileDescription >= 0) {
-        sk_sp<SkData> data(SkData::MakeFromFD(mFileDescription));
-        if (data.get() == NULL) {
-            return RET_ERR_BAD_VALUE;
-        }
-        stream = new SkMemoryStream(data);
-    } else if (!strncasecmp("http://", mImageUrl, 7) || !strncasecmp("https://", mImageUrl, 8)) {
-        stream = new SkHttpStream(mImageUrl, mHttpService);
-    } else {
-        stream = new SkFILEStream(mImageUrl);
+    stream = getSkStream();
+    if (stream == NULL) {
+        return RET_ERR_BAD_VALUE;
     }
 
     if (mBitmap != NULL) {
@@ -1558,18 +1565,19 @@ int ImagePlayerService::prepare() {
     }
 
     mMovieImage = false;
+    mFrameIndex = 0;
     if (isMovieByExtenName(mImageUrl)) {
         ALOGI("it's a movie image, show it with thread");
 
         mMovieImage = true;
-        if (MovieInit(mImageUrl)) {
+        if (MovieInit(stream)) {
             delete stream;
             return RET_OK;
         }
         else{
-            //delete stream;
-            //return RET_ERR_BAD_VALUE;
+            stream->rewind();
             mMovieImage = false;
+            mFrameIndex = 0;
             mBitmap = decode(stream, NULL);
         }
     }
@@ -1601,31 +1609,6 @@ int ImagePlayerService::prepare() {
         ALOGE("render, but displayFd can not ready");
         return RET_ERR_BAD_VALUE;
     }
-
-#if 0
-    float scaleX = 1.0f;
-    float scaleY = 1.0f;
-    if(mWidth > surfaceWidth){
-        scaleX = (float)surfaceWidth/mWidth;
-    }
-
-    if(mHeight > surfaceHeight){
-        scaleY = (float)surfaceHeight/mHeight;
-    }
-
-    if(scaleX < scaleY) scaleY = scaleX;
-    else if(scaleX > scaleY) scaleX = scaleY;
-
-    if ((scaleX != 1.0f) || (scaleY != 1.0f)) {
-        SkBitmap *dstBitmap = scale(mBitmap, scaleX, scaleY);
-        if (dstBitmap != NULL) {
-            delete mBitmap;
-            mBitmap = dstBitmap;
-        }
-
-        ALOGD("prepare scale sx:%f, sy:%f", scaleX, scaleY);
-    }
-#endif
 
     SkBitmap *dstBitmap = fillSurface(mBitmap);
     if (dstBitmap != NULL) {
@@ -1662,18 +1645,19 @@ int ImagePlayerService::prepareBuf(const char *uri) {
     }
 
     mMovieImage = false;
+    mFrameIndex = 0;
     if (isMovieByExtenName(uri)) {
         ALOGI("it's a movie image, show it with thread");
 
         mMovieImage = true;
-        if (MovieInit(path)) {
+        if (MovieInit(stream)) {
             delete stream;
             return RET_OK;
         }
         else {
-            //delete stream;
-            //return RET_ERR_INVALID_OPERATION;
+            stream->rewind();
             mMovieImage = false;
+            mFrameIndex = 0;
             mBufBitmap = decode(stream, NULL);
         }
     }
@@ -2195,99 +2179,111 @@ int ImagePlayerService::convertIndex8toYUYV(void *dst, const SkBitmap *src) {
     return RET_OK;
 }
 
-bool ImagePlayerService::MovieInit(const char path[]) {
-    //stop it firstly
-    MovieThreadStop();
-
+bool ImagePlayerService::MovieInit(SkStreamRewindable *stream) {
     mMovieDegree = 0;
     mMovieScale = 1.0f;
 
-#if 0
-    if (NULL != mSkMovie)
-        delete mSkMovie;
-
-    mMovieTime = 0;
-    mSkMovie = SkMovie::DecodeFile(path);
-    if (mSkMovie && mSkMovie->width() > 0 && mSkMovie->height() > 0) {
-        int duration = mSkMovie->duration();
-        ALOGI("MovieInit duration:%d, w:%d, h:%d", duration, mSkMovie->width(), mSkMovie->height());
-        return true;
+    SkCodec* codec(SkCodec::NewFromStream(stream));
+    if (!codec) {
+        return false;
     }
-    else {
-        ALOGE("MovieInit decodeFile '%s' (%d)", strerror(errno), errno);
-    }
-#endif
-
-    return false;
+    std::vector<SkCodec::FrameInfo> frameInfos = codec->getFrameInfo();
+    int frameCount = frameInfos.size() == 0 ? 1 : frameInfos.size();
+    mFrameIndex = 0;
+    return (frameCount > 1);
 }
 
 bool ImagePlayerService::MovieShow() {
-    int sysTime = (int)nanoseconds_to_milliseconds(systemTime(SYSTEM_TIME_MONOTONIC));
-    if (0 == mMovieTime)
-        mMovieTime = sysTime;
+    SkStreamRewindable *stream;
+    stream = getSkStream();
+    if (stream == NULL) {
+        return false;
+    }
+    SkCodec* codec(SkCodec::NewFromStream(stream));
+    if (!codec) {
+        return false;
+    }
 
-#if 0
-    if (mSkMovie) {
-        if (mSkMovie->duration()) {
-            mSkMovie->setTime((sysTime-mMovieTime) % mSkMovie->duration());
-        } else {
-            mSkMovie->setTime(0);
-        }
+    std::vector<SkCodec::FrameInfo> frameInfos = codec->getFrameInfo();
+    int frameCount = frameInfos.size() == 0 ? 1 : frameInfos.size();
+    std::vector<SkBitmap> cachedFrames(frameCount);
+    if (mFrameIndex >= frameCount) {
+        mFrameIndex = 0;
+    }
+    SkBitmap bm = cachedFrames[mFrameIndex];
+    if (!bm.getPixels()) {
+        const SkImageInfo info = codec->getInfo().makeColorType(kN32_SkColorType);
+        bm.allocPixels(info);
 
-        SkBitmap *scaleBitmap = NULL;
-        SkBitmap *rotateBitmap = NULL;
-        SkBitmap bitmap;//= mSkMovie->bitmap();
-        mSkMovie->bitmap().copyTo(&bitmap, kN32_SkColorType);
-        if ((bitmap.width() > surfaceWidth) || (bitmap.height() > surfaceHeight)) {
-            ALOGW("MovieShow, origin width:%d or height:%d > surface w:%d or h:%d",
-                    bitmap.width(), bitmap.height(), surfaceWidth, surfaceHeight);
-
-            SkBitmap *dstCrop = fillSurface(&bitmap);
-            if (NULL != dstCrop) {
-                dstCrop->copyTo(&bitmap, kN32_SkColorType);
-                delete dstCrop;
+        SkCodec::Options opts;
+        opts.fFrameIndex = mFrameIndex;
+        opts.fHasPriorFrame = false;
+        const size_t requiredFrame = frameInfos[mFrameIndex].fRequiredFrame;
+        if (requiredFrame != SkCodec::kNone) {
+            const SkBitmap& requiredBitmap = cachedFrames[requiredFrame];
+            // For simplicity, do not try to cache old frames
+            if (requiredBitmap.getPixels() && requiredBitmap.copyTo(&bm)) {
+                opts.fHasPriorFrame = true;
             }
         }
-
-        if (1.0f != mMovieScale) {
-            int scaledW = bitmap.width()*mMovieScale;
-            int scaledH = bitmap.height()*mMovieScale;
-            if ((scaledW > surfaceWidth) || (scaledH > surfaceHeight)) {
-                ALOGW("MovieShow, scaled width:%d or height:%d > surface w:%d or h:%d scale delta:%f",
-                    scaledW, scaledH, surfaceWidth, surfaceHeight, mMovieScale);
-
-                scaleBitmap = scaleStep(&bitmap, mMovieScale, mMovieScale);
-            }
-            else {
-                scaleBitmap = scale(&bitmap, mMovieScale, mMovieScale);
-            }
+        if (SkCodec::kSuccess != codec->getPixels(info, bm.getPixels(),
+                bm.rowBytes(), &opts, nullptr, nullptr)) {
+            ALOGD("Could not getPixels for frame %d", mFrameIndex);
+            return false;
         }
+    }
 
-        if (0 != mMovieDegree) {
-            if (NULL != scaleBitmap) {
-                rotateBitmap = rotate(scaleBitmap, mMovieDegree);
-                delete scaleBitmap;
-                scaleBitmap = NULL;
-            }
-            else
-                rotateBitmap = rotate(&bitmap, mMovieDegree);
+    SkBitmap *scaleBitmap = NULL;
+    SkBitmap *rotateBitmap = NULL;
+    SkBitmap bitmap;
+    bm.copyTo(&bitmap, kN32_SkColorType);
+    if ((bitmap.width() > surfaceWidth) || (bitmap.height() > surfaceHeight)) {
+        ALOGW("MovieShow, origin width:%d or height:%d > surface w:%d or h:%d",
+                bitmap.width(), bitmap.height(), surfaceWidth, surfaceHeight);
+        SkBitmap *dstCrop = fillSurface(&bitmap);
+        if (NULL != dstCrop) {
+            dstCrop->copyTo(&bitmap, kN32_SkColorType);
+            delete dstCrop;
         }
+    }
 
-        if (NULL != rotateBitmap) {
-            MovieRenderPost(rotateBitmap);
-            delete rotateBitmap;
-        }
-        else if (NULL != scaleBitmap) {
-            MovieRenderPost(scaleBitmap);
-            delete scaleBitmap;
+    if (1.0f != mMovieScale) {
+        int scaledW = bitmap.width()*mMovieScale;
+        int scaledH = bitmap.height()*mMovieScale;
+        if ((scaledW > surfaceWidth) || (scaledH > surfaceHeight)) {
+            ALOGW("MovieShow, scaled width:%d or height:%d > surface w:%d or h:%d scale delta:%f",
+                scaledW, scaledH, surfaceWidth, surfaceHeight, mMovieScale);
+
+            scaleBitmap = scaleStep(&bitmap, mMovieScale, mMovieScale);
         }
         else {
-            MovieRenderPost(&bitmap);
+            scaleBitmap = scale(&bitmap, mMovieScale, mMovieScale);
         }
-        return true;
     }
-#endif
-    return false;
+
+    if (0 != mMovieDegree) {
+        if (NULL != scaleBitmap) {
+            rotateBitmap = rotate(scaleBitmap, mMovieDegree);
+            delete scaleBitmap;
+            scaleBitmap = NULL;
+        }
+        else
+            rotateBitmap = rotate(&bitmap, mMovieDegree);
+    }
+
+    if (NULL != rotateBitmap) {
+        MovieRenderPost(rotateBitmap);
+        delete rotateBitmap;
+    }
+    else if (NULL != scaleBitmap) {
+        MovieRenderPost(scaleBitmap);
+        delete scaleBitmap;
+    }
+    else {
+        MovieRenderPost(&bitmap);
+    }
+    mFrameIndex++;
+    return true;
 }
 
 void ImagePlayerService::MovieRenderPost(SkBitmap *bitmap) {
@@ -2424,20 +2420,53 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                     }
                 }
 
-                #if 0
-                if (NULL != mSkMovie) {
+                if (mMovieImage) {
                     char bufPath[256] = {0};
                     strcat(bufPath, path.string());
                     strcat(bufPath, "_movie.png");
 
                     SkBitmap copy;
-                    //mSkMovie->setTime(0);
-                    int sysTime = (int)nanoseconds_to_milliseconds(systemTime(SYSTEM_TIME_MONOTONIC));
-                    mSkMovie->setTime(sysTime % mSkMovie->duration());
+                    SkStreamRewindable *stream;
+                    stream = getSkStream();
+                    if (stream == NULL) {
+                        return RET_ERR_BAD_VALUE;
+                    }
+                    SkCodec* codec(SkCodec::NewFromStream(stream));
+                    if (!codec) {
+                        return false;
+                    }
 
-                    mSkMovie->bitmap().copyTo(&copy, kN32_SkColorType);
-                    if (!SkImageEncoder::EncodeFile(bufPath, copy,
-                            SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality)) {
+                    std::vector<SkCodec::FrameInfo> frameInfos = codec->getFrameInfo();
+                    int frameCount = frameInfos.size() == 0 ? 1 : frameInfos.size();
+                    std::vector<SkBitmap> cachedFrames(frameCount);
+                    if (mFrameIndex >= frameCount) {
+                        mFrameIndex = 0;
+                    }
+                    SkBitmap bm = cachedFrames[mFrameIndex];
+                    if (!bm.getPixels()) {
+                        const SkImageInfo info = codec->getInfo().makeColorType(kN32_SkColorType);
+                        bm.allocPixels(info);
+                        SkCodec::Options opts;
+                        opts.fFrameIndex = mFrameIndex;
+                        opts.fHasPriorFrame = false;
+                        const size_t requiredFrame = frameInfos[mFrameIndex].fRequiredFrame;
+                        if (requiredFrame != SkCodec::kNone) {
+                            const SkBitmap& requiredBitmap = cachedFrames[requiredFrame];
+                            // For simplicity, do not try to cache old frames
+                            if (requiredBitmap.getPixels() && requiredBitmap.copyTo(&bm)) {
+                                opts.fHasPriorFrame = true;
+                            }
+                        }
+                        if (SkCodec::kSuccess != codec->getPixels(info, bm.getPixels(),
+                                bm.rowBytes(), &opts, nullptr, nullptr)) {
+                            ALOGD("Could not getPixels for frame %d", mFrameIndex);
+                            return false;
+                        }
+                    }
+
+                    bm.copyTo(&copy, kN32_SkColorType);
+                    SkFILEWStream file(bufPath);
+                    if (!SkEncodeImage(&file, copy, SkEncodedImageFormat::kPNG, 100)) {
                         result.appendFormat("ImagePlayerService: [error]encode to png file:%s\n", bufPath);
                     }
                     else {
@@ -2445,7 +2474,6 @@ status_t ImagePlayerService::dump(int fd, const Vector<String16>& args){
                             bufPath, copy.width(), copy.height());
                     }
                 }
-                #endif
             }
         }
     }
@@ -2473,47 +2501,7 @@ status_t MovieThread::readyToRun() {
     2) once: if returns false, the thread will exit.
 */
 bool MovieThread::threadLoop() {
-    usleep(500*1000);//delay 500ms
+    usleep(100*1000);//delay 100ms
     return mPlayer->MovieShow();
 }
-
-#if 0
-MovieImageHandler::MovieImageHandler(const sp<ImagePlayerService>& player)
-    : mPlayer(player) {
-}
-
-MovieImageHandler::~MovieImageHandler() {
-}
-
-void MovieImageHandler::init(const char path[]) {
-    sp<AMessage> msg = new AMessage(kWhatInit, id());
-    msg->setString("imagePath", path);
-    msg->post();
-}
-
-void MovieImageHandler::show() {
-    sp<AMessage> msg = new AMessage(kWhatShow, id());
-    msg->post();
-}
-
-void MovieImageHandler::onMessageReceived(const sp<AMessage> &msg) {
-    switch (msg->what()) {
-        case kWhatInit:
-            AString path;
-            if (msg->findString("imagePath", &path)) {
-                mPlayer->MovieInit(path.c_str());
-            }
-            break;
-
-        case kWhatShow:
-            break;
-
-        case kWhatStop:
-            break;
-
-        default:
-            TRESPASS();
-    }
-}
-#endif
 }

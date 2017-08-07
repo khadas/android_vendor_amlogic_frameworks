@@ -1472,6 +1472,10 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         pSysWrite->writeSysfs(DOLBY_VISION_ENABLE, DV_ENABLE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE, DV_MODE_IPT_TUNNEL);
         pSysWrite->setProperty(PROP_DOLBY_VISION_ENABLE, "true");
+        usleep(100000);//100ms
+        if (DISPLAY_TYPE_TV == mDisplayType) {
+            setHdrMode(HDR_MODE_AUTO);
+        }
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
     } else {
         pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FORCE_MODE);

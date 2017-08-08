@@ -751,8 +751,8 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
         strncpy(tempMode, startpos, destpos - startpos);
         startpos = destpos + 1;
         if (!pSysWrite->getPropertyBoolean(PROP_SUPPORT_4K, true)
-            &&(strstr(tempMode, "2160") || strstr(tempMode, "smpte"))) {
-                SYS_LOGE("This platform not support : %s\n", tempMode);
+                &&(strstr(tempMode, "2160") || strstr(tempMode, "smpte"))) {
+            SYS_LOGE("This platform not support : %s\n", tempMode);
             continue;
         }
 
@@ -760,6 +760,12 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
             tempMode[strlen(tempMode) - 1] = '\0';
         }
 
+        if (!pSysWrite->getPropertyBoolean(PROP_SUPPORT_OVER_4K30, true)
+                &&(resolveResolutionValue(tempMode) > resolveResolutionValue("2160p30hz")
+                    || strstr(tempMode, "smpte"))) {
+            SYS_LOGE("This platform not support the mode over 2160p30hz, current mode is:[%s]\n", tempMode);
+            continue;
+        }
         if (resolveResolutionValue(tempMode) > resolveResolutionValue(value)) {
             memset(value, 0, MODE_LEN);
             strcpy(value, tempMode);
@@ -783,6 +789,7 @@ int64_t DisplayMode::resolveResolutionValue(const char *mode) {
  *  User can select Highest resolution base this value.
  */
 void DisplayMode::resolveResolution(const char *mode, resolution_t* resol_t) {
+    memset(resol_t, 0, sizeof(resolution_t));
     bool validMode = false;
     if (strlen(mode) != 0) {
         for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {

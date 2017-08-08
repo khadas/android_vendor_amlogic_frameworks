@@ -75,6 +75,7 @@ public class OutputModeManager {
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
     public static final String PROP_SUPPORT_4K              = "ro.platform.support.4k";
+    public static final String PROP_SUPPORT_OVER_4K30       = "ro.platform.support.over.4k30";
     public static final String PROP_DEEPCOLOR               = "sys.open.deepcolor";
     public static final String PROP_DTSDRCSCALE             = "persist.sys.dtsdrcscale";
     public static final String PROP_DTSEDID                 = "persist.sys.dts.edid";
@@ -383,6 +384,10 @@ public class OutputModeManager {
                 if (str != null) {
                     if (!getPropertyBoolean(PROP_SUPPORT_4K, true)
                         && (str.contains("2160") || str.contains("smpte"))) {
+                        continue;
+                    }
+                    if (!getPropertyBoolean(PROP_SUPPORT_OVER_4K30, true)
+                        && (str.contains("2160p50") || str.contains("2160p60") || str.contains("smpte"))) {
                         continue;
                     }
                     value += str + ",";

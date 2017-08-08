@@ -188,6 +188,7 @@ using namespace android;
 
 #define PROP_HDMIONLY                   "ro.platform.hdmionly"
 #define PROP_SUPPORT_4K                 "ro.platform.support.4k"
+#define PROP_SUPPORT_OVER_4K30          "ro.platform.support.over.4k30"
 #define PROP_LCD_DENSITY                "ro.sf.lcd_density"
 #define PROP_WINDOW_WIDTH               "const.window.w"
 #define PROP_WINDOW_HEIGHT              "const.window.h"

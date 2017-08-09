@@ -467,6 +467,10 @@ void DisplayMode::setSourceDisplay(output_mode_state state) {
             pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
         }
     }
+    if (!strcmp(outputmode, "none")) {
+       memset(outputmode, 0, sizeof(outputmode));
+       strcpy(outputmode, data.current_mode);
+    }
     DetectDolbyVisionOutputMode(state, outputmode);
     setSourceOutputMode(outputmode, state);
 }

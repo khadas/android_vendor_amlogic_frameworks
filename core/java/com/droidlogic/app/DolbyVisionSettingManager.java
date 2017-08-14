@@ -27,30 +27,7 @@ import android.util.Log;
 public class DolbyVisionSettingManager {
     private static final String TAG                 = "DolbyVisionSettingManager";
 
-    private static final String KEY_DV_ENABLE        = "key_dv_enable";
-    private static final String KEY_DV_POLICY        = "key_dv_policy";
-    private static final String KEY_DV_MODE          = "key_dv_mode";
-
     private static final String PROP_DOLBY_VISION_ENABLE  = "persist.sys.dolbyvision.enable";
-
-    private static final String SYSF_DV_ENABLE       = "/sys/module/am_vecm/parameters/dolby_vision_enable";
-    private static final String SYSF_DV_POLICY       = "/sys/module/am_vecm/parameters/dolby_vision_policy";
-    private static final String SYSF_DV_MODE         = "/sys/class/amvecm/dv_mode";
-    private static final String SYSF_HDP_STATE         = "/sys/class/amhdmitx/amhdmitx0/hpd_state";
-
-    private static final String DV_ENABLE            = "Y";
-    private static final String DV_DISABLE           = "N";
-
-    public static final int DOLBY_VISION_FOLLOW_SINK       = 0;
-    public static final int DOLBY_VISION_FOLLOW_SOURCE     = 1;
-    public static final int DOLBY_VISION_FORCE_OUTPUT_MODE = 2;
-
-    public static final int DOLBY_VISION_OUTPUT_MODE_BYPASS      = 0;
-  //public static final int DOLBY_VISION_OUTPUT_MODE_IPT         = 1;
-    public static final int DOLBY_VISION_OUTPUT_MODE_IPT_TUNNEL  = 2;
-    public static final int DOLBY_VISION_OUTPUT_MODE_HDR10       = 3;
-  //public static final int DOLBY_VISION_OUTPUT_MODE_SDR10       = 4;
-    public static final int DOLBY_VISION_OUTPUT_MODE_SDR8        = 5;
 
     public static final int DOVISION_DISABLE        = 0;
     public static final int DOVISION_ENABLE        = 1;
@@ -63,73 +40,8 @@ public class DolbyVisionSettingManager {
         mSystenControl = new SystemControlManager(context);
     }
 
-    /**
-     * if DV ENABLE: set policy value of database to sysFs. and need to init mode value.
-     * if DV DISABLE: set DOLBY_VISION_FORCE_OUTPUT_MODE to policy sysFs, DOLBY_VISION_OUTPUT_MODE_BYPASS to mode sysFs.
-     */
-    public void initDolbyVision() {
-        String flag = (getDolbyVisionEnable() == true) ? DV_ENABLE:DV_DISABLE;
-        if (getDolbyVisionEnable() == true) {
-            initDolbyVisionPolicy(getDolbyVisionPolicy());
-            setDolbyVisionEnable(true);
-            initDolbyVisionMode(getDolbyVisionMode());
-        } else {
-            initDolbyVisionPolicy(DOLBY_VISION_FORCE_OUTPUT_MODE);
-            initDolbyVisionMode(DOLBY_VISION_OUTPUT_MODE_BYPASS);
-            setDolbyVisionEnable(false);
-        }
-    }
-
-    private void initDolbyVisionPolicy(int policy) {
-        mSystenControl.writeSysFs(SYSF_DV_POLICY, Integer.toString(policy));
-        Settings.System.putInt(mContext.getContentResolver(), KEY_DV_POLICY, policy);
-    }
-
-    private void initDolbyVisionMode(int mode) {
-        mSystenControl.writeSysFs(SYSF_DV_MODE, "0x" + Integer.toString(mode));
-        Settings.System.putInt(mContext.getContentResolver(), KEY_DV_MODE, mode);
-    }
-
-    public void setDolbyVisionEnable(boolean enable) {
-        String flag = (enable == true) ? DV_ENABLE:DV_DISABLE;
-        Settings.System.putString(mContext.getContentResolver(), KEY_DV_ENABLE, flag);
-        try {
-                Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        mSystenControl.writeSysFs(SYSF_DV_ENABLE, flag);
-    }
-
-    public void setDolbyVisionPolicy(int policy) {
-        if ((policy >= DOLBY_VISION_FOLLOW_SINK) && (policy <=DOLBY_VISION_FORCE_OUTPUT_MODE)) {
-            if (policy != getDolbyVisionPolicy()) {
-                mSystenControl.writeSysFs(SYSF_DV_POLICY, Integer.toString(policy));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_DV_POLICY, policy);
-            }
-        }
-    }
-
-    public void setDolbyVisionMode(int mode) {
-        if ((mode >= DOLBY_VISION_OUTPUT_MODE_BYPASS) && (mode <= DOLBY_VISION_OUTPUT_MODE_SDR8)) {
-            if (mode != getDolbyVisionMode()) {
-                mSystenControl.writeSysFs(SYSF_DV_MODE, "0x" + Integer.toString(mode));
-                Settings.System.putInt(mContext.getContentResolver(), KEY_DV_MODE, mode);
-            }
-        }
-    }
-
-    public boolean getDolbyVisionEnable() {
-        String flag = Settings.System.getString(mContext.getContentResolver(), KEY_DV_ENABLE);
-        if ("Y".equals(flag)) {
-            return true;
-        }
-        return false;
-    }
-
     public void initSetDolbyVision() {
-       if (mSystenControl.readSysFs(SYSF_HDP_STATE).contains("1")
-                && isDolbyVisionEnable()) {
+       if (isDolbyVisionEnable()) {
             setDolbyVisionEnable(DOVISION_ENABLE);
         }
     }
@@ -164,15 +76,5 @@ public class DolbyVisionSettingManager {
 
     public long resolveResolutionValue(String mode) {
         return mSystenControl.resolveResolutionValue(mode);
-    }
-
-    public int getDolbyVisionPolicy() {
-        int policy = Settings.System.getInt(mContext.getContentResolver(), KEY_DV_POLICY, DOLBY_VISION_FORCE_OUTPUT_MODE);
-        return policy;
-    }
-
-    public int getDolbyVisionMode() {
-        int mode = Settings.System.getInt(mContext.getContentResolver(), KEY_DV_MODE, DOLBY_VISION_OUTPUT_MODE_BYPASS);
-        return mode;
     }
 }

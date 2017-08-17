@@ -234,6 +234,8 @@ using namespace android;
 #define FULL_HEIGHT_576                 576
 #define FULL_WIDTH_720                  1280
 #define FULL_HEIGHT_720                 720
+#define FULL_WIDTH_768                  1366
+#define FULL_HEIGHT_768                 768
 #define FULL_WIDTH_1080                 1920
 #define FULL_HEIGHT_1080                1080
 #define FULL_WIDTH_4K2K                 3840
@@ -262,6 +264,7 @@ enum {
 #define MODE_576CVBS                    "576cvbs"
 #define MODE_720P50HZ                   "720p50hz"
 #define MODE_720P                       "720p60hz"
+#define MODE_768P                       "768p60hz"
 #define MODE_1080P24HZ                  "1080p24hz"
 #define MODE_1080I50HZ                  "1080i50hz"
 #define MODE_1080P50HZ                  "1080p50hz"
@@ -282,6 +285,7 @@ enum {
 #define MODE_576I_PREFIX                "576i"
 #define MODE_576P_PREFIX                "576p"
 #define MODE_720P_PREFIX                "720p"
+#define MODE_768P_PREFIX                "768p"
 #define MODE_1080I_PREFIX               "1080i"
 #define MODE_1080P_PREFIX               "1080p"
 #define MODE_4K2K_PREFIX                "2160p"

@@ -61,7 +61,12 @@ using namespace android;
 
 #define DEFAULT_EDID_CRCHEAD            "checkvalue: "
 #define DEFAULT_OUTPUT_MODE             "1080p60hz"
+
+#if ANDROID_PLATFORM_SDK_VERSION >= 26 //8.0
+#define DISPLAY_CFG_FILE                "/vendor/etc/mesondisplay.cfg"
+#else
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
+#endif
 #define DISPLAY_FB0                     "/dev/graphics/fb0"
 #define DISPLAY_FB1                     "/dev/graphics/fb1"
 #define SYSFS_DISPLAY_MODE              "/sys/class/display/mode"

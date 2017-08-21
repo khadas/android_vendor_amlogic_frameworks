@@ -588,7 +588,9 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 #ifndef RECOVERY_MODE
     notifyEvent(EVENT_OUTPUT_MODE_CHANGE);
 #endif
-
+    if (!cvbsMode && (OUPUT_MODE_STATE_POWER == state) && isDolbyVisionEnable()) {
+        setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE);
+    }
     //audio
     memset(value, 0, sizeof(0));
     getBootEnv(UBOOTENV_DIGITAUDIO, value);

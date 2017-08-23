@@ -38,6 +38,12 @@
 
 namespace android {
 
+//must sync with hardware\libhardware\include\hardware\Hdmi_cec.h
+enum {
+    /* Option 4 not used */
+    HDMI_OPTION_CEC_AUTO_DEVICE_OFF = 4,
+};
+
 /**
  * struct for information of cec device.
  * @mDeviceType      Indentify type of cec device, such as TV or BOX.

@@ -49,6 +49,7 @@ LOCAL_SRC_FILES:= \
   VdcLoop.c \
   SysWrite.cpp \
   SystemControl.cpp \
+  SystemControlHal.cpp \
   DisplayMode.cpp \
   Dimension.cpp \
   SysTokenizer.cpp \
@@ -72,11 +73,19 @@ LOCAL_SHARED_LIBRARIES := \
   libgui \
   libm
 
+LOCAL_SHARED_LIBRARIES += \
+  vendor.amlogic.hardware.systemcontrol@1.0 \
+  libbase \
+  libhidlbase \
+  libhidltransport
+
 LOCAL_C_INCLUDES := \
   external/zlib \
   external/libcxx/include
 
 LOCAL_MODULE:= systemcontrol
+
+LOCAL_INIT_RC := systemcontrol.rc
 
 LOCAL_STATIC_LIBRARIES := \
   libz

@@ -32,21 +32,48 @@
 #include <utils/Log.h>
 
 #include "SystemControl.h"
+#include "SystemControlHal.h"
+
 
 using namespace android;
+using ::vendor::amlogic::hardware::systemcontrol::V1_0::implementation::SystemControlHal;
+using ::vendor::amlogic::hardware::systemcontrol::V1_0::ISystemControl;
+using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
 
 int main(int argc, char** argv)
 {
+    //using ::android::hardware::configureRpcThreadpool;
+
     //char value[PROPERTY_VALUE_MAX];
     const char* path = NULL;
     if(argc >= 2){
         path = argv[1];
     }
 
+    bool treble = property_get_bool("persist.system_control.treble", true);
+    if (treble) {
+        //android::ProcessState::initWithDriver("/dev/vndbinder");
+    }
+
+    ALOGI("systemcontrol starting in %s mode", treble?"teble":"normal");
+    //configureRpcThreadpool(64, false);
+    //ProcessState::self()->setThreadPoolMaxThreadCount(4);
     sp<ProcessState> proc(ProcessState::self());
-    sp<IServiceManager> sm = defaultServiceManager();
-    ALOGI("ServiceManager: %p", sm.get());
-    SystemControl::instantiate(path);
-    ProcessState::self()->startThreadPool();
+
+    SystemControl *control = SystemControl::instantiate(path);
+    if (treble) {
+        sp<ISystemControl> controlHal = new SystemControlHal(control);
+        if (controlHal == nullptr) {
+            ALOGE("Cannot create ISystemControl service");
+        } else if (controlHal->registerAsService() != OK) {
+            ALOGE("Cannot register ISystemControl service.");
+        } else {
+            ALOGI("Treble ISystemControl service created.");
+        }
+    }
+
+    /*
+     * This thread is just going to process Binder transactions.
+     */
     IPCThreadState::self()->joinThreadPool();
 }

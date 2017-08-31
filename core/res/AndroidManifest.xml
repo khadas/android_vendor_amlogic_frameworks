@@ -34,6 +34,7 @@
                  android:icon="@drawable/ic_launcher_droidlogic"
                  android:supportsRtl="true">
 
+        <uses-library android:name="droidlogic.software.core" />
         <receiver android:name="com.droidlogic.UsbCameraReceiver">
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />

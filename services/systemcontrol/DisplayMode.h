@@ -129,14 +129,14 @@ using namespace android;
 #define AV_HDMI_CONFIG                  "/sys/class/amhdmitx/amhdmitx0/config"
 #define AV_HDMI_3D_SUPPORT              "/sys/class/amhdmitx/amhdmitx0/support_3d"
 
-#define HDMI_TX_PLUG_UEVENT             "DEVPATH=/devices/virtual/switch/hdmi"//hdmi hot plug event
-#define HDMI_TX_POWER_UEVENT            "DEVPATH=/devices/virtual/switch/hdmi_power"
-#define HDMI_TX_PLUG_STATE              "/sys/devices/virtual/switch/hdmi/state"
-#define HDMI_TX_HDR_UEVENT              "DEVPATH=/devices/virtual/switch/hdmi_hdr"
-#define HDMI_TX_HDCP_UEVENT             "DEVPATH=/devices/virtual/switch/hdcp"
-#define HDMI_TX_HDCP14_LOG_UEVENT       "DEVPATH=/devices/virtual/switch/hdcp_log"
+#define HDMI_TX_PLUG_UEVENT             "DEVPATH=/devices/virtual/extcon/hdmi"//hdmi hot plug event
+#define HDMI_TX_POWER_UEVENT            "DEVPATH=/devices/virtual/extcon/hdmi_power"
+#define HDMI_TX_PLUG_STATE              "/sys/devices/virtual/extcon/hdmi/state"
+#define HDMI_TX_HDR_UEVENT              "DEVPATH=/devices/virtual/extcon/hdmi_hdr"
+#define HDMI_TX_HDCP_UEVENT             "DEVPATH=/devices/virtual/extcon/hdcp"
+#define HDMI_TX_HDCP14_LOG_UEVENT       "DEVPATH=/devices/virtual/extcon/hdcp_log"
 #define HDMI_TX_HDCP14_LOG_SYS          "/sys/kernel/debug/hdcp/log"
-#define HDMI_TX_SWITCH_HDR              "/sys/class/switch/hdmi_hdr/state"
+#define HDMI_TX_SWITCH_HDR              "/sys/class/extcon/hdmi_hdr/state"
 
 //dolby vision sysfs
 #define DOLBY_VISION_POLICY             "/sys/module/am_vecm/parameters/dolby_vision_policy"

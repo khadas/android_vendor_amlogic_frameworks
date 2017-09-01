@@ -120,11 +120,11 @@ bool UEventObserver::isMatch(const char* buffer, size_t length,
             matched = true;
         }
         //SWITCH_STATE=1, SWITCH_NAME=hdmi
-        else if (strstr(field, "SWITCH_STATE=")) {
-            strcpy(ueventData->switchState, field + strlen("SWITCH_STATE="));
+        else if (strstr(field, "STATE=HDMI=")) {
+            strcpy(ueventData->switchState, field + strlen("STATE=HDMI="));
         }
-        else if (strstr(field, "SWITCH_NAME=")) {
-            strcpy(ueventData->switchName, field + strlen("SWITCH_NAME="));
+        else if (strstr(field, "DEVTYPE=")) {
+            strcpy(ueventData->switchName, field + strlen("DEVTYPE="));
         }
         else if (strstr(field, "FRAME_RATE_HINT=")) {
             strcpy(ueventData->switchName, field + strlen("FRAME_RATE_HINT="));

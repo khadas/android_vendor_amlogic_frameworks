@@ -38,14 +38,17 @@
 
 namespace android {
 
-void SystemControl::instantiate(const char *cfgpath) {
+SystemControl* SystemControl::instantiate(const char *cfgpath) {
+    SystemControl *syscontrol = new SystemControl(cfgpath);
     android::status_t ret = defaultServiceManager()->addService(
-            String16("system_control"), new SystemControl(cfgpath));
+            String16("system_control"), syscontrol);
 
     if (ret != android::OK) {
         ALOGE("Couldn't register system control service!");
     }
     ALOGI("instantiate add system_control service result:%d", ret);
+
+    return syscontrol;
 }
 
 SystemControl::SystemControl(const char *path)
@@ -290,8 +293,8 @@ bool SystemControl::getSupportDispModeList(std::vector<std::string> *supportDisp
 }
 
 bool SystemControl::getActiveDispMode(std::string *activeDispMode) {
-      char mode[MODE_LEN]  = {0};
-      bool ret =  pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, mode);
+      char mode[MODE_LEN] = {0};
+      bool ret = pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, mode);
       *activeDispMode = mode;
       return ret;
 }

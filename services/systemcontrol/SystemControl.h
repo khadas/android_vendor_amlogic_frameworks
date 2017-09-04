@@ -109,7 +109,7 @@ public:
     virtual void isHDCPTxAuthSuccess(int &status);
     virtual void setSinkOutputMode(const String16& mode);
 
-    static void instantiate(const char *cfgpath);
+    static SystemControl* instantiate(const char *cfgpath);
 
     virtual status_t dump(int fd, const Vector<String16>& args);
 

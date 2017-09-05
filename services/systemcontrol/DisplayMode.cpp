@@ -1148,9 +1148,14 @@ int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
  */
 void DisplayMode::setAutoSwitchFrameRate(int state) {
     if (state == OUPUT_MODE_STATE_SWITCH_ADAPTER) {
+        SYS_LOGI("FrameRate video need set mode to null, and policy to 1 to into adapter policy\n");
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "1");
     } else {
+        if (state == OUPUT_MODE_STATE_ADAPTER_END) {
+            SYS_LOGI("End Hint FrameRate video need set mode to null to exit adapter policy\n");
+            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+        }
         pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "0");
     }
 }

@@ -69,6 +69,7 @@ void FrameRateAutoAdaption::getMatchDurOutputMode (int dur, char *curMode, char 
         if ((dur == FRAME_RATE_DURATION_2397)
             || (dur == FRAME_RATE_DURATION_2398)
             || (dur == FRAME_RATE_DURATION_2997)
+            || (dur == FRAME_RATE_DURATION_5992)
             || (dur == FRAME_RATE_DURATION_5994)) {
 
             if (strstr(curMode, "24hz")
@@ -99,6 +100,7 @@ void FrameRateAutoAdaption::getMatchDurOutputMode (int dur, char *curMode, char 
         if ((dur == FRAME_RATE_DURATION_2397)
             || (dur == FRAME_RATE_DURATION_2398)
             || (dur == FRAME_RATE_DURATION_2997)
+            || (dur == FRAME_RATE_DURATION_5992)
             || (dur == FRAME_RATE_DURATION_5994)) {
             needPulldown = true;
         }
@@ -115,7 +117,8 @@ void FrameRateAutoAdaption::getMatchDurOutputMode (int dur, char *curMode, char 
             sprintf(firstMode, "%s%s", resolution, "30hz");
             sprintf(secondMode, "%s%s", resolution, "60hz");
         }
-        else if ((dur == FRAME_RATE_DURATION_5994)
+        else if ((dur == FRAME_RATE_DURATION_5992)
+            ||(dur == FRAME_RATE_DURATION_5994)
             || (dur == FRAME_RATE_DURATION_60)) {
             sprintf(firstMode, "%s%s", resolution, "60hz");
             sprintf(secondMode, "%s%s", resolution, "30hz");
@@ -181,7 +184,7 @@ void FrameRateAutoAdaption::onTxUeventReceived(uevent_data_t* ueventData){
     if (!strcmp(ueventData->switchName, "end_hint")) {
         SYS_LOGD("Video framerate switch end hint last mode: %s\n", mLastVideoMode);
         if (strlen(mLastVideoMode) > 0) {
-            mCallback->onDispModeSyncEvent(mLastVideoMode, OUPUT_MODE_STATE_SWITCH);
+            mCallback->onDispModeSyncEvent(mLastVideoMode, OUPUT_MODE_STATE_ADAPTER_END);
             memset(mLastVideoMode, 0, sizeof(mLastVideoMode));
         }
     }

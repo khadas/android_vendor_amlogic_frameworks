@@ -48,6 +48,7 @@ FRAME_RATE_DURATION_23.97 = 96000/23.976 = 4004
 #define FRAME_RATE_DURATION_30                  3200
 #define FRAME_RATE_DURATION_50                  1920
 #define FRAME_RATE_DURATION_5994                1601
+#define FRAME_RATE_DURATION_5992                1602
 #define FRAME_RATE_DURATION_60                  1600
 #define FRAME_RATE_HDMI_OFF                     "0"
 #define FRAME_RATE_HDMI_CLK_PULLDOWN            "1"

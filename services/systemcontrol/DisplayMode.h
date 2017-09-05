@@ -330,7 +330,8 @@ typedef enum {
     OUPUT_MODE_STATE_POWER              = 1,//hot plug
     OUPUT_MODE_STATE_SWITCH             = 2,//user switch the mode
     OUPUT_MODE_STATE_SWITCH_ADAPTER     = 3,//video auto switch the mode
-    OUPUT_MODE_STATE_RESERVE            = 4
+    OUPUT_MODE_STATE_RESERVE            = 4,
+    OUPUT_MODE_STATE_ADAPTER_END        = 5 //end hint video auto switch the mode
 }output_mode_state;
 
 typedef enum {

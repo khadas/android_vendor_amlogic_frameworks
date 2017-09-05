@@ -751,6 +751,8 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
     while (strlen(startpos) > 0) {
         //get edid resolution to tempMode in order.
         destpos = strstr(startpos, "\n");
+        if (NULL == destpos)
+            break;
         memset(tempMode, 0, MODE_LEN);
         strncpy(tempMode, startpos, destpos - startpos);
         startpos = destpos + 1;

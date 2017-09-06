@@ -112,6 +112,9 @@ public class BootComplete extends BroadcastReceiver {
             //use to check whether disable camera or not
             new UsbCameraManager(context).bootReady();
 
+            //DroidVoldManager
+            new DroidVoldManager(context);
+
             new PlayBackManager(context).initHdmiSelfadaption();
 
             if (needCecExtend(sm, context)) {

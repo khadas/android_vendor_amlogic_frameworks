@@ -822,6 +822,20 @@ public:
         ALOGV("is auth success  status :%d\n", status);
     }
 
+    virtual void getBootanimStatus(int &status)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+
+        if (remote()->transact(GET_BOOTANIMSTATUS, data, &reply) != NO_ERROR) {
+            ALOGE("get boot anim status not contact remote\n");
+            return;
+        }
+
+        status = reply.readInt32();
+        ALOGV("boot anim status :%d\n", status);
+    }
+
     virtual void setSinkOutputMode(const String16& mode)
     {
         Parcel data, reply;
@@ -1195,6 +1209,13 @@ status_t BnISystemControlService::onTransact(
             int status;
             CHECK_INTERFACE(ISystemControlService, data, reply);
             isHDCPTxAuthSuccess(status);
+            reply->writeInt32(status);
+            return NO_ERROR;
+        }
+        case GET_BOOTANIMSTATUS: {
+            int status;
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            getBootanimStatus(status);
             reply->writeInt32(status);
             return NO_ERROR;
         }

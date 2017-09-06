@@ -108,6 +108,7 @@ enum {
     //set HDR mode and SDR mode
     SET_HDR_MODE                    = IBinder::FIRST_CALL_TRANSACTION + 54,
     SET_SDR_MODE                    = IBinder::FIRST_CALL_TRANSACTION + 55,
+    GET_BOOTANIMSTATUS              = IBinder::FIRST_CALL_TRANSACTION + 119,
 };
 
 // ----------------------------------------------------------------------------
@@ -182,6 +183,9 @@ public:
 
     virtual void isHDCPTxAuthSuccess(int &status) = 0;
     virtual void setSinkOutputMode(const String16& mode) = 0;
+
+
+    virtual void getBootanimStatus(int &status) = 0;
 
 };
 

@@ -451,6 +451,12 @@ void SystemControl::isHDCPTxAuthSuccess(int &status) {
     status = value;
 }
 
+void SystemControl::getBootanimStatus(int &status) {
+    int value=0;
+    pDisplayMode->getBootanimStatus(&value);
+    status = value;
+}
+
 void SystemControl::setSinkOutputMode(const String16& mode) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set sink output mode :%s", String8(mode).string());

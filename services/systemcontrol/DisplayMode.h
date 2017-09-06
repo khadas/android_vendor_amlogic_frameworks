@@ -418,6 +418,9 @@ public:
     virtual void onDispModeSyncEvent (const char* outputmode, int state);
     void hdcpSwitch();
 
+    void setBootanimStatus(int status);
+    void getBootanimStatus(int *status);
+
 private:
 
     bool getBootEnv(const char* key, char* value);
@@ -476,6 +479,9 @@ private:
 
     HDCPTxAuth *pTxAuth = NULL;
     HDCPRxAuth *pRxAuth = NULL;
+
+    // bootAnimation flag
+    int mBootanimStatus;
 
 #ifndef RECOVERY_MODE
     sp<ISystemControlNotify> mNotifyListener;

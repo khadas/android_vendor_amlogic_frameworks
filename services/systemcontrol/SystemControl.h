@@ -112,7 +112,7 @@ public:
     virtual status_t dump(int fd, const Vector<String16>& args);
 
     int getLogLevel();
-
+    virtual void getBootanimStatus(int &status);
 private:
     int permissionCheck();
     void setLogLevel(int level);

@@ -174,6 +174,7 @@ DisplayMode::DisplayMode(const char *path)
     mFb1TripleEnable(true),
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
+    mBootanimStatus(0),
     mLogLevel(LOG_LEVEL_DEFAULT) {
 
     if (NULL == path) {
@@ -1027,6 +1028,7 @@ void* DisplayMode::bootanimDetect(void* data) {
     }
 
     pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "-1");
+    pThiz->setBootanimStatus(1);
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
     SYS_LOGI("boot animation detect boot video:%s\n", bootvideo);
     if ((!strcmp(fs_mode, "recovery")) || (!strcmp(bootvideo, "1"))) {
@@ -1230,6 +1232,10 @@ void DisplayMode::setOsdMouse(const char* curMode) {
     int position[4] = { 0, 0, 0, 0 };//x,y,w,h
     getPosition(curMode, position);
     setOsdMouse(position[0], position[1], position[2], position[3]);
+}
+
+void DisplayMode::setBootanimStatus(int status) {
+    mBootanimStatus = status;
 }
 
 void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
@@ -1505,6 +1511,11 @@ int DisplayMode::modeToIndex(const char *mode) {
 
 void DisplayMode::isHDCPTxAuthSuccess(int *status) {
     pTxAuth->isAuthSuccess(status);
+}
+
+void DisplayMode::getBootanimStatus(int *status) {
+    *status = mBootanimStatus;
+    return;
 }
 
 void DisplayMode::onTxEvent (char* hpdstate, int outputState) {

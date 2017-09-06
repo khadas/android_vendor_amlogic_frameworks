@@ -1495,8 +1495,12 @@ void DisplayMode::isHDCPTxAuthSuccess(int *status) {
 void DisplayMode::onTxEvent (char* hpdstate, int outputState) {
     SYS_LOGI("onTxEvent hpdstate:%s state: %d\n", hpdstate, outputState);
 
-    if (hpdstate && hpdstate[0] == '1')
+    if (hpdstate && hpdstate[0] == '1') {
         dumpCaps();
+#ifndef RECOVERY_MODE
+        notifyEvent(EVENT_HDMI_PLUGGED);
+#endif
+    }
 
     setSourceDisplay((output_mode_state)outputState);
 }

@@ -335,6 +335,7 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
     ueventObserver.addMatch(HDMI_TX_HDR_UEVENT);
     ueventObserver.addMatch(HDMI_TX_HDCP_UEVENT);
     ueventObserver.addMatch(HDMI_TX_HDCP14_LOG_UEVENT);
+    ueventObserver.addMatch(HDMI_TX_HDMI_AUDIO_UEVENT);
 #ifdef FRAME_RATE_AUTO_ADAPTER
     ueventObserver.addMatch(HDMI_TVOUT_FRAME_RATE_UEVENT);
 #endif
@@ -345,12 +346,12 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
 
         //hot plug string is the hdmi audio, hdmi power, hdmi hdr substring
         if (!strcmp(ueventData.matchName, HDMI_TX_PLUG_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI) && (NULL != pThiz->mpCallback)) {
-            pThiz->mpCallback->onTxEvent(ueventData.switchState, OUPUT_MODE_STATE_POWER);
+            pThiz->mpCallback->onTxEvent(ueventData.switchName, ueventData.switchState, OUPUT_MODE_STATE_POWER);
         }
         else if (!strcmp(ueventData.matchName, HDMI_TX_POWER_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI_POWER)) {
             //0: hdmi suspend  1: hdmi resume
             if (!strcmp(ueventData.switchState, HDMI_TX_RESUME) && (NULL != pThiz->mpCallback)) {
-                pThiz->mpCallback->onTxEvent(ueventData.switchState, OUPUT_MODE_STATE_POWER);
+                pThiz->mpCallback->onTxEvent(ueventData.switchName, ueventData.switchState, OUPUT_MODE_STATE_POWER);
             }
             else if (!strcmp(ueventData.switchState, HDMI_TX_SUSPEND)) {
                 pThiz->mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
@@ -387,6 +388,9 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
         }
         else if (!strcmp(ueventData.matchName, HDMI_TVOUT_FRAME_RATE_UEVENT)) {
                pThiz->mFRAutoAdpt->onTxUeventReceived(&ueventData);
+        }
+        else if (!strcmp(ueventData.matchName, HDMI_TX_HDMI_AUDIO_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI_AUDIO)  && (NULL != pThiz->mpCallback)) {
+               pThiz->mpCallback->onTxEvent(ueventData.switchName, ueventData.switchState, OUPUT_MODE_STATE_POWER);
         }
 #ifndef RECOVERY_MODE
         if (!strcmp(ueventData.matchName, VIDEO_LAYER1_UEVENT)) {

@@ -150,6 +150,9 @@ public class BootComplete extends BroadcastReceiver {
                             UserHandle.USER_CURRENT);
                     }
             }
+            Log.d(TAG,"setWireDeviceConnectionState");
+            //simulate DEVPATH=/devices/virtual/amhdmitx/amhdmitx0/hdmi_audio uevent funtion
+            audioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_OUT_HDMI, (outputModeManager.isHDMIPlugged() == true) ? 1 : 0, "", "");
         }
     }
 

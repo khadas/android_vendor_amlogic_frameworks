@@ -137,6 +137,7 @@ using namespace android;
 #define HDMI_TX_HDCP14_LOG_UEVENT       "DEVPATH=/devices/virtual/amhdmitx/amhdmitx0/hdcp_log"
 #define HDMI_TX_HDCP14_LOG_SYS          "/sys/kernel/debug/hdcp/log"
 #define HDMI_TX_SWITCH_HDR              "/sys/class/extcon/hdmi_hdr/state"
+#define HDMI_TX_HDMI_AUDIO_UEVENT       "DEVPATH=/devices/virtual/amhdmitx/amhdmitx0/hdmi_audio"
 
 //dolby vision sysfs
 #define DOLBY_VISION_POLICY             "/sys/module/am_vecm/parameters/dolby_vision_policy"
@@ -164,6 +165,7 @@ using namespace android;
 #define HDMI_UEVENT_HDMI_HDR            "hdmi_hdr"
 #define HDMI_UEVENT_HDCP                "hdcp"
 #define HDMI_UEVENT_HDCP_LOG            "hdcp_log"
+#define HDMI_UEVENT_HDMI_AUDIO          "hdmi_audio"
 
 #define HDMI_TX_PLUG_OUT                "0"
 #define HDMI_TX_PLUG_IN                 "1"
@@ -250,6 +252,8 @@ enum {
     EVENT_OUTPUT_MODE_CHANGE            = 0,
     EVENT_DIGITAL_MODE_CHANGE           = 1,
     EVENT_HDMI_PLUGGED           = 2,
+    EVENT_HDMI_AUDIO_OUT           = 3,
+    EVENT_HDMI_AUDIO_IN           = 4,
 };
 
 enum {
@@ -427,7 +431,7 @@ public:
     void setListener(const sp<ISystemControlNotify>& listener);
 #endif
 
-    virtual void onTxEvent (char* hpdstate, int outputState);
+    virtual void onTxEvent (char* switchName, char* hpdstate, int outputState);
     virtual void onDispModeSyncEvent (const char* outputmode, int state);
     void hdcpSwitch();
 

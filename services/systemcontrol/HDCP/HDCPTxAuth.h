@@ -43,7 +43,7 @@ public:
     public:
         TxUevntCallbak() {};
         virtual ~TxUevntCallbak() {};
-        virtual void onTxEvent (char* hpdstate, int outputState) = 0;
+        virtual void onTxEvent (char* switchName, char* hpdstate, int outputState) = 0;
     };
 
     HDCPTxAuth();

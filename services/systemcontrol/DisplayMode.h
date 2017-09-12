@@ -251,9 +251,10 @@ using namespace android;
 enum {
     EVENT_OUTPUT_MODE_CHANGE            = 0,
     EVENT_DIGITAL_MODE_CHANGE           = 1,
-    EVENT_HDMI_PLUGGED           = 2,
-    EVENT_HDMI_AUDIO_OUT           = 3,
-    EVENT_HDMI_AUDIO_IN           = 4,
+    EVENT_HDMI_PLUG_OUT           = 2,
+    EVENT_HDMI_PLUG_IN           = 3,
+    EVENT_HDMI_AUDIO_OUT           = 4,
+    EVENT_HDMI_AUDIO_IN           = 5,
 };
 
 enum {

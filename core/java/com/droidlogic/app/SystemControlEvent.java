@@ -17,9 +17,10 @@ public class SystemControlEvent extends ISystemControlNotify.Stub {
     //must sync with DisplayMode.h
     public static final int EVENT_OUTPUT_MODE_CHANGE            = 0;
     public static final int EVENT_DIGITAL_MODE_CHANGE           = 1;
-    public static final int EVENT_HDMI_PLUGGED           = 2;
-    public static final int EVENT_HDMI_AUDIO_OUT           = 3;
-    public static final int EVENT_HDMI_AUDIO_IN           = 4;
+    public static final int EVENT_HDMI_PLUG_OUT           = 2;
+    public static final int EVENT_HDMI_PLUG_IN           = 3;
+    public static final int EVENT_HDMI_AUDIO_OUT           = 4;
+    public static final int EVENT_HDMI_AUDIO_IN           = 5;
 
 
     private Context mContext = null;
@@ -34,9 +35,9 @@ public class SystemControlEvent extends ISystemControlNotify.Stub {
     public void onEvent(int event) {
         Log.i(TAG, "system control callback event: " + event);
         Intent intent;
-        if (event == EVENT_HDMI_PLUGGED) {
+        if (event == EVENT_HDMI_PLUG_OUT || event == EVENT_HDMI_PLUG_IN) {
             intent = new Intent(ACTION_HDMI_PLUGGED);
-            int plugged =1;
+            boolean  plugged = (event - EVENT_HDMI_PLUG_OUT) ==1 ? true : false;
             intent.putExtra(EXTRA_HDMI_PLUGGED_STATE, plugged);
         } else if (event == EVENT_HDMI_AUDIO_OUT || event == EVENT_HDMI_AUDIO_IN) {
             mAudioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_OUT_HDMI, (event - EVENT_HDMI_AUDIO_OUT), "", "");

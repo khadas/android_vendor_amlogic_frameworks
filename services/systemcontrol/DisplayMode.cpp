@@ -1494,19 +1494,17 @@ void DisplayMode::isHDCPTxAuthSuccess(int *status) {
 
 void DisplayMode::onTxEvent (char* switchName, char* hpdstate, int outputState) {
     SYS_LOGI("onTxEvent switchName:%s hpdstate:%s state: %d\n", switchName, hpdstate, outputState);
-
+#ifndef RECOVERY_MODE
     if (!strcmp(switchName, HDMI_UEVENT_HDMI_AUDIO)) {
-#ifndef RECOVERY_MODE
-       notifyEvent(hpdstate[0] == '1' ? EVENT_HDMI_AUDIO_IN : EVENT_HDMI_AUDIO_OUT);
-#endif
-       return;
+        notifyEvent(hpdstate[0] == '1' ? EVENT_HDMI_AUDIO_IN : EVENT_HDMI_AUDIO_OUT);
+        return;
     }
-    if (hpdstate && hpdstate[0] == '1') {
-        dumpCaps();
-#ifndef RECOVERY_MODE
-        notifyEvent(EVENT_HDMI_PLUGGED);
-#endif
+    if (hpdstate) {
+        notifyEvent((hpdstate[0] == '1') ? EVENT_HDMI_PLUG_IN : EVENT_HDMI_PLUG_OUT);
+        if (hpdstate[0] == '1')
+            dumpCaps();
     }
+#endif
     setSourceDisplay((output_mode_state)outputState);
 }
 

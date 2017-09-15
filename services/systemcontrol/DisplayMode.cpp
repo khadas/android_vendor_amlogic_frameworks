@@ -193,6 +193,7 @@ DisplayMode::~DisplayMode() {
 
 void DisplayMode::init() {
     parseConfigFile();
+    pFrameRateAutoAdaption = new FrameRateAutoAdaption(this);
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
         mDisplayType, mSocType, mDefaultUI);
@@ -201,19 +202,19 @@ void DisplayMode::init() {
     } else if (DISPLAY_TYPE_MBOX == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
-        pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
+        pTxAuth->setFRAutoAdpt(pFrameRateAutoAdaption);
         setSourceDisplay(OUPUT_MODE_STATE_INIT);
         dumpCaps();
     } else if (DISPLAY_TYPE_TV == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
-        pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
+        pTxAuth->setFRAutoAdpt(pFrameRateAutoAdaption);
         pRxAuth = new HDCPRxAuth(pTxAuth);
         setSinkDisplay(true);
     } else if (DISPLAY_TYPE_REPEATER == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
-        pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
+        pTxAuth->setFRAutoAdpt(pFrameRateAutoAdaption);
         pRxAuth = new HDCPRxAuth(pTxAuth);
         setSourceDisplay(OUPUT_MODE_STATE_INIT);
         dumpCaps();
@@ -524,12 +525,15 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     // 2.stop hdcp tx
     pTxAuth->stop();
 
-    //write framerate policy
-    setAutoSwitchFrameRate(state);
-
     if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)) {
         cvbsMode = true;
     }
+
+    //write framerate policy
+    if (!cvbsMode) {
+        setAutoSwitchFrameRate(state);
+    }
+
     // 3. set deep color and outputmode
     updateDeepColor(cvbsMode, state, outputmode);
     char curMode[MODE_LEN] = {0};
@@ -1140,7 +1144,7 @@ int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
  * this function will set mode to 'null', policy to 1, and set mode to previous value later.
  */
 void DisplayMode::setAutoSwitchFrameRate(int state) {
-    if (state == OUPUT_MODE_STATE_SWITCH_ADAPTER) {
+    if ((state == OUPUT_MODE_STATE_SWITCH_ADAPTER) || pFrameRateAutoAdaption->autoSwitchFlag == true) {
         SYS_LOGI("FrameRate video need set mode to null, and policy to 1 to into adapter policy\n");
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "1");

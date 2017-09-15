@@ -468,6 +468,7 @@ private:
     char mDefaultUI[64];//this used for mbox
     int mLogLevel;
     SysWrite *pSysWrite = NULL;
+    FrameRateAutoAdaption *pFrameRateAutoAdaption = NULL;
 
     HDCPTxAuth *pTxAuth = NULL;
     HDCPRxAuth *pRxAuth = NULL;

@@ -167,6 +167,9 @@ void FrameRateAutoAdaption::onTxUeventReceived(uevent_data_t* ueventData){
     SYS_LOGD("Video framerate switchName: %s, switchState: %s, current display mode:%s, frame rate status:%s[0:off 1:pulldown 2:force switch]\n",
         ueventData->switchName, ueventData->switchState, curDisplayMode, framerateMode);
 
+    if (!strcmp(ueventData->switchName, "end_hint")) {
+        autoSwitchFlag = false;
+    }
     if (NULL != strstr(curDisplayMode, "cvbs")) {
         SYS_LOGD("CVBS mode do not need auto frame rate\n");
         return;
@@ -196,6 +199,7 @@ void FrameRateAutoAdaption::onTxUeventReceived(uevent_data_t* ueventData){
 
         SYS_LOGD("Video framerate switch new display mode: %s, pulldown:%d\n", newDisplayMode, pulldow?1:0);
         if (pulldow) {
+            autoSwitchFlag = true;
             strcpy(mLastVideoMode, curDisplayMode);
             mCallback->onDispModeSyncEvent((strlen(newDisplayMode) != 0)?newDisplayMode:curDisplayMode, OUPUT_MODE_STATE_SWITCH_ADAPTER);
         }

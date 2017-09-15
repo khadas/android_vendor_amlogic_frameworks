@@ -89,6 +89,7 @@ public:
     ~FrameRateAutoAdaption();
 
     void onTxUeventReceived(uevent_data_t* ueventData);
+    bool autoSwitchFlag = false;
 
 private:
     void readSinkEdid(char *edid);

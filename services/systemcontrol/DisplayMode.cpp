@@ -66,24 +66,17 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2K25HZ,
     MODE_4K2K30HZ,
     MODE_4K2K50HZ,
-    MODE_4K2K50HZ420,
-    MODE_4K2K50HZ422,
     MODE_4K2K60HZ,
-    MODE_4K2K60HZ420,
-    MODE_4K2K60HZ422,
     MODE_4K2KSMPTE,
     MODE_4K2KSMPTE30HZ,
     MODE_4K2KSMPTE50HZ,
-    MODE_4K2KSMPTE50HZ420,
     MODE_4K2KSMPTE60HZ,
-    MODE_4K2KSMPTE60HZ420,
+    MODE_768P,
 };
 
 // Sink reference table, sorted by priority, per CDF
 static const char* MODES_SINK[] = {
-    "2160p60hz420",
     "2160p60hz",
-    "2160p50hz420",
     "2160p50hz",
     "2160p30hz",
     "2160p25hz",

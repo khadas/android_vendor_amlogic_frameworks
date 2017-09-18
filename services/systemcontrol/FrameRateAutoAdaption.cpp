@@ -153,9 +153,6 @@ void FrameRateAutoAdaption::getMatchDurOutputMode (int dur, char *curMode, char 
         else
             *pulldown = false;
 
-        if (!strcmp(newMode,"2160p60hz") || !strcmp(newMode,"2160p50hz"))
-            strcat(newMode, "420");
-
         SYS_LOGD("get match duration outputmode, firstMode: %s secondMode:%s, new disaplay mode:%s\n", firstMode, secondMode, newMode);
     }
 }

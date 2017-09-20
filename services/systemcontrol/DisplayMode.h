@@ -67,8 +67,6 @@ using namespace android;
 #else
 #define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 #endif
-#define DISPLAY_FB0                     "/dev/graphics/fb0"
-#define DISPLAY_FB1                     "/dev/graphics/fb1"
 #define SYSFS_DISPLAY_MODE              "/sys/class/display/mode"
 #define SYSFS_DISPLAY_MODE2             "/sys/class/display2/mode"
 //when close freescale, will enable display axis, cut framebuffer output
@@ -390,10 +388,6 @@ public:
     void init();
     void reInit();
 
-    void getDisplayInfo(int &type, char* socType, char* defaultUI);
-    void getFbInfo(int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
-        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip);
-
     void setLogLevel(int level);
     int dump(char *result);
     void setSourceOutputMode(const char* outputmode);
@@ -442,7 +436,6 @@ private:
     void setBootEnv(const char* key, char* value);
 
     int parseConfigFile();
-    void setTabletDisplay();
     void getBestHdmiMode(char * mode, hdmi_data_t* data);
     void getHighestHdmiMode(char* mode, hdmi_data_t* data);
     void getHighestPriorityMode(char* mode, hdmi_data_t* data);
@@ -465,22 +458,12 @@ private:
     void startBootanimDetectThread();
     static void* HdmiUenventThreadLoop(void* data);
     void setSinkDisplay(bool initState);
-    void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);
     int getBootenvInt(const char* key, int defaultVal);
     void dumpCap(const char * path, const char * hint, char *result);
     void dumpCaps(char *result=NULL);
 
     const char* pConfigPath;
     int mDisplayType;
-    int mFb0Width;
-    int mFb0Height;
-    int mFb0FbBits;
-    bool mFb0TripleEnable;//Triple Buffer enable or not
-
-    int mFb1Width;
-    int mFb1Height;
-    int mFb1FbBits;
-    bool mFb1TripleEnable;//Triple Buffer enable or not
     bool mVideoPlaying;
 
     int mDisplayWidth;

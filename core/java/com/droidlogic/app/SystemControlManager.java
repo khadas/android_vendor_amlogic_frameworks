@@ -324,7 +324,7 @@ public class SystemControlManager {
     }
 
     public DisplayInfo getDisplayInfo() {
-        DisplayInfo info = new DisplayInfo();
+        /*DisplayInfo info = new DisplayInfo();
         synchronized (mLock) {
             Mutable<DroidDisplayInfo> resultInfo = new Mutable<>();
             try {
@@ -348,9 +348,9 @@ public class SystemControlManager {
             } catch (RemoteException e) {
                 Log.e(TAG, "getDisplayInfo:" + e);
             }
-        }
+        }*/
 
-        return info;
+        return null;
     }
 
     public void loopMountUnmount(boolean isMount, String path){
@@ -795,7 +795,7 @@ public class SystemControlManager {
     }
 
     public static class DisplayInfo{
-        //1:tablet 2:MBOX 3:TV
+        /*//1:tablet 2:MBOX 3:TV
         public int type;
         public String socType;
         public String defaultUI;
@@ -807,6 +807,6 @@ public class SystemControlManager {
         public int fb1Width;
         public int fb1Height;
         public int fb1FbBits;
-        public boolean fb1TripleEnable;//Triple Buffer enable or not
+        public boolean fb1TripleEnable;//Triple Buffer enable or not*/
     }
 }

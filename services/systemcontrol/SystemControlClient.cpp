@@ -197,7 +197,7 @@ void SystemControlClient::getDroidDisplayInfo(int &type, std::string& socType, s
     int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
     int &fb1w, int &fb1h, int &fb1bits, int &fb1trip) {
 
-    mSysCtrl->getDroidDisplayInfo([&](const Result &ret, const DroidDisplayInfo& info) {
+    /*mSysCtrl->getDroidDisplayInfo([&](const Result &ret, const DroidDisplayInfo& info) {
         if (Result::OK == ret) {
             type = info.type;
             socType = info.socType;
@@ -211,7 +211,7 @@ void SystemControlClient::getDroidDisplayInfo(int &type, std::string& socType, s
             fb1bits = info.fb1bits;
             fb1trip = info.fb1trip;
         }
-    });
+    });*/
 }
 
 void SystemControlClient::loopMountUnmount(int &isMount, const std::string& path)  {

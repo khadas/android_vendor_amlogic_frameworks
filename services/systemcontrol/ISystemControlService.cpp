@@ -316,7 +316,7 @@ public:
         int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip)
     {
-        Parcel data, reply;
+        /*Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
         ALOGV("getDroidDisplayInfo\n");
 
@@ -335,7 +335,7 @@ public:
         fb1w = reply.readInt32();
         fb1h = reply.readInt32();
         fb1bits = reply.readInt32();
-        fb1trip = reply.readInt32();
+        fb1trip = reply.readInt32();*/
     }
 
     virtual void loopMountUnmount(int &isMount, String16& path)
@@ -990,7 +990,7 @@ status_t BnISystemControlService::onTransact(
             CHECK_INTERFACE(ISystemControlService, data, reply);
             getDroidDisplayInfo(type, socType, defaultUI, fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip);
 
-            reply->writeInt32(type);
+            /*reply->writeInt32(type);
             reply->writeString16(socType);
             reply->writeString16(defaultUI);
             reply->writeInt32(fb0w);
@@ -1000,7 +1000,7 @@ status_t BnISystemControlService::onTransact(
             reply->writeInt32(fb1w);
             reply->writeInt32(fb1h);
             reply->writeInt32(fb1bits);
-            reply->writeInt32(fb1trip);
+            reply->writeInt32(fb1trip);*/
             return NO_ERROR;
         }
         case LOOP_MOUNT_UNMOUNT: {

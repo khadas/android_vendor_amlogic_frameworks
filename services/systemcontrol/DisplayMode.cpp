@@ -174,14 +174,6 @@ DisplayMode::DisplayMode(const char *path) {
 
 DisplayMode::DisplayMode(const char *path, Ubootenv *ubootenv)
     :mDisplayType(DISPLAY_TYPE_MBOX),
-    mFb0Width(-1),
-    mFb0Height(-1),
-    mFb0FbBits(-1),
-    mFb0TripleEnable(true),
-    mFb1Width(-1),
-    mFb1Height(-1),
-    mFb1FbBits(-1),
-    mFb1TripleEnable(true),
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
     mLogLevel(LOG_LEVEL_DEFAULT) {
@@ -211,9 +203,7 @@ void DisplayMode::init() {
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
         mDisplayType, mSocType, mDefaultUI);
-    if (DISPLAY_TYPE_TABLET == mDisplayType) {
-        setTabletDisplay();
-    } else if (DISPLAY_TYPE_MBOX == mDisplayType) {
+    if (DISPLAY_TYPE_MBOX == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
         pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
@@ -249,9 +239,7 @@ void DisplayMode::reInit() {
     if (strcmp(boot_type, "snapshotted")) {
         SYS_LOGI("display mode reinit type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
             mDisplayType, mSocType, mDefaultUI);
-        if (DISPLAY_TYPE_TABLET == mDisplayType) {
-            setTabletDisplay();
-        } else if ((DISPLAY_TYPE_MBOX == mDisplayType) || (DISPLAY_TYPE_REPEATER == mDisplayType)) {
+        if ((DISPLAY_TYPE_MBOX == mDisplayType) || (DISPLAY_TYPE_REPEATER == mDisplayType)) {
             setSourceDisplay(OUPUT_MODE_STATE_POWER);
         } else if (DISPLAY_TYPE_TV == mDisplayType) {
             setSinkDisplay(false);
@@ -265,28 +253,6 @@ void DisplayMode::reInit() {
 
 HDCPTxAuth *DisplayMode:: geTxAuth() {
     return pTxAuth;
-}
-
-void DisplayMode:: getDisplayInfo(int &type, char* socType, char* defaultUI) {
-    type = mDisplayType;
-    if (NULL != socType)
-        strcpy(socType, mSocType);
-
-    if (NULL != defaultUI)
-        strcpy(defaultUI, mDefaultUI);
-}
-
-void DisplayMode:: getFbInfo(int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
-        int &fb1w, int &fb1h, int &fb1bits, int &fb1trip) {
-    fb0w = mFb0Width;
-    fb0h = mFb0Height;
-    fb0bits = mFb0FbBits;
-    fb0trip = mFb0TripleEnable?1:0;
-
-    fb1w = mFb1Width;
-    fb1h = mFb1Height;
-    fb1bits = mFb1FbBits;
-    fb1trip = mFb1TripleEnable?1:0;
 }
 
 void DisplayMode::setLogLevel(int level){
@@ -331,30 +297,7 @@ int DisplayMode::parseConfigFile(){
             if (!tokenizer->isEol() && tokenizer->peekChar() != '#') {
 
                 char *token = tokenizer->nextToken(WHITESPACE);
-                if(!strcmp(token, DEVICE_STR_MID)){
-                    mDisplayType = DISPLAY_TYPE_TABLET;
-
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    strcpy(mSocType, tokenizer->nextToken(WHITESPACE));
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    mFb0Width = atoi(tokenizer->nextToken(WHITESPACE));
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    mFb0Height = atoi(tokenizer->nextToken(WHITESPACE));
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    mFb0FbBits = atoi(tokenizer->nextToken(WHITESPACE));
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    mFb0TripleEnable = (0 == atoi(tokenizer->nextToken(WHITESPACE)))?false:true;
-
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    mFb1Width = atoi(tokenizer->nextToken(WHITESPACE));
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    mFb1Height = atoi(tokenizer->nextToken(WHITESPACE));
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    mFb1FbBits = atoi(tokenizer->nextToken(WHITESPACE));
-                    tokenizer->skipDelimiters(WHITESPACE);
-                    mFb1TripleEnable = (0 == atoi(tokenizer->nextToken(WHITESPACE)))?false:true;
-
-                } else if (!strcmp(token, DEVICE_STR_MBOX)) {
+                if (!strcmp(token, DEVICE_STR_MBOX)) {
                     mDisplayType = DISPLAY_TYPE_MBOX;
 
                     tokenizer->skipDelimiters(WHITESPACE);
@@ -383,40 +326,6 @@ int DisplayMode::parseConfigFile(){
         mDisplayType = DISPLAY_TYPE_REPEATER;
     }
     return status;
-}
-
-void DisplayMode::setTabletDisplay() {
-    struct fb_var_screeninfo var_set;
-
-    var_set.xres = mFb0Width;
-	var_set.yres = mFb0Height;
-	var_set.xres_virtual = mFb0Width;
-    if(mFb0TripleEnable)
-	    var_set.yres_virtual = 3*mFb0Height;
-    else
-        var_set.yres_virtual = 2*mFb0Height;
-	var_set.bits_per_pixel = mFb0FbBits;
-    setFbParameter(DISPLAY_FB0, var_set);
-
-    pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
-    var_set.xres = mFb1Width;
-	var_set.yres = mFb1Height;
-	var_set.xres_virtual = mFb1Width;
-    if (mFb1TripleEnable)
-	    var_set.yres_virtual = 3*mFb1Height;
-    else
-        var_set.yres_virtual = 2*mFb1Height;
-	var_set.bits_per_pixel = mFb1FbBits;
-    setFbParameter(DISPLAY_FB1, var_set);
-
-    char axis[512] = {0};
-    sprintf(axis, "%d %d %d %d %d %d %d %d",
-        0, 0, mFb0Width, mFb0Height, 0, 0, mFb1Width, mFb1Height);
-
-    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "panel");
-    pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
-
-    pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
 }
 
 void DisplayMode::setSourceDisplay(output_mode_state state) {
@@ -1109,17 +1018,6 @@ void DisplayMode::setSinkDisplay(bool initState) {
     setSinkOutputMode(outputmode, initState);
 }
 
-void DisplayMode::setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set) {
-    struct fb_var_screeninfo var_old;
-
-    int fh = open(fbdev, O_RDONLY);
-    ioctl(fh, FBIOGET_VSCREENINFO, &var_old);
-
-    copy_changed_values(&var_old, &var_set);
-    ioctl(fh, FBIOPUT_VSCREENINFO, &var_old);
-    close(fh);
-}
-
 int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
     int value = defaultVal;
     const char* p_value = mUbootenv->getValue(key);
@@ -1562,16 +1460,6 @@ int DisplayMode::dump(char *result) {
     char buf[2048] = {0};
     sprintf(buf, "\ndisplay type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s\n", mDisplayType, mSocType);
     strcat(result, buf);
-
-    if (DISPLAY_TYPE_TABLET == mDisplayType) {
-        sprintf(buf, "fb0 width:%d height:%d fbbits:%d triple buffer enable:%d\n",
-            mFb0Width, mFb0Height, mFb0FbBits, (int)mFb0TripleEnable);
-        strcat(result, buf);
-
-        sprintf(buf, "fb1 width:%d height:%d fbbits:%d triple buffer enable:%d\n",
-            mFb1Width, mFb1Height, mFb1FbBits, (int)mFb1TripleEnable);
-        strcat(result, buf);
-    }
 
     if ((DISPLAY_TYPE_MBOX == mDisplayType) || (DISPLAY_TYPE_REPEATER == mDisplayType)) {
         sprintf(buf, "default ui:%s\n", mDefaultUI);

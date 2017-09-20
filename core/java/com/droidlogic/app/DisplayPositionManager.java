@@ -8,7 +8,6 @@ public class DisplayPositionManager {
     private final static boolean DEBUG = false;
     private Context mContext = null;
     private SystemControlManager mSystenControl = null;
-    SystemControlManager.DisplayInfo mDisplayInfo;
     private OutputModeManager mOutputModeManager = null;
 
     private final static int MAX_Height = 100;
@@ -45,7 +44,6 @@ public class DisplayPositionManager {
         mContext = context;
         mSystenControl = new SystemControlManager(mContext);
         mOutputModeManager = new OutputModeManager(mContext);
-        mDisplayInfo = mSystenControl.getDisplayInfo();
         initPostion();
     }
 

@@ -260,12 +260,12 @@ void SystemControlService::getDroidDisplayInfo(int &type, std::string& socType, 
         int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip) {
     if (NO_ERROR == permissionCheck()) {
-        char bufType[MAX_STR_LEN] = {0};
+       /* char bufType[MAX_STR_LEN] = {0};
         char bufUI[MAX_STR_LEN] = {0};
         pDisplayMode->getDisplayInfo(type, bufType, bufUI);
         socType = bufType;
         defaultUI = bufUI;
-        pDisplayMode->getFbInfo(fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip);
+        pDisplayMode->getFbInfo(fb0w, fb0h, fb0bits, fb0trip, fb1w, fb1h, fb1bits, fb1trip);*/
     }
 }
 

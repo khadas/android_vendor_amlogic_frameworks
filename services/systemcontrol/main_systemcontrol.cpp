@@ -30,20 +30,21 @@
 #include <binder/IServiceManager.h>
 #include <cutils/properties.h>
 #include <utils/Log.h>
+#include <HidlTransportSupport.h>
 
 #include "SystemControl.h"
+#include "SystemControlService.h"
 #include "SystemControlHal.h"
 
 
 using namespace android;
+using ::android::hardware::configureRpcThreadpool;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::implementation::SystemControlHal;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::ISystemControl;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
 
 int main(int argc, char** argv)
 {
-    //using ::android::hardware::configureRpcThreadpool;
-
     //char value[PROPERTY_VALUE_MAX];
     const char* path = NULL;
     if(argc >= 2){
@@ -52,17 +53,16 @@ int main(int argc, char** argv)
 
     bool treble = property_get_bool("persist.system_control.treble", true);
     if (treble) {
-        //android::ProcessState::initWithDriver("/dev/vndbinder");
+        android::ProcessState::initWithDriver("/dev/vndbinder");
     }
 
-    ALOGI("systemcontrol starting in %s mode", treble?"teble":"normal");
-    //configureRpcThreadpool(64, false);
-    //ProcessState::self()->setThreadPoolMaxThreadCount(4);
+    ALOGI("systemcontrol starting in %s mode", treble?"treble":"normal");
+    configureRpcThreadpool(16, false);
     sp<ProcessState> proc(ProcessState::self());
 
-    SystemControl *control = SystemControl::instantiate(path);
     if (treble) {
-        sp<ISystemControl> controlHal = new SystemControlHal(control);
+        SystemControlService *controlIntf = SystemControlService::instantiate(path);
+        sp<ISystemControl> controlHal = new SystemControlHal(controlIntf);
         if (controlHal == nullptr) {
             ALOGE("Cannot create ISystemControl service");
         } else if (controlHal->registerAsService() != OK) {
@@ -70,6 +70,9 @@ int main(int argc, char** argv)
         } else {
             ALOGI("Treble ISystemControl service created.");
         }
+    }
+    else {
+        SystemControl *control = SystemControl::instantiate(path);
     }
 
     /*

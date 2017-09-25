@@ -30,7 +30,7 @@ Ubootenv::Ubootenv() :
 
     init();
 
-    printValues();
+    //printValues();
 }
 
 Ubootenv::~Ubootenv() {

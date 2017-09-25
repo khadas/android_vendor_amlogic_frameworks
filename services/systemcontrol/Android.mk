@@ -2,6 +2,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:= \
+  SystemControlClient.cpp \
   ISystemControlService.cpp \
   ISystemControlNotify.cpp
 
@@ -10,6 +11,12 @@ LOCAL_SHARED_LIBRARIES := \
   libcutils \
   liblog \
   libbinder
+
+LOCAL_SHARED_LIBRARIES += \
+  vendor.amlogic.hardware.systemcontrol@1.0_vendor \
+  libbase \
+  libhidlbase \
+  libhidltransport
 
 LOCAL_MODULE:= libsystemcontrolservice
 
@@ -50,6 +57,7 @@ LOCAL_SRC_FILES:= \
   SysWrite.cpp \
   SystemControl.cpp \
   SystemControlHal.cpp \
+  SystemControlService.cpp \
   DisplayMode.cpp \
   Dimension.cpp \
   SysTokenizer.cpp \
@@ -74,14 +82,15 @@ LOCAL_SHARED_LIBRARIES := \
   libm
 
 LOCAL_SHARED_LIBRARIES += \
-  vendor.amlogic.hardware.systemcontrol@1.0 \
+  vendor.amlogic.hardware.systemcontrol@1.0_vendor \
   libbase \
   libhidlbase \
   libhidltransport
 
 LOCAL_C_INCLUDES := \
   external/zlib \
-  external/libcxx/include
+  external/libcxx/include \
+  system/libhidl/transport/include/hidl
 
 LOCAL_MODULE:= systemcontrol
 

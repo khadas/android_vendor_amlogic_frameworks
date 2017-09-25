@@ -40,6 +40,8 @@ namespace android {
 
 SystemControl* SystemControl::instantiate(const char *cfgpath) {
     SystemControl *syscontrol = new SystemControl(cfgpath);
+
+    //in full treble mode, only use hwbinder or vndbinder, can not use binder
     android::status_t ret = defaultServiceManager()->addService(
             String16("system_control"), syscontrol);
 
@@ -47,7 +49,6 @@ SystemControl* SystemControl::instantiate(const char *cfgpath) {
         ALOGE("Couldn't register system control service!");
     }
     ALOGI("instantiate add system_control service result:%d", ret);
-
     return syscontrol;
 }
 
@@ -398,7 +399,7 @@ void SystemControl::setDigitalMode(const String16& mode) {
 }
 
 void SystemControl::setListener(const sp<ISystemControlNotify>& listener) {
-    pDisplayMode->setListener(listener);
+    //pDisplayMode->setListener(listener);
 }
 
 void SystemControl::setOsdMouseMode(const String16& mode) {

@@ -44,19 +44,32 @@ namespace systemcontrol {
 namespace V1_0 {
 namespace implementation {
 
-using ::vendor::amlogic::hardware::systemcontrol::V1_0::ISystemControl;
-using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
-using ::android::hardware::hidl_vec;
-using ::android::hardware::hidl_string;
-using ::android::hardware::Return;
-using ::android::hardware::Void;
-using ::android::sp;
-
-SystemControlHal::SystemControlHal(SystemControl * control)
+SystemControlHal::SystemControlHal(SystemControlService * control)
     : mSysControl(control) {
+
+    control->setListener(this);
 }
 
 SystemControlHal::~SystemControlHal() {
+}
+
+/*
+event:
+EVENT_OUTPUT_MODE_CHANGE            = 0,
+EVENT_DIGITAL_MODE_CHANGE           = 1,
+EVENT_HDMI_PLUG_OUT                 = 2,
+EVENT_HDMI_PLUG_IN                  = 3,
+EVENT_HDMI_AUDIO_OUT                = 4,
+EVENT_HDMI_AUDIO_IN                 = 5,
+*/
+void SystemControlHal::onEvent(int event) {
+    int clientSize = mClients.size();
+
+    ALOGI("onEvent event:%d, client size:%d", event, clientSize);
+
+    for (int i = 0; i < clientSize; i++) {
+        mClients[i]->notifyCallback(event);
+    }
 }
 
 Return<void> SystemControlHal::getSupportDispModeList(getSupportDispModeList_cb _hidl_cb) {
@@ -100,9 +113,300 @@ Return<Result> SystemControlHal::isHDCPTxAuthSuccess() {
     return (status==1)?Result::OK:Result::FAIL;
 }
 
-//ISystemControl* HIDL_FETCH_ISystemControl(const char* /* name */) {
-//    return new SystemControlHal();
-//}
+Return<void> SystemControlHal::getProperty(const hidl_string &key, getProperty_cb _hidl_cb) {
+    std::string value;
+    mSysControl->getProperty(key, &value);
+
+    ALOGI("getProperty key :%s, value:%s", key.c_str(), value.c_str());
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<void> SystemControlHal::getPropertyString(const hidl_string &key, const hidl_string &def, getPropertyString_cb _hidl_cb) {
+    std::string value;
+    mSysControl->getPropertyString(key, &value, def);
+
+    ALOGI("getPropertyString key :%s, value:%s", key.c_str(), value.c_str());
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<void> SystemControlHal::getPropertyInt(const hidl_string &key, int32_t def, getPropertyInt_cb _hidl_cb) {
+    int32_t value = mSysControl->getPropertyInt(key, def);
+
+    ALOGI("getPropertyInt key :%s, value:%d", key.c_str(), value);
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<void> SystemControlHal::getPropertyLong(const hidl_string &key, int64_t def, getPropertyLong_cb _hidl_cb) {
+    int64_t value = mSysControl->getPropertyLong(key, def);
+
+    ALOGI("getPropertyLong key :%s, value:%ld", key.c_str(), value);
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<void> SystemControlHal::getPropertyBoolean(const hidl_string &key, bool def, getPropertyBoolean_cb _hidl_cb) {
+    bool value = mSysControl->getPropertyBoolean(key, def);
+
+    ALOGI("getPropertyBoolean key :%s, value:%d", key.c_str(), value);
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<Result> SystemControlHal::setProperty(const hidl_string &key, const hidl_string &value) {
+    mSysControl->setProperty(key, value);
+
+    ALOGI("setProperty key :%s, value:%s", key.c_str(), value.c_str());
+    return Result::OK;
+}
+
+Return<void> SystemControlHal::readSysfs(const hidl_string &path, readSysfs_cb _hidl_cb) {
+    std::string value;
+    mSysControl->readSysfs(path, value);
+
+    ALOGI("readSysfs path :%s, value:%s", path.c_str(), value.c_str());
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<Result> SystemControlHal::writeSysfs(const hidl_string &path, const hidl_string &value) {
+   ALOGI("writeSysfs path :%s, value:%s", path.c_str(), value.c_str());
+    return mSysControl->writeSysfs(path, value)?Result::OK:Result::FAIL;
+}
+
+Return<void> SystemControlHal::readHdcpRX22Key(int32_t size, readHdcpRX22Key_cb _hidl_cb) {
+    char *value = (char *)malloc(size);
+    int len = mSysControl->readHdcpRX22Key(value, size);
+
+    std::string valueStr(value, len);
+
+    ALOGI("readHdcpRX22Key size :%d, value:%s", size, value);
+    _hidl_cb(Result::OK, valueStr, len);
+    free(value);
+    return Void();
+}
+
+Return<Result> SystemControlHal::writeHdcpRX22Key(const hidl_string &key) {
+    ALOGI("writeHdcpRX22Key key:%s", key.c_str());
+    return mSysControl->writeHdcpRX22Key(key.c_str(), key.size())?Result::OK:Result::FAIL;
+}
+
+Return<void> SystemControlHal::readHdcpRX14Key(int32_t size, readHdcpRX14Key_cb _hidl_cb) {
+    char *value = (char *)malloc(size);
+    int len = mSysControl->readHdcpRX14Key(value, size);
+
+    std::string valueStr(value, len);
+
+    ALOGI("readHdcpRX14Key size :%d, value:%s", size, value);
+    _hidl_cb(Result::OK, valueStr, len);
+    free(value);
+    return Void();
+}
+
+Return<Result> SystemControlHal::writeHdcpRX14Key(const hidl_string &key) {
+    ALOGI("writeHdcpRX14Key key:%s", key.c_str());
+    return mSysControl->writeHdcpRX14Key(key.c_str(), key.size())?Result::OK:Result::FAIL;
+}
+
+Return<Result> SystemControlHal::writeHdcpRXImg(const hidl_string &path) {
+    ALOGI("writeHdcpRXImg path:%s", path.c_str());
+    return mSysControl->writeHdcpRXImg(path)?Result::OK:Result::FAIL;
+}
+
+Return<void> SystemControlHal::getBootEnv(const hidl_string &key, getBootEnv_cb _hidl_cb) {
+    std::string value;
+    mSysControl->getBootEnv(key, value);
+
+    ALOGI("getBootEnv key :%s, value:%s", key.c_str(), value.c_str());
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<void> SystemControlHal::setBootEnv(const hidl_string &key, const hidl_string &value) {
+    mSysControl->setBootEnv(key, value);
+
+    ALOGI("setBootEnv key :%s, value:%s", key.c_str(), value.c_str());
+    return Void();
+}
+
+Return<void> SystemControlHal::getDroidDisplayInfo(getDroidDisplayInfo_cb _hidl_cb) {
+    DroidDisplayInfo info;
+
+    std::string type;
+    std::string ui;
+    mSysControl->getDroidDisplayInfo(info.type, type, ui,
+        info.fb0w, info.fb0h, info.fb0bits, info.fb0trip,
+        info.fb1w, info.fb1h, info.fb1bits, info.fb1trip);
+
+    info.socType = type;
+    info.defaultUI = ui;
+    _hidl_cb(Result::OK, info);
+    return Void();
+}
+
+Return<void> SystemControlHal::loopMountUnmount(int32_t isMount, const hidl_string& path) {
+    ALOGI("loopMountUnmount isMount :%d, path:%s", isMount, path.c_str());
+    mSysControl->loopMountUnmount(isMount, path);
+    return Void();
+}
+
+Return<void> SystemControlHal::setSourceOutputMode(const hidl_string& mode) {
+    ALOGI("setSourceOutputMode mode:%s", mode.c_str());
+    mSysControl->setSourceOutputMode(mode);
+    return Void();
+}
+
+Return<void> SystemControlHal::setSinkOutputMode(const hidl_string& mode) {
+    ALOGI("setSinkOutputMode mode:%s", mode.c_str());
+    mSysControl->setSinkOutputMode(mode);
+    return Void();
+}
+
+Return<void> SystemControlHal::setDigitalMode(const hidl_string& mode) {
+    ALOGI("setDigitalMode mode:%s", mode.c_str());
+    mSysControl->setDigitalMode(mode);
+    return Void();
+}
+
+Return<void> SystemControlHal::setOsdMouseMode(const hidl_string& mode) {
+    ALOGI("setOsdMouseMode mode:%s", mode.c_str());
+    mSysControl->setOsdMouseMode(mode);
+    return Void();
+}
+
+Return<void> SystemControlHal::setOsdMousePara(int32_t x, int32_t y, int32_t w, int32_t h) {
+    mSysControl->setOsdMousePara(x, y, w, h);
+    return Void();
+}
+
+Return<void> SystemControlHal::setPosition(int32_t left, int32_t top, int32_t width, int32_t height) {
+    mSysControl->setPosition(left, top, width, height);
+    return Void();
+}
+
+Return<void> SystemControlHal::getPosition(const hidl_string& mode, getPosition_cb _hidl_cb) {
+    int x, y, w, h;
+    mSysControl->getPosition(mode, x, y, w, h);
+    _hidl_cb(Result::OK, x, y, w, h);
+    return Void();
+}
+
+Return<void> SystemControlHal::saveDeepColorAttr(const hidl_string& mode, const hidl_string& dcValue) {
+    mSysControl->saveDeepColorAttr(mode, dcValue);
+    return Void();
+}
+
+Return<void> SystemControlHal::getDeepColorAttr(const hidl_string &mode, getDeepColorAttr_cb _hidl_cb) {
+    std::string value;
+    mSysControl->getDeepColorAttr(mode, value);
+
+    ALOGI("getDeepColorAttr mode :%s, value:%s", mode.c_str(), value.c_str());
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<void> SystemControlHal::setDolbyVisionState(int32_t state) {
+    mSysControl->setDolbyVisionEnable(state);
+    return Void();
+}
+
+Return<void> SystemControlHal::sinkSupportDolbyVision(sinkSupportDolbyVision_cb _hidl_cb) {
+    std::string mode;
+    bool support = mSysControl->isTvSupportDolbyVision(mode);
+
+    ALOGI("getDeepColorAttr mode :%s, dv support:%d", mode.c_str(), support);
+    _hidl_cb(Result::OK, mode, support);
+    return Void();
+}
+
+Return<void> SystemControlHal::setHdrMode(const hidl_string& mode) {
+    ALOGI("setHdrMode mode:%s", mode.c_str());
+    mSysControl->setHdrMode(mode);
+    return Void();
+}
+
+Return<void> SystemControlHal::setSdrMode(const hidl_string& mode) {
+    ALOGI("setSdrMode mode:%s", mode.c_str());
+    mSysControl->setSdrMode(mode);
+    return Void();
+}
+
+Return<void> SystemControlHal::resolveResolutionValue(const hidl_string& mode, resolveResolutionValue_cb _hidl_cb) {
+    int64_t value = mSysControl->resolveResolutionValue(mode);
+    _hidl_cb(Result::OK, value);
+    return Void();
+}
+
+Return<void> SystemControlHal::setCallback(const sp<ISystemControlCallback>& callback) {
+    if (callback != nullptr) {
+        mClients.push_back(callback);
+    }
+    return Void();
+}
+
+//for 3D
+Return<void> SystemControlHal::set3DMode(const hidl_string& mode) {
+    ALOGI("set3DMode mode:%s", mode.c_str());
+    mSysControl->set3DMode(mode);
+    return Void();
+}
+
+Return<void> SystemControlHal::init3DSetting() {
+    mSysControl->init3DSetting();
+    return Void();
+}
+
+Return<void> SystemControlHal::getVideo3DFormat(getVideo3DFormat_cb _hidl_cb) {
+    int32_t format = mSysControl->getVideo3DFormat();
+    _hidl_cb(Result::OK, format);
+    return Void();
+}
+
+Return<void> SystemControlHal::getDisplay3DTo2DFormat(getDisplay3DTo2DFormat_cb _hidl_cb) {
+    int32_t format = mSysControl->getDisplay3DTo2DFormat();
+    _hidl_cb(Result::OK, format);
+    return Void();
+}
+
+Return<void> SystemControlHal::setDisplay3DTo2DFormat(int32_t format) {
+    mSysControl->setDisplay3DTo2DFormat(format);
+    return Void();
+}
+
+Return<void> SystemControlHal::setDisplay3DFormat(int32_t format) {
+    mSysControl->setDisplay3DFormat(format);
+    return Void();
+}
+
+Return<void> SystemControlHal::getDisplay3DFormat(getDisplay3DFormat_cb _hidl_cb) {
+    int32_t format = mSysControl->getDisplay3DFormat();
+    _hidl_cb(Result::OK, format);
+    return Void();
+}
+
+Return<void> SystemControlHal::setOsd3DFormat(int32_t format) {
+    mSysControl->setOsd3DFormat(format);
+    return Void();
+}
+
+Return<void> SystemControlHal::switch3DTo2D(int32_t format) {
+    mSysControl->switch3DTo2D(format);
+    return Void();
+}
+
+Return<void> SystemControlHal::switch2DTo3D(int32_t format) {
+    mSysControl->switch2DTo3D(format);
+    return Void();
+}
+
+Return<void> SystemControlHal::autoDetect3DForMbox() {
+    mSysControl->autoDetect3DForMbox();
+    return Void();
+}
+//3D end
+
 }  // namespace implementation
 }  // namespace V1_0
 }  // namespace systemcontrol

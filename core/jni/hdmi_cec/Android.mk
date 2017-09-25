@@ -15,6 +15,7 @@ LOCAL_C_INCLUDES += \
     $(HDMI_CEC_NATIVE_PATH)/binder
 
 LOCAL_SHARED_LIBRARIES := \
+    vendor.amlogic.hardware.hdmicec@1.0_vendor \
     libandroid_runtime \
     libcutils \
     libutils \

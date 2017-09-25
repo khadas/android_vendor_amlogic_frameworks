@@ -665,9 +665,9 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
     }
 
     /* for native */
-    public native int  nativeSendCecMessage(long ptr, int dest, byte[] body);
+    public native int nativeSendCecMessage(long ptr, int dest, byte[] body);
     public native long nativeInit(HdmiCecExtend ext);
-    public native int  nativeGetPhysicalAddr(long ptr);
-    public native int  nativeGetVendorId(long ptr);
-    public native int  nativeGetCecVersion(long ptr);
+    public native int nativeGetPhysicalAddr(long ptr);
+    public native int nativeGetVendorId(long ptr);
+    public native int nativeGetCecVersion(long ptr);
 }

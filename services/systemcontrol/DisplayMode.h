@@ -39,7 +39,7 @@
 
 #include "ubootenv/Ubootenv.h"
 #ifndef RECOVERY_MODE
-#include "ISystemControlNotify.h"
+#include "SystemControlNotify.h"
 
 using namespace android;
 #endif
@@ -429,7 +429,7 @@ public:
     HDCPTxAuth *geTxAuth();
 #ifndef RECOVERY_MODE
     void notifyEvent(int event);
-    void setListener(const sp<ISystemControlNotify>& listener);
+    void setListener(const sp<SystemControlNotify>& listener);
 #endif
 
     virtual void onTxEvent (char* switchName, char* hpdstate, int outputState);
@@ -496,7 +496,7 @@ private:
     HDCPRxAuth *pRxAuth = NULL;
 
 #ifndef RECOVERY_MODE
-    sp<ISystemControlNotify> mNotifyListener;
+    sp<SystemControlNotify> mNotifyListener;
 #endif
 };
 

@@ -9,6 +9,7 @@
 
 #include <HdmiCecBase.h>
 #include <HdmiCecClient.h>
+#include <HdmiCecHidlClient.h>
 #include <android/log.h>
 
 namespace android {
@@ -55,45 +56,60 @@ public:
 
 private:
     sp<HdmiCecClient> mHdmiCecClient;
+    HdmiCecHidlClient *mHdmiCecHidlClient;
     jobject mCallbacksObj;
 };
 
 JHdmiCecExtend::JHdmiCecExtend(jobject callbacksObj) :
         mCallbacksObj(callbacksObj) {
-    mHdmiCecClient = HdmiCecClient::connect();
-    mHdmiCecClient->setEventObserver(this);
+    //mHdmiCecClient = HdmiCecClient::connect();
+    //mHdmiCecClient->setEventObserver(this);
+
+    mHdmiCecHidlClient = HdmiCecHidlClient::connect();
+    mHdmiCecHidlClient->setEventObserver(this);
+
 }
 
 JHdmiCecExtend::~JHdmiCecExtend() {
     mHdmiCecClient.clear();
+
+    delete mHdmiCecHidlClient;
 }
 
 void JHdmiCecExtend::init() {
 }
 
 int JHdmiCecExtend::getPhysicalAddress(uint16_t* addr) {
-    if (mHdmiCecClient != NULL)
-        return mHdmiCecClient->getPhysicalAddress(addr);
-    return 0;
+    //if (mHdmiCecClient != NULL)
+    //    return mHdmiCecClient->getPhysicalAddress(addr);
+    //return 0;
+
+    return mHdmiCecHidlClient->getPhysicalAddress(addr);
 }
 
 
 int JHdmiCecExtend::getVendorId(uint32_t* vendorId) {
-    if (mHdmiCecClient != NULL)
-        return mHdmiCecClient->getVendorId(vendorId);
-    return 0;
+    //if (mHdmiCecClient != NULL)
+    //    return mHdmiCecClient->getVendorId(vendorId);
+    //return 0;
+
+    return mHdmiCecHidlClient->getVendorId(vendorId);
 }
 
 int JHdmiCecExtend::getVersion(int* version) {
-    if (mHdmiCecClient != NULL)
-        return mHdmiCecClient->getVersion(version);
-    return 0;
+    //if (mHdmiCecClient != NULL)
+    //    return mHdmiCecClient->getVersion(version);
+    //return 0;
+
+    return mHdmiCecHidlClient->getVersion(version);
 }
 
 int JHdmiCecExtend::sendMessage(const cec_message_t* message, bool isExtend) {
-    if (mHdmiCecClient != NULL)
-        return mHdmiCecClient->sendMessage(message, isExtend);
-    return 0;
+    //if (mHdmiCecClient != NULL)
+    //    return mHdmiCecClient->sendMessage(message, isExtend);
+    //return 0;
+
+    return mHdmiCecHidlClient->sendMessage(message, isExtend);
 }
 
 void JHdmiCecExtend::onEventUpdate(const hdmi_cec_event_t* event)

@@ -34,8 +34,7 @@
     <uses-permission android:name="android.permission.HDMI_CEC" />
     <uses-permission android:name="android.permission.GET_TASKS" />
 
-    <application android:process="system"
-                 android:persistent="true"
+    <application android:persistent="true"
                  android:hasCode="true"
                  android:label="@string/droidlogic_system_label"
                  android:allowClearUserData="false"

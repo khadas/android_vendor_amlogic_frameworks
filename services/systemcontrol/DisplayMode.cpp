@@ -1525,7 +1525,7 @@ void DisplayMode::notifyEvent(int event) {
     }
 }
 
-void DisplayMode::setListener(const sp<ISystemControlNotify>& listener) {
+void DisplayMode::setListener(const sp<SystemControlNotify>& listener) {
     mNotifyListener = listener;
 }
 #endif

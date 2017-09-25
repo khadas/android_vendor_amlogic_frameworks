@@ -111,7 +111,7 @@ private:
     bool assertHdmiCecDevice();
     bool hasHandledByExtend(const cec_message_t* message);
 
-    hdmi_device_t *mCecDevice;
+    hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;
 };
 

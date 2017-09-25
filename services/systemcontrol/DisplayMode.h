@@ -396,6 +396,7 @@ public:
     void setSdrMode(const char* mode);
     void isHDCPTxAuthSuccess( int *status);
     static void* bootanimDetect(void *data);
+    static void* bootvideoDetect(void *data);
 
     void setSourceDisplay(output_mode_state state);
 
@@ -448,6 +449,7 @@ private:
     int modeToIndex(const char *mode);
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
+    void startBootvideoDetectThread();
     static void* HdmiUenventThreadLoop(void* data);
     void setSinkDisplay(bool initState);
     void setFbParameter(const char* fbdev, struct fb_var_screeninfo var_set);

@@ -572,6 +572,11 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     if (OUPUT_MODE_STATE_INIT == state) {
         startBootanimDetectThread();
+        char bootvideo[MODE_LEN] = {0};
+        pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
+        if (strcmp(bootvideo, "1") == 0) {
+            startBootvideoDetectThread();
+        }
     } else {
         pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
@@ -1028,9 +1033,12 @@ void* DisplayMode::bootanimDetect(void* data) {
     }
 
     pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "-1");
-    pThiz->setBootanimStatus(1);
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
     SYS_LOGI("boot animation detect boot video:%s\n", bootvideo);
+    if (strcmp(bootvideo, "1") != 0) {
+        pThiz->setBootanimStatus(1);
+    }
+
     if ((!strcmp(fs_mode, "recovery")) || (!strcmp(bootvideo, "1"))) {
         //recovery or bootvideo mode
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
@@ -1049,6 +1057,32 @@ void* DisplayMode::bootanimDetect(void* data) {
 
     pThiz->setOsdMouse(outputmode);
     pThiz->pTxAuth->setBootAnimFinished(true);
+    return NULL;
+}
+
+void DisplayMode::startBootvideoDetectThread() {
+    pthread_t id;
+    int ret = pthread_create(&id, NULL, bootvideoDetect, this);
+    if (ret != 0) {
+        SYS_LOGE("Create Bootvideo error!\n");
+    }
+}
+
+void* DisplayMode::bootvideoDetect(void* data) {
+    DisplayMode *pThiz = (DisplayMode*)data;
+    int timeout = 300;
+    char value[MODE_LEN] = {0};
+    SYS_LOGI("Need to setBootanimStatus 1 after bootvideo complete");
+    while (timeout > 0) {
+        pThiz->pSysWrite->getProperty("init.svc.bootvideo", value);
+        if (strstr(value, "stopped") != NULL) {
+            pThiz->setBootanimStatus(1);
+            return NULL;
+        }
+        usleep(100000);
+        timeout--;
+    }
+    pThiz->setBootanimStatus(1);
     return NULL;
 }
 

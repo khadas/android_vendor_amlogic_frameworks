@@ -1453,6 +1453,17 @@ void DisplayMode::setDolbyVisionEnable(int state) {
 
         //if OTT
         if ((DISPLAY_TYPE_MBOX == mDisplayType) || (DISPLAY_TYPE_REPEATER == mDisplayType)) {
+            char mode[MODE_LEN] = {0};
+            if (isTvSupportDolbyVision(mode)) {
+                SYS_LOGI("Tv is Support DolbyVision, highest mode is [%s]", mode);
+                char outputmode[MODE_LEN] = {0};
+                pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
+                if ((resolveResolutionValue(outputmode) > resolveResolutionValue(mode))
+                        || (strstr(outputmode, "smpte") != NULL)) {
+                    SYS_LOGI("CurMode[%s] is not support dolbyvision, need setmode to [%s]", outputmode, mode);
+                    setSourceOutputMode(mode);
+                }
+            }
             pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FOLLOW_SINK);
             pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY, DV_HDR10_POLICY);
         }
@@ -1491,7 +1502,8 @@ void DisplayMode::DetectDolbyVisionOutputMode(output_mode_state state, char* out
             && isDolbyVisionEnable()) {
         char mode[MODE_LEN] = {0};
         if (isTvSupportDolbyVision(mode)) {
-            if (resolveResolutionValue(outputmode) > resolveResolutionValue(mode)) {
+            if (resolveResolutionValue(outputmode) > resolveResolutionValue(mode)
+                    || (strstr(outputmode, "smpte") != NULL)) {
                 memset(outputmode, 0, sizeof(outputmode));
                 strcpy(outputmode, mode);
             }

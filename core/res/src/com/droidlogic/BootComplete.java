@@ -14,6 +14,18 @@ import android.media.AudioManager;
 import android.media.AudioSystem;
 import android.provider.Settings;
 
+import android.view.IWindowManager;
+import android.os.ServiceManager;
+import android.app.KeyguardManager;
+import android.app.KeyguardManager.KeyguardLock;
+
+import android.content.ComponentName;
+import android.content.ServiceConnection;
+import android.os.IBinder;
+import android.os.RemoteException;
+import com.android.internal.policy.IKeyguardExitCallback;
+import com.android.internal.policy.IKeyguardService;
+
 import com.droidlogic.app.OutputModeManager;
 import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
@@ -25,6 +37,9 @@ public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
     private static final String FIRST_RUN       = "first_run";
     private static final int SPEAKER_DEFAULT_VOLUME = 11;
+
+    IKeyguardService mService = null;
+    RemoteServiceConnection mConnection;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -156,10 +171,72 @@ public class BootComplete extends BroadcastReceiver {
             Log.d(TAG,"setWireDeviceConnectionState");
             //simulate DEVPATH=/devices/virtual/amhdmitx/amhdmitx0/hdmi_audio uevent funtion
             audioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_OUT_HDMI, (outputModeManager.isHDMIPlugged() == true) ? 1 : 0, "", "");
+
+            bindKeyguardService(context);
+
+            // Dissmiss keyguard first.
+            final IWindowManager wm = IWindowManager.Stub
+                    .asInterface(ServiceManager.getService(Context.WINDOW_SERVICE));
+            try {
+                wm.dismissKeyguard(null);
+            } catch (Exception e) {
+                // ignore it
+            }
+
+            KeyguardManager km= (KeyguardManager)context.getSystemService(Context.KEYGUARD_SERVICE);
+            KeyguardLock kl = km.newKeyguardLock("unLock");
+            kl.disableKeyguard();
         }
     }
 
     private boolean needCecExtend(SystemControlManager sm, Context context) {
         return sm.getPropertyInt("ro.hdmi.device_type", -1) == HdmiDeviceInfo.DEVICE_PLAYBACK;
+    }
+
+    class KeyguardExitCallback extends IKeyguardExitCallback.Stub {
+
+        @Override
+        public void onKeyguardExitResult(final boolean success) throws RemoteException {
+            Log.i(TAG, "onKeyguardExitResult: " + success);
+        }
+    };
+
+    private class RemoteServiceConnection implements ServiceConnection {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            Log.v(TAG, "onServiceConnected()");
+            mService = IKeyguardService.Stub.asInterface(service);
+            try {
+                mService.asBinder().linkToDeath(new IBinder.DeathRecipient() {
+                    @Override
+                    public void binderDied() {
+                    }
+                }, 0);
+
+               mService.verifyUnlock(new KeyguardExitCallback());
+
+            } catch (RemoteException e) {
+                Log.w(TAG, "Couldn't linkToDeath");
+                e.printStackTrace();
+            }
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            Log.v(TAG, "onServiceDisconnected()");
+            mService = null;
+        }
+    };
+
+    private void bindKeyguardService(Context ctx) {
+        if (mConnection == null) {
+            mConnection = new RemoteServiceConnection();
+            Intent intent = new Intent();
+            intent.setClassName("com.droidlogic", "com.droidlogic.StubKeyguardService");
+            Log.v(TAG, "BINDING SERVICE: " + "com.droidlogic.StubKeyguardService");
+            if (!ctx.getApplicationContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE)) {
+                Log.v(TAG, "FAILED TO BIND TO KEYGUARD!");
+            }
+        } else {
+            Log.v(TAG, "Service already bound");
+        }
     }
 }

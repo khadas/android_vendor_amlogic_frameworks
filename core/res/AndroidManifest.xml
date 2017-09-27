@@ -63,6 +63,11 @@
         <service android:name="com.droidlogic.DialogBluetoothService" />
         <service android:name="com.droidlogic.EsmService" />
         <service android:name="com.droidlogic.WifiSuspendService" />
+        <service
+            android:name=".StubKeyguardService"
+            android:directBootAware="true"
+            android:exported="true"
+            android:enabled="true" />
 
         <receiver android:name="com.droidlogic.BootComplete">
             <intent-filter>

@@ -394,7 +394,6 @@ int32_t Dimension::set3DMode(const char* mode3d) {
 
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
     usleep(100 * 1000);
-    pTxAuth->stopVerAll();
     pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1"); // "-1" means stop hdcp 14/22
     usleep(100 * 1000);
     pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); // Turn off TMDS PHY
@@ -413,12 +412,6 @@ int32_t Dimension::set3DMode(const char* mode3d) {
     //4. check window axis and set
     setWindowAxis(mode3d);
 
-    usleep(100 * 1000);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); // Turn on TMDS PHY
-    usleep(100 * 1000);
-    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-    pTxAuth->stop();
-    pTxAuth->start();
     return 0;
 }
 

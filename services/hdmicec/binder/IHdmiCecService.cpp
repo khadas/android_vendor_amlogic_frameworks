@@ -249,7 +249,7 @@ status_t BnHdmiCecService::onTransact(
                 reply->writeInt32(list[i].arc_supported);
                 reply->writeInt32(list[i].physical_address);
             }
-            delete list;
+            //delete list;
             return NO_ERROR;
         }
         default: {

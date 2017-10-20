@@ -37,15 +37,14 @@ import android.os.FileUtils;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.ServiceManager;
 import android.os.Looper;
 import android.os.Message;
-import android.os.PowerManager;
-import android.os.Process;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
-import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.ServiceManager;
+import android.os.StrictMode;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.os.storage.DiskInfo;
@@ -54,6 +53,7 @@ import android.os.storage.StorageResultCode;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.os.storage.VolumeInfo;
+import android.os.storage.StorageManager;
 import android.os.storage.VolumeRecord;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
@@ -66,14 +66,8 @@ import android.util.SparseArray;
 import android.util.TimeUtils;
 
 import com.android.internal.annotations.GuardedBy;
-import com.android.internal.os.SomeArgs;
-import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.DumpUtils;
-import com.android.internal.util.FastXmlSerializer;
-import com.android.internal.util.HexDump;
 import com.android.internal.util.IndentingPrintWriter;
-import com.android.internal.util.Preconditions;
-import com.android.internal.widget.LockPatternUtils;
 
 import libcore.io.IoUtils;
 import libcore.util.EmptyArray;
@@ -87,6 +81,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -98,11 +93,20 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+
+import vendor.amlogic.hardware.droidvold.V1_0.IDroidVold;
+import vendor.amlogic.hardware.droidvold.V1_0.IDroidVoldCallback;
+import vendor.amlogic.hardware.droidvold.V1_0.Result;
+
+import android.hidl.manager.V1_0.IServiceManager;
+import android.hidl.manager.V1_0.IServiceNotification;
+import android.os.Bundle;
+import android.os.HwBinder;
+import android.os.Parcel;
+import android.os.Parcelable;
+import java.util.NoSuchElementException;
+
+import com.droidlogic.app.IDroidVoldManager;
 
 import com.droidlogic.app.IDroidVoldManager;
 
@@ -110,17 +114,13 @@ import com.droidlogic.app.IDroidVoldManager;
  * Service responsible for various storage media. Connects to {@code droidvold} to
  * watch for and manage dynamically added storage, such as SD cards and USB mass storage.
  */
-class DroidVoldManager extends IDroidVoldManager.Stub
-    implements INativeDaemonConnectorCallbacks {
-
+class DroidVoldManager extends IDroidVoldManager.Stub {
     // Static direct instance pointer for the tightly-coupled idle service to use
     static DroidVoldManager sSelf = null;
 
     private static final boolean DEBUG = false;
 
     private static final String TAG = "DroidVoldManager";
-    private static final String VOLD_TAG = "DroidVoldConnector";
-    private static final int MAX_CONTAINERS = 250;
 
     private static ArrayMap<String, String> sEnvironmentToBroadcast = new ArrayMap<>();
 
@@ -196,10 +196,6 @@ class DroidVoldManager extends IDroidVoldManager.Stub
      */
     private final Object mLock = new Object();
 
-    /** Set of users that system knows are unlocked. */
-    @GuardedBy("mLock")
-    private int[] mSystemUnlockedUsers = EmptyArray.INT;
-
     /** Map from disk ID to disk */
     @GuardedBy("mLock")
     private ArrayMap<String, DiskInfo> mDisks = new ArrayMap<>();
@@ -215,27 +211,21 @@ class DroidVoldManager extends IDroidVoldManager.Stub
 
     private final Context mContext;
 
-    private final NativeDaemonConnector mConnector;
+    private IDroidVold mDroidVold;
 
-    private final Thread mConnectorThread;
-
-    private volatile boolean mDaemonConnected = false;
-
-    // Two connectors - mConnector & mCryptConnector
-    private final CountDownLatch mConnectedSignal = new CountDownLatch(1);
+    private DroidVoldCallback mDroidVoldCallback;
 
     public static @Nullable String getBroadcastForEnvironment(String envState) {
         return sEnvironmentToBroadcast.get(envState);
     }
 
     // Handler messages
-    private static final int H_DAEMON_CONNECTED = 1;
-    private static final int H_SHUTDOWN = 2;
-    private static final int H_VOLUME_MOUNT = 3;
-    private static final int H_VOLUME_BROADCAST = 4;
-    private static final int H_INTERNAL_BROADCAST = 5;
-    private static final int H_PARTITION_FORGET = 6;
-    private static final int H_RESET = 7;
+    private static final int H_SHUTDOWN = 1;
+    private static final int H_VOLUME_MOUNT = 2;
+    private static final int H_VOLUME_BROADCAST = 3;
+    private static final int H_INTERNAL_BROADCAST = 4;
+    private static final int H_PARTITION_FORGET = 5;
+    private static final int H_RESET = 6;
 
     class DroidVoldManagerHandler extends Handler {
         public DroidVoldManagerHandler(Looper looper) {
@@ -245,17 +235,19 @@ class DroidVoldManager extends IDroidVoldManager.Stub
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case H_DAEMON_CONNECTED: {
-                    handleDaemonConnected();
-                    break;
-                }
                 case H_SHUTDOWN: {
                     final IStorageShutdownObserver obs = (IStorageShutdownObserver) msg.obj;
                     boolean success = false;
                     try {
-                        success = mConnector.execute("volume", "shutdown").isClassOk();
-                    } catch (NativeDaemonConnectorException ignored) {
+                        int rs = mDroidVold.shutdown();
+                        success = (rs == 0 ? true : false);
+                    } catch (NoSuchElementException e) {
+                        Slog.e(TAG, "connectToProxy: droidvold hal service not found."
+                                + " Did the service fail to start?", e);
+                    } catch (RemoteException e) {
+                        Slog.e(TAG, "connectToProxy: droidvold hal service not responding", e);
                     }
+
                     if (obs != null) {
                         try {
                             obs.onShutDownComplete(success ? 0 : -1);
@@ -271,9 +263,9 @@ class DroidVoldManager extends IDroidVoldManager.Stub
                         break;
                     }
                     try {
-                        mConnector.execute("volume", "mount", vol.id, vol.mountFlags,
-                                vol.mountUserId);
-                    } catch (NativeDaemonConnectorException ignored) {
+                        mDroidVold.mount(vol.id, vol.mountFlags, vol.mountUserId);
+                    } catch (RemoteException e) {
+                        Slog.e(TAG, "connectToProxy: droidvold hal service not responding", e);
                     }
                     break;
                 }
@@ -284,6 +276,11 @@ class DroidVoldManager extends IDroidVoldManager.Stub
                             + userVol.getOwner());
 
                     final String action = getBroadcastForEnvironment(envState);
+
+                    StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                    StrictMode.setVmPolicy(builder.build());
+                    //builder.detectFileUriExposure();
+
                     if (action != null) {
                         final Intent intent = new Intent(action,
                                 Uri.fromFile(userVol.getPathFile()));
@@ -313,94 +310,117 @@ class DroidVoldManager extends IDroidVoldManager.Stub
 
     private final Handler mHandler;
 
-    private void waitForReady() {
-        waitForLatch(mConnectedSignal, "mConnectedSignal");
-    }
-
-    private void waitForLatch(CountDownLatch latch, String condition) {
-        try {
-            waitForLatch(latch, condition, -1);
-        } catch (TimeoutException ignored) {
-        }
-    }
-
-    private void waitForLatch(CountDownLatch latch, String condition, long timeoutMillis)
-            throws TimeoutException {
-        final long startMillis = SystemClock.elapsedRealtime();
-        while (true) {
-            try {
-                if (latch.await(5000, TimeUnit.MILLISECONDS)) {
-                    return;
-                } else {
-                    Slog.w(TAG, "Thread " + Thread.currentThread().getName()
-                            + " still waiting for " + condition + "...");
-                }
-            } catch (InterruptedException e) {
-                Slog.w(TAG, "Interrupt while waiting for " + condition);
-            }
-            if (timeoutMillis > 0 && SystemClock.elapsedRealtime() > startMillis + timeoutMillis) {
-                throw new TimeoutException("Thread " + Thread.currentThread().getName()
-                        + " gave up waiting for " + condition + " after " + timeoutMillis + "ms");
-            }
-        }
-    }
-
     private void resetIfReadyAndConnected() {
-        Slog.d(TAG, "Thinking about reset mDaemonConnected=" + mDaemonConnected);
-        if (mDaemonConnected) {
-            final List<UserInfo> users = mContext.getSystemService(UserManager.class).getUsers();
+        final List<UserInfo> users = mContext.getSystemService(UserManager.class).getUsers();
 
-            final int[] systemUnlockedUsers;
-            synchronized (mLock) {
-                systemUnlockedUsers = mSystemUnlockedUsers;
+        synchronized (mLock) {
+            mDisks.clear();
+            mVolumes.clear();
+        }
 
-                mDisks.clear();
-                mVolumes.clear();
-            }
-
-            try {
-                mConnector.execute("volume", "reset");
-            } catch (NativeDaemonConnectorException e) {
-                Slog.w(TAG, "Failed to reset vold", e);
-            }
+        try {
+            mDroidVold.reset();
+        } catch (RemoteException e) {
+            Slog.e(TAG, "connectToProxy: droidvold hal service not responding", e);
         }
     }
 
-    /**
-     * Callback from NativeDaemonConnector
-     */
-    @Override
-    public void onDaemonConnected() {
-        mDaemonConnected = true;
-        mHandler.obtainMessage(H_DAEMON_CONNECTED).sendToTarget();
-    }
-
-    private void handleDaemonConnected() {
-        resetIfReadyAndConnected();
-
-        /*
-         * Now that we've done our initialization, release
-         * the hounds!
-         */
-        mConnectedSignal.countDown();
-        if (mConnectedSignal.getCount() != 0) {
-            // More daemons need to connect
-            return;
+    final class DeathRecipient implements HwBinder.DeathRecipient {
+        @Override
+        public void serviceDied(long cookie) {
+            Slog.d(TAG, "droidvold server died");
         }
     }
 
-    /**
-     * Callback from NativeDaemonConnector
-     */
-    @Override
-    public boolean onCheckHoldWakeLock(int code) {
-        return false;
+    static class DroidVoldCallback extends IDroidVoldCallback.Stub {
+        public DroidVoldManager mDroidVoldManager;
+        // implement methods
+        DroidVoldCallback() {
+            super();
+        }
+
+        DroidVoldCallback(DroidVoldManager dm) {
+            this.mDroidVoldManager = dm;
+        }
+
+        public static String[] unescapeArgs(String rawEvent) {
+            final boolean DEBUG_ROUTINE = false;
+            final String LOGTAG = "unescapeArgs";
+            final ArrayList<String> parsed = new ArrayList<String>();
+            final int length = rawEvent.length();
+            int current = 0;
+            int wordEnd = -1;
+            boolean quoted = false;
+
+            if (DEBUG_ROUTINE) Slog.e(LOGTAG, "parsing '" + rawEvent + "'");
+            if (rawEvent.charAt(current) == '\"') {
+                quoted = true;
+                current++;
+            }
+            while (current < length) {
+                // find the end of the word
+                char terminator = quoted ? '\"' : ' ';
+                wordEnd = current;
+                while (wordEnd < length && rawEvent.charAt(wordEnd) != terminator) {
+                    if (rawEvent.charAt(wordEnd) == '\\') {
+                        // skip the escaped char
+                        ++wordEnd;
+                    }
+                    ++wordEnd;
+                }
+                if (wordEnd > length) wordEnd = length;
+                String word = rawEvent.substring(current, wordEnd);
+                current += word.length();
+                if (!quoted) {
+                    word = word.trim();
+                } else {
+                    current++;  // skip the trailing quote
+                }
+                // unescape stuff within the word
+                word = word.replace("\\\\", "\\");
+                word = word.replace("\\\"", "\"");
+
+                if (DEBUG_ROUTINE) Slog.e(LOGTAG, "found '" + word + "'");
+                parsed.add(word);
+
+                // find the beginning of the next word - either of these options
+                int nextSpace = rawEvent.indexOf(' ', current);
+                int nextQuote = rawEvent.indexOf(" \"", current);
+                if (DEBUG_ROUTINE) {
+                    Slog.e(LOGTAG, "nextSpace=" + nextSpace + ", nextQuote=" + nextQuote);
+                }
+                if (nextQuote > -1 && nextQuote <= nextSpace) {
+                    quoted = true;
+                    current = nextQuote + 2;
+                } else {
+                    quoted = false;
+                    if (nextSpace > -1) {
+                        current = nextSpace + 1;
+                    }
+                } // else we just start the next word after the current and read til the end
+                if (DEBUG_ROUTINE) {
+                    Slog.e(LOGTAG, "next loop - current=" + current +
+                            ", length=" + length + ", quoted=" + quoted);
+                }
+            }
+            return parsed.toArray(new String[parsed.size()]);
+        }
+
+       // @Override
+        public void onEvent(int code, String message)
+            throws android.os.RemoteException {
+            if (DEBUG)
+                Slog.d(TAG, "onEvent code=" + code + " message=" + message);
+
+            String[] cooked = unescapeArgs(message);
+            mDroidVoldManager.onEvent(code, message, unescapeArgs(message));
+        }
+
     }
 
     /**
      * Callback from NativeDaemonConnector
      */
-    @Override
     public boolean onEvent(int code, String raw, String[] cooked) {
         synchronized (mLock) {
             return onEventLocked(code, raw, cooked);
@@ -410,26 +430,26 @@ class DroidVoldManager extends IDroidVoldManager.Stub
     private boolean onEventLocked(int code, String raw, String[] cooked) {
         switch (code) {
             case VoldResponseCode.DISK_CREATED: {
-                if (cooked.length != 3) break;
-                final String id = cooked[1];
-                int flags = Integer.parseInt(cooked[2]);
+                if (cooked.length != 2) break;
+                final String id = cooked[0];
+                int flags = Integer.parseInt(cooked[1]);
 
                 mDisks.put(id, new DiskInfo(id, flags));
                 break;
             }
             case VoldResponseCode.DISK_SIZE_CHANGED: {
-                if (cooked.length != 3) break;
-                final DiskInfo disk = mDisks.get(cooked[1]);
+                if (cooked.length != 2) break;
+                final DiskInfo disk = mDisks.get(cooked[0]);
                 if (disk != null) {
-                    disk.size = Long.parseLong(cooked[2]);
+                    //disk.size = Long.parseLong(cooked[1]);
                 }
                 break;
             }
             case VoldResponseCode.DISK_LABEL_CHANGED: {
-                final DiskInfo disk = mDisks.get(cooked[1]);
+                final DiskInfo disk = mDisks.get(cooked[0]);
                 if (disk != null) {
                     final StringBuilder builder = new StringBuilder();
-                    for (int i = 2; i < cooked.length; i++) {
+                    for (int i = 1; i < cooked.length; i++) {
                         builder.append(cooked[i]).append(' ');
                     }
                     disk.label = builder.toString().trim();
@@ -437,29 +457,29 @@ class DroidVoldManager extends IDroidVoldManager.Stub
                 break;
             }
             case VoldResponseCode.DISK_SCANNED: {
-                if (cooked.length != 2) break;
-                final DiskInfo disk = mDisks.get(cooked[1]);
+                if (cooked.length != 1) break;
+                final DiskInfo disk = mDisks.get(cooked[0]);
                 break;
             }
             case VoldResponseCode.DISK_SYS_PATH_CHANGED: {
-                if (cooked.length != 3) break;
-                final DiskInfo disk = mDisks.get(cooked[1]);
+                if (cooked.length != 2) break;
+                final DiskInfo disk = mDisks.get(cooked[0]);
                 if (disk != null) {
-                    disk.sysPath = cooked[2];
+                    disk.sysPath = cooked[1];
                 }
                 break;
             }
             case VoldResponseCode.DISK_DESTROYED: {
-                if (cooked.length != 2) break;
-                final DiskInfo disk = mDisks.remove(cooked[1]);
+                if (cooked.length != 1) break;
+                final DiskInfo disk = mDisks.remove(cooked[0]);
                 break;
             }
 
             case VoldResponseCode.VOLUME_CREATED: {
-                final String id = cooked[1];
-                final int type = Integer.parseInt(cooked[2]);
-                final String diskId = TextUtils.nullIfEmpty(cooked[3]);
-                final String partGuid = TextUtils.nullIfEmpty(cooked[4]);
+                final String id = cooked[0];
+                final int type = Integer.parseInt(cooked[1]);
+                final String diskId = TextUtils.nullIfEmpty(cooked[2]);
+                final String partGuid = TextUtils.nullIfEmpty(cooked[3]);
 
                 final DiskInfo disk = mDisks.get(diskId);
                 final VolumeInfo vol = new VolumeInfo(id, type, disk, partGuid);
@@ -468,37 +488,37 @@ class DroidVoldManager extends IDroidVoldManager.Stub
                 break;
             }
             case VoldResponseCode.VOLUME_STATE_CHANGED: {
-                if (cooked.length != 3) break;
-                final VolumeInfo vol = mVolumes.get(cooked[1]);
+                if (cooked.length != 2) break;
+                final VolumeInfo vol = mVolumes.get(cooked[0]);
                 if (vol != null) {
                     final int oldState = vol.state;
-                    final int newState = Integer.parseInt(cooked[2]);
+                    final int newState = Integer.parseInt(cooked[1]);
                     vol.state = newState;
                     onVolumeStateChangedLocked(vol, oldState, newState);
                 }
                 break;
             }
             case VoldResponseCode.VOLUME_FS_TYPE_CHANGED: {
-                if (cooked.length != 3) break;
-                final VolumeInfo vol = mVolumes.get(cooked[1]);
+                if (cooked.length != 2) break;
+                final VolumeInfo vol = mVolumes.get(cooked[0]);
                 if (vol != null) {
-                    vol.fsType = cooked[2];
+                    vol.fsType = cooked[1];
                 }
                 break;
             }
             case VoldResponseCode.VOLUME_FS_UUID_CHANGED: {
-                if (cooked.length != 3) break;
-                final VolumeInfo vol = mVolumes.get(cooked[1]);
+                if (cooked.length != 2) break;
+                final VolumeInfo vol = mVolumes.get(cooked[0]);
                 if (vol != null) {
-                    vol.fsUuid = cooked[2];
+                    vol.fsUuid = cooked[1];
                 }
                 break;
             }
             case VoldResponseCode.VOLUME_FS_LABEL_CHANGED: {
-                final VolumeInfo vol = mVolumes.get(cooked[1]);
+                final VolumeInfo vol = mVolumes.get(cooked[0]);
                 if (vol != null) {
                     final StringBuilder builder = new StringBuilder();
-                    for (int i = 2; i < cooked.length; i++) {
+                    for (int i = 1; i < cooked.length; i++) {
                         builder.append(cooked[i]).append(' ');
                     }
                     vol.fsLabel = builder.toString().trim();
@@ -506,24 +526,24 @@ class DroidVoldManager extends IDroidVoldManager.Stub
                 break;
             }
             case VoldResponseCode.VOLUME_PATH_CHANGED: {
-                if (cooked.length != 3) break;
-                final VolumeInfo vol = mVolumes.get(cooked[1]);
+                if (cooked.length != 2) break;
+                final VolumeInfo vol = mVolumes.get(cooked[0]);
                 if (vol != null) {
-                    vol.path = cooked[2];
+                    vol.path = cooked[1];
                 }
                 break;
             }
             case VoldResponseCode.VOLUME_INTERNAL_PATH_CHANGED: {
-                if (cooked.length != 3) break;
-                final VolumeInfo vol = mVolumes.get(cooked[1]);
+                if (cooked.length != 2) break;
+                final VolumeInfo vol = mVolumes.get(cooked[0]);
                 if (vol != null) {
-                    vol.internalPath = cooked[2];
+                    vol.internalPath = cooked[1];
                 }
                 break;
             }
             case VoldResponseCode.VOLUME_DESTROYED: {
-                if (cooked.length != 2) break;
-                mVolumes.remove(cooked[1]);
+                if (cooked.length != 1) break;
+                mVolumes.remove(cooked[0]);
                 break;
             }
 
@@ -538,7 +558,6 @@ class DroidVoldManager extends IDroidVoldManager.Stub
     private void onVolumeCreatedLocked(VolumeInfo vol) {
 
         if (vol.type == VolumeInfo.TYPE_PUBLIC) {
-
             // Adoptable public disks are visible to apps, since they meet
             // public API requirement of being in a stable location.
             vol.mountFlags |= VolumeInfo.MOUNT_FLAG_VISIBLE;
@@ -578,9 +597,10 @@ class DroidVoldManager extends IDroidVoldManager.Stub
             // Kick state changed event towards all started users. Any users
             // started after this point will trigger additional
             // user-specific broadcasts.
-            final StorageVolume userVol = vol.buildStorageVolume(mContext, mCurrentUserId, false);
-            mHandler.obtainMessage(H_VOLUME_BROADCAST, userVol).sendToTarget();
-
+            if (vol.path != null) {
+                final StorageVolume userVol = vol.buildStorageVolume(mContext, mCurrentUserId, false);
+                mHandler.obtainMessage(H_VOLUME_BROADCAST, userVol).sendToTarget();
+            }
         }
     }
 
@@ -617,30 +637,30 @@ class DroidVoldManager extends IDroidVoldManager.Stub
      */
     public DroidVoldManager(Context context) {
         sSelf = this;
-
         mContext = context;
 
-        Slog.d(TAG, "start handle");
         HandlerThread hthread = new HandlerThread(TAG);
         hthread.start();
         mHandler = new DroidVoldManagerHandler(hthread.getLooper());
 
-       // LocalServices.addService(StorageManagerInternal.class, mStorageManagerInternal);
+        try {
+            mDroidVold = IDroidVold.getService();
+            mDroidVoldCallback = new DroidVoldCallback(this);
 
-        /*
-         * Create the connection to vold with a maximum queue of twice the
-         * amount of containers we'd ever expect to have. This keeps an
-         * "asec list" from blocking a thread repeatedly.
-         */
+            if (DEBUG) Slog.d(TAG, "setCallback");
+            mDroidVold.setCallback(mDroidVoldCallback);
+            mDroidVold.linkToDeath(new DeathRecipient(), 0);
 
-        mConnector = new NativeDaemonConnector(this, "droidvold", MAX_CONTAINERS * 2, VOLD_TAG, 25,
-                null, hthread.getLooper());
-        mConnector.setDebug(true);
-        mConnector.setWarnIfHeld(mLock);
+        } catch (NoSuchElementException e) {
+            Slog.e(TAG, "connectToProxy: droidvold hal service not found."
+                    + " Did the service fail to start?", e);
+        } catch (RemoteException e) {
+            Slog.e(TAG, "connectToProxy: droidvold hal service not responding", e);
+        }
 
-        mConnectorThread = new Thread(mConnector, VOLD_TAG);
-        Slog.d(TAG, "start nativeNaemon");
-        mConnectorThread.start();
+        if (DEBUG) Slog.d(TAG, "restIfReady and connected");
+        resetIfReadyAndConnected();
+
         ServiceManager.addService("droidmount", sSelf, false);
     }
 
@@ -686,6 +706,8 @@ class DroidVoldManager extends IDroidVoldManager.Stub
 
     @Override
     public int mkdirs(String callingPkg, String appPath) {
+        //ignore
+        /*
         final int userId = UserHandle.getUserId(Binder.getCallingUid());
         final UserEnvironment userEnv = new UserEnvironment(userId);
 
@@ -716,6 +738,8 @@ class DroidVoldManager extends IDroidVoldManager.Stub
         }
 
         throw new SecurityException("Invalid mkdirs path: " + appFile);
+        */
+        return 0;
     }
 
     @Override
@@ -831,43 +855,41 @@ class DroidVoldManager extends IDroidVoldManager.Stub
     @Override
     public void mount(String volId) {
         enforcePermission(android.Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS);
-        waitForReady();
 
         final VolumeInfo vol = findVolumeByIdOrThrow(volId);
         if (isMountDisallowed(vol)) {
             throw new SecurityException("Mounting " + volId + " restricted by policy");
         }
+
         try {
-            mConnector.execute("volume", "mount", vol.id, vol.mountFlags, vol.mountUserId);
-        } catch (NativeDaemonConnectorException e) {
-            throw e.rethrowAsParcelableException();
+            mDroidVold.mount(vol.id, vol.mountFlags, vol.mountUserId);
+        } catch (RemoteException e) {
+            Slog.e(TAG, "connectToProxy: droidvold hal service not responding", e);
         }
     }
 
     @Override
     public void unmount(String volId) {
         enforcePermission(android.Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS);
-        waitForReady();
 
         final VolumeInfo vol = findVolumeByIdOrThrow(volId);
-
         try {
-            mConnector.execute("volume", "unmount", vol.id);
-        } catch (NativeDaemonConnectorException e) {
-            throw e.rethrowAsParcelableException();
+            mDroidVold.unmount(vol.id);
+        } catch (RemoteException e) {
+            Slog.e(TAG, "connectToProxy: droidvold hal service not responding", e);
         }
     }
 
     @Override
     public void format(String volId) {
         enforcePermission(android.Manifest.permission.MOUNT_FORMAT_FILESYSTEMS);
-        waitForReady();
 
         final VolumeInfo vol = findVolumeByIdOrThrow(volId);
+
         try {
-            mConnector.execute("volume", "format", vol.id, "auto");
-        } catch (NativeDaemonConnectorException e) {
-            throw e.rethrowAsParcelableException();
+            mDroidVold.format(vol.id, "auto");
+        } catch (RemoteException e) {
+            Slog.e(TAG, "connectToProxy: droidvold hal service not responding", e);
         }
     }
 
@@ -940,14 +962,9 @@ class DroidVoldManager extends IDroidVoldManager.Stub
                 pw.println(" GB)");
             }
             pw.println();
-            pw.println("System unlocked users: " + Arrays.toString(mSystemUnlockedUsers));
         }
 
-
         pw.println();
-        pw.println("mConnector:");
-        pw.increaseIndent();
-        mConnector.dump(fd, pw, args);
         pw.decreaseIndent();
     }
 }

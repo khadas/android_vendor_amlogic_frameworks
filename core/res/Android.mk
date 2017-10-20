@@ -3,7 +3,12 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
-LOCAL_JAVA_LIBRARIES := droidlogic droidlogic.external.pppoe
+LOCAL_JAVA_LIBRARIES := droidlogic droidlogic.external.pppoe \
+	android.hidl.manager-V1.0-java
+
+LOCAL_STATIC_JAVA_LIBRARIES := android.hidl.base-V1.0-java-static \
+	vendor.amlogic.hardware.droidvold-V1.0-java
+
 #LOCAL_SDK_VERSION := current
 
 LOCAL_PACKAGE_NAME := droidlogic-res

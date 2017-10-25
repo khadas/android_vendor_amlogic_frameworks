@@ -175,3 +175,4 @@ LOCAL_C_INCLUDES := \
 LOCAL_MODULE:= libsystemcontrol_static
 
 include $(BUILD_STATIC_LIBRARY)
+include $(LOCAL_PATH)/cmd/Android.mk

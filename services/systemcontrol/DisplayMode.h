@@ -138,7 +138,11 @@ using namespace android;
 #define DOLBY_VISION_ENABLE             "/sys/module/am_vecm/parameters/dolby_vision_enable"
 #define DOLBY_VISION_MODE               "/sys/class/amvecm/dv_mode"
 #define DOLBY_VISION_IS_SUPPORT         "/sys/class/amhdmitx/amhdmitx0/dv_cap"
+#define DOLBY_VISION_GRAPHICS_PRIORITY  "/sys/module/am_vecm/parameters/dolby_vision_graphics_priority"
+#define DOLBY_VISION_LL_POLICY          "/sys/module/am_vecm/parameters/dolby_vision_ll_policy"
 
+#define DOLBY_VISION_SET_ENABLE_LL_RGB  3
+#define DOLBY_VISION_SET_ENABLE_LL_YUV  2
 #define DOLBY_VISION_SET_ENABLE         1
 #define DOLBY_VISION_SET_DISABLE        0
 
@@ -148,7 +152,7 @@ using namespace android;
 #define DV_POLICY_FOLLOW_SINK           "0"
 #define DV_POLICY_FOLLOW_SOURCE         "1"
 #define DV_POLICY_FORCE_MODE            "2"
-#define DV_HDR10_POLICY                 "1"
+#define DV_HDR10_POLICY                 "3"
 
 #define DV_MODE_BYPASS                  "0x0"
 #define DV_MODE_IPT_TUNNEL              "0x2"
@@ -201,6 +205,8 @@ using namespace android;
 #define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
 #define PROP_BOOTCOMPLETE               "dev.bootcomplete"
 #define PROP_DOLBY_VISION_ENABLE        "persist.sys.dolbyvision.enable"
+#define PROP_DOLBY_VISION_TYPE         "persist.sys.dolbyvision.type"
+#define PROP_DOLBY_VISION_PRIORITY      "persist.sys.graphics.priority"
 #define PROP_HDR_MODE_STATE             "persist.sys.hdr.state"
 #define PROP_SDR_MODE_STATE             "persist.sys.sdr.state"
 
@@ -389,6 +395,8 @@ public:
     bool isDolbyVisionEnable();
     bool isTvSupportDolbyVision(char *mode);
     void DetectDolbyVisionOutputMode(output_mode_state state, char* outputmode);
+    void setGraphicsPriority(const char* mode);
+    void getGraphicsPriority(char* mode);
     void getDeepColorAttr(const char* mode, char *value);
     void saveDeepColorAttr(const char* mode, const char* dcValue);
     int64_t resolveResolutionValue(const char *mode);
@@ -440,6 +448,7 @@ private:
     void updateDeepColor(bool cvbsMode, output_mode_state state, const char* outputmode);
     void updateFreeScaleAxis();
     void updateWindowAxis(const char* outputmode);
+    void initGraphicsPriority();
     void initHdrSdrMode();
     bool isEdidChange();
     bool isBestOutputmode();

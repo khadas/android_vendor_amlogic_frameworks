@@ -445,6 +445,16 @@ bool SystemControl::isTvSupportDolbyVision(String16& mode) {
     return ret;
 }
 
+void SystemControl::setGraphicsPriority(const String16& mode) {
+    pDisplayMode->setGraphicsPriority(String8(mode).string());
+}
+
+void SystemControl::getGraphicsPriority(String16& mode) {
+    char value[MODE_LEN] = {0};
+    pDisplayMode->getGraphicsPriority(value);
+    mode.setTo(String16(value));
+}
+
 void SystemControl::isHDCPTxAuthSuccess(int &status) {
     int value=0;
     pDisplayMode->isHDCPTxAuthSuccess(&value);

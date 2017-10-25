@@ -28,9 +28,10 @@ public class DolbyVisionSettingManager {
     private static final String TAG                 = "DolbyVisionSettingManager";
 
     private static final String PROP_DOLBY_VISION_ENABLE  = "persist.sys.dolbyvision.enable";
+    private static final String PROP_DOLBY_VISION_TYPE = "persist.sys.dolbyvision.state";
 
     public static final int DOVISION_DISABLE        = 0;
-    public static final int DOVISION_ENABLE        = 1;
+    public static final int DOVISION_ENABLE         = 1;
 
     private Context mContext;
     private SystemControlManager mSystenControl;
@@ -42,7 +43,7 @@ public class DolbyVisionSettingManager {
 
     public void initSetDolbyVision() {
        if (isDolbyVisionEnable()) {
-            setDolbyVisionEnable(DOVISION_ENABLE);
+            setDolbyVisionEnable(getDolbyVisionType());
         }
     }
     /* *
@@ -74,7 +75,26 @@ public class DolbyVisionSettingManager {
         return mSystenControl.getPropertyBoolean(PROP_DOLBY_VISION_ENABLE, false);
     }
 
+    public int getDolbyVisionType() {
+        return Integer.parseInt(mSystenControl.getPropertyString(PROP_DOLBY_VISION_TYPE, "1"));
+    }
     public long resolveResolutionValue(String mode) {
         return mSystenControl.resolveResolutionValue(mode);
+    }
+
+    /* *
+     * @Description: set Dolby Vision Graphics Priority when DV is Enabled.
+     * @params: "0":Video Priority    "1":Graphics Priority
+     */
+    public void setGraphicsPriority(String mode) {
+        mSystenControl.setGraphicsPriority(mode);
+    }
+
+    /* *
+     * @Description: set Dolby Vision Graphics Priority when DV is Enabled.
+     * @return: current Priority
+     */
+    public String getGraphicsPriority() {
+        return mSystenControl.getGraphicsPriority();
     }
 }

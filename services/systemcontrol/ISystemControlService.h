@@ -109,6 +109,8 @@ enum {
     SET_HDR_MODE                    = IBinder::FIRST_CALL_TRANSACTION + 54,
     SET_SDR_MODE                    = IBinder::FIRST_CALL_TRANSACTION + 55,
     GET_BOOTANIMSTATUS              = IBinder::FIRST_CALL_TRANSACTION + 119,
+    SET_DOLBY_VISION_PRIORITY       = IBinder::FIRST_CALL_TRANSACTION + 121,
+    GET_DOLBY_VISION_PRIORITY       = IBinder::FIRST_CALL_TRANSACTION + 122,
 };
 
 // ----------------------------------------------------------------------------
@@ -186,6 +188,10 @@ public:
 
 
     virtual void getBootanimStatus(int &status) = 0;
+
+    //set/get dolby vision graphics priority
+    virtual void setGraphicsPriority(const String16& mode) = 0;
+    virtual void getGraphicsPriority(String16& mode) = 0;
 
 };
 

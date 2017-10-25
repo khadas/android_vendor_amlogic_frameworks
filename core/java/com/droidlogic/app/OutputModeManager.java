@@ -237,7 +237,7 @@ public class OutputModeManager {
     public boolean isModeSupportColor(final String curMode, final String curValue){
          writeSysfs(DISPLAY_HDMI_VALID_MODE, curMode+curValue);
          String isSupport = readSysfs(DISPLAY_HDMI_VALID_MODE).trim();
-         Log.d("SystemControl", "In OutputModeManager, " + curMode+curValue+" is "+ " supported or not:"+isSupport);
+         Log.d("SystemControl", "In OutputModeManager, " + curMode+curValue+" is " + (isSupport.equals("1") ? "supported" : "not supported"));
          return isSupport.equals("1") ? true : false;
     }
 

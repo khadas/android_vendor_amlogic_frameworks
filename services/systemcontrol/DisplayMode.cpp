@@ -105,6 +105,13 @@ static const char* MODES_REPEATER[] = {
     "576p50hz",
 };
 
+static const char* DV_MODE_TYPE[] = {
+    "DV_RGB_444_8BIT",
+    "DV_YCbCr_422_12BIT",
+    "LL_YCbCr_422_12BIT",
+    "LL_RGB_444_12BIT"
+};
+
 /**
  * strstr - Find the first substring in a %NUL terminated string
  * @s1: The string to be searched
@@ -462,7 +469,7 @@ void DisplayMode::setSourceDisplay(output_mode_state state) {
             pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
         }
     }
-    DetectDolbyVisionOutputMode(state, outputmode);
+    //DetectDolbyVisionOutputMode(state, outputmode);
     setSourceOutputMode(outputmode, state);
 }
 
@@ -1227,11 +1234,27 @@ void DisplayMode::updateDeepColor(bool cvbsMode, output_mode_state state, const 
         char mode[MODE_LEN] = {0};
         FormatColorDepth deepColor;
         if (pSysWrite->getPropertyBoolean(PROP_DEEPCOLOR, false)) {
+            char mode[MODE_LEN] = {0};
             if (isDolbyVisionEnable() && isTvSupportDolbyVision(mode)) {
-                if (!deepColor.isModeSupportDeepColorAttr(outputmode, COLOR_YCBCR444_8BIT)) {
-                    strcpy((char *)outputmode, mode);
+                char type[MODE_LEN] = {0};
+                pSysWrite->getPropertyString(PROP_DOLBY_VISION_TYPE, type, "1");
+                if (atoi(type) != 1 && strstr(mode, DV_MODE_TYPE[atoi(type)]) == NULL) {
+                    strcpy(type, "1");
                 }
-                strcpy(colorAttribute, COLOR_YCBCR444_8BIT);
+                switch (atoi(type)) {
+                    case DOLBY_VISION_SET_ENABLE:
+                        strcpy(colorAttribute, "444,8bit");
+                        break;
+                    case DOLBY_VISION_SET_ENABLE_LL_YUV:
+                        strcpy(colorAttribute, "422,12bit");
+                        break;
+                    case DOLBY_VISION_SET_ENABLE_LL_RGB:
+                        if (deepColor.isModeSupportDeepColorAttr(outputmode, "444,12bit"))
+                            strcpy(colorAttribute, "444,12bit");
+                        else if (deepColor.isModeSupportDeepColorAttr(outputmode, "444,10bit"))
+                            strcpy(colorAttribute, "444,10bit");
+                        break;
+                }
             } else {
                 deepColor.getHdmiColorAttribute(outputmode, colorAttribute, (int)state);
             }
@@ -1436,17 +1459,26 @@ void DisplayMode::getDeepColorAttr(const char* mode, char* value) {
  */
 bool DisplayMode::isTvSupportDolbyVision(char *mode) {
     char dv_cap[1024] = {0};
+    strcpy(mode, "");
     pSysWrite->readSysfs(DOLBY_VISION_IS_SUPPORT, dv_cap);
-    if (strlen(dv_cap) != 0) {
-        for (int i = DISPLAY_MODE_TOTAL - 1; i >= 0; i--) {
-            if (strstr(dv_cap, DISPLAY_MODE_LIST[i]) != NULL) {
-                strcpy(mode, DISPLAY_MODE_LIST[i]);
-                return true;
-            }
+    if (strstr(dv_cap, "The Rx don't support DolbyVision")) {
+        return false;
+    }
+    for (int i = DISPLAY_MODE_TOTAL - 1; i >= 0; i--) {
+        if (strstr(dv_cap, DISPLAY_MODE_LIST[i]) != NULL) {
+            strcat(mode, DISPLAY_MODE_LIST[i]);
+            strcat(mode, ",");
+            break;
         }
     }
-    strcpy(mode, "");
-    return false;
+    for (int i = 0; i < sizeof(DV_MODE_TYPE)/sizeof(DV_MODE_TYPE[0]); i++) {
+        if (strstr(dv_cap, DV_MODE_TYPE[i])) {
+            strcat(mode, DV_MODE_TYPE[i]);
+            strcat(mode, ",");
+        }
+    }
+    SYS_LOGI("Current Tv Support DV type [%s]", mode);
+    return true;
 }
 
 bool DisplayMode::isDolbyVisionEnable() {
@@ -1454,16 +1486,11 @@ bool DisplayMode::isDolbyVisionEnable() {
 }
 
 void DisplayMode::setDolbyVisionEnable(int state) {
-    bool dvStatus = false;
-    char dvEdid[1024] = {0};
-    pSysWrite->readSysfs(DOLBY_VISION_IS_SUPPORT, dvEdid);
-    if (strlen(dvEdid) == 0)
-        dvStatus = true;
-    if (DOLBY_VISION_SET_ENABLE == state) {
-        if (isDolbyVisionEnable())
-            dvStatus = true;
-        if (!dvStatus)
-            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+    char tvmode[MODE_LEN] = {0};
+    int value_state = state;
+    if (isTvSupportDolbyVision(tvmode))
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+    if (DOLBY_VISION_SET_DISABLE != value_state) {
         //if TV
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_OFF);
@@ -1473,14 +1500,55 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         //if OTT
         if ((DISPLAY_TYPE_MBOX == mDisplayType) || (DISPLAY_TYPE_REPEATER == mDisplayType)) {
             char mode[MODE_LEN] = {0};
+            char outputmode[MODE_LEN] = {0};
+            FormatColorDepth deepColor;
+            pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
             if (isTvSupportDolbyVision(mode)) {
+                setBootEnv(UBOOTENV_ISBESTMODE, "false");
                 SYS_LOGI("Tv is Support DolbyVision, highest mode is [%s]", mode);
+                if (value_state != 1 && strstr(mode, DV_MODE_TYPE[value_state]) == NULL) {
+                    value_state = 1;
+                }
+                switch (value_state) {
+                    case DOLBY_VISION_SET_ENABLE:
+                        pSysWrite->writeSysfs(DOLBY_VISION_LL_POLICY, "0");
+                        setBootEnv(UBOOTENV_COLORATTRIBUTE, "444,8bit");
+                        break;
+                    case DOLBY_VISION_SET_ENABLE_LL_YUV:
+                        pSysWrite->writeSysfs(DOLBY_VISION_LL_POLICY, "0");
+                        setBootEnv(UBOOTENV_COLORATTRIBUTE, "422,12bit");
+                        pSysWrite->writeSysfs(DOLBY_VISION_LL_POLICY, "1");
+                        break;
+                    case DOLBY_VISION_SET_ENABLE_LL_RGB:
+                        pSysWrite->writeSysfs(DOLBY_VISION_LL_POLICY, "0");
+                        if (deepColor.isModeSupportDeepColorAttr(outputmode, "444,12bit"))
+                            setBootEnv(UBOOTENV_COLORATTRIBUTE, "444,12bit");
+                        else if (deepColor.isModeSupportDeepColorAttr(outputmode, "444,10bit"))
+                            setBootEnv(UBOOTENV_COLORATTRIBUTE, "444,10bit");
+                        pSysWrite->writeSysfs(DOLBY_VISION_LL_POLICY, "2");
+                        break;
+                    default:
+                        pSysWrite->writeSysfs(DOLBY_VISION_LL_POLICY, "0");
+                        setBootEnv(UBOOTENV_COLORATTRIBUTE, "444,8bit");
+                }
+                char tmp[10];
+                sprintf(tmp, "%d", value_state);
+                pSysWrite->setProperty(PROP_DOLBY_VISION_TYPE, tmp);
+
                 char outputmode[MODE_LEN] = {0};
+                char tvmode[MODE_LEN] = {0};
+                for (int i = DISPLAY_MODE_TOTAL - 1; i >= 0; i--) {
+                    if (strstr(mode, DISPLAY_MODE_LIST[i]) != NULL) {
+                        strcpy(tvmode, DISPLAY_MODE_LIST[i]);
+                    }
+                }
                 pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
-                if ((resolveResolutionValue(outputmode) > resolveResolutionValue(mode))
+                if ((resolveResolutionValue(outputmode) > resolveResolutionValue(tvmode))
                         || (strstr(outputmode, "smpte") != NULL)) {
-                    SYS_LOGI("CurMode[%s] is not support dolbyvision, need setmode to [%s]", outputmode, mode);
-                    setSourceOutputMode(mode);
+                    SYS_LOGI("CurMode[%s] is not support dolbyvision, need setmode to [%s]", outputmode, tvmode);
+                    setSourceOutputMode(tvmode);
+                } else {
+                    setSourceOutputMode(outputmode);
                 }
             }
             pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FOLLOW_SINK);
@@ -1495,14 +1563,9 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_AUTO);
         }
-        if (!dvStatus) {
-            usleep(400000);//400ms
-            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-        }
+        initGraphicsPriority();
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
     } else {
-        if (!dvStatus)
-            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FORCE_MODE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE, DV_MODE_BYPASS);
         usleep(100000);//100ms
@@ -1511,11 +1574,12 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_AUTO);
         }
-        if (!dvStatus) {
-            usleep(300000);//300ms
-            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-        }
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
+    }
+
+    if (isTvSupportDolbyVision(tvmode)) {
+        usleep(300000);//300ms
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
 }
 
@@ -1535,13 +1599,78 @@ void DisplayMode::DetectDolbyVisionOutputMode(output_mode_state state, char* out
             && isDolbyVisionEnable()) {
         char mode[MODE_LEN] = {0};
         if (isTvSupportDolbyVision(mode)) {
-            if (resolveResolutionValue(outputmode) > resolveResolutionValue(mode)
+            char tvmode[MODE_LEN] = {0};
+            for (int i = DISPLAY_MODE_TOTAL - 1; i >= 0; i--) {
+                if (strstr(mode, DISPLAY_MODE_LIST[i]) != NULL) {
+                    strcpy(tvmode, DISPLAY_MODE_LIST[i]);
+                }
+            }
+            if (resolveResolutionValue(outputmode) > resolveResolutionValue(tvmode)
                     || (strstr(outputmode, "smpte") != NULL)) {
                 memset(outputmode, 0, sizeof(outputmode));
-                strcpy(outputmode, mode);
+                strcpy(outputmode, tvmode);
+            }
+            char type[MODE_LEN] = {0};
+            pSysWrite->getPropertyString(PROP_DOLBY_VISION_TYPE, type, "1");
+            if (atoi(type) != 1 && strstr(mode, DV_MODE_TYPE[atoi(type)]) == NULL) {
+                strcpy(type, "1");
+            }
+            switch (atoi(type)) {
+                case DOLBY_VISION_SET_ENABLE:
+                    setBootEnv(UBOOTENV_COLORATTRIBUTE, "444,8bit");
+                    break;
+                case DOLBY_VISION_SET_ENABLE_LL_YUV:
+                    setBootEnv(UBOOTENV_COLORATTRIBUTE, "422,12bit");
+                    break;
+                case DOLBY_VISION_SET_ENABLE_LL_RGB:
+                    setBootEnv(UBOOTENV_COLORATTRIBUTE, "444,12bit");
+                    break;
             }
         }
     }
+}
+
+/* *
+ * @Description: set dolby vision graphics priority only when dolby vision enable.
+ * @params: "0": Video Priority    "1": Graphics Priority
+ * */
+void DisplayMode::setGraphicsPriority(const char* mode) {
+    if (NULL != mode) {
+        SYS_LOGI("setGraphicsPriority [%s]", mode);
+    }
+    if ((NULL != mode) && (atoi(mode) == 0 || atoi(mode) == 1)) {
+        pSysWrite->writeSysfs(DOLBY_VISION_GRAPHICS_PRIORITY, mode);
+        pSysWrite->setProperty(PROP_DOLBY_VISION_PRIORITY, mode);
+        SYS_LOGI("setGraphicsPriority [%s]",
+                atoi(mode) == 0 ? "Video Priority" : "Graphics Priority");
+    } else {
+        pSysWrite->writeSysfs(DOLBY_VISION_GRAPHICS_PRIORITY, "0");
+        pSysWrite->setProperty(PROP_DOLBY_VISION_PRIORITY, "0");
+        SYS_LOGI("setGraphicsPriority default [Video Priority]");
+    }
+}
+
+/* *
+ * @Description: get dolby vision graphics priority.
+ * @params: store current priority mode.
+ * */
+void DisplayMode::getGraphicsPriority(char* mode) {
+    char tmpmode[MODE_LEN] = {0};
+    memset(mode, 0, sizeof(mode));
+    pSysWrite->readSysfs(DOLBY_VISION_GRAPHICS_PRIORITY, tmpmode);
+    strcpy(mode, tmpmode);
+    SYS_LOGI("getGraphicsPriority [%s]",
+        atoi(mode) == 0 ? "Video Priority" : "Graphics Priority");
+}
+
+/* *
+ * @Description: init dolby vision graphics priority when bootup.
+ * */
+void DisplayMode::initGraphicsPriority() {
+    char mode[MODE_LEN] = {0};
+    pSysWrite->getPropertyString(PROP_DOLBY_VISION_PRIORITY, mode, "0");
+    pSysWrite->writeSysfs(DOLBY_VISION_GRAPHICS_PRIORITY, mode);
+    pSysWrite->setProperty(PROP_DOLBY_VISION_PRIORITY, mode);
 }
 
 /* *

@@ -86,6 +86,8 @@ public:
     virtual int64_t resolveResolutionValue(const String16& mode);
     virtual void setDolbyVisionEnable(int state);
     virtual bool isTvSupportDolbyVision(String16& mode);
+    virtual void setGraphicsPriority(const String16& mode);
+    virtual void getGraphicsPriority(String16& mode);
     virtual void setHdrMode(const String16& mode);
     virtual void setSdrMode(const String16& mode);
     virtual void reInit();

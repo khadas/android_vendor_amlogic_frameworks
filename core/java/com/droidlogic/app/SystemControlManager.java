@@ -114,6 +114,8 @@ public class SystemControlManager {
     //set HDR mode and SDR mode
     private static final int SET_HDR_MODE                   = IBinder.FIRST_CALL_TRANSACTION + 54;
     private static final int SET_SDR_MODE                   = IBinder.FIRST_CALL_TRANSACTION + 55;
+    private static final int SET_DOLBY_VISION_PRIORITY       = IBinder.FIRST_CALL_TRANSACTION + 121;
+    private static final int GET_DOLBY_VISION_PRIORITY       = IBinder.FIRST_CALL_TRANSACTION + 122;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -1043,6 +1045,39 @@ public class SystemControlManager {
         } catch (RemoteException ex) {
             Log.e(TAG, "set sdr mode:" + ex);
         }
+    }
+
+    public void setGraphicsPriority(String mode) {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                data.writeString(mode);
+                mIBinder.transact(SET_DOLBY_VISION_PRIORITY, data, reply, 0);
+                reply.recycle();
+                data.recycle();
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set dolby vision graphics priority mode:" + ex);
+        }
+    }
+    public String getGraphicsPriority() {
+        try {
+            if (null != mIBinder) {
+                Parcel data = Parcel.obtain();
+                Parcel reply = Parcel.obtain();
+                data.writeInterfaceToken(SYS_TOKEN);
+                mIBinder.transact(GET_DOLBY_VISION_PRIORITY, data, reply, 0);
+                String mode = reply.readString();
+                reply.recycle();
+                data.recycle();
+                return mode;
+            }
+        } catch (RemoteException ex) {
+            Log.e(TAG, "set dolby vision:" + ex);
+        }
+        return null;
     }
 
     public void setListener(ISystemControlNotify listener) {

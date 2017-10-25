@@ -709,6 +709,25 @@ public:
         }
     }
 
+    virtual void setGraphicsPriority(const String16& mode) {
+        Parcel data, reply;
+        data.writeString16(mode);
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(SET_DOLBY_VISION_PRIORITY, data, &reply) != NO_ERROR) {
+            ALOGE("set dolby vision graphics priority could not contact remote\n");
+            return;
+        }
+    }
+    virtual void getGraphicsPriority(String16& mode) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        if (remote()->transact(GET_DOLBY_VISION_PRIORITY, data, &reply) != NO_ERROR) {
+            ALOGD("getGraphicsPriority could not contact remote\n");
+            return;
+        }
+        mode = reply.readString16();
+    }
+
     virtual void reInit(void) {
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -1258,6 +1277,18 @@ status_t BnISystemControlService::onTransact(
             CHECK_INTERFACE(ISystemControlService, data, reply);
             String16 mode = data.readString16();
             setSinkOutputMode(mode);
+            return NO_ERROR;
+        }
+        case SET_DOLBY_VISION_PRIORITY: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 mode = data.readString16();
+            setGraphicsPriority(mode);
+            return NO_ERROR;
+        }
+        case GET_DOLBY_VISION_PRIORITY: {
+            String16 value;
+            getGraphicsPriority(value);
+            reply->writeString16(value);
             return NO_ERROR;
         }
         default: {

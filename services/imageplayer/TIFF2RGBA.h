@@ -19,6 +19,9 @@
 
 #include <SkBitmap.h>
 
+#include "tiffiop.h"
+#include "tiffio.h"
+
 #define MAX_PIC_SIZE                8000
 
 namespace android {
@@ -28,9 +31,11 @@ class TIFF2RGBA {
     TIFF2RGBA();
     ~TIFF2RGBA();
 
-    static int tiffDecodeBound(const char *filePath, int *width, int *height);
-    static int tiffDecoder(const char *filePath, SkBitmap *pBitmap);
-
+    int tiffDecodeBound(const char *filePath, int *width, int *height);
+    int tiffDecoder(const char *filePath, SkBitmap *pBitmap);
+    void close();
+    TIFF* mTif;
+    int* mRaster;
 };
 
 }  // namespace android

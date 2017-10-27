@@ -26,9 +26,6 @@
 #include "TIFF2RGBA.h"
 #include "ImagePlayerService.h"
 
-#include "tiffiop.h"
-#include "tiffio.h"
-
 using namespace android;
 
 namespace android {
@@ -447,8 +444,6 @@ int TIFF2RGBA::tiffDecodeBound(const char *filePath, int *width, int *height) {
 *
 *---------------------------------------------------------------*/
 int TIFF2RGBA::tiffDecoder(const char *filePath, SkBitmap *pBitmap) {
-    TIFF *in = NULL;
-    uint32* raster = NULL;  /* retrieve RGBA image */
     uint32 width, height;   /* image width & height */
     int ret = 0;
     size_t pixel_count;
@@ -460,15 +455,15 @@ int TIFF2RGBA::tiffDecoder(const char *filePath, SkBitmap *pBitmap) {
     }
 
     TIFFSetErrorHandler(TIFFErrorHandler);
-    in = TIFFOpen(filePath, "r");
-    if (NULL == in) {
+    mTif = TIFFOpen(filePath, "r");
+    if (NULL == mTif) {
         ALOGE("tiff decoder, open file:%s error", filePath);
         ret = -1;
         goto exit;
     }
 
-    TIFFGetField(in, TIFFTAG_IMAGEWIDTH, &width);
-    TIFFGetField(in, TIFFTAG_IMAGELENGTH, &height);
+    TIFFGetField(mTif, TIFFTAG_IMAGEWIDTH, &width);
+    TIFFGetField(mTif, TIFFTAG_IMAGELENGTH, &height);
 
     if (width > MAX_PIC_SIZE || height > MAX_PIC_SIZE) {
         ALOGE("tiff decoder size too large, not support");
@@ -479,25 +474,26 @@ int TIFF2RGBA::tiffDecoder(const char *filePath, SkBitmap *pBitmap) {
 
     /* XXX: Check the integer overflow. */
     if (!width || !height || pixel_count / width != height) {
-        ALOGE(TIFFFileName(in),
+        ALOGE(TIFFFileName(mTif),
             "Malformed input file; can't allocate buffer for raster of %lux%lu size",
             (unsigned long)width, (unsigned long)height);
         ret = -1;
         goto exit;
     }
 
-    raster = (uint32*)_TIFFCheckMalloc(in, pixel_count, sizeof(uint32), "raster buffer");
-    if (raster == NULL) {
-        ALOGE(TIFFFileName(in), "Failed to allocate buffer (%lu elements of %lu each)",
+    mRaster = (int*)_TIFFCheckMalloc(mTif, pixel_count, sizeof(uint32), "raster buffer");
+    if (mRaster == NULL) {
+        ALOGE(TIFFFileName(mTif), "Failed to allocate buffer (%lu elements of %lu each)",
             (unsigned long)pixel_count, (unsigned long)sizeof(uint32));
         ret = -1;
         goto exit;
     }
 
     /* Read the image in one chunk into an RGBA array */
-    if (!TIFFReadRGBAImageOriented(in, width, height, raster,
+    if (!TIFFReadRGBAImageOriented(mTif, width, height, (uint32*)mRaster,
                                    ORIENTATION_TOPLEFT, 0)) {
-        _TIFFfree(raster);
+        _TIFFfree(mRaster);
+        mRaster = NULL;
         ret = -1;
         goto exit;
     }
@@ -507,28 +503,46 @@ int TIFF2RGBA::tiffDecoder(const char *filePath, SkBitmap *pBitmap) {
      * we should rearrange it here.
      */
 #if HOST_BIGENDIAN
-    TIFFSwabArrayOfLong(raster, width * height);
+    TIFFSwabArrayOfLong(mRaster, width * height);
 #endif
 
     pBitmap->setInfo(SkImageInfo::Make(width, height,
             kN32_SkColorType, kPremul_SkAlphaType));
-    pBitmap->setPixels((void*)raster);
-    TIFFClose(in);
+    pBitmap->setPixels((void*)mRaster);
+    TIFFClose(mTif);
+    mTif = NULL;
     return ret;
 
 exit:
-    if (NULL != in)
-        TIFFClose(in);
+    if (NULL != mTif) {
+        TIFFClose(mTif);
+    }
 
-    if (NULL != raster)
-        _TIFFfree(raster);
+    if (NULL != mRaster) {
+        _TIFFfree(mRaster);
+        mRaster = NULL;
+    }
     return ret;
 }
 
+void TIFF2RGBA::close() {
+    if (NULL != mTif) {
+        TIFFClose(mTif);
+        mTif = NULL;
+    }
+
+    if (NULL != mRaster) {
+        _TIFFfree(mRaster);
+        mRaster = NULL;
+    }
+}
+
 TIFF2RGBA::TIFF2RGBA() {
+    mTif = NULL;
 }
 
 TIFF2RGBA::~TIFF2RGBA() {
+    close();
 }
 
 }

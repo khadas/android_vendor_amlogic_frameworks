@@ -18,7 +18,6 @@
 #define LOG_TAG "ImagePlayerService"
 
 #include "utils/Log.h"
-#include "TIFF2RGBA.h"
 #include "ImagePlayerService.h"
 
 #include <stdlib.h>
@@ -640,7 +639,7 @@ void ImagePlayerService::instantiate() {
 
 ImagePlayerService::ImagePlayerService()
     : mWidth(0), mHeight(0), mBitmap(NULL), mBufBitmap(NULL),
-    mSampleSize(1), mFileDescription(-1), mFrameIndex(0),
+    mSampleSize(1), mFileDescription(-1), mFrameIndex(0), mTif(NULL),
     surfaceWidth(SURFACE_4K_WIDTH), surfaceHeight(SURFACE_4K_HEIGHT),
     mScalingDirect(SCALE_NORMAL), mScalingStep(1.0f), mScalingBitmap(NULL),
     mRotateBitmap(NULL), mMovieImage(false), mMovieThread(NULL), mNeedResetHWScale(false),
@@ -1294,6 +1293,11 @@ int ImagePlayerService::release() {
         mFrameIndex = 0;
     }
 
+    if (NULL != mTif) {
+        delete mTif;
+        mTif = NULL;
+    }
+
     resetRotateScale();
     resetTranslate();
     resetHWScale();
@@ -1366,14 +1370,21 @@ SkBitmap* ImagePlayerService::decodeTiff(const char *filePath) {
     int width = 0;
     int height = 0;
 
-    TIFF2RGBA::tiffDecodeBound(filePath, &width, &height);
+    if (NULL != mTif) {
+        delete mTif;
+        mTif = NULL;
+    }
+    mTif = new TIFF2RGBA();
+    mTif->tiffDecodeBound(filePath, &width, &height);
     if ((width > MAX_PIC_SIZE) || (height > MAX_PIC_SIZE)) {
         ALOGE("decode tiff size is too large, we only support w < %d and h < %d, now image size w:%d, h:%d",
             MAX_PIC_SIZE, MAX_PIC_SIZE, width, height);
+        delete mTif;
+        mTif = NULL;
     }
     else {
         SkBitmap *bitmap = new SkBitmap();
-        int ret = TIFF2RGBA::tiffDecoder(filePath, bitmap);
+        int ret = mTif->tiffDecoder(filePath, bitmap);
         ALOGI("decode tiff result:%d, width:%d, height:%d", ret, bitmap->width(), bitmap->height());
 
         mWidth = bitmap->width();

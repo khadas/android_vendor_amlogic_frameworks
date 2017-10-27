@@ -26,6 +26,7 @@
 #include <SkStream.h>
 #include <IImagePlayerService.h>
 #include "ISystemControlService.h"
+#include "TIFF2RGBA.h"
 #include <binder/Binder.h>
 
 #define MAX_FILE_PATH_LEN           1024
@@ -146,6 +147,8 @@ class ImagePlayerService :  public BnImagePlayerService {
     SkBitmap* scaleAndCrop(SkBitmap *srcBitmap, float sx, float sy);
     SkBitmap* fillSurface(SkBitmap *bitmap);
     bool isSupportFromat(const char *uri, SkBitmap **bitmap);
+
+    TIFF2RGBA *mTif;
 
     mutable Mutex mLock;
     int mWidth, mHeight;

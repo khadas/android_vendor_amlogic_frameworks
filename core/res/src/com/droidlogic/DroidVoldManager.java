@@ -45,11 +45,13 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.os.ServiceManager;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.os.storage.DiskInfo;
 import android.os.storage.IStorageShutdownObserver;
 import android.os.storage.StorageResultCode;
+import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.os.storage.VolumeInfo;
 import android.os.storage.VolumeRecord;
@@ -76,6 +78,13 @@ import com.android.internal.widget.LockPatternUtils;
 import libcore.io.IoUtils;
 import libcore.util.EmptyArray;
 
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -95,11 +104,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.droidlogic.app.IDroidVoldManager;
+
 /**
  * Service responsible for various storage media. Connects to {@code droidvold} to
  * watch for and manage dynamically added storage, such as SD cards and USB mass storage.
  */
-class DroidVoldManager implements INativeDaemonConnectorCallbacks {
+class DroidVoldManager extends IDroidVoldManager.Stub
+    implements INativeDaemonConnectorCallbacks {
 
     // Static direct instance pointer for the tightly-coupled idle service to use
     static DroidVoldManager sSelf = null;
@@ -629,17 +641,313 @@ class DroidVoldManager implements INativeDaemonConnectorCallbacks {
         mConnectorThread = new Thread(mConnector, VOLD_TAG);
         Slog.d(TAG, "start nativeNaemon");
         mConnectorThread.start();
+        ServiceManager.addService("droidmount", sSelf, false);
+    }
 
+    private String findVolumeIdForPathOrThrow(String path) {
+        synchronized (mLock) {
+            for (int i = 0; i < mVolumes.size(); i++) {
+                final VolumeInfo vol = mVolumes.valueAt(i);
+                if (vol.path != null && path.startsWith(vol.path)) {
+                    return vol.id;
+                }
+            }
+        }
+        throw new IllegalArgumentException("No volume found for path " + path);
+    }
+
+    private VolumeInfo findVolumeByIdOrThrow(String id) {
+        synchronized (mLock) {
+            final VolumeInfo vol = mVolumes.get(id);
+            if (vol != null) {
+                return vol;
+            }
+        }
+        throw new IllegalArgumentException("No volume found for ID " + id);
     }
 
     /**
      * Exposed API calls below here
      */
 
+    @Override
     public void shutdown(final IStorageShutdownObserver observer) {
         enforcePermission(android.Manifest.permission.SHUTDOWN);
 
         Slog.i(TAG, "Shutting down");
         mHandler.obtainMessage(H_SHUTDOWN, observer).sendToTarget();
+    }
+
+    @Override
+    public int formatVolume(String path) {
+        format(findVolumeIdForPathOrThrow(path));
+        return 0;
+    }
+
+    @Override
+    public int mkdirs(String callingPkg, String appPath) {
+        final int userId = UserHandle.getUserId(Binder.getCallingUid());
+        final UserEnvironment userEnv = new UserEnvironment(userId);
+
+        File appFile = null;
+        try {
+            appFile = new File(appPath).getCanonicalFile();
+        } catch (IOException e) {
+            Slog.e(TAG, "Failed to resolve " + appPath + ": " + e);
+            return -1;
+        }
+
+        // Try translating the app path into a vold path, but require that it
+        // belong to the calling package.
+        if (FileUtils.contains(userEnv.buildExternalStorageAppDataDirs(callingPkg), appFile) ||
+                FileUtils.contains(userEnv.buildExternalStorageAppObbDirs(callingPkg), appFile) ||
+                FileUtils.contains(userEnv.buildExternalStorageAppMediaDirs(callingPkg), appFile)) {
+            appPath = appFile.getAbsolutePath();
+            if (!appPath.endsWith("/")) {
+                appPath = appPath + "/";
+            }
+
+            try {
+                mConnector.execute("volume", "mkdirs", appPath);
+                return 0;
+            } catch (NativeDaemonConnectorException e) {
+                return e.getCode();
+            }
+        }
+
+        throw new SecurityException("Invalid mkdirs path: " + appFile);
+    }
+
+    @Override
+    public StorageVolume[] getVolumeList(int uid, String packageName, int flags) {
+        final int userId = UserHandle.getUserId(uid);
+
+        final boolean forWrite = (flags & StorageManager.FLAG_FOR_WRITE) != 0;
+        final boolean realState = (flags & StorageManager.FLAG_REAL_STATE) != 0;
+        final boolean includeInvisible = (flags & StorageManager.FLAG_INCLUDE_INVISIBLE) != 0;
+
+
+        boolean foundPrimary = false;
+
+        final ArrayList<StorageVolume> res = new ArrayList<>();
+        synchronized (mLock) {
+            for (int i = 0; i < mVolumes.size(); i++) {
+                final VolumeInfo vol = mVolumes.valueAt(i);
+                switch (vol.getType()) {
+                    case VolumeInfo.TYPE_PUBLIC:
+                    case VolumeInfo.TYPE_EMULATED:
+                        break;
+                    default:
+                        continue;
+                }
+
+                boolean match = false;
+                if (forWrite) {
+                    match = vol.isVisibleForWrite(userId);
+                } else {
+                    match = vol.isVisibleForRead(userId)
+                            || (includeInvisible && vol.getPath() != null);
+                }
+                if (!match) continue;
+
+                boolean reportUnmounted = false;
+                if ((vol.getType() == VolumeInfo.TYPE_EMULATED)) {
+                    reportUnmounted = true;
+                } else if (!realState) {
+                    reportUnmounted = true;
+                }
+
+                final StorageVolume userVol = vol.buildStorageVolume(mContext, userId,
+                        reportUnmounted);
+                if (vol.isPrimary()) {
+                    res.add(0, userVol);
+                    foundPrimary = true;
+                } else {
+                    res.add(userVol);
+                }
+            }
+        }
+
+        if (!foundPrimary) {
+            Log.w(TAG, "No primary storage defined yet; hacking together a stub");
+
+            final boolean primaryPhysical = SystemProperties.getBoolean(
+                    StorageManager.PROP_PRIMARY_PHYSICAL, false);
+
+            final String id = "stub_primary";
+            final File path = Environment.getLegacyExternalStorageDirectory();
+            final String description = mContext.getString(android.R.string.unknownName);
+            final boolean primary = true;
+            final boolean removable = primaryPhysical;
+            final boolean emulated = !primaryPhysical;
+            final long mtpReserveSize = 0L;
+            final boolean allowMassStorage = false;
+            final long maxFileSize = 0L;
+            final UserHandle owner = new UserHandle(userId);
+            final String uuid = null;
+            final String state = Environment.MEDIA_REMOVED;
+
+            res.add(0, new StorageVolume(id, StorageVolume.STORAGE_ID_INVALID, path,
+                    description, primary, removable, emulated, mtpReserveSize,
+                    allowMassStorage, maxFileSize, owner, uuid, state));
+        }
+
+        return res.toArray(new StorageVolume[res.size()]);
+    }
+
+    @Override
+    public DiskInfo[] getDisks() {
+        synchronized (mLock) {
+            final DiskInfo[] res = new DiskInfo[mDisks.size()];
+            for (int i = 0; i < mDisks.size(); i++) {
+                res[i] = mDisks.valueAt(i);
+            }
+            return res;
+        }
+    }
+
+    @Override
+    public VolumeInfo[] getVolumes(int flags) {
+        synchronized (mLock) {
+            final VolumeInfo[] res = new VolumeInfo[mVolumes.size()];
+            for (int i = 0; i < mVolumes.size(); i++) {
+                res[i] = mVolumes.valueAt(i);
+            }
+            return res;
+        }
+    }
+
+    @Override
+    public VolumeRecord[] getVolumeRecords(int flags) {
+        synchronized (mLock) {
+            final VolumeRecord[] res = new VolumeRecord[mRecords.size()];
+            for (int i = 0; i < mRecords.size(); i++) {
+                res[i] = mRecords.valueAt(i);
+            }
+            return res;
+        }
+    }
+
+    @Override
+    public void mount(String volId) {
+        enforcePermission(android.Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS);
+        waitForReady();
+
+        final VolumeInfo vol = findVolumeByIdOrThrow(volId);
+        if (isMountDisallowed(vol)) {
+            throw new SecurityException("Mounting " + volId + " restricted by policy");
+        }
+        try {
+            mConnector.execute("volume", "mount", vol.id, vol.mountFlags, vol.mountUserId);
+        } catch (NativeDaemonConnectorException e) {
+            throw e.rethrowAsParcelableException();
+        }
+    }
+
+    @Override
+    public void unmount(String volId) {
+        enforcePermission(android.Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS);
+        waitForReady();
+
+        final VolumeInfo vol = findVolumeByIdOrThrow(volId);
+
+        try {
+            mConnector.execute("volume", "unmount", vol.id);
+        } catch (NativeDaemonConnectorException e) {
+            throw e.rethrowAsParcelableException();
+        }
+    }
+
+    @Override
+    public void format(String volId) {
+        enforcePermission(android.Manifest.permission.MOUNT_FORMAT_FILESYSTEMS);
+        waitForReady();
+
+        final VolumeInfo vol = findVolumeByIdOrThrow(volId);
+        try {
+            mConnector.execute("volume", "format", vol.id, "auto");
+        } catch (NativeDaemonConnectorException e) {
+            throw e.rethrowAsParcelableException();
+        }
+    }
+
+    @Override
+    public int getVolumeInfoDiskFlags(String mountPoint) {
+        int flag = 0;
+        int FLAG_SD = 1 << 2;
+        int FLAG_USB = 1 << 3;
+
+        synchronized (mLock) {
+            for (int i = 0; i < mVolumes.size(); i++) {
+                final VolumeInfo vol = mVolumes.valueAt(i);
+                if (vol.path != null && mountPoint.startsWith(vol.path)) {
+                    if (vol.getDisk().isSd())
+                        flag |= FLAG_SD;
+                    else if (vol.getDisk().isUsb())
+                        flag |= FLAG_USB;
+                    break;
+                }
+            }
+        }
+
+        return flag;
+    }
+
+
+    @Override
+    protected void dump(FileDescriptor fd, PrintWriter writer, String[] args) {
+        if (!DumpUtils.checkDumpPermission(mContext, TAG, writer)) return;
+
+        final IndentingPrintWriter pw = new IndentingPrintWriter(writer, "  ", 160);
+        synchronized (mLock) {
+            pw.println("Disks:");
+            pw.increaseIndent();
+            for (int i = 0; i < mDisks.size(); i++) {
+                final DiskInfo disk = mDisks.valueAt(i);
+                disk.dump(pw);
+            }
+            pw.decreaseIndent();
+
+            pw.println();
+            pw.println("Volumes:");
+            pw.increaseIndent();
+            for (int i = 0; i < mVolumes.size(); i++) {
+                final VolumeInfo vol = mVolumes.valueAt(i);
+                if (VolumeInfo.ID_PRIVATE_INTERNAL.equals(vol.id)) continue;
+                vol.dump(pw);
+            }
+            pw.decreaseIndent();
+
+            pw.println();
+            pw.println("Records:");
+            pw.increaseIndent();
+            for (int i = 0; i < mRecords.size(); i++) {
+                final VolumeRecord note = mRecords.valueAt(i);
+                note.dump(pw);
+            }
+            pw.decreaseIndent();
+
+            final Pair<String, Long> pair = StorageManager.getPrimaryStoragePathAndSize();
+            if (pair == null) {
+                pw.println("Internal storage total size: N/A");
+            } else {
+                pw.print("Internal storage (");
+                pw.print(pair.first);
+                pw.print(") total size: ");
+                pw.print(pair.second);
+                pw.print(" (");
+                pw.print((float) pair.second / TrafficStats.GB_IN_BYTES);
+                pw.println(" GB)");
+            }
+            pw.println();
+            pw.println("System unlocked users: " + Arrays.toString(mSystemUnlockedUsers));
+        }
+
+
+        pw.println();
+        pw.println("mConnector:");
+        pw.increaseIndent();
+        mConnector.dump(fd, pw, args);
+        pw.decreaseIndent();
     }
 }

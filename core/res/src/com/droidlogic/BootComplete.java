@@ -151,8 +151,8 @@ public class BootComplete extends BroadcastReceiver {
             if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false))
                 context.startService(new Intent(context, EsmService.class));
 
-            //Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
-            //context.startService(gattServiceIntent);
+            Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
+            context.startService(gattServiceIntent);
 
             String rotProp = sm.getPropertyString("persist.sys.app.rotation", "");
             ContentResolver res = context.getContentResolver();

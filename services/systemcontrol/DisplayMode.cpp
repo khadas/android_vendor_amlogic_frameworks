@@ -175,6 +175,7 @@ DisplayMode::DisplayMode(const char *path)
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
     mBootanimStatus(0),
+    mDVStatus(0),
     mLogLevel(LOG_LEVEL_DEFAULT) {
 
     if (NULL == path) {
@@ -562,6 +563,8 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         usleep(20000);
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "1");
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "0");
+        if ((state == OUPUT_MODE_STATE_SWITCH) && isDolbyVisionEnable())
+            usleep(20000);
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
 
@@ -1445,6 +1448,10 @@ bool DisplayMode::isDolbyVisionEnable() {
 
 void DisplayMode::setDolbyVisionEnable(int state) {
     if (DOLBY_VISION_SET_ENABLE == state) {
+        if (isDolbyVisionEnable())
+            mDVStatus = 1;
+        if (mDVStatus == 0)
+            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         //if TV
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_OFF);
@@ -1476,8 +1483,13 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_AUTO);
         }
+        if (mDVStatus == 0) {
+            usleep(400000);//400ms
+            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+        }
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
     } else {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FORCE_MODE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE, DV_MODE_BYPASS);
         usleep(100000);//100ms
@@ -1486,6 +1498,9 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_AUTO);
         }
+        usleep(300000);//300ms
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+        mDVStatus = 0;
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
     }
 }

@@ -234,14 +234,14 @@ Return<void> SystemControlHal::setBootEnv(const hidl_string &key, const hidl_str
 Return<void> SystemControlHal::getDroidDisplayInfo(getDroidDisplayInfo_cb _hidl_cb) {
     DroidDisplayInfo info;
 
-    std::string type;
+    /*std::string type;
     std::string ui;
     mSysControl->getDroidDisplayInfo(info.type, type, ui,
         info.fb0w, info.fb0h, info.fb0bits, info.fb0trip,
         info.fb1w, info.fb1h, info.fb1bits, info.fb1trip);
 
     info.socType = type;
-    info.defaultUI = ui;
+    info.defaultUI = ui;*/
     _hidl_cb(Result::OK, info);
     return Void();
 }

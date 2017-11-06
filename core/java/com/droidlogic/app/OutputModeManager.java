@@ -138,18 +138,12 @@ public class OutputModeManager {
     final Object mLock = new Object[0];
 
     private SystemControlManager mSystenControl;
-    SystemControlManager.DisplayInfo mDisplayInfo;
     private HdmiControlManager mHdmiControlManager;
 
     public OutputModeManager(Context context) {
         mContext = context;
 
         mSystenControl = new SystemControlManager(context);
-        mDisplayInfo = mSystenControl.getDisplayInfo();
-        if (DEBUG && mDisplayInfo.defaultUI != null) {
-            Log.d(TAG, "output mode, display type [1:tablet 2:MBOX 3:TV]: "
-                + mDisplayInfo.type + ", default output:" + mDisplayInfo.defaultUI);
-        }
 
         currentOutputmode = readSysfs(DISPLAY_MODE);
 
@@ -413,11 +407,9 @@ public class OutputModeManager {
     public void setHdmiUnPlugged(){
         Log.d(TAG, "setHdmiUnPlugged");
 
-        if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
-            if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
-                String cvbsmode = getBootenv(ENV_CVBS_MODE, "576cvbs");
-                setOutputMode(cvbsmode);
-            }
+        if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
+            String cvbsmode = getBootenv(ENV_CVBS_MODE, "576cvbs");
+            setOutputMode(cvbsmode);
         }
     }
 
@@ -425,21 +417,19 @@ public class OutputModeManager {
         boolean isAutoMode = isBestOutputmode() || readSupportList(HDMI_SUPPORT_LIST).contains("null edid");
 
         Log.d(TAG, "setHdmiPlugged auto mode: " + isAutoMode);
-        if (REAL_OUTPUT_SOC.contains(mDisplayInfo.socType)) {
-            if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
-                if (isAutoMode) {
-                    if (SystemControlManager.USE_BEST_MODE) {
-                        setOutputMode(getBestMatchResolution());
-                    } else {
-                        setOutputMode(getHighestMatchResolution());
-                    }
+        if (getPropertyBoolean(PROP_HDMI_ONLY, true)) {
+            if (isAutoMode) {
+                if (SystemControlManager.USE_BEST_MODE) {
+                    setOutputMode(getBestMatchResolution());
                 } else {
-                    String mode = getSupportedResolution();
-                    setOutputMode(mode);
+                    setOutputMode(getHighestMatchResolution());
                 }
+            } else {
+                String mode = getSupportedResolution();
+                setOutputMode(mode);
             }
-            switchHdmiPassthough();
         }
+        switchHdmiPassthough();
     }
 
     public boolean isBestOutputmode() {

@@ -937,7 +937,6 @@ void* DisplayMode::bootanimDetect(void* data) {
         usleep(1000 * 1000);
     }
 
-    pThiz->pSysWrite->writeSysfs(DISPLAY_LOGO_INDEX, "-1");
     pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
     SYS_LOGI("boot animation detect boot video:%s\n", bootvideo);
     if ((!strcmp(fs_mode, "recovery")) || (!strcmp(bootvideo, "1"))) {
@@ -952,8 +951,6 @@ void* DisplayMode::bootanimDetect(void* data) {
             //open fb0, let bootanimation show in it
             pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         }
-    } else {
-        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE_SWTICH, "0x10001");
     }
 
     pThiz->setOsdMouse(outputmode);

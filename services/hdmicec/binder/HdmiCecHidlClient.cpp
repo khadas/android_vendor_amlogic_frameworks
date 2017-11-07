@@ -31,11 +31,11 @@ namespace android {
 
 Mutex HdmiCecHidlClient::mLock;
 
-HdmiCecHidlClient::HdmiCecHidlClient()
+HdmiCecHidlClient::HdmiCecHidlClient(cec_connect_type_t type): mType(type)
 {
     mHdmiCecService = getHdmiCecService();
     mHdmiCecHidlCallback = new HdmiCecHidlCallback(this);
-    Return<void> ret = mHdmiCecService->setCallback(mHdmiCecHidlCallback);
+    Return<void> ret = mHdmiCecService->setCallback(mHdmiCecHidlCallback, static_cast<ConnectType>(type));
 }
 
 HdmiCecHidlClient::~HdmiCecHidlClient()
@@ -44,11 +44,20 @@ HdmiCecHidlClient::~HdmiCecHidlClient()
         delete mpPortInfo;
 }
 
-HdmiCecHidlClient* HdmiCecHidlClient::connect()
+HdmiCecHidlClient* HdmiCecHidlClient::connect(cec_connect_type_t type)
 {
     //sp<HdmiCecHidlClient> client = new HdmiCecHidlClient();
     //return client;
-    return new HdmiCecHidlClient();
+    return new HdmiCecHidlClient(type);
+}
+
+void HdmiCecHidlClient::reconnect()
+{
+    ALOGI("hdmi cec client type:%d reconnect", mType);
+    mHdmiCecService.clear();
+    //reconnect to server
+    mHdmiCecService = getHdmiCecService();
+    mHdmiCecService->setCallback(mHdmiCecHidlCallback, static_cast<ConnectType>(mType));
 }
 
 int HdmiCecHidlClient::openCecDevice()
@@ -207,7 +216,7 @@ int HdmiCecHidlClient::sendMessage(const cec_message_t* message, bool isExtend)
     //change message from hwbinder data structure to needed data structure
     hidlMsg.initiator = static_cast<CecLogicalAddress>(message->initiator);
     hidlMsg.destination = static_cast<CecLogicalAddress>(message->destination);
-
+    hidlMsg.body.resize(message->length);
     for (size_t i = 0; i < message->length; ++i) {
         hidlMsg.body[i] = message->body[i];
     }
@@ -303,11 +312,11 @@ Return<void> HdmiCecHidlClient::HdmiCecHidlCallback::notifyCallback(const CecEve
 void HdmiCecHidlClient::HdmiCecDaemonDeathRecipient::serviceDied(uint64_t cookie __unused,
         const ::android::wp<::android::hidl::base::V1_0::IBase>& who __unused)
 {
-    ALOGE("hdmi cec died.");
+    ALOGE("hdmi cec daemon died.");
     Mutex::Autolock _l(mLock);
-    cecClient->mHdmiCecService.clear();
-    ALOGE("kill myself");
-    kill(getpid(), SIGKILL);
+
+    usleep(200*1000);//sleep 200ms
+    cecClient->reconnect();
 }
 
 };//namespace android

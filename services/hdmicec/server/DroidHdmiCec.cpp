@@ -23,6 +23,7 @@
 
 #include <inttypes.h>
 #include <string>
+#include <cutils/properties.h>
 #include "../binder/HdmiCecBase.h"
 #include "DroidHdmiCec.h"
 
@@ -39,10 +40,12 @@ void DroidHdmiCec::instantiate()
     DroidHdmiCec *pcec = new DroidHdmiCec();
 }
 
-DroidHdmiCec::DroidHdmiCec()
+DroidHdmiCec::DroidHdmiCec() : mDeathRecipient(new DeathRecipient(this))
 {
     mHdmiCecControl = new HdmiCecControl();
     mHdmiCecControl->setEventObserver(this);
+
+    mDebug = property_get_bool("persist.hdmicec.debug", true);
 }
 
 DroidHdmiCec::~DroidHdmiCec()
@@ -58,6 +61,10 @@ Return<void> DroidHdmiCec::openCecDevice(openCecDevice_cb _hidl_cb)
     }
 
     _hidl_cb(Result::SUCCESS, fd);
+
+    if (mDebug)
+        ALOGI("openCecDevice fd: %d", fd);
+
     return Void();
 }
 
@@ -66,6 +73,10 @@ Return<void> DroidHdmiCec::closeCecDevice()
     if (NULL != mHdmiCecControl) {
         mHdmiCecControl->closeCecDevice();
     }
+
+    if (mDebug)
+        ALOGI("closeCecDevice");
+
     return Void();
 }
 
@@ -75,6 +86,10 @@ Return<int32_t> DroidHdmiCec::getCecVersion()
     if (NULL != mHdmiCecControl) {
         return mHdmiCecControl->getVersion(&version);
     }
+
+    if (mDebug)
+        ALOGI("getCecVersion version: %d", version);
+
     return version;
 }
 
@@ -84,6 +99,10 @@ Return<uint32_t> DroidHdmiCec::getVendorId()
     if (NULL != mHdmiCecControl) {
         return mHdmiCecControl->getVendorId(&vendorId);
     }
+
+    if (mDebug)
+        ALOGI("getVendorId vendorId: %d", vendorId);
+
     return vendorId;
 }
 
@@ -138,13 +157,15 @@ Return<void> DroidHdmiCec::getPortInfo(getPortInfo_cb _hidl_cb)
                 .arcSupported = legacyPorts[i].arc_supported != 0,
                 .physicalAddress = legacyPorts[i].physical_address
             };
-            /*
-            ALOGD("droidhdmicec port %d, type:%s, id:%d, cec support:%d, arc support:%d, physical address:%x",
-                i, (HDMI_OUTPUT==static_cast<hdmi_port_type_t>(portInfos[i].type)) ? "output" : "input",
-                portInfos[i].portId,
-                portInfos[i].cecSupported?1:0,
-                portInfos[i].arcSupported?1:0,
-                portInfos[i].physicalAddress);*/
+
+            if (mDebug)
+                ALOGD("droidhdmicec port %d, type:%s, id:%d, cec support:%d, arc support:%d, physical address:%x",
+                    i, (HDMI_OUTPUT==static_cast<hdmi_port_type_t>(portInfos[i].type)) ? "output" : "input",
+                    portInfos[i].portId,
+                    portInfos[i].cecSupported?1:0,
+                    portInfos[i].arcSupported?1:0,
+                    portInfos[i].physicalAddress);
+
         }
 
         _hidl_cb(portInfos);
@@ -155,6 +176,9 @@ Return<void> DroidHdmiCec::getPortInfo(getPortInfo_cb _hidl_cb)
 
 Return<Result> DroidHdmiCec::addLogicalAddress(CecLogicalAddress addr)
 {
+    if (mDebug)
+        ALOGI("addLogicalAddress addr: %d", addr);
+
     if (NULL != mHdmiCecControl) {
         mHdmiCecControl->addLogicalAddress(static_cast<cec_logical_address_t>(addr));
         return Result::SUCCESS;
@@ -164,6 +188,9 @@ Return<Result> DroidHdmiCec::addLogicalAddress(CecLogicalAddress addr)
 
 Return<void> DroidHdmiCec::clearLogicalAddress()
 {
+    if (mDebug)
+        ALOGI("clearLogicalAddress");
+
     if (NULL != mHdmiCecControl) {
         mHdmiCecControl->clearLogicaladdress();
     }
@@ -172,6 +199,9 @@ Return<void> DroidHdmiCec::clearLogicalAddress()
 
 Return<void> DroidHdmiCec::setOption(OptionKey key, bool value)
 {
+    if (mDebug)
+        ALOGI("setOption key: %d, value:%d", key, value?1:0);
+
     if (NULL != mHdmiCecControl) {
         mHdmiCecControl->setOption((int)key, value);
     }
@@ -180,6 +210,9 @@ Return<void> DroidHdmiCec::setOption(OptionKey key, bool value)
 
 Return<void> DroidHdmiCec::enableAudioReturnChannel(int32_t portId, bool enable)
 {
+    if (mDebug)
+        ALOGI("enableAudioReturnChannel portId: %d enable:%d", portId, enable?1:0);
+
     if (NULL != mHdmiCecControl) {
         mHdmiCecControl->setAudioReturnChannel(portId, enable);
     }
@@ -188,16 +221,37 @@ Return<void> DroidHdmiCec::enableAudioReturnChannel(int32_t portId, bool enable)
 
 Return<bool> DroidHdmiCec::isConnected(int32_t portId)
 {
+    if (mDebug)
+        ALOGI("isConnected portId: %d", portId);
+
     if (NULL != mHdmiCecControl) {
         return mHdmiCecControl->isConnected(portId);
     }
     return false;
 }
 
-Return<void> DroidHdmiCec::setCallback(const sp<IDroidHdmiCecCallback>& callback)
+Return<void> DroidHdmiCec::setCallback(const sp<IDroidHdmiCecCallback>& callback, ConnectType type)
 {
-    if (callback != NULL) {
-        mClients.push_back(callback);
+    if ((int)type > (int)ConnectType::TYPE_TOTAL - 1) {
+        ALOGE("%s don't support type:%d", __FUNCTION__, (int)type);
+        return Void();
+    }
+
+    if (callback != nullptr) {
+        if (mClients[(int)type] != nullptr) {
+            ALOGW("%s this type:%s had a callback, cover it", __FUNCTION__, getConnectTypeStr(type));
+            mClients[(int)type]->unlinkToDeath(mDeathRecipient);
+        }
+
+        mClients[(int)type] = callback;
+        Return<bool> linkResult = callback->linkToDeath(mDeathRecipient, (int)type);
+        bool linkSuccess = linkResult.isOk() ? static_cast<bool>(linkResult) : false;
+        if (!linkSuccess) {
+            ALOGW("Couldn't link death recipient for type: %s", getConnectTypeStr(type));
+        }
+
+        if (mDebug)
+            ALOGI("%s this type:%s, client size:%d", __FUNCTION__, getConnectTypeStr(type), (int)mClients.size());
     }
     return Void();
 }
@@ -218,20 +272,22 @@ void DroidHdmiCec::onEventUpdate(const hdmi_cec_event_t* event)
     else if (0 != event->eventType) {
         hidlEvent.cec.initiator = static_cast<CecLogicalAddress>(event->cec.initiator);
         hidlEvent.cec.destination = static_cast<CecLogicalAddress>(event->cec.destination);
+        hidlEvent.cec.body.resize(event->cec.length);
         for (size_t i = 0; i < event->cec.length; i++) {
             hidlEvent.cec.body[i] = event->cec.body[i];
         }
     }
 
     int clientSize = mClients.size();
-    ALOGV("%s, %s, client size:%d", __FUNCTION__, getEventType(event->eventType), clientSize);
-
     for (int i = 0; i < clientSize; i++) {
-        mClients[i]->notifyCallback(hidlEvent);
+        if (mClients[i] != nullptr) {
+            ALOGI("%s, client index:%d, connect type:%s, event:%s", __FUNCTION__, i, getConnectTypeStr((ConnectType)i), getEventTypeStr(event->eventType));
+            mClients[i]->notifyCallback(hidlEvent);
+        }
     }
 }
 
-const char* DroidHdmiCec::getEventType(int eventType)
+const char* DroidHdmiCec::getEventTypeStr(int eventType)
 {
     switch (eventType) {
         case HDMI_EVENT_CEC_MESSAGE:
@@ -247,6 +303,35 @@ const char* DroidHdmiCec::getEventType(int eventType)
         default:
             return "unknown message";
     }
+}
+
+const char* DroidHdmiCec::getConnectTypeStr(ConnectType type)
+{
+    switch (type) {
+        case ConnectType::TYPE_HAL:
+            return "HAL";
+        case ConnectType::TYPE_EXTEND:
+            return "EXTEND";
+        default:
+            return "unknown type";
+    }
+}
+
+void DroidHdmiCec::handleServiceDeath(uint32_t type) {
+    ALOGI("hdmicec daemon client:%s died", getConnectTypeStr((ConnectType)type));
+    mClients[type].clear();
+}
+
+DroidHdmiCec::DeathRecipient::DeathRecipient(sp<DroidHdmiCec> cec)
+        : mDroidHdmiCec(cec) {}
+
+void DroidHdmiCec::DeathRecipient::serviceDied(
+        uint64_t cookie,
+        const wp<::android::hidl::base::V1_0::IBase>& /*who*/) {
+    ALOGE("droid hdmi cec daemon a client died cookie:%d", (int)cookie);
+
+    uint32_t type = static_cast<uint32_t>(cookie);
+    mDroidHdmiCec->handleServiceDeath(type);
 }
 
 }  // namespace implementation

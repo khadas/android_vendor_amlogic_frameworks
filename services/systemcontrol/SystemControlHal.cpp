@@ -45,7 +45,8 @@ namespace V1_0 {
 namespace implementation {
 
 SystemControlHal::SystemControlHal(SystemControlService * control)
-    : mSysControl(control) {
+    : mSysControl(control),
+    mDeathRecipient(new DeathRecipient(this)) {
 
     control->setListener(this);
 }
@@ -68,7 +69,10 @@ void SystemControlHal::onEvent(int event) {
     ALOGI("onEvent event:%d, client size:%d", event, clientSize);
 
     for (int i = 0; i < clientSize; i++) {
-        mClients[i]->notifyCallback(event);
+        if (mClients[i] != nullptr) {
+            ALOGI("%s, client cookie:%d notifyCallback", __FUNCTION__, i);
+            mClients[i]->notifyCallback(event);
+        }
     }
 }
 
@@ -341,8 +345,31 @@ Return<void> SystemControlHal::resolveResolutionValue(const hidl_string& mode, r
 
 Return<void> SystemControlHal::setCallback(const sp<ISystemControlCallback>& callback) {
     if (callback != nullptr) {
-        mClients.push_back(callback);
+        int cookie = -1;
+        int clientSize = mClients.size();
+        for (int i = 0; i < clientSize; i++) {
+            if (mClients[i] == nullptr) {
+                ALOGI("%s, client index:%d had died, this id give the new client", __FUNCTION__, i);
+                cookie = i;
+                mClients[i] = callback;
+                break;
+            }
+        }
+
+        if (cookie < 0) {
+            cookie = clientSize;
+            mClients[clientSize] = callback;
+        }
+
+        Return<bool> linkResult = callback->linkToDeath(mDeathRecipient, cookie);
+        bool linkSuccess = linkResult.isOk() ? static_cast<bool>(linkResult) : false;
+        if (!linkSuccess) {
+            ALOGW("Couldn't link death recipient for cookie: %d", cookie);
+        }
+
+        ALOGI("%s cookie:%s, client size:%d", __FUNCTION__, cookie, (int)mClients.size());
     }
+
     return Void();
 }
 
@@ -406,6 +433,23 @@ Return<void> SystemControlHal::autoDetect3DForMbox() {
     return Void();
 }
 //3D end
+
+void SystemControlHal::handleServiceDeath(uint32_t cookie) {
+    mClients[cookie]->unlinkToDeath(mDeathRecipient);
+    mClients[cookie].clear();
+}
+
+SystemControlHal::DeathRecipient::DeathRecipient(sp<SystemControlHal> sch)
+        : mSystemControlHal(sch) {}
+
+void SystemControlHal::DeathRecipient::serviceDied(
+        uint64_t cookie,
+        const wp<::android::hidl::base::V1_0::IBase>& /*who*/) {
+    ALOGE("systemcontrol daemon client died cookie:%d", (int)cookie);
+
+    uint32_t type = static_cast<uint32_t>(cookie);
+    mSystemControlHal->handleServiceDeath(type);
+}
 
 }  // namespace implementation
 }  // namespace V1_0

@@ -77,7 +77,6 @@ using namespace android;
 #define SYSFS_VIDEO_LAYER_STATE         "/sys/class/video/video_layer1_state"
 #define DISPLAY_FB0_BLANK               "/sys/class/graphics/fb0/blank"
 #define DISPLAY_FB1_BLANK               "/sys/class/graphics/fb1/blank"
-#define DISPLAY_LOGO_INDEX              "/sys/module/fb/parameters/osd_logo_index"
 #define SYS_DISABLE_VIDEO               "/sys/class/video/disable_video"
 
 #define DISPLAY_FB0_FREESCALE           "/sys/class/graphics/fb0/free_scale"
@@ -90,7 +89,6 @@ using namespace android;
 
 #define DISPLAY_FB0_FREESCALE_AXIS      "/sys/class/graphics/fb0/free_scale_axis"
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
-#define DISPLAY_FB0_FREESCALE_SWTICH    "/sys/class/graphics/fb0/free_scale_switch"
 
 #define DISPLAY_HDMI_HDCP14_STOP        "stop14" //stop HDCP1.4 authenticate
 #define DISPLAY_HDMI_HDCP22_STOP        "stop22" //stop HDCP2.2 authenticate

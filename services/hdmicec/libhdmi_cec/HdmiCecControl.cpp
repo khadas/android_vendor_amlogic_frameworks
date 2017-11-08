@@ -151,8 +151,10 @@ void HdmiCecControl::threadLoop()
     ALOGD("[hcc] file open ok, fd = %d.", mCecDevice.mFd);
 
     while (mCecDevice.mRun) {
-        if (!mCecDevice.isCecEnabled)
+        if (!mCecDevice.isCecEnabled) {
+            usleep(1000 * 1000);
             continue;
+        }
         checkConnectStatus();
 
         memset(msg_buf, 0, sizeof(msg_buf));
@@ -331,6 +333,7 @@ void HdmiCecControl::setOption(int flag, int value)
 
         case HDMI_OPTION_SYSTEM_CEC_CONTROL:
             ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_SYS_CTRL, value);
+            mCecDevice.isCecEnabled = (value == 1) ? true : false;
             mCecDevice.isCecControlled = (value == 1) ? true : false;
             break;
 

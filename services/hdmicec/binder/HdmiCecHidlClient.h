@@ -35,6 +35,7 @@ namespace android {
 
 using ::vendor::amlogic::hardware::hdmicec::V1_0::IDroidHdmiCEC;
 using ::vendor::amlogic::hardware::hdmicec::V1_0::IDroidHdmiCecCallback;
+using ::vendor::amlogic::hardware::hdmicec::V1_0::ConnectType;
 using ::vendor::amlogic::hardware::hdmicec::V1_0::Result;
 using ::vendor::amlogic::hardware::hdmicec::V1_0::CecEvent;
 using ::vendor::amlogic::hardware::hdmicec::V1_0::HdmiPortInfo;
@@ -48,12 +49,17 @@ using ::android::hardware::hidl_string;
 using ::android::hardware::Return;
 using ::android::hardware::Void;
 
+typedef enum {
+    CONNECT_TYPE_HAL            = 0,
+    CONNECT_TYPE_EXTEND         = 1
+} cec_connect_type_t;
+
 class HdmiCecHidlClient {
 public:
-    HdmiCecHidlClient();
+    HdmiCecHidlClient(cec_connect_type_t type);
     virtual ~HdmiCecHidlClient();
 
-    static HdmiCecHidlClient* connect();
+    static HdmiCecHidlClient* connect(cec_connect_type_t type);
 
     virtual int openCecDevice();
     virtual int closeCecDevice();
@@ -74,10 +80,12 @@ public:
 private:
 
     static Mutex mLock;
+    cec_connect_type_t mType;
     sp<IDroidHdmiCEC> mHdmiCecService;
     sp<HdmiCecEventListener> mEventListener;
 
     sp<IDroidHdmiCEC> getHdmiCecService();
+    void reconnect();
     class HdmiCecHidlCallback : public IDroidHdmiCecCallback {
     public:
         HdmiCecHidlCallback(HdmiCecHidlClient *client): cecClient(client) {};

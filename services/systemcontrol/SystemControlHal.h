@@ -101,8 +101,25 @@ struct SystemControlHal : public ISystemControl, public SystemControlNotify {
     virtual void onEvent(int event);
 
   private:
+    void handleServiceDeath(uint32_t cookie);
+
     SystemControlService *mSysControl;
-    std::vector<sp<ISystemControlCallback>> mClients;
+    std::map<uint32_t, sp<ISystemControlCallback>> mClients;
+
+    class DeathRecipient : public android::hardware::hidl_death_recipient  {
+    public:
+        DeathRecipient(sp<SystemControlHal> sch);
+
+        // hidl_death_recipient interface
+        virtual void serviceDied(uint64_t cookie,
+            const ::android::wp<::android::hidl::base::V1_0::IBase>& who) override;
+
+    private:
+        sp<SystemControlHal> mSystemControlHal;
+    };
+
+    sp<DeathRecipient> mDeathRecipient;
+
 };
 
 }  // namespace implementation

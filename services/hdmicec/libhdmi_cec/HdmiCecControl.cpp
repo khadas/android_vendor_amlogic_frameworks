@@ -34,7 +34,7 @@
 namespace android {
 
 HdmiCecControl::HdmiCecControl() {
-    ALOGD("HdmiCecControl");
+    ALOGD("[hcc] HdmiCecControl");
     init();
 }
 
@@ -54,7 +54,7 @@ void HdmiCecControl::init()
     memset(value, 0, PROPERTY_VALUE_MAX);
     property_get("persist.sys.hdmi.keep_awake", value, "true");
     mCecDevice.mExtendControl = (!strcmp(value, "false")) ? 1 : 0;
-    ALOGD("device_type: %d, ext_control: %d", mCecDevice.mDeviceType, mCecDevice.mExtendControl);
+    ALOGD("[hcc] device_type: %d, ext_control: %d", mCecDevice.mDeviceType, mCecDevice.mExtendControl);
 }
 
 /**
@@ -70,7 +70,7 @@ int HdmiCecControl::closeCecDevice()
     close(mCecDevice.mFd);
     delete mCecDevice.mpPortData;
 
-    ALOGD("%s, cec has closed.", __FUNCTION__);
+    ALOGD("[hcc] %s, cec has closed.", __FUNCTION__);
     return 0;
 }
 
@@ -92,7 +92,7 @@ int HdmiCecControl::openCecDevice()
     mCecDevice.isCecControlled = false;
     mCecDevice.mFd = open(CEC_FILE, O_RDWR);
     if (mCecDevice.mFd < 0) {
-        ALOGE("can't open device. fd < 0");
+        ALOGE("[hcc] can't open device. fd < 0");
         return -EINVAL;
     }
     int ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_DEV_TYPE, mCecDevice.mDeviceType);
@@ -111,7 +111,7 @@ void HdmiCecControl::getBootConnectStatus()
     int port, ret;
 
     ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_PORT_NUM, &total);
-    ALOGD("total port:%d, ret:%d", total, ret);
+    ALOGD("[hcc] total port:%d, ret:%d", total, ret);
     if (ret < 0)
         return ;
 
@@ -122,12 +122,12 @@ void HdmiCecControl::getBootConnectStatus()
         port = i + 1;
         ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_CONNECT_STATUS, &port);
         if (ret) {
-            ALOGD("get port %d connected status failed, ret:%d", i, ret);
+            ALOGD("[hcc] get port %d connected status failed, ret:%d", i, ret);
             continue;
         }
         mCecDevice.mConnectStatus |= ((port ? 1 : 0) << i);
     }
-    ALOGD("mConnectStatus: %d", mCecDevice.mConnectStatus);
+    ALOGD("[hcc] mConnectStatus: %d", mCecDevice.mConnectStatus);
 }
 
 void* HdmiCecControl::__threadLoop(void *user)
@@ -143,12 +143,12 @@ void HdmiCecControl::threadLoop()
     hdmi_cec_event_t event;
     int r = -1;
 
-    ALOGD("threadLoop start.");
+    //ALOGD("[hcc] threadLoop start.");
     while (mCecDevice.mFd < 0) {
         usleep(1000 * 1000);
         mCecDevice.mFd = open(CEC_FILE, O_RDWR);
     }
-    ALOGD("file open ok, fd = %d.", mCecDevice.mFd);
+    ALOGD("[hcc] file open ok, fd = %d.", mCecDevice.mFd);
 
     while (mCecDevice.mRun) {
         if (!mCecDevice.isCecEnabled)
@@ -171,14 +171,14 @@ void HdmiCecControl::threadLoop()
 
         if (mCecDevice.mDeviceType == DEV_TYPE_PLAYBACK
                 && msg_buf[1] == CEC_MESSAGE_SET_MENU_LANGUAGE && mCecDevice.mExtendControl) {
-            ALOGD("ignore menu language change for hdmi-tx.");
+            ALOGD("[hcc] ignore menu language change for hdmi-tx.");
         } else {
             if (mCecDevice.isCecControlled) {
                 event.eventType |= HDMI_EVENT_CEC_MESSAGE;
             }
         }
 
-        ALOGD("mExtendControl = %d, mDeviceType = %d, isCecControlled = %d",
+        ALOGD("[hcc] mExtendControl = %d, mDeviceType = %d, isCecControlled = %d",
                 mCecDevice.mExtendControl, mCecDevice.mDeviceType, mCecDevice.isCecControlled);
         /* call java method to process cec message for ext control */
         if ((mCecDevice.mExtendControl == 0x03)
@@ -190,7 +190,7 @@ void HdmiCecControl::threadLoop()
             mEventListener->onEventUpdate(&event);
         }
     }
-    ALOGE("thread end.");
+    //ALOGE("thread end.");
     mCecDevice.mExited = true;
 }
 
@@ -205,12 +205,12 @@ void HdmiCecControl::checkConnectStatus()
         port = mCecDevice.mpPortData[i].port_id;
         ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_CONNECT_STATUS, &port);
         if (ret) {
-            ALOGE("get port %d connected status failed, ret:%d\n", mCecDevice.mpPortData[i].port_id, ret);
+            ALOGE("[hcc] get port %d connected status failed, ret:%d\n", mCecDevice.mpPortData[i].port_id, ret);
             continue;
         }
         bit = prev_status & (1 << i);
         if (bit ^ ((port ? 1 : 0) << i)) {//connect status has changed
-            ALOGD("port:%d, connect status changed, now:%d, prev_status:%x\n",
+            ALOGD("[hcc] port:%d, connect status changed, now:%d, prev_status:%x\n",
                     mCecDevice.mpPortData[i].port_id, port, prev_status);
             if (mEventListener != NULL && mCecDevice.isCecEnabled && mCecDevice.isCecControlled) {
                 event.eventType = HDMI_EVENT_HOT_PLUG;
@@ -220,7 +220,7 @@ void HdmiCecControl::checkConnectStatus()
             }
             prev_status &= ~(bit);
             prev_status |= ((port ? 1 : 0) << i);
-            ALOGD("now mask:%x\n", prev_status);
+            //ALOGD("[hcc] now mask:%x\n", prev_status);
         }
     }
     mCecDevice.mConnectStatus = prev_status;
@@ -236,7 +236,7 @@ int HdmiCecControl::readMessage(unsigned char *buf, int msg_cnt)
     /* maybe blocked at driver */
     ret = read(mCecDevice.mFd, buf, msg_cnt);
     if (ret < 0) {
-        ALOGE("read :%s failed, ret:%d\n", CEC_FILE, ret);
+        ALOGE("[hcc] read :%s failed, ret:%d\n", CEC_FILE, ret);
         return -1;
     }
 
@@ -250,7 +250,7 @@ void HdmiCecControl::getPortInfos(hdmi_port_info_t* list[], int* total)
 
     ioctl(mCecDevice.mFd, CEC_IOC_GET_PORT_NUM, total);
 
-    ALOGD("total port:%d", *total);
+    ALOGD("[hcc] total port:%d", *total);
     if (*total > MAX_PORT)
         *total = MAX_PORT;
 
@@ -258,7 +258,7 @@ void HdmiCecControl::getPortInfos(hdmi_port_info_t* list[], int* total)
         delete mCecDevice.mpPortData;
     mCecDevice.mpPortData = new hdmi_port_info[*total];
     if (!mCecDevice.mpPortData) {
-        ALOGE("alloc port_data failed");
+        ALOGE("[hcc] alloc port_data failed");
         *total = 0;
         return;
     }
@@ -266,7 +266,7 @@ void HdmiCecControl::getPortInfos(hdmi_port_info_t* list[], int* total)
     ioctl(mCecDevice.mFd, CEC_IOC_GET_PORT_INFO, mCecDevice.mpPortData);
 
     for (int i = 0; i < *total; i++) {
-        ALOGD("port %d, type:%s, id:%d, cec support:%d, arc support:%d, physical address:%x",
+        ALOGD("[hcc] port %d, type:%s, id:%d, cec support:%d, arc support:%d, physical address:%x",
                 i, mCecDevice.mpPortData[i].type ? "output" : "input",
                 mCecDevice.mpPortData[i].port_id,
                 mCecDevice.mpPortData[i].cec_supported,
@@ -295,7 +295,7 @@ int HdmiCecControl::addLogicalAddress(cec_logical_address_t address)
             mEventListener->onEventUpdate(&event);
         }
     }
-    ALOGD("addr:%x, bitmap:%x\n", address, mCecDevice.mAddrBitmap);
+    ALOGD("[hcc] addr:%x, bitmap:%x\n", address, mCecDevice.mAddrBitmap);
     return ioctl(mCecDevice.mFd, CEC_IOC_ADD_LOGICAL_ADDR, address);
 }
 
@@ -346,7 +346,7 @@ void HdmiCecControl::setOption(int flag, int value)
         default:
             break;
     }
-    ALOGD("%s, flag:0x%x, value:0x%x, ret:%d, isCecControlled:%x", __FUNCTION__, flag, value, ret, mCecDevice.isCecControlled);
+    ALOGD("[hcc] %s, flag:0x%x, value:0x%x, ret:%d, isCecControlled:%x", __FUNCTION__, flag, value, ret, mCecDevice.isCecControlled);
 }
 
 void HdmiCecControl::setAudioReturnChannel(int port, bool flag)
@@ -355,7 +355,7 @@ void HdmiCecControl::setAudioReturnChannel(int port, bool flag)
         return;
 
     int ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_ARC_ENABLE, flag);
-    ALOGD("%s, port id:%d, flag:%x, ret:%d\n", __FUNCTION__, port, flag, ret);
+    ALOGD("[hcc] %s, port id:%d, flag:%x, ret:%d\n", __FUNCTION__, port, flag, ret);
 }
 
 bool HdmiCecControl::isConnected(int port)
@@ -369,7 +369,7 @@ bool HdmiCecControl::isConnected(int port)
     ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_CONNECT_STATUS, &status);
     if (ret)
         return false;
-    ALOGD("%s, port:%d, connected:%s", __FUNCTION__, port, status ? "yes" : "no");
+    ALOGD("[hcc] %s, port:%d, connected:%s", __FUNCTION__, port, status ? "yes" : "no");
     return status;
 }
 
@@ -379,7 +379,7 @@ int HdmiCecControl::getVersion(int* version)
         return -1;
 
     int ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_VERSION, version);
-    ALOGD("%s, version:%x, ret = %d", __FUNCTION__, *version, ret);
+    ALOGD("[hcc] %s, version:%x, ret = %d", __FUNCTION__, *version, ret);
     return ret;
 }
 
@@ -389,7 +389,7 @@ int HdmiCecControl::getVendorId(uint32_t* vendorId)
         return -1;
 
     int ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_VENDOR_ID, vendorId);
-    ALOGD("%s, vendorId: %x, ret = %d", __FUNCTION__, *vendorId, ret);
+    ALOGD("[hcc] %s, vendorId: %x, ret = %d", __FUNCTION__, *vendorId, ret);
     return ret;
 }
 
@@ -399,7 +399,7 @@ int HdmiCecControl::getPhysicalAddress(uint16_t* addr)
         return -EINVAL;
 
     int ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_PHYSICAL_ADDR, addr);
-    ALOGD("%s, physical addr: %x, ret = %d", __FUNCTION__, *addr, ret);
+    ALOGD("[hcc] %s, physical addr: %x, ret = %d", __FUNCTION__, *addr, ret);
     return ret;
 }
 
@@ -409,7 +409,7 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
         return -EINVAL;
 
     if (isExtend) {
-        ALOGD("isExtend = %d, mExtendControl = %d", isExtend, mCecDevice.mExtendControl);
+        ALOGD("[hcc] isExtend = %d, mExtendControl = %d", isExtend, mCecDevice.mExtendControl);
         return sendExtMessage(message);
     }
     /* don't send message if controlled by extend */

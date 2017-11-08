@@ -65,7 +65,7 @@ JHdmiCecExtend::JHdmiCecExtend(jobject callbacksObj) :
     //mHdmiCecClient = HdmiCecClient::connect();
     //mHdmiCecClient->setEventObserver(this);
 
-    mHdmiCecHidlClient = HdmiCecHidlClient::connect();
+    mHdmiCecHidlClient = HdmiCecHidlClient::connect(CONNECT_TYPE_EXTEND);
     mHdmiCecHidlClient->setEventObserver(this);
 
 }

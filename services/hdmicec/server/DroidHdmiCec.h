@@ -22,8 +22,10 @@
 #ifndef ANDROID_DROIDLOGIC_HDMI_CEC_V1_0_H
 #define ANDROID_DROIDLOGIC_HDMI_CEC_V1_0_H
 
+#include <binder/IBinder.h>
 #include <utils/Mutex.h>
 #include <vector>
+#include <map>
 #include <HdmiCecControl.h>
 #include <vendor/amlogic/hardware/hdmicec/1.0/IDroidHdmiCEC.h>
 
@@ -36,6 +38,7 @@ namespace implementation {
 
 using ::vendor::amlogic::hardware::hdmicec::V1_0::IDroidHdmiCEC;
 using ::vendor::amlogic::hardware::hdmicec::V1_0::IDroidHdmiCecCallback;
+using ::vendor::amlogic::hardware::hdmicec::V1_0::ConnectType;
 using ::vendor::amlogic::hardware::hdmicec::V1_0::Result;
 using ::android::hardware::hidl_vec;
 using ::android::hardware::hidl_string;
@@ -64,19 +67,39 @@ public:
     Return<void> enableAudioReturnChannel(int32_t portId, bool enable) override;
     Return<bool> isConnected(int32_t portId) override;
 
-    Return<void> setCallback(const sp<IDroidHdmiCecCallback>& callback) override;
+    Return<void> setCallback(const sp<IDroidHdmiCecCallback>& callback, ConnectType type) override;
 
     virtual void onEventUpdate(const hdmi_cec_event_t* event);
 
     static void instantiate();
 
 private:
-    const char* getEventType(int eventType);
+    const char* getEventTypeStr(int eventType);
+    const char* getConnectTypeStr(ConnectType type);
 
+    // Handle the case where the callback registered for the given type dies
+    void handleServiceDeath(uint32_t type);
+
+    bool mDebug = false;
     HdmiCecControl *mHdmiCecControl;
-    std::vector<sp<IDroidHdmiCecCallback>> mClients;
+    //std::vector<sp<IDroidHdmiCecCallback>> mClients;
+    std::map<uint32_t, sp<IDroidHdmiCecCallback>> mClients;
 
     mutable Mutex mLock;
+
+    class DeathRecipient : public android::hardware::hidl_death_recipient  {
+    public:
+        DeathRecipient(sp<DroidHdmiCec> cec);
+
+        // hidl_death_recipient interface
+        virtual void serviceDied(uint64_t cookie,
+            const ::android::wp<::android::hidl::base::V1_0::IBase>& who) override;
+
+    private:
+        sp<DroidHdmiCec> mDroidHdmiCec;
+    };
+
+    sp<DeathRecipient> mDeathRecipient;
 };
 
 }  // namespace implementation

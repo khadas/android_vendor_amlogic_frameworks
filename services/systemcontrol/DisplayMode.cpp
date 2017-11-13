@@ -175,7 +175,6 @@ DisplayMode::DisplayMode(const char *path)
     mDisplayWidth(FULL_WIDTH_1080),
     mDisplayHeight(FULL_HEIGHT_1080),
     mBootanimStatus(0),
-    mDVStatus(0),
     mLogLevel(LOG_LEVEL_DEFAULT) {
 
     if (NULL == path) {
@@ -1447,10 +1446,15 @@ bool DisplayMode::isDolbyVisionEnable() {
 }
 
 void DisplayMode::setDolbyVisionEnable(int state) {
+    bool dvStatus = false;
+    char dvEdid[1024] = {0};
+    pSysWrite->readSysfs(DOLBY_VISION_IS_SUPPORT, dvEdid);
+    if (strlen(dvEdid) == 0)
+        dvStatus = true;
     if (DOLBY_VISION_SET_ENABLE == state) {
         if (isDolbyVisionEnable())
-            mDVStatus = 1;
-        if (mDVStatus == 0)
+            dvStatus = true;
+        if (!dvStatus)
             pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         //if TV
         if (DISPLAY_TYPE_TV == mDisplayType) {
@@ -1483,13 +1487,14 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_AUTO);
         }
-        if (mDVStatus == 0) {
+        if (!dvStatus) {
             usleep(400000);//400ms
             pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
         }
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
     } else {
-        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+        if (!dvStatus)
+            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FORCE_MODE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE, DV_MODE_BYPASS);
         usleep(100000);//100ms
@@ -1498,9 +1503,10 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_AUTO);
         }
-        usleep(300000);//300ms
-        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-        mDVStatus = 0;
+        if (!dvStatus) {
+            usleep(300000);//300ms
+            pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+        }
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
     }
 }

@@ -484,7 +484,6 @@ private:
 
     // bootAnimation flag
     int mBootanimStatus;
-    int mDVStatus;
 #ifndef RECOVERY_MODE
     sp<ISystemControlNotify> mNotifyListener;
 #endif

@@ -40,7 +40,7 @@ public class BootComplete extends BroadcastReceiver {
 
     IKeyguardService mService = null;
     RemoteServiceConnection mConnection;
-
+    private SystemControlEvent sce =  null;
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
@@ -50,7 +50,8 @@ public class BootComplete extends BroadcastReceiver {
             final ContentResolver resolver = context.getContentResolver();
             final SystemControlManager sm = new SystemControlManager(context);
             //register system control callback
-            sm.setListener(new SystemControlEvent(context));
+            sce = new SystemControlEvent(context);
+            sm.setListener(sce);
 
             final AudioManager audioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
             final OutputModeManager outputModeManager = new OutputModeManager(context);

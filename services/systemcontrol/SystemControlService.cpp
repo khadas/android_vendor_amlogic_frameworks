@@ -316,14 +316,12 @@ void SystemControlService::setOsdMouseMode(const std::string& mode) {
         ALOGI("set osd mouse mode :%s", mode.c_str());
     }
 
-    pDisplayMode->setOsdMouse(mode.c_str());
 }
 
 void SystemControlService::setOsdMousePara(int x, int y, int w, int h) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set osd mouse parameter x:%d y:%d w:%d h:%d", x, y, w, h);
     }
-    pDisplayMode->setOsdMouse(x, y, w, h);
 }
 
 void SystemControlService::setPosition(int left, int top, int width, int height) {

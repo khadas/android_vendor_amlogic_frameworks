@@ -71,7 +71,6 @@ using namespace android;
 #define SYSFS_DISPLAY_MODE2             "/sys/class/display2/mode"
 //when close freescale, will enable display axis, cut framebuffer output
 //when open freescale, will enable window axis, scale framebuffer output
-#define SYSFS_DISPLAY_AXIS              "/sys/class/display/axis"
 #define SYSFS_VIDEO_AXIS                "/sys/class/video/axis"
 #define SYSFS_BOOT_TYPE                 "/sys/power/boot_type"
 #define SYSFS_VIDEO_LAYER_STATE         "/sys/class/video/video_layer1_state"
@@ -84,8 +83,7 @@ using namespace android;
 #define DISPLAY_FB0_FREESCALE_MODE      "/sys/class/graphics/fb0/freescale_mode"
 #define DISPLAY_FB1_FREESCALE_MODE      "/sys/class/graphics/fb1/freescale_mode"
 #define DISPLAY_FB0_SCALE_AXIS          "/sys/class/graphics/fb0/scale_axis"
-#define DISPLAY_FB1_SCALE_AXIS          "/sys/class/graphics/fb1/scale_axis"
-#define DISPLAY_FB1_SCALE               "/sys/class/graphics/fb1/scale"
+
 
 #define DISPLAY_FB0_FREESCALE_AXIS      "/sys/class/graphics/fb0/free_scale_axis"
 #define DISPLAY_FB0_WINDOW_AXIS         "/sys/class/graphics/fb0/window_axis"
@@ -391,8 +389,6 @@ public:
     void setSourceOutputMode(const char* outputmode);
     void setSinkOutputMode(const char* outputmode);
     void setDigitalMode(const char* mode);
-    void setOsdMouse(const char* curMode);
-    void setOsdMouse(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
     void setDolbyVisionEnable(int state);

@@ -139,7 +139,7 @@ void* HdmiCecControl::__threadLoop(void *user)
 
 void HdmiCecControl::threadLoop()
 {
-    unsigned char msg_buf[CEC_MESSAGE_BODY_MAX_LENGTH];
+    unsigned char msgBuf[CEC_MESSAGE_BODY_MAX_LENGTH];
     hdmi_cec_event_t event;
     int r = -1;
 
@@ -157,37 +157,44 @@ void HdmiCecControl::threadLoop()
         }
         checkConnectStatus();
 
-        memset(msg_buf, 0, sizeof(msg_buf));
+        memset(msgBuf, 0, sizeof(msgBuf));
         //try to get a message from dev.
-        r = readMessage(msg_buf, CEC_MESSAGE_BODY_MAX_LENGTH);
+        r = readMessage(msgBuf, CEC_MESSAGE_BODY_MAX_LENGTH);
         if (r <= 1)//ignore received ping messages
             continue;
 
-        printCecMsgBuf((const char*)msg_buf, r);
+        printCecMsgBuf((const char*)msgBuf, r);
 
         event.eventType = 0;
-        memcpy(event.cec.body, msg_buf + 1, r - 1);
-        event.cec.initiator = cec_logical_address_t((msg_buf[0] >> 4) & 0xf);
-        event.cec.destination = cec_logical_address_t((msg_buf[0] >> 0) & 0xf);
+        memcpy(event.cec.body, msgBuf + 1, r - 1);
+        event.cec.initiator = cec_logical_address_t((msgBuf[0] >> 4) & 0xf);
+        event.cec.destination = cec_logical_address_t((msgBuf[0] >> 0) & 0xf);
         event.cec.length = r - 1;
-
-        if (mCecDevice.mDeviceType == DEV_TYPE_PLAYBACK
-                && msg_buf[1] == CEC_MESSAGE_SET_MENU_LANGUAGE && mCecDevice.mExtendControl) {
-            ALOGD("[hcc] ignore menu language change for hdmi-tx.");
-        } else {
-            if (mCecDevice.isCecControlled) {
-                event.eventType |= HDMI_EVENT_CEC_MESSAGE;
-            }
-        }
 
         ALOGD("[hcc] mExtendControl = %d, mDeviceType = %d, isCecControlled = %d",
                 mCecDevice.mExtendControl, mCecDevice.mDeviceType, mCecDevice.isCecControlled);
-        /* call java method to process cec message for ext control */
-        if ((mCecDevice.mExtendControl == 0x03)
-                && (mCecDevice.mDeviceType == DEV_TYPE_PLAYBACK)
-                && mCecDevice.isCecControlled) {
-            event.eventType |= HDMI_EVENT_RECEIVE_MESSAGE;
+
+        if (mCecDevice.isCecControlled) {
+             event.eventType |= HDMI_EVENT_CEC_MESSAGE;
+            /* call java method to process cec message for ext control */
+            if (mCecDevice.mExtendControl) {
+                event.eventType |= HDMI_EVENT_RECEIVE_MESSAGE;
+            }
+            if (mCecDevice.mDeviceType == DEV_TYPE_PLAYBACK
+                && msgBuf[1] == CEC_MESSAGE_SET_MENU_LANGUAGE) {
+                event.eventType &= 0;
+                ALOGD("[hcc] ignore menu language change for hdmi-tx.");
+            }
+        } else {
+            /* wakeup playback device */
+            if (isWakeUpMsg((char*)msgBuf, r, mCecDevice.mDeviceType)) {
+                memset(event.cec.body, 0, sizeof(event.cec.body));
+                memcpy(event.cec.body, msgBuf + 1, r - 1);
+                event.eventType |= HDMI_EVENT_CEC_MESSAGE;
+                ALOGD("[hcc] receive wake up message for hdmi_tx");
+            }
         }
+
         if (mEventListener != NULL && event.eventType != 0) {
             mEventListener->onEventUpdate(&event);
         }
@@ -196,13 +203,55 @@ void HdmiCecControl::threadLoop()
     mCecDevice.mExited = true;
 }
 
+/**
+ * Check if received a wakeup message if  mCecDevice.isCecControlled  is false
+* @param msgBuf is a message Buf
+*   msgBuf[1]: message type
+*   msgBuf[2]-msgBuf[n]: message para
+* @param len is message lenth
+* @param deviceType is type of device
+*/
+
+bool HdmiCecControl::isWakeUpMsg(char *msgBuf, int len, int deviceType)
+{
+    bool ret = false;
+    if (deviceType == DEV_TYPE_PLAYBACK) {
+        switch (msgBuf[1]) {
+            case CEC_MESSAGE_SET_STREAM_PATH:
+            case CEC_MESSAGE_DECK_CONTROL:
+            case CEC_MESSAGE_PLAY:
+            case CEC_MESSAGE_ACTIVE_SOURCE:
+                ret = true;
+                break;
+            case CEC_MESSAGE_ROUTING_CHANGE:
+                /* build <set stream path> message*/
+                msgBuf[1] = CEC_MESSAGE_SET_STREAM_PATH;
+                msgBuf[2] =  msgBuf[len - 2];
+                msgBuf[3] =  msgBuf[len - 1];
+                msgBuf[len - 2] &= 0x0;
+                msgBuf[len - 1] &= 0x0;
+                ret = true;
+                break;
+            case CEC_MESSAGE_USER_CONTROL_PRESSED:
+                if (msgBuf[2] == CEC_KEYCODE_POWER
+                || msgBuf[2] == CEC_KEYCODE_ROOT_MENU
+                || msgBuf[2] == CEC_KEYCODE_POWER_ON_FUNCTION) {
+                    ret = true;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return ret;
+}
 void HdmiCecControl::checkConnectStatus()
 {
-    unsigned int prev_status, bit;
+    unsigned int prevStatus, bit;
     int i, port, ret;
     hdmi_cec_event_t event;
 
-    prev_status = mCecDevice.mConnectStatus;
+    prevStatus = mCecDevice.mConnectStatus;
     for (i = 0; i < mCecDevice.mTotalPort && mCecDevice.mpPortData != NULL; i++) {
         port = mCecDevice.mpPortData[i].port_id;
         ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_CONNECT_STATUS, &port);
@@ -210,33 +259,33 @@ void HdmiCecControl::checkConnectStatus()
             ALOGE("[hcc] get port %d connected status failed, ret:%d\n", mCecDevice.mpPortData[i].port_id, ret);
             continue;
         }
-        bit = prev_status & (1 << i);
+        bit = prevStatus & (1 << i);
         if (bit ^ ((port ? 1 : 0) << i)) {//connect status has changed
-            ALOGD("[hcc] port:%d, connect status changed, now:%d, prev_status:%x\n",
-                    mCecDevice.mpPortData[i].port_id, port, prev_status);
+            ALOGD("[hcc] port:%d, connect status changed, now:%d, prevStatus:%x\n",
+                    mCecDevice.mpPortData[i].port_id, port, prevStatus);
             if (mEventListener != NULL && mCecDevice.isCecEnabled && mCecDevice.isCecControlled) {
                 event.eventType = HDMI_EVENT_HOT_PLUG;
                 event.hotplug.connected = port;
                 event.hotplug.port_id = mCecDevice.mpPortData[i].port_id;
                 mEventListener->onEventUpdate(&event);
             }
-            prev_status &= ~(bit);
-            prev_status |= ((port ? 1 : 0) << i);
-            //ALOGD("[hcc] now mask:%x\n", prev_status);
+            prevStatus &= ~(bit);
+            prevStatus |= ((port ? 1 : 0) << i);
+            //ALOGD("[hcc] now mask:%x\n", prevStatus);
         }
     }
-    mCecDevice.mConnectStatus = prev_status;
+    mCecDevice.mConnectStatus = prevStatus;
 }
 
-int HdmiCecControl::readMessage(unsigned char *buf, int msg_cnt)
+int HdmiCecControl::readMessage(unsigned char *buf, int msgCount)
 {
-    if (msg_cnt <= 0 || !buf) {
+    if (msgCount <= 0 || !buf) {
         return 0;
     }
 
     int ret = -1;
     /* maybe blocked at driver */
-    ret = read(mCecDevice.mFd, buf, msg_cnt);
+    ret = read(mCecDevice.mFd, buf, msgCount);
     if (ret < 0) {
         ALOGE("[hcc] read :%s failed, ret:%d\n", CEC_FILE, ret);
         return -1;
@@ -333,7 +382,7 @@ void HdmiCecControl::setOption(int flag, int value)
 
         case HDMI_OPTION_SYSTEM_CEC_CONTROL:
             ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_SYS_CTRL, value);
-            mCecDevice.isCecEnabled = (value == 1) ? true : false;
+            mCecDevice.isCecEnabled = (value == 1 && !mCecDevice.isCecEnabled) ? true : mCecDevice.isCecEnabled;
             mCecDevice.isCecControlled = (value == 1) ? true : false;
             break;
 
@@ -464,13 +513,13 @@ int HdmiCecControl::sendExtMessage(const cec_message_t* message)
 
 int HdmiCecControl::send(const cec_message_t* message)
 {
-    unsigned char msg_buf[CEC_MESSAGE_BODY_MAX_LENGTH];
+    unsigned char msgBuf[CEC_MESSAGE_BODY_MAX_LENGTH];
     int ret = -1;
 
-    memset(msg_buf, 0, sizeof(msg_buf));
-    msg_buf[0] = ((message->initiator & 0xf) << 4) | (message->destination & 0xf);
-    memcpy(msg_buf + 1, message->body, message->length);
-    ret = write(mCecDevice.mFd, msg_buf, message->length + 1);
+    memset(msgBuf, 0, sizeof(msgBuf));
+    msgBuf[0] = ((message->initiator & 0xf) << 4) | (message->destination & 0xf);
+    memcpy(msgBuf + 1, message->body, message->length);
+    ret = write(mCecDevice.mFd, msgBuf, message->length + 1);
     printCecMessage(message, ret);
     return ret;
 }

@@ -44,6 +44,15 @@ enum {
     HDMI_OPTION_CEC_AUTO_DEVICE_OFF = 4,
 };
 
+/*
+ * HDMI CEC messages para value
+ */
+enum cec_message_para_value{
+    CEC_KEYCODE_POWER = 0x40,
+    CEC_KEYCODE_ROOT_MENU = 0x09,
+    CEC_KEYCODE_POWER_ON_FUNCTION = 0x6D
+};
+
 /**
  * struct for information of cec device.
  * @mDeviceType      Indentify type of cec device, such as TV or BOX.
@@ -105,12 +114,12 @@ private:
 
     int sendExtMessage(const cec_message_t* message);
     int send(const cec_message_t* message);
-    int readMessage(unsigned char *buf, int msg_cnt);
+    int readMessage(unsigned char *buf, int msgCount);
     void checkConnectStatus();
 
     bool assertHdmiCecDevice();
     bool hasHandledByExtend(const cec_message_t* message);
-
+    bool isWakeUpMsg(char *msgBuf, int len, int deviceType);
     hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;
 };

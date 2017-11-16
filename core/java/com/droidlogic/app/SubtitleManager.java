@@ -57,8 +57,12 @@ public class SubtitleManager {
 
         private boolean disable() {
             boolean ret = false;
-            if (SystemProperties.getBoolean ("sys.subtitle.disable", false) ) {
-                ret = true;
+            try {
+                ret = (boolean)Class.forName("android.os.SystemProperties")
+                    .getMethod("getBoolean", new Class[] { String.class, Boolean.TYPE })
+                    .invoke(null, new Object[] { "sys.subtitle.disable", true });
+            } catch (Exception e) {
+                Log.e(TAG,"[start]Exception e:" + e);
             }
             return ret;
         }
@@ -200,16 +204,8 @@ public class SubtitleManager {
         public void start() {
             LOGI("[start]mPath:" + mPath);
 
-            try {
-                boolean isDisabled = (boolean)Class.forName("android.os.SystemProperties")
-                    .getMethod("getBoolean", new Class[] { String.class, Boolean.TYPE })
-                    .invoke(null, new Object[] { "sys.subtitle.disable", true });
-
-                if (isDisabled) {
-                    return;
-                }
-            } catch (Exception e) {
-                Log.e(TAG,"[start]Exception e:" + e);
+            if (disable()) {
+                return;
             }
 
             mThreadStop = false;

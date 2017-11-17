@@ -182,8 +182,8 @@ void HdmiCecControl::threadLoop()
             }
             if (mCecDevice.mDeviceType == DEV_TYPE_PLAYBACK
                 && msgBuf[1] == CEC_MESSAGE_SET_MENU_LANGUAGE) {
-                event.eventType &= 0;
-                ALOGD("[hcc] ignore menu language change for hdmi-tx.");
+                event.eventType &= ~(HDMI_EVENT_CEC_MESSAGE);
+                ALOGD("[hcc]  receive menu language change send only for extend.");
             }
         } else {
             /* wakeup playback device */

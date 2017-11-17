@@ -478,6 +478,7 @@ bool HdmiCecControl::hasHandledByExtend(const cec_message_t* message)
     int opcode = message->body[0] & 0xff;
     switch (opcode) {
         case CEC_MESSAGE_SET_MENU_LANGUAGE:
+        case CEC_MESSAGE_INACTIVE_SOURCE:
             ret = true;
             break;
         default:

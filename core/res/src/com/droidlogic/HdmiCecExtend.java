@@ -246,9 +246,19 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
     @Override
     public void onControlStateChanged(boolean enabled, int reason) {
         Slog.d(TAG, "enabled = " + enabled + ", reason = " + reason);
-        if (!enabled && reason == HdmiControlManager.CONTROL_STATE_CHANGED_REASON_STANDBY) {//go to standby
-            getWakeLock().acquire();
-            mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_WAKE_LOCK), TIMER_DEVICE_CLEANUP);
+        switch (reason) {
+            case HdmiControlManager.CONTROL_STATE_CHANGED_REASON_WAKEUP:
+                if (enabled)
+                    mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
+                break;
+            case HdmiControlManager.CONTROL_STATE_CHANGED_REASON_STANDBY:
+                if (!enabled) {//go to standby
+                    getWakeLock().acquire();
+                    mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_WAKE_LOCK), TIMER_DEVICE_CLEANUP);
+                }
+                break;
+            default:
+                break;
         }
     }
 
@@ -400,7 +410,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
 
     private void onAddAddress(int addr) {
         Slog.d(TAG, "onAddressAllocated:" + String.format("0x%02x", addr));
-        mHandler.postDelayed(mDelayedRun, 200);
+        mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
     }
 
     private final Runnable mDelayedRun = new Runnable() {
@@ -410,6 +420,8 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
                 @Override
                 public void run() {
                     if (isOneTouchPlayOn() && mPlayback != null) {
+                        /* to wake up tv in case of last oneTouchPlayAction timeout and not finish when wake up playback and try to start a new action */
+                        SendCecMessage(ADDR_TV, buildCecMsg(MESSAGE_TEXT_VIEW_ON, new byte[0]));
                         mPlayback.oneTouchPlay(mOneTouchPlayCallback);
                     } else {//need update menu language
                         updateMenuLanguage();

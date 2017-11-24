@@ -234,8 +234,12 @@ sp<IDroidHdmiCEC> HdmiCecHidlClient::getHdmiCecService()
     Mutex::Autolock _l(mLock);
 
 #if 1//PLATFORM_SDK_VERSION >= 26
-    sp<IDroidHdmiCEC> hdmicec = IDroidHdmiCEC::getService();
-
+    sp<IDroidHdmiCEC> hdmicec = IDroidHdmiCEC::tryGetService();
+    while (hdmicec == nullptr) {
+         usleep(200*1000);//sleep 200ms
+         hdmicec = IDroidHdmiCEC::tryGetService();
+         ALOGE("tryGet hdmicecd daemon Service");
+    };
     mDeathRecipient = new HdmiCecDaemonDeathRecipient(this);
     Return<bool> linked = hdmicec->linkToDeath(mDeathRecipient, /*cookie*/ 0);
     if (!linked.isOk()) {

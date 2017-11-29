@@ -563,7 +563,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "1");
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "0");
         if ((state == OUPUT_MODE_STATE_SWITCH) && isDolbyVisionEnable())
-            usleep(20000);
+            usleep(1000000);
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
     }
 

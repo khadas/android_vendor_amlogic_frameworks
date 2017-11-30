@@ -37,6 +37,11 @@
 
 #include "ubootenv/Ubootenv.h"
 
+#include <vendor/amlogic/hardware/droidvold/1.0/IDroidVold.h>
+using ::vendor::amlogic::hardware::droidvold::V1_0::IDroidVold;
+using ::android::hardware::hidl_string;
+using ::android::hardware::Return;
+
 extern "C" int vdc_loop(int argc, char **argv);
 
 namespace android {
@@ -124,6 +129,15 @@ private:
     DisplayMode *pDisplayMode;
     Dimension *pDimension;
     Ubootenv *pUbootenv;
+
+    struct DroidVoldDeathRecipient : public android::hardware::hidl_death_recipient  {
+        // hidl_death_recipient interface
+        virtual void serviceDied(uint64_t cookie,
+            const ::android::wp<::android::hidl::base::V1_0::IBase>& who) override;
+    };
+    sp<DroidVoldDeathRecipient> mDeathRecipient = nullptr;
+
+    sp<IDroidVold> mDroidVold;
 };
 
 // ----------------------------------------------------------------------------

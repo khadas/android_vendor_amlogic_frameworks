@@ -269,11 +269,16 @@ void SystemControlService::getDroidDisplayInfo(int &type, std::string& socType, 
     }
 }
 
+void SystemControlService::DroidVoldDeathRecipient::serviceDied(uint64_t cookie,
+        const ::android::wp<::android::hidl::base::V1_0::IBase>& who) {
+    //LOG(ERROR) << "DroidVold service died. need release some resources";
+}
+
 void SystemControlService::loopMountUnmount(int isMount, const std::string& path) {
     if (NO_ERROR == permissionCheck()) {
         traceValue("loopMountUnmount", (isMount==1)?"mount":"unmount", path);
 
-        if (isMount == 1) {
+        /*if (isMount == 1) {
             char mountPath[MAX_STR_LEN] = {0};
 
             strncpy(mountPath, path.c_str(), path.size());
@@ -283,6 +288,24 @@ void SystemControlService::loopMountUnmount(int isMount, const std::string& path
         } else {
             const char *cmd[3] = {"vdc", "loop", "unmount"};
             vdc_loop(3, (char **)cmd);
+        }*/
+
+        mDroidVold = IDroidVold::getService();
+        mDeathRecipient = new DroidVoldDeathRecipient();
+        Return<bool> linked = mDroidVold->linkToDeath(mDeathRecipient, 0);
+        if (!linked.isOk()) {
+            //LOG(ERROR) << "Transaction error in linking to system service death: " << linked.description().c_str();
+        } else if (!linked) {
+            //LOG(ERROR) << "Unable to link to system service death notifications";
+        } else {
+            //LOG(INFO) << "Link to system service death notification successful";
+        }
+
+        if (isMount == 1) {
+            mDroidVold->mount(path, 0xF, 0);
+        }
+        else {
+            mDroidVold->unmount(path);
         }
     }
 }

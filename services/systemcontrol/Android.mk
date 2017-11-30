@@ -83,6 +83,7 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_SHARED_LIBRARIES += \
   vendor.amlogic.hardware.systemcontrol@1.0_vendor \
+  vendor.amlogic.hardware.droidvold@1.0_vendor \
   libbase \
   libhidlbase \
   libhidltransport

@@ -433,7 +433,8 @@ public class OutputModeManager {
     }
 
     public boolean isBestOutputmode() {
-        return Boolean.parseBoolean(mSystenControl.getBootenv(ENV_IS_BEST_MODE, "true"));
+        String isBestOutputmode = mSystenControl.getBootenv(ENV_IS_BEST_MODE, "true");
+        return Boolean.parseBoolean(isBestOutputmode.equals("") ? "true" : isBestOutputmode);
     }
 
     public boolean isDeepColor() {

@@ -581,9 +581,17 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         }
     } else {
         pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
-        pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
-        pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-        setOsdMouse(outputmode);
+        /**
+         * Need blank osd0 when unplug/plug HDMI during playing bootvideo.
+         */
+        if ((0 == pSysWrite->getPropertyInt(PROP_BOOTCOMPLETE, 0))
+                && (1 == pSysWrite->getPropertyInt(PROP_BOOTVIDEO_SERVICE, 0))) {
+            pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
+        } else {
+            pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+            pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
+            setOsdMouse(outputmode);
+        }
     }
 
 #ifndef RECOVERY_MODE
@@ -1072,7 +1080,7 @@ void DisplayMode::startBootvideoDetectThread() {
 
 void* DisplayMode::bootvideoDetect(void* data) {
     DisplayMode *pThiz = (DisplayMode*)data;
-    int timeout = 300;
+    int timeout = 1200;
     char value[MODE_LEN] = {0};
     SYS_LOGI("Need to setBootanimStatus 1 after bootvideo complete");
     while (timeout > 0) {

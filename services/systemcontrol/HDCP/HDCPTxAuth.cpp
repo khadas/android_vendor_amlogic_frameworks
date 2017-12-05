@@ -47,6 +47,7 @@ HDCPTxAuth::HDCPTxAuth() :
     mRepeaterRxVer(REPEATER_RX_VERSION_NONE),
     mpCallback(NULL),
     mMute(false),
+    pthreadIdHdcpTx(0),
     mBootAnimFinished(false) {
 
     if (sem_init(&pthreadTxSem, 0, 0) < 0) {

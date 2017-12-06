@@ -178,7 +178,7 @@ public class FileListManager {
     }
 
     private static void mount(String path) {
-        mSystemControl.loopMountUnmount(false, null);
+        mSystemControl.loopMountUnmount(false, path);
         mSystemControl.loopMountUnmount(true, path);
     }
 

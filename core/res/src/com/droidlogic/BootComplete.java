@@ -66,6 +66,7 @@ public class BootComplete extends BroadcastReceiver {
                     Settings.Global.putInt(resolver, Settings.Global.CAPTIVE_PORTAL_DETECTION_ENABLED, 0);
                     //set default show_ime_with_hard_keyboard 1, then first boot can show the ime.
                     Settings.Secure.putInt(resolver, Settings.Secure.SHOW_IME_WITH_HARD_KEYBOARD, 1);
+                    Settings.Secure.putInt(resolver, Settings.Secure.TV_USER_SETUP_COMPLETE, 1);
                     if (AudioSystem.PLATFORM_TELEVISION == AudioSystem.getPlatformType(context)) {
                         int maxVolume = SystemProperties.getInt("ro.config.media_vol_steps", 100);
                         int streamMaxVolume = audioManager.getStreamMaxVolume(AudioSystem.STREAM_MUSIC);

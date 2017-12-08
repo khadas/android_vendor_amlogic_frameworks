@@ -51,7 +51,7 @@ public class BootComplete extends BroadcastReceiver {
             final SystemControlManager sm = new SystemControlManager(context);
             //register system control callback
             sce = new SystemControlEvent(context);
-            sm.setListener(sce);
+            //sm.setListener(sce);
 
             final AudioManager audioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
             final OutputModeManager outputModeManager = new OutputModeManager(context);

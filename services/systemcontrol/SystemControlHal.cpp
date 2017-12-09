@@ -367,7 +367,7 @@ Return<void> SystemControlHal::setCallback(const sp<ISystemControlCallback>& cal
             ALOGW("Couldn't link death recipient for cookie: %d", cookie);
         }
 
-        ALOGI("%s cookie:%s, client size:%d", __FUNCTION__, cookie, (int)mClients.size());
+        ALOGI("%s cookie:%d, client size:%d", __FUNCTION__, cookie, (int)mClients.size());
     }
 
     return Void();

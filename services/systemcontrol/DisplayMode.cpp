@@ -494,7 +494,6 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
         pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
         pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-        setOsdMouse(outputmode);
     }
 
 #ifndef RECOVERY_MODE
@@ -953,7 +952,6 @@ void* DisplayMode::bootanimDetect(void* data) {
         }
     }
 
-    pThiz->setOsdMouse(outputmode);
     pThiz->pTxAuth->setBootAnimFinished(true);
     return NULL;
 }
@@ -1108,50 +1106,6 @@ void DisplayMode::updateWindowAxis(const char* outputmode) {
     sprintf(axis, "%d %d %d %d",
             position[0], position[1], position[0] + position[2] - 1, position[1] + position[3] -1);
     pSysWrite->writeSysfs(DISPLAY_FB0_WINDOW_AXIS, axis);
-}
-
-void DisplayMode::setOsdMouse(const char* curMode) {
-    //SYS_LOGI("set osd mouse mode: %s", curMode);
-
-    int position[4] = { 0, 0, 0, 0 };//x,y,w,h
-    getPosition(curMode, position);
-    setOsdMouse(position[0], position[1], position[2], position[3]);
-}
-
-void DisplayMode::setOsdMouse(int x, int y, int w, int h) {
-    SYS_LOGI("set osd mouse x:%d y:%d w:%d h:%d", x, y, w, h);
-
-    const char* displaySize = "1920 1080";
-    int display_w, display_h;
-    if (!strncmp(mDefaultUI, "720", 3)) {
-        displaySize = "1280 720";
-    } else if (!strncmp(mDefaultUI, "1080", 4)) {
-        displaySize = "1920 1080";
-    } else if (!strncmp(mDefaultUI, "4k2k", 4)) {
-        displaySize = "3840 2160";
-    }
-
-    char cur_mode[MODE_LEN] = {0};
-    pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, cur_mode);
-    if (!strcmp(cur_mode, MODE_480I) || !strcmp(cur_mode, MODE_576I) ||
-            !strcmp(cur_mode, MODE_480CVBS) || !strcmp(cur_mode, MODE_576CVBS) ||
-            !strcmp(cur_mode, MODE_1080I50HZ) || !strcmp(cur_mode, MODE_1080I)) {
-        y /= 2;
-        h /= 2;
-    }
-
-    char axis[512] = {0};
-    sprintf(axis, "%d %d %s %d %d 18 18", x, y, displaySize, x, y);
-    pSysWrite->writeSysfs(SYSFS_DISPLAY_AXIS, axis);
-
-    sprintf(axis, "%s %d %d", displaySize, w, h);
-    sscanf(displaySize,"%d %d",&display_w,&display_h);
-    pSysWrite->writeSysfs(DISPLAY_FB1_SCALE_AXIS, axis);
-    if ((display_w != w) || (display_h != h)) {
-        pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0x10001");
-    } else {
-        pSysWrite->writeSysfs(DISPLAY_FB1_SCALE, "0");
-    }
 }
 
 void DisplayMode::getPosition(const char* curMode, int *position) {

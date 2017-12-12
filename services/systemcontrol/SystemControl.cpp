@@ -407,14 +407,12 @@ void SystemControl::setOsdMouseMode(const String16& mode) {
         ALOGI("set osd mouse mode :%s", String8(mode).string());
     }
 
-    pDisplayMode->setOsdMouse(String8(mode).string());
 }
 
 void SystemControl::setOsdMousePara(int x, int y, int w, int h) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set osd mouse parameter x:%d y:%d w:%d h:%d", x, y, w, h);
     }
-    pDisplayMode->setOsdMouse(x, y, w, h);
 }
 
 void SystemControl::setPosition(int left, int top, int width, int height) {

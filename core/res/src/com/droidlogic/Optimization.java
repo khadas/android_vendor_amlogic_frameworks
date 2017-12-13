@@ -55,11 +55,13 @@ public class Optimization extends Service {
         public void run() {
             int retProc = -1;
             int retPkg = -1;
+            boolean isInProcOpt = false;
+            boolean isInPkgOpt = false;
             ActivityManager am = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
 
             while (true) {
                 try {
-                    if (retProc != 0 && retProc != -4) {//0:PKG_BENCH, -4:PKG_SAME
+                    if (!isInProcOpt) {
                         List< ActivityManager.RunningTaskInfo > task = am.getRunningTasks (1);
                         if (!task.isEmpty()) {
                             ComponentName cn = task.get (0).topActivity;
@@ -67,10 +69,16 @@ public class Optimization extends Service {
                             String cls = cn.getClassName();
 
                             retPkg = nativeOptimization(pkg, cls);//bench match
+                            if (retPkg == 0) {//0:PKG_BENCH, -4:PKG_SAME
+                                isInPkgOpt = true;
+                            }
+                            else if (retPkg != -4) {
+                                isInPkgOpt = false;
+                            }
                         }
                     }
 
-                    if (retPkg != 0/* && retPkg != -4*/) {
+                    if (!isInPkgOpt) {
                         List< ActivityManager.RunningAppProcessInfo> apInfo = am.getRunningAppProcesses();
                         int len = apInfo.size();
                         //Log.i(TAG, "apInfo.size():" + len);
@@ -80,6 +88,12 @@ public class Optimization extends Service {
                             proc[i] = apInfo.get(i).processName;
                         }
                         retProc = nativeOptimization(proc);
+                        if (retProc == 0) {
+                            isInProcOpt = true;
+                        }
+                        else if (retProc != -4) {
+                            isInProcOpt = false;
+                        }
                     }
 
                     Thread.sleep(50);

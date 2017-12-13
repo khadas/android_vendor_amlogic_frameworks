@@ -1082,7 +1082,15 @@ void DisplayMode::updateDeepColor(bool cvbsMode, output_mode_state state, const 
         } else {
             strcpy(colorAttribute, "default");
         }
-        pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
+        char attr[MODE_LEN] = {0};
+        pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, attr);
+        if (strstr(attr, colorAttribute) == NULL) {
+            SYS_LOGI("set DeepcolorAttr value is different from attr sysfs value\n");
+            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+            pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
+        } else {
+            SYS_LOGI("cur deepcolor attr value is equals to colorAttribute, Do not need set it\n");
+        }
         SYS_LOGI("setMboxOutputMode colorAttribute = %s\n", colorAttribute);
         //save to ubootenv
         saveDeepColorAttr(outputmode, colorAttribute);

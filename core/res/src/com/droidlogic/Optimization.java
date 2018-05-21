@@ -70,7 +70,7 @@ public class Optimization extends Service {
                         }
                     }
 
-                    if (retPkg != 0/* && retPkg != -4*/) {
+                    if (retPkg != 0 && retPkg != -4) {
                         List< ActivityManager.RunningAppProcessInfo> apInfo = am.getRunningAppProcesses();
                         int len = apInfo.size();
                         //Log.i(TAG, "apInfo.size():" + len);

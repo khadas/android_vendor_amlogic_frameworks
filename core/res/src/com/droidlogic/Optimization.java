@@ -53,36 +53,20 @@ public class Optimization extends Service {
 
     private Runnable runnable = new Runnable() {
         public void run() {
-            int retProc = -1;
-            int retPkg = -1;
             ActivityManager am = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
 
             while (true) {
                 try {
-                    if (retProc != 0 && retProc != -4) {
-                        List< ActivityManager.RunningTaskInfo > task = am.getRunningTasks (1);
-                        if (!task.isEmpty()) {
-                            ComponentName cn = task.get (0).topActivity;
-                            String pkg = cn.getPackageName();
-                            String cls = cn.getClassName();
+                    List< ActivityManager.RunningTaskInfo > task = am.getRunningTasks (1);
+                    if (!task.isEmpty()) {
+                        ComponentName cn = task.get (0).topActivity;
+                        String pkg = cn.getPackageName();
+                        String cls = cn.getClassName();
 
-                            retPkg = nativeOptimization(pkg, cls);//bench match
-                        }
+                        nativeOptimization(pkg, cls);//bench match
                     }
 
-                    if (retPkg != 0 && retPkg != -4) {
-                        List< ActivityManager.RunningAppProcessInfo> apInfo = am.getRunningAppProcesses();
-                        int len = apInfo.size();
-                        //Log.i(TAG, "apInfo.size():" + len);
-                        String [] proc = new String[len];
-                        for (int i = 0; i < len; i++) {
-                            //Log.i(TAG, "apInfo[" + i + "] processName:" + apInfo.get(i).processName);
-                            proc[i] = apInfo.get(i).processName;
-                        }
-                        retProc = nativeOptimization(proc);
-                    }
-
-                    Thread.sleep(50);
+                    Thread.sleep(500);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -91,5 +75,4 @@ public class Optimization extends Service {
     };
 
     private native int nativeOptimization(String pkg, String cls);
-    private native int nativeOptimization(String[] proc);
 }

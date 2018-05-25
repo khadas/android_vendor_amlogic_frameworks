@@ -12,9 +12,15 @@ import android.content.IntentFilter;
 import android.os.IBinder;
 import android.os.Process;
 import android.os.SystemProperties;
+import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.lang.StringBuffer;
 import java.util.List;
 import java.util.Scanner;
 import com.droidlogic.app.SystemControlManager;
@@ -32,6 +38,8 @@ public class NetflixService extends Service {
     public static final String NETFLIX_STATUS_CHANGE        = "com.netflix.action.STATUS_CHANGE";
     public static final String NETFLIX_DIAL_STOP            = "com.netflix.action.DIAL_STOP";
     private static final String VIDEO_SIZE_DEVICE           = "/sys/class/video/device_resolution";
+    private static final String NRDP_AUDIO_PLATFORM_CAP     = "nrdp_audio_platform_capabilities";
+    private static final String NRDP_AUDIO_CONFIG_FILE      = "/vendor/etc/nrdp_audio_platform_capabilities.json";
     private static boolean mLaunchDialService               = true;
 
     private boolean mIsNetflixFg = false;
@@ -61,6 +69,7 @@ public class NetflixService extends Service {
         IntentFilter filter = new IntentFilter(NETFLIX_DIAL_STOP);
         filter.setPriority (IntentFilter.SYSTEM_HIGH_PRIORITY);
         mContext.registerReceiver (mReceiver, filter);
+        setNrdpAudioCapabilitesIfNeed();
 
         new ObserverThread ("NetflixObserver").start();
     }
@@ -78,6 +87,34 @@ public class NetflixService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    private void setNrdpAudioCapabilitesIfNeed() {
+        String audioCap = Settings.Global.getString(getContentResolver(), NRDP_AUDIO_PLATFORM_CAP);
+        Log.i(TAG, "Nrdp audioCap:\n" + audioCap);
+        if (!TextUtils.isEmpty(audioCap)) {
+            return;
+        }
+
+        try {
+            FileInputStream fis = new FileInputStream(new File(NRDP_AUDIO_CONFIG_FILE));
+            InputStreamReader isr = new InputStreamReader(fis);
+            BufferedReader reader = new BufferedReader(isr);
+            StringBuffer sb = new StringBuffer();
+            String line = null;
+
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+                sb.append('\n');
+            }
+
+            Settings.Global.putString(getContentResolver(), NRDP_AUDIO_PLATFORM_CAP, sb.toString());
+            fis.close();
+        } catch (java.io.FileNotFoundException e) {
+            Log.d(TAG, e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public int getNetflixPid() {

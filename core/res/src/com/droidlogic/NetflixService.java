@@ -207,6 +207,7 @@ public class NetflixService extends Service {
                     mContext.sendBroadcast (intent);
                 }
 
+/* move setting display-size code to systemcontrol
                 if (SystemProperties.getBoolean ("sys.display-size.check", true) ||
                     SystemProperties.getBoolean ("vendor.display-size.check", true)) {
                     try {
@@ -240,6 +241,7 @@ public class NetflixService extends Service {
                         Log.i(TAG, "Error parsing video size device node");
                     }
                 }
+*/
             }
         }
     }

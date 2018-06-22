@@ -77,6 +77,7 @@ using namespace android;
 #define DISPLAY_FB0_BLANK               "/sys/class/graphics/fb0/blank"
 #define DISPLAY_FB1_BLANK               "/sys/class/graphics/fb1/blank"
 #define SYS_DISABLE_VIDEO               "/sys/class/video/disable_video"
+#define SYS_DISPLAY_RESOLUTION          "/sys/class/video/device_resolution"
 
 #define DISPLAY_FB0_FREESCALE           "/sys/class/graphics/fb0/free_scale"
 #define DISPLAY_FB1_FREESCALE           "/sys/class/graphics/fb1/free_scale"
@@ -217,6 +218,8 @@ using namespace android;
 #define PROP_DOLBY_VISION_PRIORITY      "persist.vendor.sys.graphics.priority"
 #define PROP_HDR_MODE_STATE             "persist.vendor.sys.hdr.state"
 #define PROP_SDR_MODE_STATE             "persist.vendor.sys.sdr.state"
+#define PROP_DISPLAY_SIZE_CHECK         "vendor.display-size.check"
+#define PROP_DISPLAY_SIZE               "vendor.display-size"
 
 #define HDR_MODE_OFF                    "0"
 #define HDR_MODE_ON                     "1"

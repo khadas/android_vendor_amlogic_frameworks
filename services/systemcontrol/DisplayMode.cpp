@@ -531,6 +531,24 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     } else {
         setBootEnv(UBOOTENV_HDMIMODE, (char *)outputmode);
     }
+    if (pSysWrite->getPropertyBoolean(PROP_DISPLAY_SIZE_CHECK, true)) {
+        char resolution[MODE_LEN] = {0};
+        char defaultResolution[MODE_LEN] = {0};
+        char finalResolution[MODE_LEN] = {0};
+        int w = 0, h = 0, w1 =0, h1 = 0;
+        pSysWrite->readSysfs(SYS_DISPLAY_RESOLUTION, resolution);
+        pSysWrite->getPropertyString(PROP_DISPLAY_SIZE, defaultResolution, "0x0");
+        sscanf(resolution, "%dx%d", &w, &h);
+        sscanf(defaultResolution, "%dx%d", &w1, &h1);
+        if ((w != w1) || (h != h1)) {
+            sprintf(finalResolution, "%dx%d", w, h);
+            pSysWrite->setProperty(PROP_DISPLAY_SIZE, finalResolution);
+        }
+    }
+
+    char defaultResolution[MODE_LEN] = {0};
+    pSysWrite->getPropertyString(PROP_DISPLAY_SIZE, defaultResolution, "0x0");
+    SYS_LOGI("set display-size:%s\n", defaultResolution);
     SYS_LOGI("set output mode:%s done\n", outputmode);
 }
 

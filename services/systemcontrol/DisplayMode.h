@@ -36,6 +36,7 @@
 #include <pthread.h>
 #include <linux/fb.h>
 #include <semaphore.h>
+#include <utils/Mutex.h>
 
 #include "ubootenv/Ubootenv.h"
 #ifndef RECOVERY_MODE
@@ -484,6 +485,8 @@ private:
     const char* pConfigPath;
     int mDisplayType;
     bool mVideoPlaying;
+
+    mutex_t mEnvLock;
 
     int mDisplayWidth;
     int mDisplayHeight;

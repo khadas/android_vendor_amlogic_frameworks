@@ -7,6 +7,7 @@ import android.preference.PreferenceManager;
 public class SettingsPref {
     private static final String FIRST_RUN           = "first_run";
     private static final String WIFI_SAVE_STATE     = "wifi_save_state";
+    private static final String SAVED_BUILD_DATE    = "saved_build_date";
 
     public static void setFirstRun(Context c, boolean firstRun) {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
@@ -29,6 +30,18 @@ public class SettingsPref {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
         SharedPreferences.Editor editor = sp.edit();
         editor.putInt(WIFI_SAVE_STATE, state);
+        editor.commit();
+    }
+
+    public static String getSavedBuildDate(Context c) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
+        return sp.getString(SAVED_BUILD_DATE, "");
+    }
+
+    public static void setSavedBuildDate(Context c, String date) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString(SAVED_BUILD_DATE, date);
         editor.commit();
     }
 }

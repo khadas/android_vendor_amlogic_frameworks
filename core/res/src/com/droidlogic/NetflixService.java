@@ -38,8 +38,11 @@ public class NetflixService extends Service {
     public static final String NETFLIX_STATUS_CHANGE        = "com.netflix.action.STATUS_CHANGE";
     public static final String NETFLIX_DIAL_STOP            = "com.netflix.action.DIAL_STOP";
     private static final String VIDEO_SIZE_DEVICE           = "/sys/class/video/device_resolution";
+    private static final String WAKEUP_REASON_DEVICE        = "/sys/devices/platform/aml_pm/suspend_reason";
+    private static final String NRDP_PLATFORM_CAP           = "nrdp_platform_capabilities";
     private static final String NRDP_AUDIO_PLATFORM_CAP     = "nrdp_audio_platform_capabilities";
-    private static final String NRDP_AUDIO_CONFIG_FILE      = "/vendor/etc/nrdp_audio_platform_capabilities.json";
+    private static final String NRDP_PLATFORM_CONFIG_DIR    = "/vendor/etc/";
+    private static final int WAKEUP_REASON_CUSTOM           = 9;
     private static boolean mLaunchDialService               = true;
 
     private boolean mIsNetflixFg = false;
@@ -69,7 +72,17 @@ public class NetflixService extends Service {
         IntentFilter filter = new IntentFilter(NETFLIX_DIAL_STOP);
         filter.setPriority (IntentFilter.SYSTEM_HIGH_PRIORITY);
         mContext.registerReceiver (mReceiver, filter);
-        setNrdpAudioCapabilitesIfNeed();
+
+        String buildDate = SystemProperties.get("ro.build.version.incremental", "");
+        boolean needUpdate = !buildDate.equals(SettingsPref.getSavedBuildDate(mContext));
+
+        setNrdpCapabilitesIfNeed(NRDP_PLATFORM_CAP, needUpdate);
+        setNrdpCapabilitesIfNeed(NRDP_AUDIO_PLATFORM_CAP, needUpdate);
+        if (needUpdate) {
+            SettingsPref.setSavedBuildDate(mContext, buildDate);
+        }
+
+        startNetflixIfNeed();
 
         new ObserverThread ("NetflixObserver").start();
     }
@@ -89,27 +102,50 @@ public class NetflixService extends Service {
         return null;
     }
 
-    private void setNrdpAudioCapabilitesIfNeed() {
-        String audioCap = Settings.Global.getString(getContentResolver(), NRDP_AUDIO_PLATFORM_CAP);
-        Log.i(TAG, "Nrdp audioCap:\n" + audioCap);
-        if (!TextUtils.isEmpty(audioCap)) {
+    private void startNetflixIfNeed() {
+        Scanner scanner = null;
+        int reason = -1;
+        try {
+            scanner = new Scanner (new File(WAKEUP_REASON_DEVICE));
+            reason = scanner.nextInt();
+            scanner.close();
+        } catch (Exception e) {
+            if (scanner != null)
+                scanner.close();
+            e.printStackTrace();
+            return;
+        }
+
+        if (reason == WAKEUP_REASON_CUSTOM) {
+            Intent netflixIntent = new Intent();
+            netflixIntent.setAction("com.netflix.ninja.intent.action.NETFLIX_KEY");
+            netflixIntent.setPackage("com.netflix.ninja");
+            netflixIntent.putExtra("power_on", true);
+            netflixIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+
+            Log.i(TAG, "start netflix by power on");
+            mContext.sendBroadcast(netflixIntent,"com.netflix.ninja.permission.NETFLIX_KEY");
+        }
+    }
+
+    private void setNrdpCapabilitesIfNeed(String capName, boolean needUpdate) {
+        String cap = Settings.Global.getString(getContentResolver(), capName);
+        Log.i(TAG, capName + ":\n" + cap);
+        if (!needUpdate && !TextUtils.isEmpty(cap)) {
             return;
         }
 
         try {
-            FileInputStream fis = new FileInputStream(new File(NRDP_AUDIO_CONFIG_FILE));
-            InputStreamReader isr = new InputStreamReader(fis);
-            BufferedReader reader = new BufferedReader(isr);
+            Scanner scanner = new Scanner(new File(NRDP_PLATFORM_CONFIG_DIR + capName + ".json"));
             StringBuffer sb = new StringBuffer();
-            String line = null;
 
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
+            while (scanner.hasNextLine()) {
+                sb.append(scanner.nextLine());
                 sb.append('\n');
             }
 
-            Settings.Global.putString(getContentResolver(), NRDP_AUDIO_PLATFORM_CAP, sb.toString());
-            fis.close();
+            Settings.Global.putString(getContentResolver(), capName, sb.toString());
+            scanner.close();
         } catch (java.io.FileNotFoundException e) {
             Log.d(TAG, e.getMessage());
         } catch (Exception e) {
@@ -205,6 +241,8 @@ public class NetflixService extends Service {
                     intent.putExtra ("status", fg ? 1 : 0);
                     intent.putExtra ("pid", fg?getNetflixPid():-1);
                     mContext.sendBroadcast (intent);
+
+                    mSCM.setProperty ("vendor.netflix.state", fg ? "fg" : "bg");
                 }
 
 /* move setting display-size code to systemcontrol

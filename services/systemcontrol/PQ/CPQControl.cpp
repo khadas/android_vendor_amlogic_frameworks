@@ -2605,6 +2605,7 @@ int CPQControl::SaveBacklight(int value)
 
 int CPQControl::Cpq_SetBackLight(int value)
 {
+    //SYS_LOGD("%s, value = %d\n",__FUNCTION__, value);
     char val[64] = {0};
     sprintf(val, "%d", value);
     return pqWriteSys(BACKLIGHT_PATH, val);
@@ -2672,10 +2673,23 @@ int CPQControl::GetHistParam(ve_hist_t *hist)
     memset(hist, 0, sizeof(ve_hist_s));
     int ret = VPPDeviceIOCtl(AMVECM_IOC_G_HIST_AVG, hist);
     if (ret < 0) {
-        //SYS_LOGE("GetAVGHistParam, error(%s)!\n", strerror(errno));
+        SYS_LOGE("GetAVGHistParam, error(%s)!\n", strerror(errno));
         hist->ave = -1;
     }
     return ret;
+}
+
+void CPQControl::GetDynamicBacklighConfig(int *thtf, int *lut_mode, int *heigh_param, int *low_param)
+{
+    *thtf = mPQConfigFile->GetInt(CFG_SECTION_BACKLIGHT, CFG_AUTOBACKLIGHT_THTF, 0);
+    *lut_mode = mPQConfigFile->GetInt(CFG_SECTION_BACKLIGHT, CFG_AUTOBACKLIGHT_LUTMODE, 1);
+
+    const char *buf = NULL;
+    buf = mPQConfigFile->GetString(CFG_SECTION_BACKLIGHT, CFG_AUTOBACKLIGHT_LUTHIGH, NULL);
+    pqTransformStringToInt(buf, heigh_param);
+
+    buf = mPQConfigFile->GetString(CFG_SECTION_BACKLIGHT, CFG_AUTOBACKLIGHT_LUTLOW, NULL);
+    pqTransformStringToInt(buf, low_param);
 }
 
 void CPQControl::GetDynamicBacklighParam(dynamic_backlight_Param_t *DynamicBacklightParam)
@@ -5284,8 +5298,8 @@ int CPQControl::pqReadSys(const char *path, char *buf, int count)
 void CPQControl::pqTransformStringToInt(const char *buf, int *val)
 {
     if (buf != NULL) {
-        SYS_LOGD("%s: %s\n", buf);
-        char temp_buf[32];
+        //SYS_LOGD("%s: %s\n", __FUNCTION__, buf);
+        char temp_buf[256];
         char *p = NULL;
         int i = 0;
         strncpy(temp_buf, buf, strlen(buf)+1);

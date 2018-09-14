@@ -26,6 +26,8 @@ CDynamicBackLight::CDynamicBackLight()
 {
     mPreBacklightValue = 255;
     mGD_mvreflsh = 9;
+    GD_LUT_MODE = 1;
+    GD_ThTF = 0;
     mRunStatus = THREAD_STOPED;
     mArithmeticPauseTime = -1;
 }
@@ -73,7 +75,7 @@ void CDynamicBackLight::setOsdStatus(int osd_status)
     //tvWriteSysfs(SYSFS_HIST_SEL, osd_status);
 }
 
-void CDynamicBackLight::gd_fw_alg_frm(int value, int *tf_bl_value, int *LUT, int GD_ThTF, int ColorRangeMode)
+void CDynamicBackLight::gd_fw_alg_frm(int value, int *tf_bl_value, int *LUT)
 {
     int nT0 = 0, nT1 = 0;
     int nL0 = 0, nR0 = 0;
@@ -83,45 +85,44 @@ void CDynamicBackLight::gd_fw_alg_frm(int value, int *tf_bl_value, int *LUT, int
     int RBASE = 0;
     int apl_lut[10] = {0, 16, 35, 58, 69, 80, 91, 102, 235, 255};
     int step = 0;
-    int k = 0;
+    int i = 0;
     int average = 0;
     int GD_STEP_Th = 5;
     int GD_IIR_MODE = 0;//1-old iir;0-new iir,set constant step
     RBASE = (1 << mGD_mvreflsh);
-    if (ColorRangeMode == 1) {//color renge limit
+    if (COLOR_RANGE_MODE == 1) {//color range limit
         if (value < 16) {
             value = 16;
         } else if (value > 236) {
             value = 236;
         }
-
         average = (value - 16)*256/(236-16);
     } else {
         if (value < 0) {//color renge full
             value = 0;
         } else if (value > 255) {
-            value = 255;
+            *tf_bl_value = mPreBacklightValue;
+            return;
         }
-
         average = value;
     }
-    if (!GD_LUT_MODE) {//old or xiaomi project
+
+    if (GD_LUT_MODE == 0) {//old or xiaomi project
         nT0 = average/16;
         nT1 = average%16;
-
         nL0 = LUT[nT0];
         nR0 = LUT[nT0+1];
-
         nDt = nL0*(16-nT1)+nR0*nT1+8;
         bl_value = nDt/16;
     } else {//new mode, only first ten elements used
-        for (k = 0; k < 9; k++ ) {
-            if (average <= apl_lut[k+1] && average >= apl_lut[k]) {
-                nT0 = k;
-                step= apl_lut[k+1] - apl_lut[k];
+        for (i=0;i<9;i++) {
+            if (average <= apl_lut[i+1] && average >= apl_lut[i]) {
+                nT0 = i;
+                step= apl_lut[i+1] - apl_lut[i];
                 break;
             }
         }
+
         nT1 = average - apl_lut[nT0];
         nL0 = LUT[nT0];
         nR0 = LUT[nT0+1];
@@ -143,16 +144,18 @@ void CDynamicBackLight::gd_fw_alg_frm(int value, int *tf_bl_value, int *LUT, int
         *tf_bl_value = mPreBacklightValue + step;
     }
     mPreBacklightValue = *tf_bl_value;
+    return;
 }
 
 int CDynamicBackLight::backLightScale(int backLight, int UIval)
 {
-    //SYS_LOGD ("backLightScale:backLight =  %d, UIvalue = %d\n", backLight, UIval);
+    //SYS_LOGD ("%s: backLight =  %d, UIvalue = %d\n", __FUNCTION__, backLight, UIval);
     int ret = 255;
-    if (backLight <= 0)
-        backLight = 1;
-    if (backLight >= 255)
+    if (backLight <= 0) {
+        return 1;
+    } else if (backLight >= 255) {
         backLight = 255;
+    }
 
     ret = backLight * UIval / 100;
     if (ret <= 0) {
@@ -168,11 +171,23 @@ bool CDynamicBackLight::threadLoop()
 {
     dynamic_backlight_Param_t DynamicBacklightParam;
     memset(&DynamicBacklightParam, 0, sizeof(dynamic_backlight_Param_t));
-    int backLight = 0, NewBacklightValue = 0;
-    int LUT_high[17] = {25,170,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255};
-    int LUT_low[17] = {102,217,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255};
+    int backLight = 0, NewBacklightValue = 0, ValueChange = 0;;
+    int LUT_high[17], LUT_low[17];
+    memset(LUT_high, 0, sizeof(LUT_high));
+    memset(LUT_low, 0, sizeof(LUT_low));
+    if (mpObserver != NULL) {
+        mpObserver->GetDynamicBacklighConfig(&GD_ThTF, &GD_LUT_MODE, LUT_high, LUT_low);
+    }
 
-    while ( !exitPending() ) {
+    if (GD_ThTF < 0 || GD_ThTF >(1<<mGD_mvreflsh)) {
+        GD_ThTF = 0;
+    }
+
+    if (GD_LUT_MODE < 0 || GD_LUT_MODE >255) {
+        GD_LUT_MODE = 0;
+    }
+
+    while (!exitPending()) {
         if (mArithmeticPauseTime != -1) {
             usleep(mArithmeticPauseTime);
             SYS_LOGD ("Pasuse %d usecs", mArithmeticPauseTime);
@@ -181,23 +196,28 @@ bool CDynamicBackLight::threadLoop()
 
         if (mpObserver != NULL) {
             mpObserver->GetDynamicBacklighParam(&DynamicBacklightParam);
-            //SYS_LOGD("VideoStatus=%d, ave=%d, mode = %d\n", DynamicBacklightParam.VideoStatus, DynamicBacklightParam.hist.ave, DynamicBacklightParam.CurDynamicBacklightMode);
-            /*if ((DynamicBacklightParam.hist.ave == 0)
-                || (DynamicBacklightParam.VideoStatus == 0)) {
-               DynamicBacklightParam.CurDynamicBacklightMode = DYNAMIC_BACKLIGHT_OFF;
-            }*/
+            //SYS_LOGD("hist = %d, mode = %d\n", DynamicBacklightParam.hist.ave, DynamicBacklightParam.CurDynamicBacklightMode);
 
-            if (DYNAMIC_BACKLIGHT_HIGH == DynamicBacklightParam.CurDynamicBacklightMode) {
-                gd_fw_alg_frm(DynamicBacklightParam.hist.ave, &backLight, LUT_high, 8, 0);
-            } else if (DYNAMIC_BACKLIGHT_LOW == DynamicBacklightParam.CurDynamicBacklightMode) {
-                gd_fw_alg_frm(DynamicBacklightParam.hist.ave, &backLight, LUT_low, 8, 0);
-            } else {
-                backLight = 255;
+            if (DynamicBacklightParam.hist.ave == -1) {
+                DynamicBacklightParam.CurDynamicBacklightMode = DYNAMIC_BACKLIGHT_OFF;
             }
 
+            if (DYNAMIC_BACKLIGHT_HIGH == DynamicBacklightParam.CurDynamicBacklightMode) {
+                gd_fw_alg_frm(DynamicBacklightParam.hist.ave, &backLight, LUT_high);
+            } else if (DYNAMIC_BACKLIGHT_LOW == DynamicBacklightParam.CurDynamicBacklightMode) {
+                gd_fw_alg_frm(DynamicBacklightParam.hist.ave, &backLight, LUT_low);
+            } else {
+                if ((255 - mPreBacklightValue) > 5) {
+                    backLight = mPreBacklightValue + 5;
+                } else {
+                    backLight = 255;
+                }
+                mPreBacklightValue = backLight;
+            }
+            //SYS_LOGD("hist = %d， scale_value = %d\n", DynamicBacklightParam.hist.ave, backLight);
             NewBacklightValue = backLightScale(backLight, DynamicBacklightParam.UiBackLightValue);
-            if ((DynamicBacklightParam.CurBacklightValue != NewBacklightValue) &&
-                (DynamicBacklightParam.hist.ave != -1)) {
+            //SYS_LOGD("new set val = %d\n", NewBacklightValue);
+            if (DynamicBacklightParam.CurBacklightValue != NewBacklightValue) {
                 mpObserver->Set_Backlight(NewBacklightValue);
             }
         }
@@ -206,5 +226,3 @@ bool CDynamicBackLight::threadLoop()
     }
     return false;
 }
-
-

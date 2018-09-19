@@ -132,7 +132,7 @@ typedef struct ve_dnlp_s {
     enum ve_dnlp_ext_e white;
 } ve_dnlp_t;
 typedef struct ve_hist_s {
-	unsigned long long sum;
+    unsigned int sum;
     int width;
     int height;
     int ave;

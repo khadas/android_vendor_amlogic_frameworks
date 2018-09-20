@@ -300,6 +300,19 @@ public class SystemControlManager {
         return true;
     }
 
+    public boolean checkAttestationKey() {
+        synchronized (mLock) {
+            try {
+                int res = mProxy.checkAttestationKey();
+                Log.d(TAG, "checkAttestationKey result " + res);
+                return 0 == res;
+            } catch (RemoteException e) {
+                Log.e(TAG, "checkAttestationKey:" + e);
+            }
+        }
+        return false;
+    }
+
     public boolean writeAttestationKey(String node, String name, int[] key, int def) {
         synchronized (mLock) {
             try {

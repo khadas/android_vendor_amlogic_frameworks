@@ -19,7 +19,7 @@
  *  - 1 system control interface
  */
 
-#define LOG_TAG "SystemControl"
+#define LOG_TAG "SystemControlService"
 #define LOG_NDEBUG 0
 
 #include <dlfcn.h>
@@ -33,6 +33,9 @@
 #include <pthread.h>
 
 #include "SystemControlService.h"
+#include "keymaster_hidl_hal_test.h"
+
+using android::hardware::keymaster::V3_0::check_AttestationKey;
 
 #define VIDEO_RGB_SCREEN    "/sys/class/video/rgb_screen"
 #define SSC_PATH            "/sys/class/lcd/ss"
@@ -307,6 +310,15 @@ bool SystemControlService::writeAttestationKey(const std::string& node, const st
         }
 
         bool ret = pSysWrite->writeAttestationKey(node.c_str(), name.c_str(), buff, size);
+        return ret;
+    }
+    return false;
+}
+
+bool SystemControlService::checkAttestationKey() {
+    if (NO_ERROR == permissionCheck()) {
+        ALOGD("SystemControlService checkAttestationKey \n");
+        bool ret = check_AttestationKey();
         return ret;
     }
     return false;

@@ -76,7 +76,14 @@ LOCAL_SRC_FILES:= \
   HDCP/sha1.cpp \
   HDCP/HDCPRx22ImgKey.cpp \
   FrameRateAutoAdaption.cpp \
-  FormatColorDepth.cpp
+  FormatColorDepth.cpp \
+  keymaster_hidl_hal_test.cpp \
+  authorization_set.cpp \
+  attestation_record.cpp \
+  key_param_output.cpp \
+  keystore_tags_utils.cpp \
+  VtsHalHidlTargetTestBase.cpp \
+  VtsHalHidlTargetTestEnvBase.cpp
 
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \
@@ -86,7 +93,8 @@ LOCAL_SHARED_LIBRARIES := \
   libbinder \
   libm \
   libpqcontrol \
-  libsqlite
+  libsqlite \
+  libhwbinder
 
 LOCAL_SHARED_LIBRARIES += \
   vendor.amlogic.hardware.systemcontrol@1.0 \
@@ -100,6 +108,8 @@ LOCAL_C_INCLUDES := \
   external/libcxx/include \
   system/core/include \
   system/libhidl/transport/include/hidl \
+  external/googletest/googletest/include \
+  hardware/libhardware/include \
   $(PQ_INCLUDE_PATH) \
   $(LIB_SQLITE_PATH)
 
@@ -108,7 +118,12 @@ LOCAL_MODULE:= systemcontrol
 LOCAL_INIT_RC := systemcontrol.rc
 
 LOCAL_STATIC_LIBRARIES := \
-  libz
+  libz \
+  android.hardware.keymaster@3.0 \
+  libcrypto \
+  libsoftkeymasterdevice \
+  libgtest \
+
 
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
 LOCAL_PROPRIETARY_MODULE := true

@@ -35,6 +35,10 @@
 #include <pthread.h>
 
 #include "SystemControl.h"
+#include "keymaster_hidl_hal_test.h"
+
+using ::android::hardware::keymaster::V3_0::check_AttestationKey;
+
 
 namespace android {
 
@@ -223,6 +227,15 @@ int32_t SystemControl::readAttestationKey(const String16& node, const String16& 
         return len;
     }
     return 0;
+}
+
+bool SystemControl::checkAttestationKey() {
+    if (NO_ERROR == permissionCheck()) {
+        ALOGD("SystemControl checkAttestationKey");
+        bool ret = check_AttestationKey();
+        return ret;
+    }
+    return false;
 }
 
 bool SystemControl::writeAttestationKey(const String16& node, const String16& name, const char *buff, const int size) {

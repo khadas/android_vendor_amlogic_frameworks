@@ -80,6 +80,7 @@ public:
 
     int32_t readAttestationKey(const std::string& node, const std::string& name, char *value, int size);
     bool writeAttestationKey(const std::string& node, const std::string& name, const char *buff, const int size);
+    bool checkAttestationKey();
     //set or get uboot env
     bool getBootEnv(const std::string& key, std::string& value);
     void setBootEnv(const std::string& key, const std::string& value);

@@ -321,6 +321,12 @@ Return<Result> SystemControlHal::writeAttestationKey(const hidl_string &node, co
     return mSysControl->writeAttestationKey(node.c_str(), name.c_str(), value, 10240)?Result::OK:Result::FAIL;
 }
 
+Return<Result> SystemControlHal::checkAttestationKey() {
+    ALOGI("SystemControlHal checkAttestationKey");
+    return mSysControl->checkAttestationKey()?Result::OK:Result::FAIL;
+}
+
+
 Return<void> SystemControlHal::readUnifyKey(const hidl_string &key, readUnifyKey_cb _hidl_cb) {
     std::string value;
     mSysControl->readUnifyKey(key, value);

@@ -240,6 +240,15 @@ bool SystemControlClient::writeAttestationKey(const std::string& node, const std
     return false;
 }
 
+bool SystemControlClient::checkAttestationKey() {
+    LOG(INFO) << "SystemControlClient checkAttestationKey";
+    Result rtn = mSysCtrl->checkAttestationKey();
+    if (rtn == Result::OK) {
+        return true;
+    }
+    return false;
+}
+
 int32_t SystemControlClient::readHdcpRX22Key(char *value, int size) {
     hidl_array<int32_t, 4096> result;
     int32_t len;

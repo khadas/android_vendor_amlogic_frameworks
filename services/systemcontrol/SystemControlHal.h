@@ -78,6 +78,7 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
 
     Return<void> readAttestationKey(const hidl_string &node, const hidl_string &name, int32_t size, readAttestationKey_cb _hidl_cb) override;
     Return<Result> writeAttestationKey(const hidl_string &node, const hidl_string &name, const hidl_array<int32_t, 10240>& key) override;
+    Return<Result> checkAttestationKey() override;
 
     Return<void> getBootEnv(const hidl_string &key, getBootEnv_cb _hidl_cb) override;
     Return<void> setBootEnv(const hidl_string &key, const hidl_string &value) override;

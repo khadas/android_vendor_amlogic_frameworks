@@ -71,6 +71,7 @@ public:
     virtual bool writePlayreadyKey(const String16& path, const char *buff, const int size);
     virtual int32_t readPlayreadyKey(const String16& path, char *value, int size);
 
+    virtual bool checkAttestationKey();
     virtual int32_t readAttestationKey(const String16& node, const String16& name, char *value, int size);
     virtual bool writeAttestationKey(const String16& node, const String16& name, const char *buff, const int size);
 

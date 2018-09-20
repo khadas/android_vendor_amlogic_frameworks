@@ -1,0 +1,37 @@
+cc_library_static {
+    name: "libsystemcontrol_static",
+    vendor_available: true,
+    //vndk: {
+    //    enabled: true,
+    //},
+    srcs: [
+        "main_recovery.cpp",
+        "ubootenv/Ubootenv.cpp",
+        "SysWrite.cpp",
+        "DisplayMode.cpp",
+        "SysTokenizer.cpp",
+        "UEventObserver.cpp",
+        "HDCP/aes.cpp",
+        "HDCP/HdcpKeyDecrypt.cpp",
+        "HDCP/HDCPRxKey.cpp",
+        "HDCP/HDCPRxAuth.cpp",
+        "HDCP/HDCPTxAuth.cpp",
+        "FrameRateAutoAdaption.cpp",
+        "FormatColorDepth.cpp"
+    ],
+    
+    static_libs: [
+        "libcutils",
+        "libz",
+    ],
+    include_dirs: [
+        "external/zlib",
+        "external/libcxx/include",
+        "system/core/libutils/include",
+        "system/core/liblog/include",
+    ],
+    cflags: [
+        "-DRECOVERY_MODE",
+        "-DPLATFORM_SDK_VERSION=%d"
+    ],
+}

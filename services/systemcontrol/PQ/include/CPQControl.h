@@ -17,25 +17,36 @@
 #include "PQType.h"
 #include "CPQColorData.h"
 #include "CPQLog.h"
+#include "CDynamicBackLight.h"
+#include "CConfigFile.h"
+#include "COverScandb.h"
 
-#define PQ_DB_PATH                "/vendor/etc/tvconfig/pq.db"
+#define PQ_DB_TV_DEFAULT_PATH     "/vendor/etc/tvconfig/pq/pq.db"
+#define PARAM_PQ_DB_PATH          "/mnt/vendor/param/pq/pq.db"
+#define PQ_DB_BOX_DEFAULT_PATH    "/vendor/etc/tvconfig/pq.db"
+#define OVERSCAN_DB_PATH          "/vendor/etc/tvconfig/pq/overscan.db"
+#define PARAM_OVERSCAN_DB_PATH    "/mnt/vendor/param/pq/overscan.db"
+#define PQ_CONFIG_DEFAULT_PATH    "/vendor/etc/tvconfig/pq/pq_default.ini"
+#define MODEL_SUM_DEFAULT_PATH    "/vendor/etc/tvconfig/model/model_sum.ini"
 #define LDIM_PATH                 "/dev/aml_ldim"
+#define LDIM_CONTROL_PATH         "/sys/class/aml_ldim/func_en"
 #define VPP_DEV_PATH              "/dev/amvecm"
 #define DI_DEV_PATH               "/dev/di0"
 #define AFE_DEV_PATH              "/dev/tvafe0"
-#define DNLP_ENABLE               "/sys/module/am_vecm/parameters/dnlp_en"
 #define SYS_VIDEO_FRAME_HEIGHT    "/sys/class/video/frame_height"
-#define HDMIRX_DEV_PATH           "/dev/hdmirx0"
 
 #define CROP_PATH                 "/sys/class/video/crop"
 #define SCREEN_MODE_PATH          "/sys/class/video/screen_mode"
 #define NOLINER_FACTORY           "/sys/class/video/nonlinear_factor"
 #define BACKLIGHT_PATH            "/sys/class/backlight/aml-bl/brightness"
-#define PQ_MOUDLE_ENABLE_PATH     "/sys/class/amvecm/pc_mode"
+#define SYSFS_VFM_MAP_PATH        "/sys/class/vfm/map"
+#define VIDEO_RGB_SCREEN          "/sys/class/video/rgb_screen"
+#define SSC_PATH                  "/sys/class/lcd/ss"
+#define TEST_SCREEN               "/sys/class/video/test_screen"
+#define PQ_SET_RW_INTERFACE       "/sys/class/amvecm/pq_reg_rw"
 
-#define HDMI_IOC_MAGIC 'H'
-#define HDMI_IOC_PC_MODE_ON         _IO(HDMI_IOC_MAGIC, 0x04)
-#define HDMI_IOC_PC_MODE_OFF        _IO(HDMI_IOC_MAGIC, 0x05)
+#define FINAL_GAIN_REG_NUM        46
+
 
 #define TVIN_IOC_MAGIC 'T'
 #define TVIN_IOC_LOAD_REG           _IOW(TVIN_IOC_MAGIC, 0x20, struct am_regs_s)
@@ -50,7 +61,45 @@
 #define  SCREEN_MODE_CROP_FULL        6
 #define  SCREEN_MODE_CROP             7
 
-class CPQControl: public CDevicePollCheckThread::IDevicePollCheckObserver{
+//NR Param
+#define NR_3D_YGAIN_ADDR         (0X371C)
+#define NR_3D_CGAIN_ADDR         (0X2DCE)
+#define NR_2D_GAIN_ADDR          (0X2DAE)
+#define VPP_BLACKEXT_CTRL        (0x1D80)
+
+//Sharpness CTI
+#define VPP_CTI_YC_DELAY         (0X7)
+#define VPP_DECODE_CTI           (0XB5)
+#define VPP_CTI_SR0_GAIN         (0X322F)
+#define VPP_CTI_SR1_GAIN         (0X32AF)
+
+#define YC_DELAY_REG_MASK        (0XF)
+#define DECODE_CTI_REG_MASK      (0XFFFF)
+#define SR0_GAIN0_REG_MASK       (0XFF000000)
+#define SR0_GAIN1_REG_MASK       (0X00FF0000)
+#define SR0_GAIN2_REG_MASK       (0X0000FF00)
+#define SR0_GAIN3_REG_MASK       (0X000000FF)
+#define SR1_GAIN0_REG_MASK       (0XFF000000)
+#define SR1_GAIN1_REG_MASK       (0X00FF0000)
+#define SR1_GAIN2_REG_MASK       (0X0000FF00)
+#define SR1_GAIN3_REG_MASK       (0X000000FF)
+//Video Decode Luma
+#define DECODE_BRI_ADDR          (0X9)
+#define DECODE_CON_ADDR          (0X8)
+#define DECODE_SAT_ADDR          (0XA)
+//Sharpness Advanced
+#define SHARPNESS_SD_GAIN                (0x3213)
+#define SHARPNESS_SD_HP_DIAG_CORE        (0x320f)
+#define SHARPNESS_SD_BP_DIAG_CORE        (0x3210)
+#define SHARPNESS_SD_PKGAIN_VSLUMA       (0x327e)
+#define SHARPNESS_HD_GAIN                (0x3293)
+#define SHARPNESS_HD_HP_DIAG_CORE        (0x328f)
+#define SHARPNESS_HD_BP_DIAG_CORE        (0x3290)
+#define SHARPNESS_HD_PKGAIN_VSLUMA       (0x32fe)
+
+class CPQControl: public CDevicePollCheckThread::IDevicePollCheckObserver,
+                         public CDynamicBackLight::IDynamicBackLightObserver,
+                         public SSMAction::ISSMActionObserver{
 public:
     CPQControl();
     ~CPQControl();
@@ -58,21 +107,22 @@ public:
 
     virtual void onVframeSizeChange();
     virtual void onHDRStatusChange();
-    int SetPQMoudleStatus(int status);
+    virtual void resetAllUserSettingParam();
+    virtual void Set_Backlight(int value);
+    virtual void GetDynamicBacklighParam(dynamic_backlight_Param_t *DynamicBacklightParam);
     int LoadPQSettings(source_input_param_t source_input_param);
     int LoadCpqLdimRegs(void);
     int Cpq_LoadRegs(am_regs_t regs);
     int Cpq_LoadDisplayModeRegs(ve_pq_load_t regs);
     int DI_LoadRegs(am_pq_param_t di_regs );
     int Cpq_LoadBasicRegs(source_input_param_t source_input_param);
-    int Cpq_SetDIMode(di_mode_param_t di_param, source_input_param_t source_input_param);
+    int Cpq_SetDIModuleParam(source_input_param_t source_input_param);
     int ResetLastPQSettingsSourceType(void);
     int BacklightInit(void);
     //PQ mode
     int SetPQMode(int pq_mode, int is_save, int is_autoswitch);
     int GetPQMode(void);
     int SavePQMode(int pq_mode);
-    int Cpq_SetPcModeStatus(int value);
     int Cpq_SetPQMode(vpp_picture_mode_t pq_mode, source_input_param_t source_input_param);
     int SetPQParams(vpp_pq_para_t pq_para, source_input_param_t source_input_param);
     int GetPQParams(source_input_param_t source_input_param, vpp_picture_mode_t pq_mode, vpp_pq_para_t *pq_para);
@@ -85,7 +135,7 @@ public:
     unsigned short Cpq_CalColorTemperatureParamsChecksum(void);
     int Cpq_SetColorTemperatureParamsChecksum(void);
     unsigned short Cpq_GetColorTemperatureParamsChecksum(void);
-    int Cpq_SetColorTemperatureUser(vpp_color_temperature_mode_t temp_mode __unused, tv_source_input_type_t source_type);
+    int Cpq_SetColorTemperatureUser(vpp_color_temperature_mode_t temp_mode __unused, tv_source_input_t source_input);
     int Cpq_RestoreColorTemperatureParamsFromDB(source_input_param_t source_input_param);
     int Cpq_CheckTemperatureDataLable(void);
     int Cpq_SetTemperatureDataLable(void);
@@ -97,23 +147,27 @@ public:
     int SetBrightness(int value, int is_save);
     int GetBrightness(void);
     int SaveBrightness(int value);
+    int Cpq_SetBrightnessBasicParam(source_input_param_t source_input_param);
     int Cpq_SetBrightness(int value, source_input_param_t source_input_param);
     int Cpq_SetVideoBrightness(int value);
     //Contrast
     int SetContrast(int value, int is_save);
     int GetContrast(void);
     int SaveContrast(int value);
+    int Cpq_SetContrastBasicParam(source_input_param_t source_input_param);
     int Cpq_SetContrast(int value, source_input_param_t source_input_param);
     int Cpq_SetVideoContrast(int value);
     //Saturation
     int SetSaturation(int value, int is_save);
     int GetSaturation(void);
     int SaveSaturation(int value);
+    int Cpq_SetSaturationBasicParam(source_input_param_t source_input_param);
     int Cpq_SetSaturation(int value, source_input_param_t source_input_param);
     //Hue
     int SetHue(int value, int is_save);
     int GetHue(void);
     int SaveHue(int value);
+    int Cpq_SetHueBasicParam(source_input_param_t source_input_param);
     int Cpq_SetHue(int value, source_input_param_t source_input_param);
     int Cpq_SetVideoSaturationHue(int satVal, int hueVal);
     void video_set_saturation_hue(signed char saturation, signed char hue, signed long *mab);
@@ -123,6 +177,10 @@ public:
     int GetSharpness(void);
     int SaveSharpness(int value);
     int Cpq_SetSharpness(int value, source_input_param_t source_input_param);
+    int Cpq_SetSharpness0FixedParam(source_input_param_t source_input_param);
+    int Cpq_SetSharpness0VariableParam(source_input_param_t source_input_param);
+    int Cpq_SetSharpness1FixedParam(source_input_param_t source_input_param);
+    int Cpq_SetSharpness1VariableParam(source_input_param_t source_input_param);
     //NoiseReductionMode
     int SetNoiseReductionMode(int nr_mode, int is_save);
     int GetNoiseReductionMode(void);
@@ -135,53 +193,69 @@ public:
     int SetDisplayMode(tv_source_input_t source_input, vpp_display_mode_t display_mode, int is_save);
     int GetDisplayMode(tv_source_input_t source_input);
     int SaveDisplayMode(tv_source_input_t source_input, vpp_display_mode_t mode);
-    int Cpq_SetDisplayMode(tv_source_input_t source_input, vpp_display_mode_t display_mode);
-    int Cpq_SetDisplayModeForDTV(tv_source_input_t source_input, vpp_display_mode_t display_mode);
+    int Cpq_SetDisplayModeForVdin(tv_source_input_t source_input, vpp_display_mode_t display_mode);
+    int Cpq_SetDisplayModeForDecoder(tv_source_input_t source_input, vpp_display_mode_t display_mode);
     int Cpq_SetVideoScreenMode(int value);
     int Cpq_GetScreenModeValue(vpp_display_mode_t display_mode);
     int Cpq_SetVideoCrop(int Voffset0, int Hoffset0, int Voffset1, int Hoffset1);
     int Cpq_SetNonLinearFactor(int value);
     //Backlight
-    int SetBacklight(tv_source_input_t source_input, int value, int is_save);
-    int GetBacklight(tv_source_input_t source_input);
-    int SaveBacklight(tv_source_input_t source_input, int value);
-    int Cpq_SetBackLightLevel(int value);
+    int SetBacklight(int value, int is_save);
+    int GetBacklight(void);
+    int SaveBacklight(int value);
+    int Cpq_SetBackLight(int value);
+    void Cpq_GetBacklight(int *value);
+    int SetDynamicBacklight(Dynamic_backlight_status_t mode, int is_save);
+    int GetDynamicBacklight(void);
+    int GetVideoPlayStatus(void);
+    //BlackExtension
+    int SetBlackExtensionParam(source_input_param_t source_input_param);
     //Factory
     int FactoryResetPQMode(void);
     int FactoryResetColorTemp(void);
-
-    int FactorySetPQParam(source_input_param_t source_input_param, int pq_mode, int id, int value);
-    int FactoryGetPQParam(source_input_param_t source_input_param, int pq_mode, int id);
-    int FactorySetColorTemperatureParam(int colortemperature_mode, pq_color_param_t id, int value);
-    int FactoryGetColorTemperatureParam(int colortemperature_mode, pq_color_param_t id);
-    int FactorySaveColorTemperatureParam(int colortemperature_mode, pq_color_param_t id, int value);
-
     int FactorySetPQMode_Brightness(source_input_param_t source_input_param, int pq_mode, int brightness );
     int FactoryGetPQMode_Brightness(source_input_param_t source_input_param, int pq_mode );
     int FactorySetPQMode_Contrast(source_input_param_t source_input_param, int pq_mode, int contrast );
     int FactoryGetPQMode_Contrast(source_input_param_t source_input_param, int pq_mode );
     int FactorySetPQMode_Saturation(source_input_param_t source_input_param, int pq_mode, int saturation );
     int FactoryGetPQMode_Saturation(source_input_param_t source_input_param, int pq_mode );
-    int FactorySetPQMode_Sharpness(source_input_param_t source_input_param, int pq_mode, int sharpness );
-    int FactoryGetPQMode_Sharpness(source_input_param_t source_input_param, int pq_mode );
     int FactorySetPQMode_Hue(source_input_param_t source_input_param, int pq_mode, int hue );
     int FactoryGetPQMode_Hue(source_input_param_t source_input_param, int pq_mode );
-
-    int FactoryGetTestPattern(void );
+    int FactorySetPQMode_Sharpness(source_input_param_t source_input_param, int pq_mode, int sharpness );
+    int FactoryGetPQMode_Sharpness(source_input_param_t source_input_param, int pq_mode );
+    int FactorySetColorTemp_Rgain ( int source_input, int colortemp_mode, int rgain );
+    int FactorySaveColorTemp_Rgain ( int source_input, int colortemp_mode, int rgain );
+    int FactoryGetColorTemp_Rgain ( int source_input, int colortemp_mode );
+    int FactorySetColorTemp_Ggain ( int source_input, int colortemp_mode, int ggain );
+    int FactorySaveColorTemp_Ggain ( int source_input, int colortemp_mode, int ggain );
+    int FactoryGetColorTemp_Ggain ( int source_input, int colortemp_mode );
+    int FactorySetColorTemp_Bgain ( int source_input, int colortemp_mode, int bgain );
+    int FactorySaveColorTemp_Bgain ( int source_input, int colortemp_mode, int bgain );
+    int FactoryGetColorTemp_Bgain ( int source_input, int colortemp_mode );
+    int FactorySetColorTemp_Roffset ( int source_input, int colortemp_mode, int roffset );
+    int FactorySaveColorTemp_Roffset ( int source_input, int colortemp_mode, int roffset );
+    int FactoryGetColorTemp_Roffset ( int source_input, int colortemp_mode );
+    int FactorySetColorTemp_Goffset ( int source_input, int colortemp_mode, int goffset );
+    int FactorySaveColorTemp_Goffset ( int source_input, int colortemp_mode, int goffset );
+    int FactoryGetColorTemp_Goffset ( int source_input, int colortemp_mode );
+    int FactorySetColorTemp_Boffset ( int source_input, int colortemp_mode, int boffset );
+    int FactorySaveColorTemp_Boffset ( int source_input, int colortemp_mode, int boffset );
+    int FactoryGetColorTemp_Boffset ( int source_input, int colortemp_mode );
     int FactoryResetNonlinear(void);
     int FactorySetParamsDefault(void);
     int FactorySetNolineParams(source_input_param_t source_input_param, int type, noline_params_t noline_params);
-    int FactoryGetNolineParams(source_input_param_t source_input_param,          int type, noline_params_ID_t id);
+    noline_params_t FactoryGetNolineParams(source_input_param_t source_input_param,          int type);
+    int FactorySetHdrMode(int mode);
+    int FactoryGetHdrMode(void);
     int FactorySetOverscanParam(source_input_param_t source_input_param, tvin_cutwin_t cutwin_t);
-    int FactoryGetOverscanParam(source_input_param_t source_input_param, tvin_cutwin_param_t id);
+    tvin_cutwin_t FactoryGetOverscanParam(source_input_param_t source_input_param);
     int FactorySetGamma(int gamma_r_value, int gamma_g_value, int gamma_b_value);
     int FcatorySSMRestore(void);
+
     int SetColorDemoMode(vpp_color_demomode_t demomode);
-    int Cpq_SetCMRegisterMap(struct cm_regmap_s *pRegMap);
     int SetBaseColorMode(vpp_color_basemode_t basemode, source_input_param_t source_input_param);
     vpp_color_basemode_t GetBaseColorMode(void);
     int SaveBaseColorMode(vpp_color_basemode_t basemode);
-    int SetBaseColorModeWithoutSave(vpp_color_basemode_t basemode, source_input_param_t source_input_param);
     int Cpq_SetBaseColorMode(vpp_color_basemode_t basemode, source_input_param_t source_input_param);
     int Cpq_SetRGBOGO(const struct tcon_rgb_ogo_s *rgbogo);
     int Cpq_GetRGBOGO(const struct tcon_rgb_ogo_s *rgbogo);
@@ -189,10 +263,33 @@ public:
     int Cpq_SetGammaTbl_R(unsigned short red[256]);
     int Cpq_SetGammaTbl_G(unsigned short green[256]);
     int Cpq_SetGammaTbl_B(unsigned short blue[256]);
-    int Cpq_SetGammaOnOff(unsigned char onoff);
-    int SetDNLP(source_input_param_t source_input_param);
+    int Cpq_SetGammaOnOff(int onoff);
+    int SetDnlpMode(source_input_param_t source_input_param, int level);
+    int GetDnlpMode(source_input_param_t source_input_param, int *level);
     int Cpq_SetVENewDNLP(const ve_dnlp_curve_param_t *pDNLP);
-    int Cpq_SetDNLPStatus(const char *val);
+    int Cpq_SetDNLPStatus(ve_dnlp_state_t status);
+    int FactorySetDNLPCurveParams(source_input_param_t source_input_param, int level, int final_gain);
+    int FactoryGetDNLPCurveParams(source_input_param_t source_input_param, int level);
+    int FactorySetBlackExtRegParams(source_input_param_t source_input_param, int val);
+    int FactoryGetBlackExtRegParams(source_input_param_t source_input_param);
+    int FactoryGetBEValFromDB(source_input_param_t source_input_param, int addr);
+    int FactorySetBERegDBVal(source_input_param_t source_input_param, int addr, unsigned int reg_val);
+    int FactorySetRGBCMYFcolorParams(source_input_param_t source_input_param, int color_type,int color_param,int val);
+    int FactoryGetRGBCMYFcolorParams(source_input_param_t source_input_param, int color_type,int color_param);
+    int FactorySetNoiseReductionParams(source_input_param_t source_input_param, vpp_noise_reduction_mode_t nr_mode, int addr, int val);
+    int FactoryGetNoiseReductionParams(source_input_param_t source_input_param, vpp_noise_reduction_mode_t nr_mode, int addr);
+    int FactorySetCTIParams(source_input_param_t source_input_param, int param_type, int val);
+    int FactoryGetCTIParams(source_input_param_t source_input_param, int param_type);
+    int SetCTIParamsCheckVal(int param_type, int val);
+    int MatchCTIRegMask(int param_type);
+    int MatchCTIRegAddr(int param_type);
+    int FactorySetDecodeLumaParams(source_input_param_t source_input_param, int param_type, int val);
+    int FactoryGetDecodeLumaParams(source_input_param_t source_input_param, int param_type);
+    int SetDecodeLumaParamsCheckVal(int param_type, int val);
+    int SetSharpnessParamsCheckVal(int param_type, int val);
+    int MatchSharpnessRegAddr(int param_type, int isHd);
+    int FactorySetSharpnessParams(source_input_param_t source_input_param, Sharpness_timing_e source_timing, int param_type, int val);
+    int FactoryGetSharpnessParams(source_input_param_t source_input_param, Sharpness_timing_e source_timing, int param_type);
     int SetEyeProtectionMode(tv_source_input_t source_input, int enable, int is_save);
     int GetEyeProtectionMode(tv_source_input_t source_input);
     int Cpq_SSMReadNTypes(int id, int data_len, int offset);
@@ -201,13 +298,25 @@ public:
     int Cpq_GetSSMActualSize(int id);
     int Cpq_SSMRecovery(void);
     int Cpq_GetSSMStatus();
-    int SetFlagByCfg(Set_Flag_Cmd_t id, int value);
+    int SetFlagByCfg(void);
     int SetPLLValues(source_input_param_t source_input_param);
-    int SetCVD2Values(source_input_param_t source_input_param);
+    int SetCVD2Values(void);
     int SetCurrentSourceInputInfo(source_input_param_t source_input_param);
     source_input_param_t GetCurrentSourceInputInfo();
     int resetLastSourceTypeSettings(void);
-    int autoSwitchMode();
+    int GetHistParam(ve_hist_t *hist);
+    bool isFileExist(const char *file_name);
+    int GetRGBPattern();
+    int SetRGBPattern(int r, int g, int b);
+    int FactorySetDDRSSC (int step);
+    int FactoryGetDDRSSC(void);
+    int FactorySetLVDSSSC (int step);
+    int FactoryGetLVDSSSC(void);
+    int SetLVDSSSC(int step);
+    int SetGrayPattern(int value);
+    int GetGrayPattern();
+    int SetHDRMode(int mode);
+    int GetHDRMode(void);
 private:
     int VPPOpenModule(void);
     int VPPCloseModule(void );
@@ -215,39 +324,50 @@ private:
     int DIOpenModule(void);
     int DICloseModule(void);
     int DIDeviceIOCtl(int request, ...);
-
+    int AFEDeviceIOCtl ( int request, ... );
     tvin_sig_fmt_t getVideoResolutionToFmt();
     int Cpq_SetXVYCCMode(vpp_xvycc_mode_t xvycc_mode, source_input_param_t source_input_param);
-    int AFE_DeviceIOCtl ( int request, ... );
     void InitSourceInputInfo();
     int pqWriteSys(const char *path, const char *val);
+    int pqReadSys(const char *path, char *buf, int count);
+    void pqTransformStringToInt(const char *buf, int *val);
+    unsigned int GetSharpnessRegVal(int addr);
 
-    tv_source_input_type_t cpq_setting_last_source_type;
+    tv_source_input_t cpq_setting_last_source;
     tvin_sig_fmt_t cpq_setting_last_sig_fmt;
     tvin_trans_fmt_t cpq_setting_last_trans_fmt;
     bool mIsHdrLastTime;
     bool mInitialized;
     int mAutoSwitchPCModeFlag;
     //cfg
-    bool mbVppCfg_backlight_reverse = false;
-    bool mbVppCfg_backlight_init = false;
-    bool mbVppCfg_pqmode_depend_bklight = false;
-    bool mbCpqCfg_pqmode_without_hue = true;
-    bool mbCpqCfg_hue_reverse = true;
-    bool mbCpqCfg_gamma_onoff = false;
-    bool mbCpqCfg_new_cm = true;
-    bool mbCpqCfg_new_nr = true;
-    bool mbCpqCfg_colortemp_by_source = true;
-    bool mbCpqCfg_xvycc_switch_control = false;
-    //osd config
-    bool mbCpqCfg_contrast_withOSD = false;
-    bool mbCpqCfg_hue_withOSD = false;
-    bool mbCpqCfg_brightness_withOSD = false;
+    bool mbCpqCfg_seperate_db_enable;
+    bool mbCpqCfg_brightness_contrast_enable;
+    bool mbCpqCfg_satuation_hue_enable;
+    bool mbCpqCfg_blackextension_enable;
+    bool mbCpqCfg_sharpness0_enable;
+    bool mbCpqCfg_sharpness1_enable;
+    bool mbCpqCfg_di_enable;
+    bool mbCpqCfg_mcdi_enable;
+    bool mbCpqCfg_deblock_enable;
+    bool mbCpqCfg_nr_enable;
+    bool mbCpqCfg_demoSquito_enable;
+    bool mbCpqCfg_gamma_enable;
+    bool mbCpqCfg_cm2_enable;
+    bool mbCpqCfg_whitebalance_enable;
+    bool mbCpqCfg_dnlp_enable;
+    bool mbCpqCfg_xvycc_enable;
+    bool mbCpqCfg_brightness_withOSD;
+    bool mbCpqCfg_contrast_withOSD;
+    bool mbCpqCfg_hue_withOSD;
+    bool mbCpqCfg_display_overscan_enable;
 
     CPQdb *mPQdb;
+    COverScandb *mpOverScandb;
     SSMAction *mSSMAction;
     static CPQControl *mInstance;
     CDevicePollCheckThread mCDevicePollCheckThread;
+    CDynamicBackLight *mDynamicBackLight;
+    CConfigFile *mPQConfigFile;
 
     int mAmvideoFd;
     int mDiFd;

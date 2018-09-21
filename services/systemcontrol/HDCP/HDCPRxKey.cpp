@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 
 #include "HDCPRxKey.h"
 #include "HdcpKeyDecrypt.h"
@@ -75,6 +76,7 @@
 
 #define HDCP_RX_DEBUG_PATH                  "/sys/class/hdmirx/hdmirx0/debug"
 #define HDMI_RX_HPD_OK_FLAG                 "/sys/module/tvin_hdmirx/parameters/hdcp22_firmware_ok_flag"
+#define HDCP_RX14_KEY_MODE_DEV              "/dev/hdmirx0"
 
 #define HDCP_RX22_STORAGE_KEY_SIZE          (10U<<10)//10K
 
@@ -528,6 +530,7 @@ bool HDCPRxKey::genKeyImg() {
     char cmd[512] = {0};
     if (access(HDCP_RX22_KEYS_PATH, F_OK)) {
         SYS_LOGE("don't exist path:%s\n", HDCP_RX22_KEYS_PATH);
+        setHdcpRX22SupportStatus();
         return false;
     }
 
@@ -554,6 +557,7 @@ bool HDCPRxKey::esmSwap() {
     char cmd[512] = {0};
     if (access(HDCP_RX22_ESM_SWAP_PATH, F_OK)) {
         SYS_LOGE("don't exist path:%s\n", HDCP_RX22_ESM_SWAP_PATH);
+        setHdcpRX22SupportStatus();
         return false;
     }
 
@@ -580,6 +584,7 @@ bool HDCPRxKey::aicTool() {
     char cmd[512] = {0};
     if (access(HDCP_RX22_AIC_TOOL_PATH, F_OK)) {
         SYS_LOGE("don't exist path:%s\n", HDCP_RX22_AIC_TOOL_PATH);
+        setHdcpRX22SupportStatus();
         return false;
     }
 
@@ -670,5 +675,25 @@ exit:
         free(pSrcData);
     if (NULL != pInsertData)
         free(pInsertData);
+    return ret;
+}
+
+int HDCPRxKey::setHdcpRX22SupportStatus()
+{
+    int ret = -1;
+    int fd, size;
+    if ((fd = open(HDCP_RX14_KEY_MODE_DEV, O_RDWR)) < 0) {
+        SYS_LOGE("%s:open %s fail.", __FUNCTION__, HDCP_RX14_KEY_MODE_DEV);
+        return ret;
+    }
+
+    ret = ioctl(fd, HDMI_IOC_HDCP22_NOT_SUPPORT);
+    if (ret != 0) {
+        SYS_LOGE("ioctl error: %s\n", strerror(errno));
+        close(fd);
+        return ret;
+    }
+
+    close(fd);
     return ret;
 }

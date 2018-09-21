@@ -25,9 +25,19 @@
 #include <assert.h>
 #include "common.h"
 #include "../SysWrite.h"
+
+#define HDMI_IOC_MAGIC 'H'
+#define HDMI_IOC_HDCP14_KEY_MODE    _IOR(HDMI_IOC_MAGIC, 0x0d, enum hdcp14_key_mode_e)
+#define HDMI_IOC_HDCP22_NOT_SUPPORT _IO(HDMI_IOC_MAGIC, 0x0e)
+
 enum {
     HDCP_RX_14_KEY                  = 0,
     HDCP_RX_22_KEY                  = 1
+};
+
+enum hdcp14_key_mode_e {
+    HDCP14_KEY_MODE_NORMAL          = 0,
+    HDCP14_KEY_MODE_SECURE
 };
 
 class HDCPRxKey {
@@ -56,6 +66,7 @@ private:
     bool esmSwap();
     bool genKeyImg();
     bool combineFirmware();
+    int setHdcpRX22SupportStatus();
     SysWrite sysWrite;
 };
 

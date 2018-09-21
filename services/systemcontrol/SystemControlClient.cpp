@@ -596,16 +596,11 @@ void SystemControlClient::autoDetect3DForMbox() {
     mSysCtrl->autoDetect3DForMbox();
 }
 //3D end
-
 //PQ
 int SystemControlClient::loadPQSettings(source_input_param_t srcInputParam) {
     SourceInputParam hidlSrcInput;
     memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
     return mSysCtrl->loadPQSettings(hidlSrcInput);
-}
-
-int SystemControlClient::loadCpqLdimRegs(void) {
-    return mSysCtrl->loadCpqLdimRegs();
 }
 
 int SystemControlClient::setPQmode(int mode, int isSave, int is_autoswitch) {
@@ -630,22 +625,6 @@ int SystemControlClient::getColorTemperature(void) {
 
 int SystemControlClient::saveColorTemperature(int mode) {
     return mSysCtrl->saveColorTemperature(mode);
-}
-
-int SystemControlClient::setColorTemperatureParam(int mode, tcon_rgb_ogo_t params) {
-    TconRgbOgo hidlParam;
-    memcpy(&hidlParam, &params, sizeof(tcon_rgb_ogo_t));
-    return mSysCtrl->setColorTemperatureParam(mode, hidlParam);
-}
-
-int SystemControlClient::getColorTemperatureParam(int mode, int id) {
-    return mSysCtrl->getColorTemperatureParam(mode, id);
-}
-
-int SystemControlClient::saveColorTemperatureParam(int mode, tcon_rgb_ogo_t params) {
-    TconRgbOgo hidlParam;
-    memcpy(&hidlParam, &params, sizeof(tcon_rgb_ogo_t));
-    return mSysCtrl->saveColorTemperatureParam(mode, hidlParam);
 }
 
 int SystemControlClient::setBrightness(int value, int isSave) {
@@ -750,77 +729,126 @@ int SystemControlClient::saveDisplayMode(int source_input, int mode)
     return mSysCtrl->saveDisplayMode(source_input, mode);
 }
 
-int SystemControlClient::setBacklight(int source_input, int value, int isSave)
+int SystemControlClient::setBacklight(int value, int isSave)
 {
-    return mSysCtrl->setBacklight(source_input, value, isSave);
+    return mSysCtrl->setBacklight(value, isSave);
 }
 
-int SystemControlClient::getBacklight(int source_input)
+int SystemControlClient::getBacklight(void)
 {
-    return mSysCtrl->getBacklight(source_input);
+    return mSysCtrl->getBacklight();
 }
 
-int SystemControlClient::saveBacklight(int source_input, int value)
+int SystemControlClient::saveBacklight(int value)
 {
-    return mSysCtrl->saveBacklight(source_input, value);
+    return mSysCtrl->saveBacklight(value);
+}
+
+int SystemControlClient::setDynamicBacklight(int mode, int isSave)
+{
+    return mSysCtrl->setDynamicBacklight(mode, isSave);
+}
+
+int SystemControlClient::getDynamicBacklight(void)
+{
+    return mSysCtrl->getDynamicBacklight();
+}
+
+bool SystemControlClient::checkLdimExist(void)
+{
+    int ret = mSysCtrl->checkLdimExist();
+    if (ret == 0) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 int SystemControlClient::factoryResetPQMode(void) {
     return mSysCtrl->factoryResetPQMode();
+}
+int SystemControlClient::factorySetPQMode_Brightness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value) {
+    return mSysCtrl->factorySetPQMode_Brightness(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+}
+
+int SystemControlClient::factoryGetPQMode_Brightness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode) {
+    return mSysCtrl->factoryGetPQMode_Brightness(inputSrc, sig_fmt, trans_fmt, pq_mode);
+}
+
+int SystemControlClient::factorySetPQMode_Contrast(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value) {
+    return mSysCtrl->factorySetPQMode_Contrast(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+}
+
+int SystemControlClient::factoryGetPQMode_Contrast(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode) {
+    return mSysCtrl->factoryGetPQMode_Contrast(inputSrc, sig_fmt, trans_fmt, pq_mode);
+}
+
+int SystemControlClient::factorySetPQMode_Saturation(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value) {
+    return mSysCtrl->factorySetPQMode_Saturation(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+}
+
+int SystemControlClient::factoryGetPQMode_Saturation(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode) {
+    return mSysCtrl->factoryGetPQMode_Saturation(inputSrc, sig_fmt, trans_fmt, pq_mode);
+}
+
+int SystemControlClient::factorySetPQMode_Hue(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value) {
+    return mSysCtrl->factorySetPQMode_Hue(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+}
+
+int SystemControlClient::factoryGetPQMode_Hue(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode) {
+    return mSysCtrl->factoryGetPQMode_Hue(inputSrc, sig_fmt, trans_fmt, pq_mode);
+}
+
+int SystemControlClient::factorySetPQMode_Sharpness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value) {
+    return mSysCtrl->factorySetPQMode_Sharpness(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+}
+int SystemControlClient::factoryGetPQMode_Sharpness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode) {
+    return mSysCtrl->factoryGetPQMode_Sharpness(inputSrc, sig_fmt, trans_fmt, pq_mode);
 }
 
 int SystemControlClient::factoryResetColorTemp(void) {
     return mSysCtrl->factoryResetColorTemp();
 }
 
-int SystemControlClient::factorySetPQParam(source_input_param_t srcInputParam, int mode, int id, int value) {
-    SourceInputParam hidlSrcInput;
-    memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
-    return mSysCtrl->factorySetPQParam(hidlSrcInput, mode, id, value);
+int SystemControlClient::factorySetOverscan(int inputSrc, int sigFmt, int transFmt, int he_value, int hs_value, int ve_value, int vs_value) {
+    return mSysCtrl->factorySetOverscan(inputSrc, sigFmt, transFmt, he_value, hs_value, ve_value, vs_value);
 }
 
-int SystemControlClient::factoryGetPQParam(source_input_param_t srcInputParam, int mode, int id) {
-    SourceInputParam hidlSrcInput;
-    memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
-    return mSysCtrl->factoryGetPQParam(hidlSrcInput, mode, id);
+tvin_cutwin_t SystemControlClient::factoryGetOverscan(int inputSrc, int sigFmt, int transFmt) {
+    tvin_cutwin_t overscanParam;
+    memset(&overscanParam, 0, sizeof(tvin_cutwin_t));
+    mSysCtrl->factoryGetOverscan(inputSrc, sigFmt, transFmt, [&](const OverScanParam& param) {
+        overscanParam.he = param.he;
+        overscanParam.hs = param.hs;
+        overscanParam.ve = param.ve;
+        overscanParam.vs = param.vs;
+    });
+
+    return overscanParam;
 }
 
-int SystemControlClient::factorySetColorTemperatureParam(int colortemperature_mode, int id, int value) {
-    return mSysCtrl->factorySetColorTemperatureParam(colortemperature_mode, id, value);
-}
-
-int SystemControlClient::factoryGetColorTemperatureParam(int colortemperature_mode, int id) {
-    return mSysCtrl->factoryGetColorTemperatureParam(colortemperature_mode, id);
-}
-
-int SystemControlClient::factorySaveColorTemperatureParam(int colortemperature_mode, int id, int value) {
-    return mSysCtrl->factorySaveColorTemperatureParam(colortemperature_mode, id, value);
-}
-
-int SystemControlClient::factorySetOverscan(source_input_param_t srcInputParam, int he_value, int hs_value, int ve_value, int vs_value) {
-    SourceInputParam hidlSrcInput;
-    memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
-    return mSysCtrl->factorySetOverscan(hidlSrcInput, he_value, hs_value, ve_value, vs_value);
-}
-
-int SystemControlClient::factoryGetOverscan(source_input_param_t srcInputParam, int id) {
-    SourceInputParam hidlSrcInput;
-    memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
-    return mSysCtrl->factoryGetOverscan(hidlSrcInput, id);
-}
-
-int SystemControlClient::factorySetNolineParams(source_input_param_t srcInputParam, int type, int osd0_value, int osd25_value,
+int SystemControlClient::factorySetNolineParams(int inputSrc, int sigFmt, int transFmt, int type, int osd0_value, int osd25_value,
                             int osd50_value, int osd75_value, int osd100_value) {
-    SourceInputParam hidlSrcInput;
-    memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
-    return mSysCtrl->factorySetNolineParams(hidlSrcInput, type, osd0_value, osd25_value,
-                            osd50_value, osd75_value, osd100_value);
+    return mSysCtrl->factorySetNolineParams(inputSrc, sigFmt, transFmt, type, osd0_value, osd25_value,
+                                            osd50_value, osd75_value, osd100_value);
 }
 
-int SystemControlClient::factoryGetNolineParams(source_input_param_t srcInputParam, int type, int id) {
-    SourceInputParam hidlSrcInput;
-    memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
-    return mSysCtrl->factoryGetNolineParams(hidlSrcInput, type, id);
+noline_params_t SystemControlClient::factoryGetNolineParams(int inputSrc, int sigFmt, int transFmt, int type) {
+    noline_params_t nolineParam;
+    memset(&nolineParam, 0, sizeof(noline_params_t));
+    mSysCtrl->factoryGetNolineParams(inputSrc, sigFmt, transFmt, type, [&](const NolineParam& param) {
+        nolineParam.osd0 = param.osd0;
+        nolineParam.osd25 = param.osd25;
+        nolineParam.osd50 = param.osd50;
+        nolineParam.osd75 = param.osd75;
+        nolineParam.osd100 = param.osd100;
+    });
+
+    return nolineParam;
+}
+
+int SystemControlClient::factoryfactoryGetColorTemperatureParams(int colorTemp_mode){
+    return mSysCtrl->factoryfactoryGetColorTemperatureParams(colorTemp_mode);
 }
 
 int SystemControlClient::factorySetParamsDefault(void) {
@@ -865,101 +893,80 @@ int SystemControlClient::setPLLValues(source_input_param_t srcInputParam) {
     return mSysCtrl->setPLLValues(hidlSrcInput);
 }
 
-int SystemControlClient::setCVD2Values(source_input_param_t srcInputParam) {
-    SourceInputParam hidlSrcInput;
-    memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
-    return mSysCtrl->setCVD2Values(hidlSrcInput);
-}
-
-int SystemControlClient::setPQConfig(Set_Flag_Cmd_t id, int value) {
-    return mSysCtrl->setPQConfig(id, value);
+int SystemControlClient::setCVD2Values(void) {
+    return mSysCtrl->setCVD2Values();
 }
 
 int SystemControlClient::getSSMStatus(void) {
     return mSysCtrl->getSSMStatus();
 }
 
-int SystemControlClient::resetLastPQSettingsSourceType(void) {
-    return mSysCtrl->resetLastPQSettingsSourceType();
+int SystemControlClient::setCurrentSourceInfo(int32_t sourceInput, int32_t sigFmt, int32_t transFmt) {
+    return mSysCtrl->setCurrentSourceInfo(sourceInput, sigFmt, transFmt);
 }
 
-int SystemControlClient::setCurrentSourceInfo(source_input_param_t srcInputParam) {
-    SourceInputParam hidlSrcInput;
-    memcpy(&hidlSrcInput, &srcInputParam, sizeof(source_input_param_t));
-    return mSysCtrl->setCurrentSourceInfo(hidlSrcInput);
-}
-
-void SystemControlClient::getCurrentSourceInfo(int32_t &sourceInput, int32_t &sourceType, int32_t &sourcePort,
-                                                       int32_t &sigFmt, int32_t &transFmt, int32_t &is3d)
+void SystemControlClient::getCurrentSourceInfo(int32_t &sourceInput, int32_t &sigFmt, int32_t &transFmt)
 {
     mSysCtrl->getCurrentSourceInfo([&](const Result &ret, const SourceInputParam &hidlSrcInput) {
         if (Result::OK == ret) {
             sourceInput = hidlSrcInput.sourceInput;
-            sourceType = hidlSrcInput.sourceType;
-            sourcePort = hidlSrcInput.sourcePort;
             sigFmt = hidlSrcInput.sigFmt;
             transFmt = hidlSrcInput.transFmt;
-            is3d = hidlSrcInput.is3d;
         }
     });
 }
 
-int SystemControlClient::getAutoSwitchPCModeFlag(void) {
-    return mSysCtrl->getAutoSwitchPCModeFlag();
-}
-//PQ end
-
-int SystemControlClient::setwhiteBalanceGainRed(int32_t inputSrc, int32_t colortemp_mode, int32_t value) {
-    return mSysCtrl->setwhiteBalanceGainRed(inputSrc, colortemp_mode, value);
+int SystemControlClient::setwhiteBalanceGainRed(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode, int32_t value) {
+    return mSysCtrl->setwhiteBalanceGainRed(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
 }
 
-int SystemControlClient::setwhiteBalanceGainGreen(int32_t inputSrc, int32_t colortemp_mode, int32_t value) {
-    return mSysCtrl->setwhiteBalanceGainGreen(inputSrc, colortemp_mode, value);
+int SystemControlClient::setwhiteBalanceGainGreen(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode, int32_t value) {
+    return mSysCtrl->setwhiteBalanceGainGreen(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
 }
 
-int SystemControlClient::setwhiteBalanceGainBlue(int32_t inputSrc, int32_t colortemp_mode, int32_t value) {
-    return mSysCtrl->setwhiteBalanceGainBlue(inputSrc, colortemp_mode, value);
+int SystemControlClient::setwhiteBalanceGainBlue(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode, int32_t value) {
+    return mSysCtrl->setwhiteBalanceGainBlue(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
 }
 
-int SystemControlClient::setwhiteBalanceOffsetRed(int32_t inputSrc, int32_t colortemp_mode, int32_t value) {
-    return mSysCtrl->setwhiteBalanceOffsetRed(inputSrc, colortemp_mode, value);
+int SystemControlClient::setwhiteBalanceOffsetRed(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode, int32_t value) {
+    return mSysCtrl->setwhiteBalanceOffsetRed(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
 }
 
-int SystemControlClient::setwhiteBalanceOffsetGreen(int32_t inputSrc, int32_t colortemp_mode, int32_t value) {
-    return mSysCtrl->setwhiteBalanceOffsetGreen(inputSrc, colortemp_mode, value);
+int SystemControlClient::setwhiteBalanceOffsetGreen(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode, int32_t value) {
+    return mSysCtrl->setwhiteBalanceOffsetGreen(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
 }
 
-int SystemControlClient::setwhiteBalanceOffsetBlue(int32_t inputSrc, int32_t colortemp_mode, int32_t value) {
-    return mSysCtrl->setwhiteBalanceOffsetBlue(inputSrc, colortemp_mode, value);
+int SystemControlClient::setwhiteBalanceOffsetBlue(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode, int32_t value) {
+    return mSysCtrl->setwhiteBalanceOffsetBlue(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
 }
 
-int SystemControlClient::getwhiteBalanceGainRed(int32_t inputSrc, int32_t colortemp_mode) {
-    return mSysCtrl->getwhiteBalanceGainRed(inputSrc, colortemp_mode);
+int SystemControlClient::getwhiteBalanceGainRed(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode) {
+    return mSysCtrl->getwhiteBalanceGainRed(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
 }
 
-int SystemControlClient::getwhiteBalanceGainGreen(int32_t inputSrc, int32_t colortemp_mode) {
-    return mSysCtrl->getwhiteBalanceGainGreen(inputSrc, colortemp_mode);
+int SystemControlClient::getwhiteBalanceGainGreen(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode) {
+    return mSysCtrl->getwhiteBalanceGainGreen(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
 }
 
-int SystemControlClient::getwhiteBalanceGainBlue(int32_t inputSrc, int32_t colortemp_mode) {
-    return mSysCtrl->getwhiteBalanceGainBlue(inputSrc, colortemp_mode);
+int SystemControlClient::getwhiteBalanceGainBlue(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode) {
+    return mSysCtrl->getwhiteBalanceGainBlue(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
 }
 
-int SystemControlClient::getwhiteBalanceOffsetRed(int32_t inputSrc, int32_t colortemp_mode) {
-    return mSysCtrl->getwhiteBalanceOffsetRed(inputSrc, colortemp_mode);
+int SystemControlClient::getwhiteBalanceOffsetRed(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode) {
+    return mSysCtrl->getwhiteBalanceOffsetRed(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
 }
 
-int SystemControlClient::getwhiteBalanceOffsetGreen(int32_t inputSrc, int32_t colortemp_mode) {
-    return mSysCtrl->getwhiteBalanceOffsetGreen(inputSrc, colortemp_mode);
+int SystemControlClient::getwhiteBalanceOffsetGreen(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode) {
+    return mSysCtrl->getwhiteBalanceOffsetGreen(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
 }
 
-int SystemControlClient::getwhiteBalanceOffsetBlue(int32_t inputSrc, int32_t colortemp_mode) {
-    return mSysCtrl->getwhiteBalanceOffsetBlue(inputSrc, colortemp_mode);
+int SystemControlClient::getwhiteBalanceOffsetBlue(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode) {
+    return mSysCtrl->getwhiteBalanceOffsetBlue(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
 }
 
-int SystemControlClient:: saveWhiteBalancePara(int32_t sourceType, int32_t colorTemp_mode, int32_t r_gain, int32_t g_gain, int32_t b_gain, int32_t r_offset, int32_t g_offset, int32_t
-b_offset) {
-    return mSysCtrl->saveWhiteBalancePara(sourceType, colorTemp_mode, r_gain, g_gain, b_gain, r_offset, g_offset, b_offset);
+int SystemControlClient:: saveWhiteBalancePara(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colorTemp_mode,
+                                                       int32_t r_gain, int32_t g_gain, int32_t b_gain, int32_t r_offset, int32_t g_offset, int32_t b_offset) {
+    return mSysCtrl->saveWhiteBalancePara(inputSrc, sig_fmt, trans_fmt, colorTemp_mode, r_gain, g_gain, b_gain, r_offset, g_offset, b_offset);
 }
 
 int SystemControlClient::getRGBPattern() {
@@ -1001,6 +1008,77 @@ int SystemControlClient::whiteBalanceGrayPatternSet(int32_t value) {
 int SystemControlClient::whiteBalanceGrayPatternGet() {
     return mSysCtrl->whiteBalanceGrayPatternGet();
 }
+
+int SystemControlClient::factorySetHdrMode(int mode) {
+    return mSysCtrl->factorySetHdrMode(mode);
+}
+
+int SystemControlClient::factoryGetHdrMode(void) {
+    return mSysCtrl->factoryGetHdrMode();
+}
+
+int SystemControlClient::setDnlpParams(int inputSrc, int32_t sigFmt, int32_t transFmt, int level) {
+    return mSysCtrl->setDnlpParams(inputSrc, sigFmt, transFmt, level);
+}
+
+int SystemControlClient::getDnlpParams(int inputSrc, int32_t sigFmt, int32_t transFmt) {
+    return mSysCtrl->getDnlpParams(inputSrc, sigFmt, transFmt);
+}
+
+int SystemControlClient::factorySetDnlpParams(int inputSrc, int32_t sigFmt, int32_t transFmt, int level, int final_gain) {
+    return mSysCtrl->factorySetDnlpParams(inputSrc, sigFmt, transFmt, level, final_gain);
+}
+
+int SystemControlClient::factoryGetDnlpParams(int inputSrc, int32_t sigFmt, int32_t transFmt, int level) {
+    return mSysCtrl->factoryGetDnlpParams(inputSrc, sigFmt, transFmt, level);
+}
+
+int SystemControlClient::factorySetBlackExtRegParams(int inputSrc, int32_t sigFmt, int32_t transFmt, int val) {
+    return mSysCtrl->factorySetBlackExtRegParams(inputSrc, sigFmt, transFmt, val);
+}
+
+int SystemControlClient::factoryGetBlackExtRegParams(int inputSrc, int32_t sigFmt, int32_t transFmt) {
+    return mSysCtrl->factoryGetBlackExtRegParams(inputSrc, sigFmt, transFmt);
+}
+
+int SystemControlClient::factorySetColorParams(int inputSrc, int32_t sigFmt, int32_t transFmt, int color_type, int color_param, int val) {
+    return mSysCtrl->factorySetColorParams(inputSrc, sigFmt, transFmt, color_type, color_param, val);
+}
+int SystemControlClient::factoryGetColorParams(int inputSrc, int32_t sigFmt, int32_t transFmt, int color_type, int color_param) {
+    return mSysCtrl->factoryGetColorParams(inputSrc, sigFmt, transFmt, color_type, color_param);
+}
+
+int SystemControlClient::factorySetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type, int val) {
+    return mSysCtrl->factorySetNoiseReductionParams(inputSrc, sig_fmt, trans_fmt, nr_mode, param_type, val);
+}
+
+int SystemControlClient::factoryGetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type) {
+    return mSysCtrl->factoryGetNoiseReductionParams(inputSrc, sig_fmt, trans_fmt, nr_mode, param_type);
+}
+
+int SystemControlClient::factorySetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val) {
+    return mSysCtrl->factorySetCTIParams(inputSrc, sig_fmt, trans_fmt, param_type, val);
+}
+
+int SystemControlClient::factoryGetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type) {
+    return mSysCtrl->factoryGetCTIParams(inputSrc, sig_fmt, trans_fmt, param_type);
+}
+
+int SystemControlClient::factorySetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val) {
+    return mSysCtrl->factorySetDecodeLumaParams(inputSrc, sig_fmt, trans_fmt, param_type, val);
+}
+int SystemControlClient::factoryGetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type) {
+    return mSysCtrl->factoryGetDecodeLumaParams(inputSrc, sig_fmt, trans_fmt, param_type);
+}
+
+int SystemControlClient::factorySetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type, int val) {
+    return mSysCtrl->factorySetSharpnessParams(inputSrc, sig_fmt, trans_fmt, isHD, param_type, val);
+}
+
+int SystemControlClient::factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type) {
+    return mSysCtrl->factoryGetSharpnessParams(inputSrc, sig_fmt, trans_fmt, isHD, param_type);
+}
+//PQ end
 
 void SystemControlClient::SystemControlDeathRecipient::serviceDied(uint64_t cookie,
         const ::android::wp<::android::hidl::base::V1_0::IBase>& who) {

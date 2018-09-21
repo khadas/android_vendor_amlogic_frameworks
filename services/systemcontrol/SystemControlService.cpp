@@ -54,8 +54,6 @@ SystemControlService::SystemControlService(const char *path)
     pDisplayMode = new DisplayMode(path, pUbootenv);
     pDisplayMode->init();
 
-    mSSMAction = SSMAction::getInstance();
-
     //load PQ
     pCPQControl = CPQControl::GetInstance();
 
@@ -77,11 +75,6 @@ SystemControlService::~SystemControlService() {
     delete pSysWrite;
     delete pDisplayMode;
     delete pDimension;
-
-    if (mSSMAction != NULL) {
-        delete mSSMAction;
-        mSSMAction = NULL;
-    }
 
     if (pCPQControl != NULL) {
         delete pCPQControl;
@@ -637,11 +630,6 @@ int SystemControlService::loadPQSettings(source_input_param_t source_input_param
     return pCPQControl->LoadPQSettings(source_input_param);
 }
 
-int SystemControlService::loadCpqLdimRegs(void)
-{
-    return pCPQControl->LoadCpqLdimRegs();
-}
-
 int SystemControlService::sysSSMReadNTypes(int id, int data_len, int offset)
 {
     return pCPQControl->Cpq_SSMReadNTypes(id, data_len, offset);
@@ -695,59 +683,6 @@ int SystemControlService::getColorTemperature(void)
 int SystemControlService::saveColorTemperature(int temp_mode)
 {
     return pCPQControl->SaveColorTemperature(temp_mode);
-}
-
-int SystemControlService::setColorTemperatureParam(int Tempmode, tcon_rgb_ogo_t params)
-{
-    return pCPQControl->SetColorTemperatureParams((vpp_color_temperature_mode_t)Tempmode, params);
-}
-
-int SystemControlService::getColorTemperatureParam(int Tempmode, int id)
-{
-    tcon_rgb_ogo_t params;
-    pCPQControl->GetColorTemperatureParams((vpp_color_temperature_mode_t)Tempmode, &params);
-
-    switch ((pq_color_param_t)id) {
-        case EN: {
-            return params.en;
-        }
-        case POST_OFFSET_R: {
-            return params.r_post_offset;
-        }
-        case POST_OFFSET_G: {
-            return params.g_post_offset;
-        }
-        case POST_OFFSET_B: {
-            return params.b_post_offset;
-        }
-        case GAIN_R: {
-            return params.r_gain;
-        }
-        case GAIN_G: {
-            return params.g_gain;
-        }
-        case GAIN_B: {
-            return params.b_gain;
-        }
-        case PRE_OFFSET_R: {
-            return params.r_post_offset;
-        }
-        case PRE_OFFSET_G: {
-            return params.g_post_offset;
-        }
-        case PRE_OFFSET_B: {
-            return params.b_post_offset;
-        }
-        default: {
-            return -1;
-        }
-
-    }
-}
-
-int SystemControlService::saveColorTemperatureParam(int Tempmode, tcon_rgb_ogo_t params)
-{
-    return pCPQControl->SaveColorTemperatureParams((vpp_color_temperature_mode_t)Tempmode, params);
 }
 
 int SystemControlService::setBrightness(int value, int is_save)
@@ -875,19 +810,34 @@ int SystemControlService::saveDisplayMode(int source_input, int mode)
     return pCPQControl->SaveDisplayMode((tv_source_input_t)source_input, (vpp_display_mode_t)mode);
 }
 
-int SystemControlService::setBacklight(int source_input, int value, int isSave)
+int SystemControlService::setBacklight(int value, int isSave)
 {
-    return pCPQControl->SetBacklight((tv_source_input_t)source_input, value, isSave);
+    return pCPQControl->SetBacklight(value, isSave);
 }
 
-int SystemControlService::getBacklight(int source_input)
+int SystemControlService::getBacklight(void)
 {
-    return pCPQControl->GetBacklight((tv_source_input_t)source_input);
+    return pCPQControl->GetBacklight();
 }
 
-int SystemControlService::saveBacklight(int source_input, int value)
+int SystemControlService::saveBacklight(int value)
 {
-    return pCPQControl->SaveBacklight((tv_source_input_t)source_input, value);
+    return pCPQControl->SaveBacklight(value);
+}
+
+int SystemControlService::setDynamicBacklight(int mode, int isSave)
+{
+    return pCPQControl->SetDynamicBacklight((Dynamic_backlight_status_t)mode, isSave);
+}
+
+int SystemControlService::getDynamicBacklight(void)
+{
+    return pCPQControl->GetDynamicBacklight();
+}
+
+bool SystemControlService::checkLdimExist(void)
+{
+    return pCPQControl->isFileExist(LDIM_PATH);
 }
 
 int SystemControlService::factoryResetPQMode(void)
@@ -895,37 +845,102 @@ int SystemControlService::factoryResetPQMode(void)
     return pCPQControl->FactoryResetPQMode();
 }
 
+int SystemControlService::factorySetPQMode_Brightness(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactorySetPQMode_Brightness(srcInputParam, pq_mode, value);
+}
+
+int SystemControlService::factoryGetPQMode_Brightness(int inputSrc, int sigFmt, int transFmt, int pq_mode)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactoryGetPQMode_Brightness(srcInputParam, pq_mode);
+}
+
+int SystemControlService::factorySetPQMode_Contrast(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactorySetPQMode_Contrast(srcInputParam, pq_mode, value);
+}
+
+int SystemControlService::factoryGetPQMode_Contrast(int inputSrc, int sigFmt, int transFmt, int pq_mode)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactoryGetPQMode_Contrast(srcInputParam, pq_mode);
+}
+
+int SystemControlService::factorySetPQMode_Saturation(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactorySetPQMode_Saturation(srcInputParam, pq_mode, value);
+}
+
+int SystemControlService::factoryGetPQMode_Saturation(int inputSrc, int sigFmt, int transFmt, int pq_mode)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactoryGetPQMode_Saturation(srcInputParam, pq_mode);
+}
+
+int SystemControlService::factorySetPQMode_Hue(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactorySetPQMode_Hue(srcInputParam, pq_mode, value);
+}
+
+int SystemControlService::factoryGetPQMode_Hue(int inputSrc, int sigFmt, int transFmt, int pq_mode)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactoryGetPQMode_Hue(srcInputParam, pq_mode);
+}
+
+int SystemControlService::factorySetPQMode_Sharpness(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactorySetPQMode_Sharpness(srcInputParam, pq_mode, value);
+}
+
+int SystemControlService::factoryGetPQMode_Sharpness(int inputSrc, int sigFmt, int transFmt, int pq_mode)
+{
+    source_input_param_t srcInputParam;
+    srcInputParam.source_input = (tv_source_input_t)inputSrc;
+    srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactoryGetPQMode_Sharpness(srcInputParam, pq_mode);
+}
+
 int SystemControlService::factoryResetColorTemp(void)
 {
     return pCPQControl->FactoryResetColorTemp();
 }
 
-int SystemControlService::factorySetPQParam(source_input_param_t source_input_param, int pq_mode, int id, int value)
-{
-    return pCPQControl->FactorySetPQParam(source_input_param, pq_mode, id, value);
-}
-
-int SystemControlService::factoryGetPQParam(source_input_param_t source_input_param, int pq_mode, int id)
-{
-    return pCPQControl->FactoryGetPQParam(source_input_param, pq_mode, id);
-}
-
-int SystemControlService::factorySetColorTemperatureParam(int colortemperature_mode, int id, int value)
-{
-    return pCPQControl->FactorySetColorTemperatureParam(colortemperature_mode, (pq_color_param_t)id, value);
-}
-
-int SystemControlService::factoryGetColorTemperatureParam(int colortemperature_mode, int id)
-{
-    return pCPQControl->FactoryGetColorTemperatureParam(colortemperature_mode, (pq_color_param_t)id);
-}
-
-int SystemControlService::factorySaveColorTemperatureParam(int colortemperature_mode, int id, int value)
-{
-    return pCPQControl->FactorySaveColorTemperatureParam(colortemperature_mode, (pq_color_param_t)id, value);
-}
-
-int SystemControlService::factorySetOverscan(source_input_param_t source_input_param, int he_value, int hs_value,
+int SystemControlService::factorySetOverscan(int inputSrc, int sigFmt, int transFmt, int he_value, int hs_value,
                                              int ve_value, int vs_value)
 {
     tvin_cutwin_t cutwin_t;
@@ -934,30 +949,58 @@ int SystemControlService::factorySetOverscan(source_input_param_t source_input_p
     cutwin_t.ve = ve_value;
     cutwin_t.vs = vs_value;
 
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt= (tvin_trans_fmt_t)transFmt;
+
     return pCPQControl->FactorySetOverscanParam(source_input_param, cutwin_t);
 }
 
-int SystemControlService::factoryGetOverscan(source_input_param_t source_input_param, int id)
+tvin_cutwin_t SystemControlService::factoryGetOverscan(int inputSrc, int sigFmt, int transFmt)
 {
-    return pCPQControl->FactoryGetOverscanParam(source_input_param, (tvin_cutwin_param_t)id);
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    tvin_cutwin_t cutwin_t = pCPQControl->FactoryGetOverscanParam(source_input_param);
+
+    return cutwin_t;
 }
 
-int SystemControlService::factorySetNolineParams(source_input_param_t source_input_param, int type, int osd0_value, int osd25_value,
-                                                int osd50_value, int osd75_value, int osd100_value __unused)
+int SystemControlService::factorySetNolineParams(int inputSrc, int sigFmt, int transFmt, int type, int osd0_value,
+int osd25_value,
+                                                          int osd50_value, int osd75_value, int osd100_value)
 {
     noline_params_t noline_params;
     noline_params.osd0   = osd0_value;
     noline_params.osd25  = osd25_value;
     noline_params.osd50  = osd50_value;
     noline_params.osd75  = osd75_value;
-    noline_params.osd100 = osd50_value;
+    noline_params.osd100 = osd100_value;
 
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt= (tvin_trans_fmt_t)transFmt;
     return pCPQControl->FactorySetNolineParams(source_input_param, type, noline_params);
 }
 
-int SystemControlService::factoryGetNolineParams(source_input_param_t source_input_param, int type, int id)
+noline_params_t SystemControlService::factoryGetNolineParams(int inputSrc, int sigFmt, int transFmt, int type)
 {
-    return pCPQControl->FactoryGetNolineParams(source_input_param, type, (noline_params_ID_t)id);
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt= (tvin_trans_fmt_t)transFmt;
+    noline_params_t param = pCPQControl->FactoryGetNolineParams(source_input_param, type);
+    return param;
+}
+
+int SystemControlService::factoryGetColorTemperatureParams(int colorTemp_mode)
+{
+    tcon_rgb_ogo_t params;
+    memset(&params, 0, sizeof(tcon_rgb_ogo_t));
+    return pCPQControl->GetColorTemperatureParams((vpp_color_temperature_mode_t)colorTemp_mode, &params);
 }
 
 int SystemControlService::factorySetParamsDefault()
@@ -980,6 +1023,16 @@ int SystemControlService::factorySetGamma(int gamma_r, int gamma_g, int gamma_b)
     return pCPQControl->FactorySetGamma(gamma_r, gamma_g, gamma_b);
 }
 
+int SystemControlService::factorySetHdrMode(int mode)
+{
+    return pCPQControl->SetHDRMode(mode);
+}
+
+int SystemControlService::factoryGetHdrMode(void)
+{
+    return pCPQControl->GetHDRMode();
+}
+
 int SystemControlService::SSMRecovery(void)
 {
     return pCPQControl->Cpq_SSMRecovery();
@@ -990,23 +1043,17 @@ int SystemControlService::setPLLValues(source_input_param_t source_input_param)
     return pCPQControl->SetPLLValues(source_input_param);
 }
 
-int SystemControlService::setCVD2Values(source_input_param_t source_input_param)
+int SystemControlService::setCVD2Values(void)
 {
-    return pCPQControl->SetCVD2Values(source_input_param);
+    return pCPQControl->SetCVD2Values();
 }
 
-int SystemControlService::setPQConfig(Set_Flag_Cmd_t id, int value)
+int SystemControlService::setCurrentSourceInfo(int sourceInput, int sigFmt, int transFmt)
 {
-    return pCPQControl->SetFlagByCfg(id, value);
-}
-
-int SystemControlService::resetLastPQSettingsSourceType(void)
-{
-    return pCPQControl->resetLastSourceTypeSettings();
-}
-
-int SystemControlService::setCurrentSourceInfo(source_input_param_t source_input_param)
-{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)sourceInput;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
     return pCPQControl->SetCurrentSourceInputInfo(source_input_param);
 }
 
@@ -1015,13 +1062,8 @@ source_input_param_t SystemControlService::getCurrentSourceInfo(void)
     return pCPQControl->GetCurrentSourceInputInfo();
 }
 
-int SystemControlService::getAutoSwitchPCModeFlag(void)
+int SystemControlService::setwhiteBalanceGainRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value)
 {
-    return pCPQControl->autoSwitchMode();
-}
-//PQ end
-
-int SystemControlService::setwhiteBalanceGainRed(int inputSrc, int colortemp_mode, int value) {
     int ret = -1;
     if (value < 0) {
         value = 0;
@@ -1029,15 +1071,16 @@ int SystemControlService::setwhiteBalanceGainRed(int inputSrc, int colortemp_mod
         value = 2047;
     }
 
-    ret = pCPQControl->FactorySetColorTemperatureParam(colortemp_mode, GAIN_R, value);
+    ret = pCPQControl->FactorySetColorTemp_Rgain(inputSrc, colortemp_mode, value);
     if (ret != -1) {
         ALOGI("save the red gain to flash");
-        ret = pCPQControl->FactorySaveColorTemperatureParam(colortemp_mode, GAIN_R, value);
+        ret = pCPQControl->FactorySaveColorTemp_Rgain(inputSrc, colortemp_mode, value);
     }
     return ret;
 }
 
-int SystemControlService::setwhiteBalanceGainGreen(int inputSrc, int colortemp_mode, int value) {
+int SystemControlService::setwhiteBalanceGainGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value)
+{
     int ret = -1;
     if (value < 0) {
         value = 0;
@@ -1045,15 +1088,16 @@ int SystemControlService::setwhiteBalanceGainGreen(int inputSrc, int colortemp_m
         value = 2047;
     }
     // not use fbc store the white balance params
-    ret = pCPQControl->FactorySetColorTemperatureParam(colortemp_mode, GAIN_G, value);
+    ret = pCPQControl->FactorySetColorTemp_Ggain(inputSrc, colortemp_mode, value);
     if (ret != -1) {
         ALOGI("save the green gain to flash");
-        ret = pCPQControl->FactorySaveColorTemperatureParam(colortemp_mode, GAIN_G, value);
+        ret = pCPQControl->FactorySaveColorTemp_Ggain(inputSrc, colortemp_mode, value);
     }
     return ret;
 }
 
-int SystemControlService::setwhiteBalanceGainBlue(int inputSrc, int colortemp_mode, int value) {
+int SystemControlService::setwhiteBalanceGainBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value)
+{
     int ret = -1;
     if (value < 0) {
         value = 0;
@@ -1061,15 +1105,16 @@ int SystemControlService::setwhiteBalanceGainBlue(int inputSrc, int colortemp_mo
         value = 2047;
     }
     // not use fbc store the white balance params
-    ret = pCPQControl->FactorySetColorTemperatureParam(colortemp_mode, GAIN_B, value);
+    ret = pCPQControl->FactorySetColorTemp_Bgain(inputSrc, colortemp_mode, value);
     if (ret != -1) {
         ALOGI("save the blue gain to flash");
-        ret = pCPQControl->FactorySaveColorTemperatureParam(colortemp_mode, GAIN_B, value);
+        ret = pCPQControl->FactorySaveColorTemp_Bgain(inputSrc, colortemp_mode, value);
     }
     return ret;
 }
 
-int SystemControlService::setwhiteBalanceOffsetRed(int inputSrc, int colortemp_mode, int value) {
+int SystemControlService::setwhiteBalanceOffsetRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value)
+{
     int ret = -1;
     if (value < -1024) {
         value = -1024;
@@ -1077,15 +1122,16 @@ int SystemControlService::setwhiteBalanceOffsetRed(int inputSrc, int colortemp_m
         value = 1023;
     }
     // not use fbc store the white balance params
-    ret = pCPQControl->FactorySetColorTemperatureParam(colortemp_mode, POST_OFFSET_R, value);
+    ret = pCPQControl->FactorySetColorTemp_Roffset(inputSrc, colortemp_mode, value);
     if (ret != -1) {
         ALOGI("save the red offset to flash");
-        ret = pCPQControl->FactorySaveColorTemperatureParam(colortemp_mode, POST_OFFSET_R, value);
+        ret = pCPQControl->FactorySaveColorTemp_Roffset(inputSrc, colortemp_mode, value);
     }
     return ret;
 }
 
-int SystemControlService::setwhiteBalanceOffsetGreen(int inputSrc, int colortemp_mode, int value) {
+int SystemControlService::setwhiteBalanceOffsetGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value)
+{
     int ret = -1;
     if (value < -1024) {
         value = -1024;
@@ -1093,16 +1139,17 @@ int SystemControlService::setwhiteBalanceOffsetGreen(int inputSrc, int colortemp
         value = 1023;
     }
     // not use fbc store the white balance params
-    ret = pCPQControl->FactorySetColorTemperatureParam(colortemp_mode, POST_OFFSET_G, value);
+    ret = pCPQControl->FactorySetColorTemp_Goffset(inputSrc, colortemp_mode, value);
     if (ret != -1) {
         ALOGI("save the green offset to flash");
-        ret = pCPQControl->FactorySaveColorTemperatureParam(colortemp_mode, POST_OFFSET_G, value);
+        ret = pCPQControl->FactorySaveColorTemp_Goffset(inputSrc, colortemp_mode, value);
     }
 
     return ret;
 }
 
-int SystemControlService::setwhiteBalanceOffsetBlue(int inputSrc, int colortemp_mode, int value) {
+int SystemControlService::setwhiteBalanceOffsetBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value)
+{
     int ret = -1;
     if (value < -1024) {
         value = -1024;
@@ -1110,201 +1157,238 @@ int SystemControlService::setwhiteBalanceOffsetBlue(int inputSrc, int colortemp_
         value = 1023;
     }
     // not use fbc store the white balance params
-    ret = pCPQControl->FactorySetColorTemperatureParam(colortemp_mode, POST_OFFSET_B, value);
+    ret = pCPQControl->FactorySetColorTemp_Boffset(inputSrc, colortemp_mode, value);
     if (ret != -1) {
         ALOGI("save the green offset to flash");
-        ret = pCPQControl->FactorySaveColorTemperatureParam(colortemp_mode, POST_OFFSET_B, value);
+        ret = pCPQControl->FactorySaveColorTemp_Boffset(inputSrc, colortemp_mode, value);
     }
 
     return ret;
 }
 
-int SystemControlService::getwhiteBalanceGainRed(int inputSrc, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemperatureParam(colortemp_mode, GAIN_R);
+int SystemControlService::getwhiteBalanceGainRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
+    return pCPQControl->FactoryGetColorTemp_Rgain(inputSrc, colortemp_mode);
 }
 
-int SystemControlService::getwhiteBalanceGainGreen(int inputSrc, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemperatureParam(colortemp_mode, GAIN_G);
+int SystemControlService::getwhiteBalanceGainGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
+    return pCPQControl->FactoryGetColorTemp_Ggain(inputSrc, colortemp_mode);
 }
 
-int SystemControlService::getwhiteBalanceGainBlue(int inputSrc, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemperatureParam(colortemp_mode, GAIN_B);
+int SystemControlService::getwhiteBalanceGainBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
+    return pCPQControl->FactoryGetColorTemp_Bgain(inputSrc, colortemp_mode);
 }
 
-int SystemControlService::getwhiteBalanceOffsetRed(int inputSrc, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemperatureParam(colortemp_mode, POST_OFFSET_R);
+int SystemControlService::getwhiteBalanceOffsetRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
+    return pCPQControl->FactoryGetColorTemp_Roffset(inputSrc, colortemp_mode);
 }
 
-int SystemControlService::getwhiteBalanceOffsetGreen(int inputSrc, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemperatureParam(colortemp_mode, POST_OFFSET_G);
+int SystemControlService::getwhiteBalanceOffsetGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
+    return pCPQControl->FactoryGetColorTemp_Goffset(inputSrc, colortemp_mode);
 }
 
-int SystemControlService::getwhiteBalanceOffsetBlue(int inputSrc, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemperatureParam(colortemp_mode, POST_OFFSET_B);
+int SystemControlService::getwhiteBalanceOffsetBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
+    return pCPQControl->FactoryGetColorTemp_Boffset(inputSrc, colortemp_mode);
 }
 
-int SystemControlService::saveWhiteBalancePara(int sourceType, int colorTemp_mode, int r_gain, int g_gain, int b_gain, int r_offset, int g_offset, int b_offset) {
+int SystemControlService::saveWhiteBalancePara(int inputSrc, int sigFmt, int transFmt, int colorTemp_mode, int r_gain
+, int g_gain, int b_gain, int r_offset, int g_offset, int b_offset) {
     int ret = 0;
-    pCPQControl->SaveColorTemperature(colorTemp_mode);
-    pCPQControl->FactorySaveColorTemperatureParam(colorTemp_mode, GAIN_R, r_gain);
-    pCPQControl->FactorySaveColorTemperatureParam(colorTemp_mode, GAIN_G, g_gain);
-    pCPQControl->FactorySaveColorTemperatureParam( colorTemp_mode, GAIN_B, b_gain);
-    pCPQControl->FactorySaveColorTemperatureParam(colorTemp_mode, POST_OFFSET_R, r_offset);
-    pCPQControl->FactorySaveColorTemperatureParam(colorTemp_mode, POST_OFFSET_G, g_offset);
-    pCPQControl->FactorySaveColorTemperatureParam(colorTemp_mode, POST_OFFSET_B, b_offset);
+    ret |= pCPQControl->SaveColorTemperature(colorTemp_mode);
+    ret |= pCPQControl->FactorySaveColorTemp_Rgain(inputSrc, colorTemp_mode, r_gain);
+    ret |= pCPQControl->FactorySaveColorTemp_Ggain(inputSrc, colorTemp_mode, g_gain);
+    ret |= pCPQControl->FactorySaveColorTemp_Bgain(inputSrc, colorTemp_mode, b_gain);
+    ret |= pCPQControl->FactorySaveColorTemp_Roffset(inputSrc, colorTemp_mode, r_offset);
+    ret |= pCPQControl->FactorySaveColorTemp_Goffset(inputSrc, colorTemp_mode, g_offset);
+    ret |= pCPQControl->FactorySaveColorTemp_Boffset(inputSrc, colorTemp_mode, b_offset);
+
     return ret;
 }
 
 int SystemControlService::getRGBPattern() {
-    char value[32] = {0};
-    bool ret = pSysWrite->readSysfs(VIDEO_RGB_SCREEN, value);
-    return strtol(value, NULL, 10);
+    return pCPQControl->GetRGBPattern();
 }
 
 int SystemControlService::setRGBPattern(int r, int g, int b) {
-    int value = ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
-    char str[32] = {0};
-    sprintf(str, "%d", value);
-    bool ret = pSysWrite->writeSysfs(VIDEO_RGB_SCREEN, str, 16);
-    return ret;
+    return pCPQControl->SetRGBPattern(r, g, b);
 }
 
 int SystemControlService::factorySetDDRSSC(int step) {
-    if (step < 0 || step > 5) {
-        SYS_LOGE ("%s, step = %d is too long", __FUNCTION__, step);
-        return -1;
-    }
-
-    return mSSMAction->SSMSaveDDRSSC(step);
+    return pCPQControl->FactorySetDDRSSC(step);
 }
 
 int SystemControlService::factoryGetDDRSSC() {
-    unsigned char data = 0;
-    mSSMAction->SSMReadDDRSSC(&data);
-    return data;
+    return pCPQControl->FactoryGetDDRSSC();
 }
 
 int SystemControlService::setLVDSSSC(int step) {
-    int ret = -1;
-    if (step > 4)
-        step = 4;
-
-    FILE *fp = fopen(SSC_PATH, "w");
-    if (fp != NULL) {
-        fprintf(fp, "%d", step);
-        fclose(fp);
-    } else {
-        SYS_LOGE("open /sys/class/lcd/ss ERROR(%s)!!\n", strerror(errno));
-        return -1;
-    }
-    return 0;
+    return pCPQControl->SetLVDSSSC(step);
 }
 int SystemControlService::factorySetLVDSSSC(int step) {
-    int ret = -1;
-    unsigned char data[2] = {0, 0};
-    char cmd_tmp_1[128];
-    int value = 0, panel_idx = 0, tmp = 0;
-    const char *PanelIdx;
-    if (step > 4)
-        step = 4;
-    PanelIdx = "0";//config_get_str ( CFG_SECTION_TV, "get.panel.index", "0" ); can't parse ini file in systemcontrol
-    panel_idx = strtoul(PanelIdx, NULL, 10);
-    SYS_LOGD ("%s, panel_idx = %x", __FUNCTION__, panel_idx);
-    mSSMAction->SSMReadLVDSSSC(data);
-
-    //every 2 bits represent one panel, use 2 byte store 8 panels
-    value = (data[1] << 8) | data[0];
-    step = step & 0x03;
-    panel_idx = panel_idx * 2;
-    tmp = 3 << panel_idx;
-    value = (value & (~tmp)) | (step << panel_idx);
-    data[0] = value & 0xFF;
-    data[1] = (value >> 8) & 0xFF;
-    SYS_LOGD ("%s, tmp = %x, save value = %x", __FUNCTION__, tmp, value);
-
-    setLVDSSSC(step);
-    return mSSMAction->SSMSaveLVDSSSC(data);
+    return pCPQControl->FactorySetLVDSSSC(step);
 }
 
 int SystemControlService::factoryGetLVDSSSC() {
-    unsigned char data[2] = {0, 0};
-    int value = 0, panel_idx = 0;
-    const char *PanelIdx = "0";//config_get_str ( CFG_SECTION_TV, "get.panel.index", "0" );can't parse ini file in systemcontrol
-
-    panel_idx = strtoul(PanelIdx, NULL, 10);
-    mSSMAction->SSMReadLVDSSSC(data);
-    value = (data[1] << 8) | data[0];
-    value = (value >> (2 * panel_idx)) & 0x03;
-    SYS_LOGD ("%s, panel_idx = %x, value= %d", __FUNCTION__, panel_idx, value);
-    return value;
+    return pCPQControl->FactoryGetLVDSSSC();
 }
+
 
 int SystemControlService::whiteBalanceGrayPatternClose() {
-    int ret = SetGrayPattern(0);
-    return ret;
-}
-
-int SystemControlService::whiteBalanceGrayPatternOpen() {
-    int ret = 0;
-    return ret;
-}
-
-int SystemControlService::whiteBalanceGrayPatternSet(int value) {
-    int ret = SetGrayPattern(value);
-    return ret;
-}
-
-int SystemControlService::whiteBalanceGrayPatternGet() {
-    int value = GetGrayPattern();
-    return value;
-}
-
-int SystemControlService::SetGrayPattern(int value) {
-    if (value < 0) {
-        value = 0;
-    } else if (value > 255) {
-        value = 255;
-    }
-    value = value << 16 | 0x8080;
-
-    SYS_LOGD("SetGrayPattern /sys/class/video/test_screen : %x", value);
-    FILE *fp = fopen(TEST_SCREEN, "w");
-    if (fp == NULL) {
-        SYS_LOGE("Open /sys/classs/video/test_screen error(%s)!\n", strerror(errno));
-        return -1;
-    }
-
-    fprintf(fp, "0x%x", value);
-    fclose(fp);
-    fp = NULL;
-
     return 0;
 }
 
-int SystemControlService::GetGrayPattern() {
-    int value = 0;
-
-    FILE *fp = fopen(TEST_SCREEN, "r+");
-    if (fp == NULL) {
-        SYS_LOGE("Open /sys/class/video/test_screen error(%s)!\n", strerror(errno));
-        return -1;
-    }
-
-    fscanf(fp, "%x", &value);
-
-    SYS_LOGD("GetGrayPattern /sys/class/video/test_screen %x", value);
-    fclose(fp);
-    fp = NULL;
-    if (value < 0) {
-        return 0;
-    } else {
-        value = value >> 16;
-        if (value > 255) {
-            value = 255;
-        }
-        return value;
-    }
+int SystemControlService::whiteBalanceGrayPatternOpen() {
+    return 0;
 }
+
+int SystemControlService::whiteBalanceGrayPatternSet(int value) {
+    return pCPQControl->SetGrayPattern(value);
+}
+
+int SystemControlService::whiteBalanceGrayPatternGet() {
+    return pCPQControl->GetGrayPattern();
+}
+
+int SystemControlService::setDnlpParams(int inputSrc, int sigFmt, int transFmt, int level)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->SetDnlpMode(source_input_param, level);
+}
+
+int SystemControlService::getDnlpParams(int inputSrc, int sigFmt, int transFmt) {
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
+    int level = 0;
+    pCPQControl->GetDnlpMode(source_input_param, &level);
+    return level;
+}
+
+int SystemControlService::factorySetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level, int final_gain) {
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactorySetDNLPCurveParams(source_input_param, level, final_gain);
+}
+
+int SystemControlService::factoryGetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level) {
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactoryGetDNLPCurveParams(source_input_param, level);
+}
+
+int SystemControlService::factorySetBlackExtRegParams(int inputSrc, int sigFmt, int transFmt, int val) {
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactorySetBlackExtRegParams(source_input_param, val);
+}
+
+int SystemControlService::factoryGetBlackExtRegParams(int inputSrc, int sigFmt, int transFmt) {
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactoryGetBlackExtRegParams(source_input_param);
+}
+
+int SystemControlService::factorySetColorParams(int inputSrc, int sigFmt, int transFmt, int color_type, int color_param, int val)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactorySetRGBCMYFcolorParams(source_input_param, color_type, color_param, val);
+}
+
+int SystemControlService::factoryGetColorParams(int inputSrc, int sigFmt, int transFmt, int color_type, int color_param)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
+    return pCPQControl->FactoryGetRGBCMYFcolorParams(source_input_param, color_type, color_param);
+}
+
+int SystemControlService::factorySetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type, int val)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
+    return pCPQControl->FactorySetNoiseReductionParams(source_input_param, (vpp_noise_reduction_mode_t)nr_mode,
+                        param_type, val);
+}
+
+int SystemControlService::factoryGetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
+    return pCPQControl->FactoryGetNoiseReductionParams(source_input_param, (vpp_noise_reduction_mode_t)nr_mode,
+param_type);
+}
+
+int SystemControlService::factorySetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val) {
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
+    return pCPQControl->FactorySetCTIParams(source_input_param, param_type, val);
+}
+
+int SystemControlService::factoryGetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
+    return pCPQControl->FactoryGetCTIParams(source_input_param, param_type);
+}
+
+int SystemControlService::factorySetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
+    return pCPQControl->FactorySetDecodeLumaParams(source_input_param, param_type, val);
+}
+
+int SystemControlService::factoryGetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
+    return pCPQControl->FactoryGetDecodeLumaParams(source_input_param, param_type);
+}
+
+int SystemControlService::factorySetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type
+, int val) {
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
+    return pCPQControl->FactorySetSharpnessParams(source_input_param, (Sharpness_timing_e)isHD, param_type, val);
+}
+int SystemControlService::factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type)
+{
+    source_input_param_t source_input_param;
+    source_input_param.source_input = (tv_source_input_t)inputSrc;
+    source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
+    source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
+    return pCPQControl->FactoryGetSharpnessParams(source_input_param, (Sharpness_timing_e)isHD, param_type);
+}
+//PQ end
 
 void SystemControlService::traceValue(const std::string& type, const std::string& key, const std::string& value) {
     if (mLogLevel > LOG_LEVEL_1) {

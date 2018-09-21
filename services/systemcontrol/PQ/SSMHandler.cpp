@@ -47,10 +47,10 @@ SSMHandler::SSMHandler()
 
 SSMHandler::~SSMHandler()
 {
-    if (mFd > 0)
+    if (mFd > 0) {
         close(mFd);
-
-    mSSMHandler = NULL;
+        mFd = -1;
+    }
 }
 
 bool SSMHandler::Construct()

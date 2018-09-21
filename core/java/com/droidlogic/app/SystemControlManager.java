@@ -16,7 +16,8 @@ import vendor.amlogic.hardware.systemcontrol.V1_0.ISystemControlCallback;
 import vendor.amlogic.hardware.systemcontrol.V1_0.Result;
 import vendor.amlogic.hardware.systemcontrol.V1_0.DroidDisplayInfo;
 import vendor.amlogic.hardware.systemcontrol.V1_0.SourceInputParam;
-
+import vendor.amlogic.hardware.systemcontrol.V1_0.NolineParam;
+import vendor.amlogic.hardware.systemcontrol.V1_0.OverScanParam;
 public class SystemControlManager {
     private static final String TAG                 = "SysControlManager";
 
@@ -33,6 +34,8 @@ public class SystemControlManager {
     private final ServiceNotification mServiceNotification = new ServiceNotification();
 
     private static final int SYSTEM_CONTROL_DEATH_COOKIE = 1000;
+
+    private static SystemControlManager mInstance = null;
 
     private Context mContext;
     private IBinder mIBinder = null;
@@ -55,6 +58,25 @@ public class SystemControlManager {
         }
         connectToProxy();
     }
+
+    public SystemControlManager() {
+        try {
+            boolean ret = IServiceManager.getService()
+                    .registerForNotifications("vendor.amlogic.hardware.systemcontrol@1.0::ISystemControl", "", mServiceNotification);
+            if (!ret) {
+                Log.e(TAG, "Failed to register service start notification");
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to register service start notification", e);
+            return;
+        }
+        connectToProxy();
+    }
+
+    public static SystemControlManager getInstance() {
+         if (null == mInstance) mInstance = new SystemControlManager();
+         return mInstance;
+     }
 
     private void connectToProxy() {
         synchronized (mLock) {
@@ -1012,33 +1034,20 @@ public class SystemControlManager {
 
     }
 
-
-    public int LoadCpqLdimRegs() {
-        synchronized (mLock) {
-            try {
-                return mProxy.loadCpqLdimRegs();
-            } catch (RemoteException e) {
-                Log.e(TAG, "LoadCpqLdimRegs:" + e);
-            }
-        }
-
-        return -1;
-    }
-
-        /**
-     * @Function: SetPQMode
-     * @Description: Set current source picture mode
-     * @Param: value mode refer to enum Pq_Mode, source refer to enum SourceInput, is_save 1 to save
-     * @Return: 0 success, -1 fail
-     */
-    public int SetPQMode(int pq_mode, int is_save, int is_autoswitch) {
-        synchronized (mLock) {
-            try {
-                return mProxy.setPQmode(pq_mode, is_save, is_autoswitch);
-            } catch (RemoteException e) {
-                Log.e(TAG, "SetPQMode:" + e);
-            }
-        }
+      /**
+      * @Function: SetPQMode
+      * @Description: Set current source picture mode
+      * @Param: value mode refer to enum Pq_Mode, source refer to enum SourceInput, is_save 1 to save
+      * @Return: 0 success, -1 fail
+      */
+     public int SetPQMode(int pq_mode, int is_save, int is_autoswitch) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.setPQmode(pq_mode, is_save, is_autoswitch);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "SetPQMode:" + e);
+             }
+         }
 
         return -1;
 
@@ -1103,7 +1112,7 @@ public class SystemControlManager {
            try {
                return mProxy.setColorTemperature(mode, is_save);
            } catch (RemoteException e) {
-               Log.e(TAG, "SavePQMode:" + e);
+                Log.e(TAG, "SetColorTemperature:" + e);
            }
        }
        return -1;
@@ -1589,55 +1598,297 @@ public class SystemControlManager {
         return -1;
     }
 
-    public int SetBacklight(int inputtSrc, int value, int isSave) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setBacklight(inputtSrc, value, isSave);
-            } catch (RemoteException e) {
-                Log.e(TAG, "SetBacklight:" + e);
-            }
-        }
-        return -1;
-    }
+     public int SetBacklight(int value, int isSave) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.setBacklight(value, isSave);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "SetBacklight:" + e);
+             }
+         }
+         return -1;
+     }
 
-    public int GetBacklight(int inputtSrc) {
-          synchronized (mLock) {
-            try {
-                return mProxy.getBacklight(inputtSrc);
-            } catch (RemoteException e) {
-                Log.e(TAG, "GetBacklight:" + e);
-            }
-        }
-        return -1;
-    }
+     public int GetBacklight() {
+           synchronized (mLock) {
+             try {
+                 return mProxy.getBacklight();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "GetBacklight:" + e);
+             }
+         }
+         return -1;
+     }
 
-    public int SaveBacklight(int inputtSrc, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.saveBacklight(inputtSrc, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "SaveBacklight:" + e);
-            }
-        }
-        return -1;
-    }
+     public int SaveBacklight(int value) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.saveBacklight(value);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "SaveBacklight:" + e);
+             }
+         }
+         return -1;
+     }
 
-    /**
-     * @Function: FactoryResetPQMode
-     * @Description: Reset all values of PQ mode for factory menu conctrol
-     * @Param:
-     * @Return: 0 success, -1 fail
-     */
-    public int FactoryResetPQMode() {
-          synchronized (mLock) {
-            try {
-                return mProxy.factoryResetPQMode();
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryResetPQMode:" + e);
-            }
-        }
-        return -1;
-    }
+     /**
+      * @Function: CheckLdimExist
+      * @Description: check local diming moudle exist or not
+      * @Param:
+      * @Return: true: exist, false: don't exist
+      */
+     public boolean CheckLdimExist() {
+           synchronized (mLock) {
+             try {
+                 int ret = mProxy.checkLdimExist();
+                 if (ret == 0) {
+                     return false;
+                 } else {
+                     return true;
+                 }
+             } catch (RemoteException e) {
+                 Log.e(TAG, "CheckLdimExist:" + e);
+             }
+         }
+         return false;
+     }
+
+     public enum Dynamic_Backlight_Mode {
+         DYNAMIC_BACKLIGHT_OFF(0),
+         DYNAMIC_BACKLIGHT_LOW(1),
+         DYNAMIC_BACKLIGHT_HIGH(2);
+
+         private int val;
+
+         Dynamic_Backlight_Mode(int val) {
+             this.val = val;
+         }
+
+         public int toInt() {
+             return this.val;
+         }
+     }
+
+     /**
+      * @Function: SetDynamicBacklight
+      * @Description: Set current source dynamic backlight mode
+      * @Param: dynamic backlight mode refer to enum Dynamic_Backlight_Mode, source refer to enum SourceInput, is_save 1 to save
+      * @Return: 0 success, -1 fail
+      */
+     public int SetDynamicBacklight(Dynamic_Backlight_Mode mode, int isSave) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.setDynamicBacklight(mode.toInt(), isSave);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "SetDynamicBacklight:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: GetDynamicBacklight
+      * @Description: Get current source dynamic backlight mode
+      * @Param: source refer to enum SourceInput
+      * @Return: dynamic backlight mode refer to enum Dynamic_Backlight_Mode
+      */
+     public int GetDynamicBacklight() {
+           synchronized (mLock) {
+             try {
+                 return mProxy.getDynamicBacklight();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "GetDynamicBacklight:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactorySetPQMode_Brightness
+      * @Description: Adjust brightness value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, brightness brightness value
+      * @Return: 0 success, -1 fail
+      */
+     public int FactorySetPQMode_Brightness(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int brightness) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factorySetPQMode_Brightness(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), brightness);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factorySetPQMode_Brightness:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactoryGetPQMode_Brightness
+      * @Description: Get brightness value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+      * @Return: 0 success, -1 fail
+      */
+     public int FactoryGetPQMode_Brightness(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetPQMode_Brightness(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factoryGetPQMode_Brightness:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactorySetPQMode_Contrast
+      * @Description: Adjust contrast value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, contrast contrast value
+      * @Return: contrast value
+      */
+     public int FactorySetPQMode_Contrast(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int contrast) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factorySetPQMode_Contrast(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), contrast);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factorySetPQMode_Contrast:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactoryGetPQMode_Contrast
+      * @Description: Get contrast value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+      * @Return: 0 success, -1 fail
+      */
+     public int FactoryGetPQMode_Contrast(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetPQMode_Contrast(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factoryGetPQMode_Contrast:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactorySetPQMode_Saturation
+      * @Description: Adjust saturation value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, saturation saturation value
+      * @Return: 0 success, -1 fail
+      */
+     public int FactorySetPQMode_Saturation(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int saturation) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factorySetPQMode_Saturation(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), saturation);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factorySetPQMode_Saturation:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactoryGetPQMode_Saturation
+      * @Description: Get saturation value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+      * @Return: saturation value
+      */
+     public int FactoryGetPQMode_Saturation(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetPQMode_Saturation(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factoryGetPQMode_Saturation:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactorySetPQMode_Hue
+      * @Description: Adjust hue value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, hue hue value
+      * @Return: 0 success, -1 fail
+      */
+     public int FactorySetPQMode_Hue(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int hue) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factorySetPQMode_Hue(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), hue);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factorySetPQMode_Hue:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactoryGetPQMode_Hue
+      * @Description: Get hue value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+      * @Return: hue value
+      */
+     public int FactoryGetPQMode_Hue(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetPQMode_Hue(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factoryGetPQMode_Hue:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactorySetPQMode_Sharpness
+      * @Description: Adjust sharpness value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode, sharpness sharpness value
+      * @Return: 0 success, -1 fail
+      */
+     public int FactorySetPQMode_Sharpness(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int sharpness) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factorySetPQMode_Sharpness(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), sharpness);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factorySetPQMode_Sharpness:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactoryGetPQMode_Sharpness
+      * @Description: Get sharpness value in corresponding pq mode for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, PQMode refer to enum Pq_Mode
+      * @Return: sharpness value
+      */
+     public int FactoryGetPQMode_Sharpness(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetPQMode_Sharpness(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "factoryGetPQMode_Sharpness:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: FactoryResetPQMode
+      * @Description: Reset all values of PQ mode for factory menu conctrol
+      * @Param:
+      * @Return: 0 success, -1 fail
+      */
+     public int FactoryResetPQMode() {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factoryResetPQMode();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryResetPQMode:" + e);
+             }
+         }
+         return -1;
+     }
 
         /**
      * @Function: FactoryResetColorTemp
@@ -1656,92 +1907,22 @@ public class SystemControlManager {
         return -1;
     }
 
-    public int FactorySetPQParam(SourceInputParam srcInputParam, int mode, int id, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.factorySetPQParam(srcInputParam, mode, id, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactorySetPQParam:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-    public int FactoryGetPQParam(SourceInputParam srcInputParam, int mode, int id) {
-          synchronized (mLock) {
-          Mutable<Integer> resultVal = new Mutable<>();
-            try {
-                return mProxy.factoryGetPQParam(srcInputParam, mode, id);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryGetPQParam:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-    public int FactorySetColorTemperatureParam(int colortemperature_mode, int id, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.factorySetColorTemperatureParam(colortemperature_mode, id, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactorySetColorTemperatureParam:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-    public int FactoryGetColorTemperatureParam(int colortemperature_mode, int id)  {
-          synchronized (mLock) {
-            try {
-                return mProxy.factoryGetColorTemperatureParam(colortemperature_mode, id);
-            } catch (RemoteException e) {
-                Log.e(TAG, "factoryGetColorTemperatureParam:" + e);
-            }
-        }
-        return -1;
-
-
-    }
-
-    public int FactorySaveColorTemperatureParam(int colortemperature_mode, int id, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.factorySaveColorTemperatureParam(colortemperature_mode, id, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactorySaveColorTemperatureParam:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-   public int FactorySetOverscan(SourceInputParam srcInputParam, int he_value, int hs_value, int ve_value, int vs_value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.factorySetOverscan(srcInputParam, he_value, hs_value, ve_value, vs_value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactorySaveColorTemperatureParam:" + e);
-            }
-        }
-        return -1;
-
-   }
-
-   public int FactoryGetOverscan(SourceInputParam srcInputParam, int id) {
-         synchronized (mLock) {
-         Mutable<Integer> resultVal = new Mutable<>();
-           try {
-               return mProxy.factoryGetOverscan(srcInputParam, id);
-           } catch (RemoteException e) {
-               Log.e(TAG, "FactoryGetOverscan:" + e);
-           }
-       }
-       return -1;
-
-   }
+     /**
+      * @Function: FactorySetParamsDefault
+      * @Description: Reset all values of pq mode and color temperature mode for factory menu conctrol
+      * @Param:
+      * @Return: 0 success, -1 fail
+      */
+     public int FactorySetParamsDefault() {
+           synchronized (mLock) {
+             try {
+                 return mProxy.factorySetParamsDefault();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetParamsDefault:" + e);
+             }
+         }
+         return -1;
+     }
 
    public class noline_params_t {
        public int osd0;
@@ -1771,41 +1952,616 @@ public class SystemControlManager {
        }
    }
 
-   public int FactorySetNolineParams(SourceInputParam srcInputParam, int type, int osd0_value, int osd25_value,
-                            int osd50_value, int osd75_value, int osd100_value) {
+     /**
+      * @Function: FactorySetNolineParams
+      * @Description: Nonlinearize the params of corresponding nolinear param type for factory menu conctrol
+      * @Param: noline_params_type refer to enum NOLINE_PARAMS_TYPE, source_type refer to SourceInput_Type, params params value refer to class noline_params_t
+      * @Return: 0 success, -1 fail
+      */
+     public int FactorySetNolineParams(NOLINE_PARAMS_TYPE noline_params_type, SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, noline_params_t params) {
          synchronized (mLock) {
-           try {
-               return mProxy.factorySetNolineParams(srcInputParam, type, osd0_value, osd25_value, osd50_value, osd75_value, osd100_value);
-           } catch (RemoteException e) {
-               Log.e(TAG, "FactorySetNolineParams:" + e);
-           }
-       }
-       return -1;
-   }
+             try {
+                 return mProxy.factorySetNolineParams(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), noline_params_type.toInt(), params.osd0,
+                                                      params.osd25, params.osd50, params.osd75, params.osd100);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetNolineParams:" + e);
+             }
+         }
+         return -1;
+     }
 
-   public int FactoryGetNolineParams(SourceInputParam srcInputParam, int type, int id) {
-          synchronized (mLock) {
-            try {
-                return mProxy.factoryGetNolineParams(srcInputParam, type, id);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryGetNolineParams:" + e);
+     /**
+      * @Function: FactoryGetNolineParams
+      * @Description: Nonlinearize the params of corresponding nolinear param type for factory menu conctrol
+      * @Param: noline_params_type refer to enum NOLINE_PARAMS_TYPE, source_type refer to SourceInput_Type
+      * @Return: params value refer to class noline_params_t
+      */
+     public noline_params_t FactoryGetNolineParams(NOLINE_PARAMS_TYPE noline_params_type, SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt) {
+         noline_params_t noline_params = new noline_params_t();
+         synchronized (mLock) {
+             try {
+                 NolineParam param = mProxy.factoryGetNolineParams(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), noline_params_type.toInt());
+                 noline_params.osd0 = param.osd0;
+                 noline_params.osd25 = param.osd25;
+                 noline_params.osd50 = param.osd50;
+                 noline_params.osd75 = param.osd75;
+                 noline_params.osd100 = param.osd100;
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetNolineParams:" + e);
+             }
+         }
+
+         return noline_params;
+     }
+
+     public class tvin_cutwin_t {
+         public int hs;
+         public int he;
+         public int vs;
+         public int ve;
+     }
+
+      /* tvin signal format table */
+     public enum TransFmt {
+         TVIN_TFMT_2D(0),
+         TVIN_TFMT_3D_LRH_OLOR(1),
+         TVIN_TFMT_3D_LRH_OLER(2),
+         TVIN_TFMT_3D_LRH_ELOR(3),
+         TVIN_TFMT_3D_LRH_ELER(4),
+         TVIN_TFMT_3D_TB(5),
+         TVIN_TFMT_3D_FP(6),
+         TVIN_TFMT_3D_FA(7),
+         TVIN_TFMT_3D_LA(8),
+         TVIN_TFMT_3D_LRF(9),
+         TVIN_TFMT_3D_LD(10),
+         TVIN_TFMT_3D_LDGD(11),
+         TVIN_TFMT_3D_DET_TB(12),
+         TVIN_TFMT_3D_DET_LR(13),
+         TVIN_TFMT_3D_DET_INTERLACE(14),
+         TVIN_TFMT_3D_DET_CHESSBOARD(15),
+         TVIN_TFMT_3D_MAX(16);
+
+         private int val;
+
+         TransFmt(int val) {
+           this.val = val;
+         }
+
+         public int toInt() {
+           return this.val;
+         }
+     }
+
+     /* tvin signal format table */
+     public enum SignalFmt {
+         TVIN_SIG_FMT_NULL(0),
+         //VGA Formats
+         TVIN_SIG_FMT_VGA_512X384P_60HZ_D147    (0x001),
+         TVIN_SIG_FMT_VGA_560X384P_60HZ_D147    (0x002),
+         TVIN_SIG_FMT_VGA_640X200P_59HZ_D924    (0x003),
+         TVIN_SIG_FMT_VGA_640X350P_85HZ_D080    (0x004),
+         TVIN_SIG_FMT_VGA_640X400P_59HZ_D940    (0x005),
+         TVIN_SIG_FMT_VGA_640X400P_85HZ_D080    (0x006),
+         TVIN_SIG_FMT_VGA_640X400P_59HZ_D638    (0x007),
+         TVIN_SIG_FMT_VGA_640X400P_56HZ_D416    (0x008),
+         TVIN_SIG_FMT_VGA_640X480P_66HZ_D619    (0x009),
+         TVIN_SIG_FMT_VGA_640X480P_66HZ_D667    (0x00a),
+         TVIN_SIG_FMT_VGA_640X480P_59HZ_D940    (0x00b),
+         TVIN_SIG_FMT_VGA_640X480P_60HZ_D000    (0x00c),
+         TVIN_SIG_FMT_VGA_640X480P_72HZ_D809    (0x00d),
+         TVIN_SIG_FMT_VGA_640X480P_75HZ_D000_A  (0x00e),
+         TVIN_SIG_FMT_VGA_640X480P_85HZ_D008    (0x00f),
+         TVIN_SIG_FMT_VGA_640X480P_59HZ_D638    (0x010),
+         TVIN_SIG_FMT_VGA_640X480P_75HZ_D000_B  (0x011),
+         TVIN_SIG_FMT_VGA_640X870P_75HZ_D000    (0x012),
+         TVIN_SIG_FMT_VGA_720X350P_70HZ_D086    (0x013),
+         TVIN_SIG_FMT_VGA_720X400P_85HZ_D039    (0x014),
+         TVIN_SIG_FMT_VGA_720X400P_70HZ_D086    (0x015),
+         TVIN_SIG_FMT_VGA_720X400P_87HZ_D849    (0x016),
+         TVIN_SIG_FMT_VGA_720X400P_59HZ_D940    (0x017),
+         TVIN_SIG_FMT_VGA_720X480P_59HZ_D940    (0x018),
+         TVIN_SIG_FMT_VGA_768X480P_59HZ_D896    (0x019),
+         TVIN_SIG_FMT_VGA_800X600P_56HZ_D250    (0x01a),
+         TVIN_SIG_FMT_VGA_800X600P_60HZ_D000    (0x01b),
+         TVIN_SIG_FMT_VGA_800X600P_60HZ_D000_A  (0x01c),
+         TVIN_SIG_FMT_VGA_800X600P_60HZ_D317    (0x01d),
+         TVIN_SIG_FMT_VGA_800X600P_72HZ_D188    (0x01e),
+         TVIN_SIG_FMT_VGA_800X600P_75HZ_D000    (0x01f),
+         TVIN_SIG_FMT_VGA_800X600P_85HZ_D061    (0x020),
+         TVIN_SIG_FMT_VGA_832X624P_75HZ_D087    (0x021),
+         TVIN_SIG_FMT_VGA_848X480P_84HZ_D751    (0x022),
+         TVIN_SIG_FMT_VGA_960X600P_59HZ_D635    (0x023),
+         TVIN_SIG_FMT_VGA_1024X768P_59HZ_D278   (0x024),
+         TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000   (0x025),
+         TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000_A (0x026),
+         TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000_B (0x027),
+         TVIN_SIG_FMT_VGA_1024X768P_74HZ_D927   (0x028),
+         TVIN_SIG_FMT_VGA_1024X768P_60HZ_D004   (0x029),
+         TVIN_SIG_FMT_VGA_1024X768P_70HZ_D069   (0x02a),
+         TVIN_SIG_FMT_VGA_1024X768P_75HZ_D029   (0x02b),
+         TVIN_SIG_FMT_VGA_1024X768P_84HZ_D997   (0x02c),
+         TVIN_SIG_FMT_VGA_1024X768P_74HZ_D925   (0x02d),
+         TVIN_SIG_FMT_VGA_1024X768P_60HZ_D020   (0x02e),
+         TVIN_SIG_FMT_VGA_1024X768P_70HZ_D008   (0x02f),
+         TVIN_SIG_FMT_VGA_1024X768P_75HZ_D782   (0x030),
+         TVIN_SIG_FMT_VGA_1024X768P_77HZ_D069   (0x031),
+         TVIN_SIG_FMT_VGA_1024X768P_71HZ_D799   (0x032),
+         TVIN_SIG_FMT_VGA_1024X1024P_60HZ_D000  (0x033),
+         TVIN_SIG_FMT_VGA_1152X864P_60HZ_D000   (0x034),
+         TVIN_SIG_FMT_VGA_1152X864P_70HZ_D012   (0x035),
+         TVIN_SIG_FMT_VGA_1152X864P_75HZ_D000   (0x036),
+         TVIN_SIG_FMT_VGA_1152X864P_84HZ_D999   (0x037),
+         TVIN_SIG_FMT_VGA_1152X870P_75HZ_D062   (0x038),
+         TVIN_SIG_FMT_VGA_1152X900P_65HZ_D950   (0x039),
+         TVIN_SIG_FMT_VGA_1152X900P_66HZ_D004   (0x03a),
+         TVIN_SIG_FMT_VGA_1152X900P_76HZ_D047   (0x03b),
+         TVIN_SIG_FMT_VGA_1152X900P_76HZ_D149   (0x03c),
+         TVIN_SIG_FMT_VGA_1280X720P_59HZ_D855   (0x03d),
+         TVIN_SIG_FMT_VGA_1280X720P_60HZ_D000_A (0x03e),
+         TVIN_SIG_FMT_VGA_1280X720P_60HZ_D000_B (0x03f),
+         TVIN_SIG_FMT_VGA_1280X720P_60HZ_D000_C (0x040),
+         TVIN_SIG_FMT_VGA_1280X720P_60HZ_D000_D (0x041),
+         TVIN_SIG_FMT_VGA_1280X768P_59HZ_D870   (0x042),
+         TVIN_SIG_FMT_VGA_1280X768P_59HZ_D995   (0x043),
+         TVIN_SIG_FMT_VGA_1280X768P_60HZ_D100   (0x044),
+         TVIN_SIG_FMT_VGA_1280X768P_85HZ_D000   (0x045),
+         TVIN_SIG_FMT_VGA_1280X768P_74HZ_D893   (0x046),
+         TVIN_SIG_FMT_VGA_1280X768P_84HZ_D837   (0x047),
+         TVIN_SIG_FMT_VGA_1280X800P_59HZ_D810   (0x048),
+         TVIN_SIG_FMT_VGA_1280X800P_59HZ_D810_A (0x049),
+         TVIN_SIG_FMT_VGA_1280X800P_60HZ_D000   (0x04a),
+         TVIN_SIG_FMT_VGA_1280X800P_85HZ_D000   (0x04b),
+         TVIN_SIG_FMT_VGA_1280X960P_60HZ_D000   (0x04c),
+         TVIN_SIG_FMT_VGA_1280X960P_60HZ_D000_A (0x04d),
+         TVIN_SIG_FMT_VGA_1280X960P_75HZ_D000   (0x04e),
+         TVIN_SIG_FMT_VGA_1280X960P_85HZ_D002   (0x04f),
+         TVIN_SIG_FMT_VGA_1280X1024P_60HZ_D020  (0x050),
+         TVIN_SIG_FMT_VGA_1280X1024P_60HZ_D020_A(0x051),
+         TVIN_SIG_FMT_VGA_1280X1024P_75HZ_D025  (0x052),
+         TVIN_SIG_FMT_VGA_1280X1024P_85HZ_D024  (0x053),
+         TVIN_SIG_FMT_VGA_1280X1024P_59HZ_D979  (0x054),
+         TVIN_SIG_FMT_VGA_1280X1024P_72HZ_D005  (0x055),
+         TVIN_SIG_FMT_VGA_1280X1024P_60HZ_D002  (0x056),
+         TVIN_SIG_FMT_VGA_1280X1024P_67HZ_D003  (0x057),
+         TVIN_SIG_FMT_VGA_1280X1024P_74HZ_D112  (0x058),
+         TVIN_SIG_FMT_VGA_1280X1024P_76HZ_D179  (0x059),
+         TVIN_SIG_FMT_VGA_1280X1024P_66HZ_D718  (0x05a),
+         TVIN_SIG_FMT_VGA_1280X1024P_66HZ_D677  (0x05b),
+         TVIN_SIG_FMT_VGA_1280X1024P_76HZ_D107  (0x05c),
+         TVIN_SIG_FMT_VGA_1280X1024P_59HZ_D996  (0x05d),
+         TVIN_SIG_FMT_VGA_1280X1024P_60HZ_D000  (0x05e),
+         TVIN_SIG_FMT_VGA_1360X768P_59HZ_D799   (0x05f),
+         TVIN_SIG_FMT_VGA_1360X768P_60HZ_D015   (0x060),
+         TVIN_SIG_FMT_VGA_1360X768P_60HZ_D015_A (0x061),
+         TVIN_SIG_FMT_VGA_1360X850P_60HZ_D000   (0x062),
+         TVIN_SIG_FMT_VGA_1360X1024P_60HZ_D000  (0x063),
+         TVIN_SIG_FMT_VGA_1366X768P_59HZ_D790   (0x064),
+         TVIN_SIG_FMT_VGA_1366X768P_60HZ_D000   (0x065),
+         TVIN_SIG_FMT_VGA_1400X1050P_59HZ_D978  (0x066),
+         TVIN_SIG_FMT_VGA_1440X900P_59HZ_D887   (0x067),
+         TVIN_SIG_FMT_VGA_1440X1080P_60HZ_D000  (0x068),
+         TVIN_SIG_FMT_VGA_1600X900P_60HZ_D000   (0x069),
+         TVIN_SIG_FMT_VGA_1600X1024P_60HZ_D000  (0x06a),
+         TVIN_SIG_FMT_VGA_1600X1200P_59HZ_D869  (0x06b),
+         TVIN_SIG_FMT_VGA_1600X1200P_60HZ_D000  (0x06c),
+         TVIN_SIG_FMT_VGA_1600X1200P_65HZ_D000  (0x06d),
+         TVIN_SIG_FMT_VGA_1600X1200P_70HZ_D000  (0x06e),
+         TVIN_SIG_FMT_VGA_1680X1050P_59HZ_D954  (0x06f),
+         TVIN_SIG_FMT_VGA_1680X1080P_60HZ_D000  (0x070),
+         TVIN_SIG_FMT_VGA_1920X1080P_49HZ_D929  (0x071),
+         TVIN_SIG_FMT_VGA_1920X1080P_59HZ_D963_A(0x072),
+         TVIN_SIG_FMT_VGA_1920X1080P_59HZ_D963  (0x073),
+         TVIN_SIG_FMT_VGA_1920X1080P_60HZ_D000  (0x074),
+         TVIN_SIG_FMT_VGA_1920X1200P_59HZ_D950  (0x075),
+         TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000_C (0x076),
+         TVIN_SIG_FMT_VGA_1024X768P_60HZ_D000_D (0x077),
+         TVIN_SIG_FMT_VGA_1920X1200P_59HZ_D988  (0x078),
+         TVIN_SIG_FMT_VGA_1400X900P_60HZ_D000   (0x079),
+         TVIN_SIG_FMT_VGA_1680X1050P_60HZ_D000  (0x07a),
+         TVIN_SIG_FMT_VGA_800X600P_60HZ_D062    (0x07b),
+         TVIN_SIG_FMT_VGA_800X600P_60HZ_317_B   (0x07c),
+         TVIN_SIG_FMT_VGA_RESERVE8              (0x07d),
+         TVIN_SIG_FMT_VGA_RESERVE9              (0x07e),
+         TVIN_SIG_FMT_VGA_RESERVE10             (0x07f),
+         TVIN_SIG_FMT_VGA_RESERVE11             (0x080),
+         TVIN_SIG_FMT_VGA_RESERVE12             (0x081),
+         TVIN_SIG_FMT_VGA_MAX                   (0x082),
+         TVIN_SIG_FMT_VGA_THRESHOLD             (0x200),
+         //Component Formats
+         TVIN_SIG_FMT_COMP_480P_60HZ_D000       (0x201),
+         TVIN_SIG_FMT_COMP_480I_59HZ_D940       (0x202),
+         TVIN_SIG_FMT_COMP_576P_50HZ_D000       (0x203),
+         TVIN_SIG_FMT_COMP_576I_50HZ_D000       (0x204),
+         TVIN_SIG_FMT_COMP_720P_59HZ_D940       (0x205),
+         TVIN_SIG_FMT_COMP_720P_50HZ_D000       (0x206),
+         TVIN_SIG_FMT_COMP_1080P_23HZ_D976      (0x207),
+         TVIN_SIG_FMT_COMP_1080P_24HZ_D000      (0x208),
+         TVIN_SIG_FMT_COMP_1080P_25HZ_D000      (0x209),
+         TVIN_SIG_FMT_COMP_1080P_30HZ_D000      (0x20a),
+         TVIN_SIG_FMT_COMP_1080P_50HZ_D000      (0x20b),
+         TVIN_SIG_FMT_COMP_1080P_60HZ_D000      (0x20c),
+         TVIN_SIG_FMT_COMP_1080I_47HZ_D952      (0x20d),
+         TVIN_SIG_FMT_COMP_1080I_48HZ_D000      (0x20e),
+         TVIN_SIG_FMT_COMP_1080I_50HZ_D000_A    (0x20f),
+         TVIN_SIG_FMT_COMP_1080I_50HZ_D000_B    (0x210),
+         TVIN_SIG_FMT_COMP_1080I_50HZ_D000_C    (0x211),
+         TVIN_SIG_FMT_COMP_1080I_60HZ_D000      (0x212),
+         TVIN_SIG_FMT_COMP_MAX                  (0x213),
+         TVIN_SIG_FMT_COMP_THRESHOLD            (0x400),
+         //HDMI Formats
+         TVIN_SIG_FMT_HDMI_640X480P_60HZ        (0x401),
+         TVIN_SIG_FMT_HDMI_720X480P_60HZ        (0x402),
+         TVIN_SIG_FMT_HDMI_1280X720P_60HZ       (0x403),
+         TVIN_SIG_FMT_HDMI_1920X1080I_60HZ      (0x404),
+         TVIN_SIG_FMT_HDMI_1440X480I_60HZ       (0x405),
+         TVIN_SIG_FMT_HDMI_1440X240P_60HZ       (0x406),
+         TVIN_SIG_FMT_HDMI_2880X480I_60HZ       (0x407),
+         TVIN_SIG_FMT_HDMI_2880X240P_60HZ       (0x408),
+         TVIN_SIG_FMT_HDMI_1440X480P_60HZ       (0x409),
+         TVIN_SIG_FMT_HDMI_1920X1080P_60HZ      (0x40a),
+         TVIN_SIG_FMT_HDMI_720X576P_50HZ        (0x40b),
+         TVIN_SIG_FMT_HDMI_1280X720P_50HZ       (0x40c),
+         TVIN_SIG_FMT_HDMI_1920X1080I_50HZ_A    (0x40d),
+         TVIN_SIG_FMT_HDMI_1440X576I_50HZ       (0x40e),
+         TVIN_SIG_FMT_HDMI_1440X288P_50HZ       (0x40f),
+         TVIN_SIG_FMT_HDMI_2880X576I_50HZ       (0x410),
+         TVIN_SIG_FMT_HDMI_2880X288P_50HZ       (0x411),
+         TVIN_SIG_FMT_HDMI_1440X576P_50HZ       (0x412),
+         TVIN_SIG_FMT_HDMI_1920X1080P_50HZ      (0x413),
+         TVIN_SIG_FMT_HDMI_1920X1080P_24HZ      (0x414),
+         TVIN_SIG_FMT_HDMI_1920X1080P_25HZ      (0x415),
+         TVIN_SIG_FMT_HDMI_1920X1080P_30HZ      (0x416),
+         TVIN_SIG_FMT_HDMI_2880X480P_60HZ       (0x417),
+         TVIN_SIG_FMT_HDMI_2880X576P_60HZ       (0x418),
+         TVIN_SIG_FMT_HDMI_1920X1080I_50HZ_B    (0x419),
+         TVIN_SIG_FMT_HDMI_1920X1080I_100HZ     (0x41a),
+         TVIN_SIG_FMT_HDMI_1280X720P_100HZ      (0x41b),
+         TVIN_SIG_FMT_HDMI_720X576P_100HZ       (0x41c),
+         TVIN_SIG_FMT_HDMI_1440X576I_100HZ      (0x41d),
+         TVIN_SIG_FMT_HDMI_1920X1080I_120HZ     (0x41e),
+         TVIN_SIG_FMT_HDMI_1280X720P_120HZ      (0x41f),
+         TVIN_SIG_FMT_HDMI_720X480P_120HZ       (0x420),
+         TVIN_SIG_FMT_HDMI_1440X480I_120HZ      (0x421),
+         TVIN_SIG_FMT_HDMI_720X576P_200HZ       (0x422),
+         TVIN_SIG_FMT_HDMI_1440X576I_200HZ      (0x423),
+         TVIN_SIG_FMT_HDMI_720X480P_240HZ       (0x424),
+         TVIN_SIG_FMT_HDMI_1440X480I_240HZ      (0x425),
+         TVIN_SIG_FMT_HDMI_1280X720P_24HZ       (0x426),
+         TVIN_SIG_FMT_HDMI_1280X720P_25HZ       (0x427),
+         TVIN_SIG_FMT_HDMI_1280X720P_30HZ       (0x428),
+         TVIN_SIG_FMT_HDMI_1920X1080P_120HZ     (0x429),
+         TVIN_SIG_FMT_HDMI_1920X1080P_100HZ     (0x42a),
+         TVIN_SIG_FMT_HDMI_1280X720P_60HZ_FRAME_PACKING  (0x42b),
+         TVIN_SIG_FMT_HDMI_1280X720P_50HZ_FRAME_PACKING  (0x42c),
+         TVIN_SIG_FMT_HDMI_1280X720P_24HZ_FRAME_PACKING  (0x42d),
+         TVIN_SIG_FMT_HDMI_1280X720P_30HZ_FRAME_PACKING  (0x42e),
+         TVIN_SIG_FMT_HDMI_1920X1080I_60HZ_FRAME_PACKING (0x42f),
+         TVIN_SIG_FMT_HDMI_1920X1080I_50HZ_FRAME_PACKING (0x430),
+         TVIN_SIG_FMT_HDMI_1920X1080P_24HZ_FRAME_PACKING (0x431),
+         TVIN_SIG_FMT_HDMI_1920X1080P_30HZ_FRAME_PACKING (0x432),
+         TVIN_SIG_FMT_HDMI_800X600_00HZ                  (0x433),
+         TVIN_SIG_FMT_HDMI_1024X768_00HZ                 (0x434),
+         TVIN_SIG_FMT_HDMI_720X400_00HZ                  (0x435),
+         TVIN_SIG_FMT_HDMI_1280X768_00HZ                 (0x436),
+         TVIN_SIG_FMT_HDMI_1280X800_00HZ                 (0x437),
+         TVIN_SIG_FMT_HDMI_1280X960_00HZ                 (0x438),
+         TVIN_SIG_FMT_HDMI_1280X1024_00HZ                (0x439),
+         TVIN_SIG_FMT_HDMI_1360X768_00HZ                 (0x43a),
+         TVIN_SIG_FMT_HDMI_1366X768_00HZ                 (0x43b),
+         TVIN_SIG_FMT_HDMI_1600X1200_00HZ                (0x43c),
+         TVIN_SIG_FMT_HDMI_1920X1200_00HZ                (0x43d),
+         TVIN_SIG_FMT_HDMI_1440X900_00HZ                 (0x43e),
+         TVIN_SIG_FMT_HDMI_1400X1050_00HZ                (0x43f),
+         TVIN_SIG_FMT_HDMI_1680X1050_00HZ                (0x440),
+         TVIN_SIG_FMT_HDMI_1920X1080I_60HZ_ALTERNATIVE   (0x441),
+         TVIN_SIG_FMT_HDMI_1920X1080I_50HZ_ALTERNATIVE   (0x442),
+         TVIN_SIG_FMT_HDMI_1920X1080P_24HZ_ALTERNATIVE   (0x443),
+         TVIN_SIG_FMT_HDMI_1920X1080P_30HZ_ALTERNATIVE   (0x444),
+         TVIN_SIG_FMT_HDMI_3840X2160_00HZ                (0x445),
+         TVIN_SIG_FMT_HDMI_4096X2160_00HZ                (0x446),
+         TVIN_SIG_FMT_HDMI_RESERVE7                      (0x447),
+         TVIN_SIG_FMT_HDMI_RESERVE8                      (0x448),
+         TVIN_SIG_FMT_HDMI_RESERVE9                      (0x449),
+         TVIN_SIG_FMT_HDMI_RESERVE10                     (0x44a),
+         TVIN_SIG_FMT_HDMI_RESERVE11                     (0x44b),
+         TVIN_SIG_FMT_HDMI_720X480P_60HZ_FRAME_PACKING   (0x44c),
+         TVIN_SIG_FMT_HDMI_720X576P_50HZ_FRAME_PACKING   (0x44d),
+         TVIN_SIG_FMT_HDMI_MAX                           (0x44e),
+         TVIN_SIG_FMT_HDMI_THRESHOLD                     (0x600),
+         //Video Formats
+         TVIN_SIG_FMT_CVBS_NTSC_M                        (0x601),
+         TVIN_SIG_FMT_CVBS_NTSC_443                      (0x602),
+         TVIN_SIG_FMT_CVBS_PAL_I                         (0x603),
+         TVIN_SIG_FMT_CVBS_PAL_M                         (0x604),
+         TVIN_SIG_FMT_CVBS_PAL_60                        (0x605),
+         TVIN_SIG_FMT_CVBS_PAL_CN                        (0x606),
+         TVIN_SIG_FMT_CVBS_SECAM                         (0x607),
+         TVIN_SIG_FMT_CVBS_MAX                           (0x608),
+         TVIN_SIG_FMT_CVBS_THRESHOLD                     (0x800),
+         //656 Formats
+         TVIN_SIG_FMT_BT656IN_576I_50HZ                  (0x801),
+         TVIN_SIG_FMT_BT656IN_480I_60HZ                  (0x802),
+         //601 Formats
+         TVIN_SIG_FMT_BT601IN_576I_50HZ                  (0x803),
+         TVIN_SIG_FMT_BT601IN_480I_60HZ                  (0x804),
+         //Camera Formats
+         TVIN_SIG_FMT_CAMERA_640X480P_30HZ               (0x805),
+         TVIN_SIG_FMT_CAMERA_800X600P_30HZ               (0x806),
+         TVIN_SIG_FMT_CAMERA_1024X768P_30HZ              (0x807),
+         TVIN_SIG_FMT_CAMERA_1920X1080P_30HZ             (0x808),
+         TVIN_SIG_FMT_CAMERA_1280X720P_30HZ              (0x809),
+         TVIN_SIG_FMT_BT601_MAX                          (0x80a),
+         TVIN_SIG_FMT_BT601_THRESHOLD                    (0xa00),
+         TVIN_SIG_FMT_MAX(0xFFFFFFFF);
+
+         private int val;
+         SignalFmt(int val) {
+             this.val = val;
+         }
+
+         public static SignalFmt valueOf(int value) {
+            for (SignalFmt fmt : SignalFmt.values()) {
+               if (fmt.toInt() == value) {
+                  return fmt;
+               }
             }
-        }
-        return -1;
+            return TVIN_SIG_FMT_MAX;
+         }
 
-   }
+         public int toInt() {
+              return this.val;
+         }
+     }
 
-   public int FactorySetParamsDefault() {
+     /**
+      * @Function: FactorySetOverscanParams
+      * @Description: Set overscan params of corresponding source type and fmt for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, fmt refer to enum tvin_sig_fmt_e
+      * @Param: trans_fmt refer to enum tvin_trans_fmt, cutwin_t refer to class tvin_cutwin_t
+      * @Return: 0 success, -1 fail
+      */
+     public int FactorySetOverscanParams(SourceInput source_input, SignalFmt fmt,
+                                                  TransFmt trans_fmt, tvin_cutwin_t cutwin_t) {
+          synchronized (mLock) {
+              try {
+                  return mProxy.factorySetOverscan(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(),
+                                                   cutwin_t.he, cutwin_t.hs, cutwin_t.ve, cutwin_t.vs);
+              } catch (RemoteException e) {
+                  Log.e(TAG, "FactorySetOverscanParams:" + e);
+              }
+          }
+          return -1;
+     }
+
+     /**
+      * @Function: FactoryGetOverscanParams
+      * @Description: Get overscan params of corresponding source type and fmt for factory menu conctrol
+      * @Param: source_type refer to enum SourceInput_Type, fmt refer to enum tvin_sig_fmt_e
+      * @Param: trans_fmt refer to enum tvin_trans_fmt
+      * @Return: cutwin_t value for overscan refer to class tvin_cutwin_t
+      */
+     public tvin_cutwin_t FactoryGetOverscanParams(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt) {
+         tvin_cutwin_t cutwin_t = new tvin_cutwin_t();
          synchronized (mLock) {
-           try {
-               return mProxy.factorySetParamsDefault();
-           } catch (RemoteException e) {
-               Log.e(TAG, "FactorySetParamsDefault:" + e);
-           }
-       }
-       return -1;
+             try {
+                 OverScanParam param = mProxy.factoryGetOverscan(source_input.toInt(), fmt.toInt(), trans_fmt.toInt());
+                 cutwin_t.hs = param.he;
+                 cutwin_t.he = param.hs;
+                 cutwin_t.vs = param.ve;
+                 cutwin_t.ve = param.vs;
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetOverscanParams:" + e);
+             }
+         }
 
-   }
+         return cutwin_t;
+     }
+
+     /**
+      * @Function: Read the red gain with specified souce and color temperature
+      * @Param:
+      * @ Return value: the red gain value
+      * */
+     public int FactoryWhiteBalanceSetRedGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.setwhiteBalanceGainRed(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceSetRedGain:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceSetGreenGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.setwhiteBalanceGainGreen(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceSetGreenGain:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceSetBlueGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.setwhiteBalanceGainBlue(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceSetBlueGain:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceGetRedGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.getwhiteBalanceGainRed(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetRedGain:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceGetGreenGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.getwhiteBalanceGainGreen(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetGreenGain:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceGetBlueGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.getwhiteBalanceGainBlue(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetGreenGain:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceSetRedOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.setwhiteBalanceOffsetRed(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (RemoteException e) {
+                   Log.e(TAG, "FactoryWhiteBalanceSetRedOffset:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceSetGreenOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.setwhiteBalanceOffsetGreen(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (RemoteException e) {
+                   Log.e(TAG, "FactoryWhiteBalanceSetGreenOffset:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceSetBlueOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.setwhiteBalanceOffsetBlue(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (RemoteException e) {
+                   Log.e(TAG, "FactoryWhiteBalanceSetBlueOffset:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceGetRedOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.getwhiteBalanceOffsetRed(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (RemoteException e) {
+                   Log.e(TAG, "FactoryWhiteBalanceGetRedOffset:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceGetGreenOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.getwhiteBalanceOffsetGreen(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (RemoteException e) {
+                   Log.e(TAG, "FactoryWhiteBalanceGetGreenOffset:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceGetBlueOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.getwhiteBalanceOffsetBlue(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (RemoteException e) {
+                   Log.e(TAG, "FactoryWhiteBalanceGetBlueOffset:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceSetColorTemperature(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int is_save) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.setColorTemperature(colorTemp_mode.toInt(), is_save);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceSetColorTemperature:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryWhiteBalanceGetColorTemperature(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.getColorTemperature();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetColorTemperature:" + e);
+             }
+         }
+         return -1;
+     }
+
+     /**
+      * @Function: Save the white balance data to fbc or g9
+      * @Param:
+      * @Return value: save OK: 0 , else -1
+      *
+      * */
+     public int FactoryWhiteBalanceSaveParameters(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int r_gain, int g_gain, int b_gain, int r_offset, int g_offset, int b_offset) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.saveWhiteBalancePara(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), r_gain, g_gain, b_gain,r_offset, g_offset, b_offset);
+             } catch (RemoteException e) {
+                   Log.e(TAG, "FactoryWhiteBalanceSaveParameters:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public class WhiteBalanceParams {
+         public int r_gain;        // u1.10, range 0~2047, default is 1024 (1.0x)
+         public int g_gain;        // u1.10, range 0~2047, default is 1024 (1.0x)
+         public int b_gain;        // u1.10, range 0~2047, default is 1024 (1.0x)
+         public int r_offset;      // s11.0, range -1024~+1023, default is 0
+         public int g_offset;      // s11.0, range -1024~+1023, default is 0
+         public int b_offset;      // s11.0, range -1024~+1023, default is 0
+     }
+
+     public WhiteBalanceParams FactoryWhiteBalanceGetAllParams(int colorTemp_mode) {
+         WhiteBalanceParams params = new WhiteBalanceParams();
+         synchronized (mLock) {
+             try {
+                 int ret = mProxy.factoryfactoryGetColorTemperatureParams(colorTemp_mode);
+                 if (ret == 0) {
+                     params.r_gain = 0;
+                     params.g_gain = 0;
+                     params.b_gain = 0;
+                     params.r_offset = 0;
+                     params.g_offset = 0;
+                     params.b_offset = 0;
+                 }
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetAllParams:" + e);
+             }
+         }
+
+         return params;
+     }
 
    public int FactorySSMRestore() {
          synchronized (mLock) {
@@ -1914,28 +2670,17 @@ public class SystemControlManager {
 
     }
 
-    public int SetCVD2Values(SourceInputParam srcInputParam) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setCVD2Values(srcInputParam);
-            } catch (RemoteException e) {
-                Log.e(TAG, "SetCVD2Values:" + e);
-            }
-        }
-        return -1;
+     public int SetCVD2Values() {
+           synchronized (mLock) {
+             try {
+                 return mProxy.setCVD2Values();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "SetCVD2Values:" + e);
+             }
+         }
+         return -1;
 
-    }
-
-   public int setPQConfig(int id, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setPQConfig(id, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "setPQConfig:" + e);
-            }
-        }
-        return -1;
-    }
+     }
 
     public int GetSSMStatus() {
          synchronized (mLock) {
@@ -1948,237 +2693,53 @@ public class SystemControlManager {
        return -1;
     }
 
-    public int ResetLastPQSettingsSourceType() {
-          synchronized (mLock) {
-            try {
-                return mProxy.resetLastPQSettingsSourceType();
-            } catch (RemoteException e) {
-                Log.e(TAG, "ResetLastPQSettingsSourceType:" + e);
-            }
-        }
-        return -1;
-    }
+     public int SetCurrentSourceInfo(SourceInput source, int sig_fmt, int trans_fmt) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.setCurrentSourceInfo(source.toInt(), sig_fmt, trans_fmt);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "SetCurrentSourceInfo:" + e);
+             }
+         }
+         return -1;
+     }
 
-    public int SetCurrentSourceInfo(SourceInputParam srcInputParam) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setCurrentSourceInfo(srcInputParam);
-            } catch (RemoteException e) {
-                Log.e(TAG, "SetCurrentSourceInfo:" + e);
-            }
-        }
-        return -1;
-    }
+     public int[] GetCurrentSourceInfo() {
+           int CurrentSourceInfo[] = {0, 0, 0};
+           synchronized (mLock) {
+               Mutable<SourceInputParam> srcInputParam = new Mutable<>();
+               try {
+                   mProxy.getCurrentSourceInfo((int ret, SourceInputParam tmpSrcInputParam)-> {
+                                                  if (Result.OK == ret) {
+                                                      srcInputParam.value = tmpSrcInputParam;
+                                                  }
+                                              });
+                 CurrentSourceInfo[0] = srcInputParam.value.sourceInput;
+                 CurrentSourceInfo[1] = srcInputParam.value.sigFmt;
+                 CurrentSourceInfo[2] = srcInputParam.value.transFmt;
+                 return CurrentSourceInfo;
+             } catch (RemoteException e) {
+                 Log.e(TAG, "GetCurrentSourceInfo:" + e);
+             }
+         }
+         return CurrentSourceInfo;
+     }
 
-    public int[] GetCurrentSourceInfo() {
-          int CurrentSourceInfo[] = {0, 0, 0, 0, 0, 0};
-          synchronized (mLock) {
-              Mutable<SourceInputParam> srcInputParam = new Mutable<>();
-              try {
-                  mProxy.getCurrentSourceInfo((int ret, SourceInputParam tmpSrcInputParam)-> {
-                                                 if (Result.OK == ret) {
-                                                     srcInputParam.value = tmpSrcInputParam;
-                                                 }
-                                             });
-                CurrentSourceInfo[0] = srcInputParam.value.sourceInput;
-                CurrentSourceInfo[1] = srcInputParam.value.sourceType;
-                CurrentSourceInfo[2] = srcInputParam.value.sourcePort;
-                CurrentSourceInfo[3] = srcInputParam.value.sigFmt;
-                CurrentSourceInfo[4] = srcInputParam.value.transFmt;
-                CurrentSourceInfo[5] = srcInputParam.value.is3d;
-                return CurrentSourceInfo;
-            } catch (RemoteException e) {
-                Log.e(TAG, "GetCurrentSourceInfo:" + e);
-            }
-        }
-        return CurrentSourceInfo;
-    }
-    public int GetAutoSwitchPCModeFlag() {
-          synchronized (mLock) {
-            try {
-                return mProxy.getAutoSwitchPCModeFlag();
-            } catch (RemoteException e) {
-                Log.e(TAG, "GetAutoSwitchPCModeFlag:" + e);
-            }
-        }
-        return -1;
-    }
-
-        /**
-     * @Function: Read the red gain with specified souce and color temperature
-     * @Param:
-     * @ Return value: the red gain value
-     * */
-    public int FactoryWhiteBalanceSetRedGain(int sourceType, int colorTemp_mode, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setwhiteBalanceGainRed(sourceType, colorTemp_mode, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSetRedGain:" + e);
-            }
-        }
-        return -1;
-    }
-
-    public int FactoryWhiteBalanceSetGreenGain(int sourceType, int colorTemp_mode, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setwhiteBalanceGainGreen(sourceType, colorTemp_mode, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSetGreenGain:" + e);
-            }
-        }
-        return -1;
-    }
-
-    public int FactoryWhiteBalanceSetBlueGain(int sourceType, int colorTemp_mode, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setwhiteBalanceGainBlue(sourceType, colorTemp_mode, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSetBlueGain:" + e);
-            }
-        }
-        return -1;
-    }
-
-    public int FactoryWhiteBalanceGetRedGain(int sourceType, int colorTemp_mode) {
-          synchronized (mLock) {
-            try {
-                return mProxy.getwhiteBalanceGainRed(sourceType, colorTemp_mode);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSetBlueGain:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-    public int FactoryWhiteBalanceGetGreenGain(int sourceType, int colorTemp_mode) {
-          synchronized (mLock) {
-            try {
-                return mProxy.getwhiteBalanceGainGreen(sourceType, colorTemp_mode);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceGetRedGain:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-    public int FactoryWhiteBalanceGetBlueGain(int sourceType, int colorTemp_mode) {
-          synchronized (mLock) {
-            try {
-                return mProxy.getwhiteBalanceGainBlue(sourceType, colorTemp_mode);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceGetBlueGain:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-    public int FactoryWhiteBalanceSetRedOffset(int sourceType, int colorTemp_mode, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setwhiteBalanceOffsetRed(sourceType, colorTemp_mode, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSetRedOffset:" + e);
-            }
-        }
-        return -1;
-    }
-
-    public int FactoryWhiteBalanceSetGreenOffset(int sourceType, int colorTemp_mode, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setwhiteBalanceOffsetGreen(sourceType, colorTemp_mode, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSetGreenOffset:" + e);
-            }
-        }
-        return -1;
-    }
-
-    public int FactoryWhiteBalanceSetBlueOffset(int sourceType, int colorTemp_mode, int value) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setwhiteBalanceOffsetBlue(sourceType, colorTemp_mode, value);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSetBlueOffset:" + e);
-            }
-        }
-        return -1;
-    }
-
-    public int FactoryWhiteBalanceGetRedOffset(int sourceType, int colorTemp_mode) {
-          synchronized (mLock) {
-            try {
-                return mProxy.getwhiteBalanceOffsetRed(sourceType, colorTemp_mode);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSetBlueOffset:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-    public int FactoryWhiteBalanceGetGreenOffset(int sourceType, int colorTemp_mode) {
-          synchronized (mLock) {
-            try {
-                return mProxy.getwhiteBalanceOffsetGreen(sourceType, colorTemp_mode);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceGetGreenOffset:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-    public int FactoryWhiteBalanceGetBlueOffset(int sourceType, int colorTemp_mode) {
-          synchronized (mLock) {
-            try {
-                return mProxy.getwhiteBalanceOffsetBlue(sourceType, colorTemp_mode);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceGetBlueOffset:" + e);
-            }
-        }
-        return -1;
-
-    }
-
-        /**
-     * @Function: Save the white balance data to fbc or g9
-     * @Param:
-     * @Return value: save OK: 0 , else -1
-     *
-     * */
-    public int FactoryWhiteBalanceSaveParameters(int sourceType, int colorTemp_mode, int r_gain, int g_gain, int b_gain, int r_offset, int g_offset, int b_offset) {
-          synchronized (mLock) {
-            try {
-                return mProxy.saveWhiteBalancePara(sourceType, colorTemp_mode, r_gain, g_gain, b_gain, r_offset, g_offset, b_offset);
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryWhiteBalanceSaveParameters:" + e);
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * @Function: FactoryGetRGBScreen
-     * @Description: get rgb screen pattern
-     * @Return: rgb(0xrrggbb)
-     */
-    public int FactoryGetRGBScreen() {
-          synchronized (mLock) {
-            try {
-                return mProxy.getRGBPattern();
-            } catch (RemoteException e) {
-                Log.e(TAG, "FactoryGetRGBScreen:" + e);
-            }
-        }
-        return -1;
-    }
+     /**
+      * @Function: FactoryGetRGBScreen
+      * @Description: get rgb screen pattern
+      * @Return: rgb(0xrrggbb)
+      */
+     public int FactoryGetRGBScreen() {
+           synchronized (mLock) {
+             try {
+                 return mProxy.getRGBPattern();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetRGBScreen:" + e);
+             }
+         }
+         return -1;
+     }
 
     /**
      * @Function: FactorySetRGBScreen
@@ -2309,6 +2870,204 @@ public class SystemControlManager {
         }
         return -1;
     }
+
+     public int FactorySetHdrIsEnable(int mode) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factorySetHdrMode(mode);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetHdrIsEnable:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryGetHdrIsEnable() {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetHdrMode();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetHdrIsEnable:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int setDNLPCurveParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int level) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.setDnlpParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), level);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "setDNLPCurveParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int getDNLPCurveParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.getDnlpParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "getDNLPCurveParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactorySetDNLPCurveParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int level, int final_gain) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factorySetDnlpParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), level, final_gain);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetDNLPCurveParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryGetDNLPCurveParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int level) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetDnlpParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), level);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetDNLPCurveParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactorysetBlackExtRegParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int val) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factorySetBlackExtRegParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), val);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorysetBlackExtRegParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactorygetBlackExtRegParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetBlackExtRegParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt());
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorygetBlackExtRegParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactorySetColorParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int color_type, int color_param, int val) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factorySetColorParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), color_type, color_param, val);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetColorParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryGetColorParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int color_type, int color_param) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetColorParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), color_type, color_param);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetColorParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactorySetNoiseReductionParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, Noise_Reduction_Mode mode, int param_type, int val) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factorySetNoiseReductionParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), mode.toInt(), param_type, val);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetNoiseReductionParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryGetNoiseReductionParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, Noise_Reduction_Mode mode, int param_type) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetNoiseReductionParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), mode.toInt(), param_type);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetNoiseReductionParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactorySetCTIParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int param_type, int val) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factorySetCTIParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), param_type, val);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetCTIParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryGetCTIParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int param_type) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetCTIParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), param_type);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetCTIParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactorySetDecodeLumaParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int param_type, int val) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factorySetDecodeLumaParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), param_type, val);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetDecodeLumaParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryGetDecodeLumaParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int param_type) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetDecodeLumaParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), param_type);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetDecodeLumaParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactorySetSharpnessHDParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int isHD, int param_type, int val) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factorySetSharpnessParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), isHD, param_type, val);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactorySetSharpnessHDParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int FactoryGetSharpnessHDParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int isHD, int param_type) {
+         synchronized (mLock) {
+             try {
+                 return mProxy.factoryGetSharpnessParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), isHD, param_type);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "FactoryGetSharpnessHDParams:" + e);
+             }
+         }
+         return -1;
+     }
 
     private static class Mutable<E> {
         public E value;

@@ -31,6 +31,9 @@ import android.hardware.hdmi.HdmiHotplugEvent;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
+import android.media.AudioManager;
+import android.media.AudioSystem;
+import android.content.ContentResolver;
 
 public class OutputModeManager {
     private static final String TAG                         = "OutputModeManager";
@@ -108,16 +111,65 @@ public class OutputModeManager {
     public static final String FULL_WIDTH_4K2KSMPTE         = "4096";
     public static final String FULL_HEIGHT_4K2KSMPTE        = "2160";
 
-    public static final String DIGITAL_SOUND                = "digital_sound";
-    public static final String PCM                          = "PCM";
-    public static final String RAW                          = "RAW";
-    public static final String HDMI                         = "HDMI";
-    public static final String SPDIF                        = "SPDIF";
-    public static final String HDMI_RAW                     = "HDMI passthrough";
-    public static final String SPDIF_RAW                    = "SPDIF passthrough";
-    public static final int IS_PCM                          = 0;
-    public static final int IS_SPDIF_RAW                    = 1;
-    public static final int IS_HDMI_RAW                     = 2;
+    public static final String DIGITAL_AUDIO_FORMAT  = "digital_audio_format";
+    public static final String PARA_PCM                      = "hdmi_format=0";
+    public static final String PARA_AUTO                     = "hdmi_format=5";
+    public static final int DIGITAL_PCM                      = 0;
+    public static final int DIGITAL_AUTO                     = 1;
+
+    public static final String BOX_LINE_OUT                          = "box_line_out";
+    public static final String PARA_BOX_LINE_OUT_OFF         = "enable_line_out=false";
+    public static final String PARA_BOX_LINE_OUT_ON           = "enable_line_out=true";
+    public static final int BOX_LINE_OUT_OFF                        = 0;
+    public static final int BOX_LINE_OUT_ON                         = 1;
+
+    public static final String BOX_HDMI                          = "box_hdmi";
+    public static final String PARA_BOX_HDMI_OFF         = "Audio hdmi-out mute=1";
+    public static final String PARA_BOX_HDMI_ON           = "Audio hdmi-out mute=0";
+    public static final int BOX_HDMI_OFF                               = 0;
+    public static final int BOX_HDMI_ON                                 = 1;
+
+    public static final String TV_SPEAKER                       = "tv_speaker";
+    public static final String PARA_TV_SPEAKER_OFF       = "speaker_mute=1";
+    public static final String PARA_TV_SPEAKER_ON         = "speaker_mute=0";
+    public static final int TV_SPEAKER_OFF                     = 0;
+    public static final int TV_SPEAKER_ON                       = 1;
+
+    public static final String TV_ARC                      = "tv_arc";
+    public static final String PARA_TV_ARC_OFF       = "HDMI ARC Switch=0";
+    public static final String PARA_TV_ARC_ON         = "HDMI ARC Switch=1";
+    public static final int TV_ARC_OFF                     = 0;
+    public static final int TV_ARC_ON                       = 1;
+
+    public static final String VIRTUAL_SURROUND                      = "virtual_surround";
+    public static final String PARA_VIRTUAL_SURROUND_OFF       = "enable_virtual_surround=false";
+    public static final String PARA_VIRTUAL_SURROUND_ON       = "enable_virtual_surround=true";
+    public static final int VIRTUAL_SURROUND_OFF                     = 0;
+    public static final int VIRTUAL_SURROUND_ON                       = 1;
+
+    public static final String SOUND_OUTPUT_DEVICE                         = "sound_output_device";
+    public static final String PARA_SOUND_OUTPUT_DEVICE_SPEAKER  = "sound_output_device=speak";
+    public static final String PARA_SOUND_OUTPUT_DEVICE_ARC       = "sound_output_device=arc";
+    public static final int SOUND_OUTPUT_DEVICE_SPEAKER                 = 0;
+    public static final int SOUND_OUTPUT_DEVICE_ARC                        = 1;
+
+    //sound effects save key in global settings
+    public static final String SOUND_EFFECT_BASS                         = "sound_effect_bass";
+    public static final String SOUND_EFFECT_TREBLE                      = "sound_effect_treble";
+    public static final String SOUND_EFFECT_BALANCE                   = "sound_effect_balance";
+    public static final String SOUND_EFFECT_DIALOG_CLARITY       = "sound_effect_dialog_clarity";
+    public static final String SOUND_EFFECT_SURROUND                 = "sound_effect_surround";
+    public static final String SOUND_EFFECT_BASS_BOOST             = "sound_effect_bass_boost";
+    public static final String SOUND_EFFECT_SOUND_MODE            = "sound_effect_sound_mode";
+    public static final String SOUND_EFFECT_BAND1       = "sound_effect_band1";
+    public static final String SOUND_EFFECT_BAND2       = "sound_effect_band2";
+    public static final String SOUND_EFFECT_BAND3       = "sound_effect_band3";
+    public static final String SOUND_EFFECT_BAND4       = "sound_effect_band4";
+    public static final String SOUND_EFFECT_BAND5       = "sound_effect_band5";
+    public static final String SOUND_EFFECT_AGC_ENABLE       = "sound_effect_agc_on";
+    public static final String SOUND_EFFECT_AGC_MAX_LEVEL       = "sound_effect_agc_level";
+    public static final String SOUND_EFFECT_AGC_ATTRACK_TIME       = "sound_effect_agc_attrack";
+    public static final String SOUND_EFFECT_AGC_RELEASE_TIME       = "sound_effect_agc_release";
 
     public static final String DRC_MODE                     = "drc_mode";
     public static final String DTSDRC_MODE                  = "dtsdrc_mode";
@@ -151,9 +203,11 @@ public class OutputModeManager {
     private static String currentOutputmode = null;
     private boolean ifModeSetting = false;
     private final Context mContext;
+    private final ContentResolver mResolver;
     final Object mLock = new Object[0];
 
     private SystemControlManager mSystenControl;
+    private AudioManager mAudioManager;
     /*only system/priv process can binder HDMI_CONTROL_SERVICE*/
    // private HdmiControlManager mHdmiControlManager;
 
@@ -161,8 +215,9 @@ public class OutputModeManager {
         mContext = context;
 
         mSystenControl = new SystemControlManager(context);
-
+        mResolver = mContext.getContentResolver();
         currentOutputmode = readSysfs(DISPLAY_MODE);
+        mAudioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
 
        /* mHdmiControlManager = (HdmiControlManager) context.getSystemService(Context.HDMI_CONTROL_SERVICE);
         if (mHdmiControlManager != null) {
@@ -446,7 +501,6 @@ public class OutputModeManager {
                 setOutputMode(mode);
             }
         }
-        switchHdmiPassthough();
     }
 
     public boolean isBestOutputmode() {
@@ -486,35 +540,6 @@ public class OutputModeManager {
             }
         });
         task.start();
-    }
-
-    private void switchHdmiPassthough() {
-        setDigitalMode(getBootenv(ENV_DIGIT_AUDIO, PCM));
-    }
-
-    public String getDigitalVoiceMode(){
-        return getBootenv(ENV_DIGIT_AUDIO, PCM);
-    }
-
-    public int autoSwitchHdmiPassthough () {
-        String mAudioCapInfo = readSysfsTotal(SYS_AUDIO_CAP);
-        if (mAudioCapInfo.contains("Dobly_Digital+")) {
-            setDigitalMode(HDMI_RAW);
-            return IS_HDMI_RAW;
-        } else if (mAudioCapInfo.contains("AC-3")
-                || (getPropertyBoolean(PROP_DTSEDID, false) && mAudioCapInfo.contains("DTS"))) {
-            setDigitalMode(SPDIF_RAW);
-            return IS_SPDIF_RAW;
-        } else {
-            setDigitalMode(PCM);
-            return IS_PCM;
-        }
-    }
-
-    public void setDigitalMode(String mode) {
-        // value : "PCM" ,"RAW","SPDIF passthrough","HDMI passthrough"
-        setBootenv(ENV_DIGIT_AUDIO, mode);
-        mSystenControl.setDigitalMode(mode);
     }
 
     public void enableDobly_DRC (boolean enable) {
@@ -695,6 +720,113 @@ public class OutputModeManager {
             return false;
         }
         */
+    }
+
+    public void setDigitalAudioFormatOut(int mode) {
+        switch (mode) {
+            case DIGITAL_PCM:
+                mAudioManager.setParameters(PARA_PCM);
+                Settings.Global.putInt(mResolver,
+                        Settings.Global.ENCODED_SURROUND_OUTPUT,
+                        Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER);
+                break;
+            case DIGITAL_AUTO:
+                mAudioManager.setParameters(PARA_AUTO);
+                Settings.Global.putInt(mResolver,
+                        Settings.Global.ENCODED_SURROUND_OUTPUT,
+                        Settings.Global.ENCODED_SURROUND_OUTPUT_AUTO);
+                break;
+            default:
+                mAudioManager.setParameters(PARA_PCM);
+                Settings.Global.putInt(mResolver,
+                        Settings.Global.ENCODED_SURROUND_OUTPUT,
+                        Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER);
+                break;
+        }
+    }
+
+    public void enableBoxLineOutAudio(boolean value) {
+        if (value) {
+            mAudioManager.setParameters(PARA_BOX_LINE_OUT_ON);
+        } else {
+            mAudioManager.setParameters(PARA_BOX_LINE_OUT_OFF);
+        }
+    }
+
+    public void enableBoxHdmiAudio(boolean value) {
+        if (value) {
+            mAudioManager.setParameters(PARA_BOX_HDMI_ON);
+        } else {
+            mAudioManager.setParameters(PARA_BOX_HDMI_OFF);
+        }
+    }
+
+    public void enableTvSpeakerAudio(boolean value) {
+        if (value) {
+            mAudioManager.setParameters(PARA_TV_SPEAKER_ON);
+        } else {
+            mAudioManager.setParameters(PARA_TV_SPEAKER_OFF);
+        }
+    }
+
+    public void enableTvArcAudio(boolean value) {
+        if (value) {
+            mAudioManager.setParameters(PARA_TV_ARC_ON);
+        } else {
+            mAudioManager.setParameters(PARA_TV_ARC_OFF);
+        }
+    }
+
+    public void setVirtualSurround (int value) {
+        if (value == VIRTUAL_SURROUND_ON) {
+            mAudioManager.setParameters(PARA_VIRTUAL_SURROUND_ON);
+        } else {
+            mAudioManager.setParameters(PARA_VIRTUAL_SURROUND_OFF);
+        }
+    }
+
+    public void setSoundOutputStatus (int mode) {
+        switch (mode) {
+            case SOUND_OUTPUT_DEVICE_SPEAKER:
+                enableTvSpeakerAudio(true);
+                enableTvArcAudio(false);
+                break;
+            case SOUND_OUTPUT_DEVICE_ARC:
+                enableTvSpeakerAudio(false);
+                enableTvArcAudio(true);
+                break;
+        }
+    }
+
+    public void initSoundParametersAfterBoot() {
+        final boolean istv = mSystenControl.getPropertyBoolean("ro.platform.has.tvuimode", false);
+        if (!istv) {
+            final int boxlineout = Settings.Global.getInt(mResolver, BOX_LINE_OUT, BOX_LINE_OUT_OFF);
+            enableBoxLineOutAudio(boxlineout == BOX_LINE_OUT_ON);
+            final int boxhdmi = Settings.Global.getInt(mResolver, BOX_HDMI, BOX_HDMI_ON);
+            enableBoxHdmiAudio(boxhdmi == BOX_HDMI_ON);
+        } else {
+            final int virtualsurround = Settings.Global.getInt(mResolver, VIRTUAL_SURROUND, VIRTUAL_SURROUND_OFF);
+            setVirtualSurround(virtualsurround);
+            int device = mAudioManager.getDevicesForStream(AudioManager.STREAM_MUSIC);
+            if ((device & AudioSystem.DEVICE_OUT_SPEAKER) != 0) {
+                final int soundoutput = Settings.Global.getInt(mResolver, SOUND_OUTPUT_DEVICE, SOUND_OUTPUT_DEVICE_SPEAKER);
+                setSoundOutputStatus(soundoutput);
+            }
+        }
+    }
+
+    public void resetSoundParameters() {
+        final boolean istv = mSystenControl.getPropertyBoolean("ro.platform.has.tvuimode", false);
+        if (!istv) {
+            enableBoxLineOutAudio(false);
+            enableBoxHdmiAudio(false);
+        } else {
+            enableTvSpeakerAudio(false);
+            enableTvArcAudio(false);
+            setVirtualSurround(VIRTUAL_SURROUND_OFF);
+            setSoundOutputStatus(SOUND_OUTPUT_DEVICE_SPEAKER);
+        }
     }
 }
 

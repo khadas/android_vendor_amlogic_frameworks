@@ -72,15 +72,6 @@ typedef enum vpp_color_management2_e {
     VPP_COLOR_MANAGEMENT2_MODE_MAX,
 } vpp_color_management2_t;
 
-typedef enum vpp_noise_reduction2_mode_e {
-    VPP_NOISE_REDUCTION2_MODE_OFF,
-    VPP_NOISE_REDUCTION2_MODE_LOW,
-    VPP_NOISE_REDUCTION2_MODE_MID,
-    VPP_NOISE_REDUCTION2_MODE_HIGH,
-    VPP_NOISE_REDUCTION2_MODE_AUTO,
-    VPP_NOISE_REDUCTION2_MODE_MAX,
-} vpp_noise_reduction2_mode_t;
-
 typedef enum vpp_noise_reduction_mode_e {
     VPP_NOISE_REDUCTION_MODE_OFF,
     VPP_NOISE_REDUCTION_MODE_LOW,
@@ -122,36 +113,18 @@ typedef struct vpp_pq_para_s {
     int nr;
 } vpp_pq_para_t;
 
-typedef enum pq_param_e {
-    BRIGHTNESS = 1,
-    CONTRAST,
-    SATURATION,
-    HUE,
-    SHARPNESS,
-    BACKLIGHT,
-    NR,
-} vpp_pq_param_t;
-
-typedef enum pq_color_param_e {
-    EN = 1,
-    PRE_OFFSET_R,
-    PRE_OFFSET_G,
-    PRE_OFFSET_B,
-    GAIN_R,
-    GAIN_G,
-    GAIN_B,
-    POST_OFFSET_R,
-    POST_OFFSET_G,
-    POST_OFFSET_B,
-} pq_color_param_t;
-
 typedef enum vpp_gamma_curve_e {
-    VPP_GAMMA_CURVE_AUTO = -1,//choose gamma table by value has been saved.
+    VPP_GAMMA_CURVE_AUTO = 1,//choose gamma table by value has been saved.
     VPP_GAMMA_CURVE_DEFAULT,
     VPP_GAMMA_CURVE_2_1,
     VPP_GAMMA_CURVE_2_2,
     VPP_GAMMA_CURVE_2_3,
     VPP_GAMMA_CURVE_2_4,
+    VPP_GAMMA_CURVE_2_5,
+    VPP_GAMMA_CURVE_2_6,
+    VPP_GAMMA_CURVE_2_7,
+    VPP_GAMMA_CURVE_2_8,
+    VPP_GAMMA_CURVE_2_9,
     VPP_GAMMA_CURVE_MAX,
 } vpp_gamma_curve_t;
 
@@ -601,14 +574,6 @@ typedef struct noline_params_s {
     int osd100;
 } noline_params_t;
 
-typedef enum noline_params_ID_e {
-    OSD_0 =1,
-    OSD_25,
-    OSD_50,
-    OSD_75,
-    OSD_100,
-} noline_params_ID_t;
-
 typedef enum noline_params_type_e {
     NOLINE_PARAMS_TYPE_BRIGHTNESS,
     NOLINE_PARAMS_TYPE_CONTRAST,
@@ -619,30 +584,6 @@ typedef enum noline_params_type_e {
     NOLINE_PARAMS_TYPE_BACKLIGHT,
     NOLINE_PARAMS_TYPE_MAX,
 } noline_params_type_t;
-
-typedef enum tvin_cutwin_param_e {
-    CUTWIN_HS,
-    CUTWIN_HE,
-    CUTWIN_VS,
-    CUTWIN_VE,
-} tvin_cutwin_param_t;
-
-typedef enum Set_Flag_Cmd_e{
-    PQ_DEPEND_BACKLIGHT = 0,
-    BACKLIGHT_REVERSE,
-    BACKLIGHT_INIT,
-    PQ_WITHOUT_HUE,
-    HUE_REVERSE,
-    GAMMA_ONOFF,
-    NEW_CM,
-    NEW_NR,
-    COLORTEMP_BY_SOURCE,
-    XVYCC_SWITCH_CONTROL,
-    CONTRAST_WITHOSD,
-    HUE_WITHOSD,
-    BRIGHTNESS_WITHOSD,
-    RESET_ALL,
-} Set_Flag_Cmd_t;
 
 typedef enum SSM_status_e
 {
@@ -659,9 +600,13 @@ typedef enum Dynamic_contrst_status_e
     DYNAMIC_CONTRAST_HIGH,
 } Dynamic_contrst_status_t;
 
-// ***************************************************************************
-// *** struct definitions *********************************************
-// ***************************************************************************
+typedef enum Dynamic_backlight_status_e
+{
+    DYNAMIC_BACKLIGHT_OFF = 0,
+    DYNAMIC_BACKLIGHT_LOW = 1,
+    DYNAMIC_BACKLIGHT_HIGH = 2,
+} Dynamic_backlight_status_t;
+
 typedef enum tvin_aspect_ratio_e {
     TVIN_ASPECT_NULL = 0,
     TVIN_ASPECT_1x1,
@@ -696,22 +641,120 @@ typedef enum color_fmt_e {
     GRBG,   // 12 raw data
     COLOR_FMT_MAX,
 } color_fmt_t;
+
+typedef enum pq_status_update_e
+{
+    MODE_OFF = 0,
+    MODE_ON,
+    MODE_STABLE,
+}pq_status_update_t;
+
+typedef enum Color_type_e
+{
+    COLOR_RED = 0,
+    COLOR_GREEN,
+    COLOR_BLUE,
+    COLOR_GRAY,
+    COLOR_MAGENTA,
+    COLOR_YELLOW,
+    COLOR_FLESHTONE,
+}Color_type_t;
+
+typedef enum Color_param_e
+{
+    COLOR_SATURATION = 0,
+    COLOR_HUE,
+    COLOR_LUMA,
+}Color_param_t;
+
+typedef enum Color_Rank_e
+{
+    CMS_sat_purple     =1,
+    CMS_sat_red        =2,
+    CMS_sat_skin       =3,
+    CMS_sat_green      =4,
+    CMS_sat_yellow     =5,
+    CMS_sat_cyan       =6,
+    CMS_sat_blue       =7,
+    CMS_hue_purple     =8,
+    CMS_hue_red        =9,
+    CMS_hue_skin       =10,
+    CMS_hue_green      =11,
+    CMS_hue_yellow     =12,
+    CMS_hue_cyan       =13,
+    CMS_hue_blue       =14,
+    CMS_luma_purple    =15,
+    CMS_luma_red       =16,
+    CMS_luma_skin      =17,
+    CMS_luma_green     =18,
+    CMS_luma_yellow    =19,
+    CMS_luma_cyan      =20,
+    CMS_luma_blue      =21,
+}Color_Rank_t;
+
+typedef enum Sharpness_param_type_e
+{
+    H_GAIN_HIGH,
+    H_GAIN_LOW,
+    V_GAIN_HIGH,
+    V_GAIN_LOW,
+    D_GAIN_HIGH,
+    D_GAIN_LOW,
+    HP_DIAG_CORE,
+    BP_DIAG_CORE,
+    PKGAIN_VSLUMALUT7,
+    PKGAIN_VSLUMALUT6,
+    PKGAIN_VSLUMALUT5 = 10,
+    PKGAIN_VSLUMALUT4,
+    PKGAIN_VSLUMALUT3,
+    PKGAIN_VSLUMALUT2,
+    PKGAIN_VSLUMALUT1,
+    PKGAIN_VSLUMALUT0,
+} Sharpness_param_type_t;
+
+typedef enum CTI_param_type_e
+{
+    CVD_YC_DELAY = 0,
+    DECODE_CTI,
+    SR0_CTI_GAIN0,
+    SR0_CTI_GAIN1,
+    SR0_CTI_GAIN2,
+    SR0_CTI_GAIN3,
+    SR1_CTI_GAIN0,
+    SR1_CTI_GAIN1,
+    SR1_CTI_GAIN2,
+    SR1_CTI_GAIN3,
+} CTI_param_type_t;
+
+typedef enum Decode_luma_e
+{
+    VIDEO_DECODE_BRIGHTNESS,
+    VIDEO_DECODE_CONTRAST,
+    VIDEO_DECODE_SATURATION,
+} Decode_luma_t;
+
+typedef enum Sharpness_timing_e
+{
+    SHARPNESS_TIMING_SD = 0,
+    SHARPNESS_TIMING_HD,
+} Sharpness_timing_t;
+
+// ***************************************************************************
+// *** struct definitions *********************************************
+// ***************************************************************************
 typedef struct tvin_info_s {
     tvin_trans_fmt    trans_fmt;
     tvin_sig_fmt_e    fmt;
     tvin_sig_status_e status;
     color_fmt_e       cfmt;
     unsigned int      fps;
-    unsigned int      reserved;
+    unsigned int      is_dvi;
 } tvin_info_t;
 
 typedef struct source_input_param_s {
     tv_source_input_t source_input;
-	tv_source_input_type_t source_type;
-    tvin_port_t source_port;
     tvin_sig_fmt_t sig_fmt;
     tvin_trans_fmt_t trans_fmt;
-	is_3d_type_t is3d;
 } source_input_param_t;
 
 typedef struct tvin_cutwin_s {
@@ -767,11 +810,4 @@ typedef struct tvpq_nonlinear_s {
     int osd75;
     int osd100;
 } tvpq_nonlinear_t;
-
-typedef struct di_mode_param_s {
-    vpp_mcdi_mode_t mcdi_mode;
-    vpp_deblock_mode_t deblock_mode;
-    vpp_noise_reduction2_mode_t nr_mode;
-}di_mode_param_t;
-
 #endif

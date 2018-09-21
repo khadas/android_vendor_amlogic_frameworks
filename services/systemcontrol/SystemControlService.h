@@ -37,7 +37,6 @@
 
 #include "CPQControl.h"
 #include "ubootenv/Ubootenv.h"
-#include "SSMAction.h"
 
 #include <vendor/amlogic/hardware/droidvold/1.0/IDroidVold.h>
 using ::vendor::amlogic::hardware::droidvold::V1_0::IDroidVold;
@@ -124,17 +123,12 @@ public:
 
     //PQ
     int loadPQSettings(source_input_param_t srcInputParam);
-    int loadCpqLdimRegs(void);
     int setPQmode(int mode, int isSave, int is_autoswitch);
     int getPQmode(void);
     int savePQmode(int mode);
-    int getPQParams(source_input_param_t srcInputParam, int mode, int id);
     int setColorTemperature(int mode, int isSave);
     int getColorTemperature(void);
     int saveColorTemperature(int mode);
-    int setColorTemperatureParam(int mode, tcon_rgb_ogo_t params);
-    int getColorTemperatureParam(int mode, int id);
-    int saveColorTemperatureParam(int mode, tcon_rgb_ogo_t params);
     int setBrightness(int value, int isSave);
     int getBrightness(void);
     int saveBrightness(int value);
@@ -160,53 +154,58 @@ public:
     int setDisplayMode(int source_input, int mode, int isSave);
     int getDisplayMode(int source_input);
     int saveDisplayMode(int source_input, int mode);
-    int setBacklight(int source_input, int value, int isSave);
-    int getBacklight(int source_input);
-    int saveBacklight(int source_input, int value);
+    int setBacklight(int value, int isSave);
+    int getBacklight(void);
+    int saveBacklight(int value);
+    int setDynamicBacklight(int mode, int isSave);
+    int getDynamicBacklight(void);
+    bool checkLdimExist(void);
+    int factorySetPQMode_Brightness(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value);
+    int factoryGetPQMode_Brightness(int inputSrc, int sigFmt, int transFmt, int pq_mode);
+    int factorySetPQMode_Contrast(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value);
+    int factoryGetPQMode_Contrast(int inputSrc, int sigFmt, int transFmt, int pq_mode);
+    int factorySetPQMode_Saturation(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value);
+    int factoryGetPQMode_Saturation(int inputSrc, int sigFmt, int transFmt, int pq_mode);
+    int factorySetPQMode_Hue(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value);
+    int factoryGetPQMode_Hue(int inputSrc, int sigFmt, int transFmt, int pq_mode);
+    int factorySetPQMode_Sharpness(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value);
+    int factoryGetPQMode_Sharpness(int inputSrc, int sigFmt, int transFmt, int pq_mode);
     int factoryResetPQMode(void);
     int factoryResetColorTemp(void);
-    int factorySetPQParam(source_input_param_t srcInputParam, int mode, int id, int value);
-    int factoryGetPQParam(source_input_param_t srcInputParam, int mode, int id);
-    int factorySetColorTemperatureParam(int colortemperature_mode, int id, int value);
-    int factoryGetColorTemperatureParam(int colortemperature_mode, int id);
-    int factorySaveColorTemperatureParam(int colortemperature_mode, int id, int value);
-    int factorySetOverscan(source_input_param_t srcInputParam, int he_value, int hs_value, int ve_value, int vs_value);
-    int factoryGetOverscan(source_input_param_t srcInputParam, int id);
-    int factorySetNolineParams(source_input_param_t srcInputParam, int type, int osd0_value, int osd25_value,
-                                        int osd50_value, int osd75_value, int osd100_value);
-    int factoryGetNolineParams(source_input_param_t srcInputParam, int type, int id);
     int factorySetParamsDefault(void);
+    int factorySetOverscan(int inputSrc, int sigFmt, int transFmt, int he_value, int hs_value, int ve_value, int vs_value);
+    tvin_cutwin_t factoryGetOverscan(int inputSrc, int sigFmt, int transFmt);
+    int factorySetNolineParams(int inputSrc, int sigFmt, int transFmt, int type, int osd0_value, int osd25_value, int osd50_value, int osd75_value, int osd100_value);
+    noline_params_t factoryGetNolineParams(int inputSrc, int sigFmt, int transFmt, int type);
+    int factoryGetColorTemperatureParams(int colorTemp_mode);
     int factorySSMRestore(void);
     int factoryResetNonlinear(void);
     int factorySetGamma(int gamma_r, int gamma_g, int gamma_b);
+    int factorySetHdrMode(int mode);
+    int factoryGetHdrMode(void);
     int sysSSMReadNTypes(int id, int data_len, int offset);
     int sysSSMWriteNTypes(int id, int data_len, int data_buf, int offset);
     int getActualAddr(int id);
     int getActualSize(int id);
     int SSMRecovery(void);
     int setPLLValues(source_input_param_t srcInputParam);
-    int setCVD2Values(source_input_param_t srcInputParam);
-    int setPQConfig(Set_Flag_Cmd_t id, int value);
+    int setCVD2Values(void);
     int getSSMStatus(void);
-    int resetLastPQSettingsSourceType(void);
-    int setCurrentSourceInfo(source_input_param_t srcInputParam);
+    int setCurrentSourceInfo(int sourceInput, int sigFmt, int transFmt);
     source_input_param_t getCurrentSourceInfo(void);
-    int getAutoSwitchPCModeFlag(void);
-    //PQ end
-    int setwhiteBalanceGainRed(int inputSrc, int colortemp_mode, int value);
-    int setwhiteBalanceGainGreen(int inputSrc, int colortemp_mode, int value);
-    int setwhiteBalanceGainBlue(int inputSrc, int colortemp_mode, int value);
-    int setwhiteBalanceOffsetRed(int inputSrc, int colortemp_mode, int value);
-    int setwhiteBalanceOffsetGreen(int inputSrc, int colortemp_mode, int value);
-    int setwhiteBalanceOffsetBlue(int inputSrc, int colortemp_mode, int value);
-    int getwhiteBalanceGainRed(int inputSrc, int colortemp_mode);
-    int getwhiteBalanceGainGreen(int inputSrc, int colortemp_mode);
-    int getwhiteBalanceGainBlue(int inputSrc, int colortemp_mode);
-    int getwhiteBalanceOffsetRed(int inputSrc, int colortemp_mode);
-    int getwhiteBalanceOffsetGreen(int inputSrc, int colortemp_mode);
-    int getwhiteBalanceOffsetBlue(int inputSrc, int colortemp_mode);
-    int saveWhiteBalancePara(int sourceType, int colorTemp_mode, int r_gain, int g_gain, int b_gain, int r_offset, int g_offset, int
-    b_offset);
+    int setwhiteBalanceGainRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
+    int setwhiteBalanceGainGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
+    int setwhiteBalanceGainBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
+    int setwhiteBalanceOffsetRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
+    int setwhiteBalanceOffsetGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
+    int setwhiteBalanceOffsetBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
+    int getwhiteBalanceGainRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode);
+    int getwhiteBalanceGainGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode);
+    int getwhiteBalanceGainBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode);
+    int getwhiteBalanceOffsetRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode);
+    int getwhiteBalanceOffsetGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode);
+    int getwhiteBalanceOffsetBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode);
+    int saveWhiteBalancePara(int inputSrc, int sigFmt, int transFmt, int colorTemp_mode, int r_gain, int g_gain, int b_gain, int r_offset, int g_offset, int b_offset);
     int getRGBPattern();
     int setRGBPattern(int r, int g, int b);
     int factorySetDDRSSC (int step);
@@ -214,13 +213,27 @@ public:
     int factorySetLVDSSSC (int step);
     int factoryGetLVDSSSC(void);
     int setLVDSSSC(int step);
-    int whiteBalanceGrayPatternClose();
     int whiteBalanceGrayPatternOpen();
+    int whiteBalanceGrayPatternClose();
     int whiteBalanceGrayPatternSet(int value);
     int whiteBalanceGrayPatternGet();
-    int SetGrayPattern(int value);
-    int GetGrayPattern();
-
+    int setDnlpParams(int inputSrc, int sigFmt, int transFmt, int level);
+    int getDnlpParams(int inputSrc, int sigFmt, int transFmt);
+    int factorySetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level, int final_gain);
+    int factoryGetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level);
+    int factorySetBlackExtRegParams(int inputSrc, int sigFmt, int transFmt, int val);
+    int factoryGetBlackExtRegParams(int inputSrc, int sigFmt, int transFmt);
+    int factorySetColorParams(int inputSrc, int sigFmt, int transFmt, int color_type, int color_param, int val);
+    int factoryGetColorParams(int inputSrc, int sigFmt, int transFmt, int color_type, int color_param);
+    int factorySetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type, int val);
+    int factoryGetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type);
+    int factorySetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val);
+    int factoryGetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type);
+    int factorySetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val);
+    int factoryGetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type);
+    int factorySetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type, int val);
+    int factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type);
+    //PQ end
     static SystemControlService* instantiate(const char *cfgpath);
 
     virtual status_t dump(int fd, const Vector<String16>& args);
@@ -243,7 +256,6 @@ private:
     CPQControl *pCPQControl;
     Dimension *pDimension;
     Ubootenv *pUbootenv;
-    SSMAction *mSSMAction;
 
     struct DroidVoldDeathRecipient : public android::hardware::hidl_death_recipient  {
         // hidl_death_recipient interface

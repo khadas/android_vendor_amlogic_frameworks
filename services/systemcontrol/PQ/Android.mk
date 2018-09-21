@@ -16,6 +16,7 @@ LIB_SQLITE_PATH := $(wildcard external/sqlite/dist)
 
 LOCAL_SRC_FILES:= \
   CPQdb.cpp \
+  COverScandb.cpp \
   CPQControl.cpp  \
   CSqlite.cpp  \
   SSMAction.cpp  \
@@ -25,13 +26,14 @@ LOCAL_SRC_FILES:= \
   CPQColorData.cpp  \
   CPQLog.cpp  \
   CFile.cpp  \
-  CEpoll.cpp
+  CEpoll.cpp \
+  CDynamicBackLight.cpp \
+  CConfigFile.cpp
 
 LOCAL_SHARED_LIBRARIES := \
   libsqlite  \
   libutils  \
-  liblog  \
-  libcutils
+  liblog
 
 LOCAL_C_INCLUDES := \
   $(PQ_INCLUDE_PATH) \

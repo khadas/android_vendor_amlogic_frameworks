@@ -78,7 +78,22 @@
 #define LDIM_IOC_PARA        _IOW(AMVECM_IOC_MAGIC, 0x50, struct vpu_ldim_param_s)
 
 // VPP.display mode command list
-#define AMVECM_IOC_GET_OVERSCAN  _IOR(AMVECM_IOC_MAGIC, 0x52, struct ve_pq_load_s)
+#define AMVECM_IOC_SET_OVERSCAN  _IOW(AMVECM_IOC_MAGIC, 0x52, struct ve_pq_load_s)
+//DNLP IOCTL command list
+#define AMVECM_IOC_G_DNLP_STATE    _IOR(AMVECM_IOC_MAGIC, 0x53, enum ve_dnlp_state_e)
+#define AMVECM_IOC_S_DNLP_STATE    _IOW(AMVECM_IOC_MAGIC, 0x54, enum ve_dnlp_state_e)
+
+//PQ moudle IOCTL command list
+#define AMVECM_IOC_G_PQ_STATUE     _IOR(AMVECM_IOC_MAGIC, 0x55, enum ve_pq_moudle_state_e)
+#define AMVECM_IOC_S_PQ_STATUE     _IOW(AMVECM_IOC_MAGIC, 0x56, enum ve_pq_moudle_state_e)
+
+//HDR IOCTL command list
+#define AMVECM_IOC_G_CSCTYPE       _IOR(AMVECM_IOC_MAGIC, 0x57, enum ve_csc_type_e)
+#define AMVECM_IOC_S_CSCTYPE       _IOW(AMVECM_IOC_MAGIC, 0x58, enum ve_csc_type_e)
+
+//PIC_MODE IOCTL command list
+#define AMVECM_IOC_G_PIC_MODE      _IOR(AMVECM_IOC_MAGIC, 0x59, struct am_pic_mode_s)
+#define AMVECM_IOC_S_PIC_MODE      _IOW(AMVECM_IOC_MAGIC, 0x60, struct am_pic_mode_s)
 
 // VPP.DI IOCTL command list
 #define _DI_    'D'

@@ -226,4 +226,14 @@ typedef struct ve_pq_table_s {
     unsigned int reserved2;
 } ve_pq_table_t;
 
+typedef struct am_pic_mode_s {
+	int flag;
+	int brightness;
+	int brightness2;
+	int saturation_hue;
+	int saturation_hue_post;
+	int contrast;
+	int contrast2;
+}am_pic_mode_t;
+
 #endif  // _TVOUT_CM_H

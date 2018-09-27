@@ -180,12 +180,6 @@ void HdmiCecControl::threadLoop()
             if (mCecDevice.mExtendControl) {
                 event.eventType |= HDMI_EVENT_RECEIVE_MESSAGE;
             }
-
-            /*if (mCecDevice.mDeviceType == DEV_TYPE_PLAYBACK
-                && msgBuf[1] == CEC_MESSAGE_SET_MENU_LANGUAGE) {
-                event.eventType &= ~(HDMI_EVENT_CEC_MESSAGE);
-                ALOGD("[hcc]  receive menu language change send only for extend.");
-            }*/
         } else {
             /* wakeup playback device */
             if (isWakeUpMsg((char*)msgBuf, r, mCecDevice.mDeviceType)) {
@@ -195,7 +189,10 @@ void HdmiCecControl::threadLoop()
                 ALOGD("[hcc] receive wake up message for hdmi_tx");
             }
         }
-
+        if (!messageValidate(&event, mCecDevice.mDeviceType)) {
+            ALOGD("[hcc]  receive message is invalid.");
+            continue;
+        }
         if (mEventListener != NULL && event.eventType != 0) {
             mEventListener->onEventUpdate(&event);
         }
@@ -255,6 +252,39 @@ bool HdmiCecControl::isWakeUpMsg(char *msgBuf, int len, int deviceType)
     }
     return ret;
 }
+
+/**
+ * Check if received a valid message.
+* @param msgBuf is a message Buf
+*   msgBuf[1]: message type
+*   msgBuf[2]-msgBuf[n]: message para
+* @param len is message lenth
+* @param deviceType is type of device
+*/
+
+bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event, int deviceType)
+{
+    bool ret = true;
+    cec_message_t message;
+    if (deviceType == DEV_TYPE_TV) {
+        switch (event->cec.body[0]) {
+            case CEC_MESSAGE_REPORT_PHYSICAL_ADDRESS:
+                if (event->cec.body[1] == 0) {
+                    message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
+                    message.destination = (cec_logical_address_t)event->cec.initiator;
+                    message.body[0] = CEC_MESSAGE_GIVE_PHYSICAL_ADDRESS;
+                    message.length = 1;
+                    sendMessage(&message, false);
+                    ret = false;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return ret;
+}
+
 void HdmiCecControl::checkConnectStatus()
 {
     unsigned int prevStatus, bit;

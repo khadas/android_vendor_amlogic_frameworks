@@ -120,6 +120,7 @@ private:
     bool assertHdmiCecDevice();
     bool hasHandledByExtend(const cec_message_t* message);
     bool isWakeUpMsg(char *msgBuf, int len, int deviceType);
+    bool messageValidate(hdmi_cec_event_t* event, int deviceType);
     hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;
 };

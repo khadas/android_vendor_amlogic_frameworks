@@ -119,7 +119,12 @@ void HdmiCecControl::getBootConnectStatus()
         total = MAX_PORT;
     mCecDevice.mConnectStatus = 0;
     for (i = 0; i < total; i++) {
-        port = i + 1;
+        //for tv, port id will be 1,2,3,4... , for playback, it has a output, port id should be 0 for connect status
+        if (mCecDevice.mDeviceType == DEV_TYPE_TV) {
+            port = i + 1;
+        } else if (mCecDevice.mDeviceType == DEV_TYPE_PLAYBACK) {
+            port = i;
+        }
         ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_CONNECT_STATUS, &port);
         if (ret) {
             ALOGD("[hcc] get port %d connected status failed, ret:%d", i, ret);
@@ -293,7 +298,12 @@ void HdmiCecControl::checkConnectStatus()
 
     prevStatus = mCecDevice.mConnectStatus;
     for (i = 0; i < mCecDevice.mTotalPort && mCecDevice.mpPortData != NULL; i++) {
-        port = mCecDevice.mpPortData[i].port_id;
+        //for tv, port id will be 1,2,3,4... , for playback, it has a output, port id should be 0 for connect status
+        if (mCecDevice.mDeviceType == DEV_TYPE_TV) {
+            port = mCecDevice.mpPortData[i].port_id;
+        } else if (mCecDevice.mDeviceType == DEV_TYPE_PLAYBACK) {
+            port = mCecDevice.mpPortData[i].port_id - 1;
+        }
         ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_CONNECT_STATUS, &port);
         if (ret) {
             ALOGE("[hcc] get port %d connected status failed, ret:%d\n", mCecDevice.mpPortData[i].port_id, ret);

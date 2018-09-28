@@ -822,7 +822,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         }
 
         public void notifyCallback(CecEvent cecEvent) {
-            Slog.d(TAG, "notifyCallback: " + cecEvent);
+            //Slog.d(TAG, "notifyCallback: " + cecEvent);
             int eventType = (int)cecEvent.eventType;
             int bodySize = cecEvent.cec.body.size();
             if (eventType == HDMI_EVENT_HOT_PLUG) {

@@ -31,6 +31,7 @@
 
 #include "HdcpKeyDecrypt.h"
 #include "aes.h"
+#include "HDCPRxKey.h"
 
 #define KEY_MAX_SIZE   (1024 * 2)
 #define AES_KEY_BIT 128
@@ -123,7 +124,7 @@ int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, 
 /*
  * inBuf: include random number and hdcp key
  * */
-bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
+int hdcpKeyUnpack(const char* inBuf, int inBufLen,
     const char *srcAicPath, const char *desAicPath, const char *keyPath)
 {
     AmlResImgHead_t *packedImgHead = NULL;
@@ -131,23 +132,28 @@ bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
     unsigned gensum = 0;
     int i = 0;
 
-    if ( inBufLen > KEY_MAX_SIZE ) {
-        SYS_LOGE("key size %d > max(%d)\n", inBufLen, KEY_MAX_SIZE);
-        return false;
-    }
-
-    if (access(srcAicPath, F_OK)) {
-        SYS_LOGE("do not exist path:%s\n", srcAicPath);
-        return false;
-    }
-
     packedImgHead = (AmlResImgHead_t*)inBuf;
     packedImgItem = (AmlResItemHead_t*)(packedImgHead + 1);
+
+    if (strncmp(AML_RES_IMG_V1_MAGIC, (char*)packedImgHead->magic, AML_RES_IMG_V1_MAGIC_LEN)) {
+        SYS_LOGE("magic error!!!\n");
+        return PC_TOOL;
+    }
 
     gensum = addSum(inBuf + 4, inBufLen - 4);
     if (packedImgHead->crc != gensum) {
         SYS_LOGE("crc chcked failed, origsum[%8x] != gensum[%8x]\n", packedImgHead->crc, gensum);
-        return false;
+        return PC_TOOL;
+    }
+
+    if ( inBufLen > KEY_MAX_SIZE ) {
+        SYS_LOGE("key size %d > max(%d)\n", inBufLen, KEY_MAX_SIZE);
+        return -1;
+    }
+
+    if (access(srcAicPath, F_OK)) {
+        SYS_LOGE("do not exist path:%s\n", srcAicPath);
+        return -1;
     }
 
     for (i = 0; i < (int)packedImgHead->imgItemNum; ++i) {
@@ -166,7 +172,7 @@ bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
             int desFd;
             if ((desFd = open(desAicPath, O_CREAT | O_RDWR | O_TRUNC, 0644)) < 0) {
                 SYS_LOGE("unpack dhcp key, open %s error(%s)", desAicPath, strerror(errno));
-                return false;
+                return -1;
             }
             //write random number to destination aic file
             write(desFd, itembuf, itemSz);
@@ -180,7 +186,7 @@ bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
                 SYS_LOGE("unpack dhcp key, can not malloc:%d memory\n", srcSize);
                 close(desFd);
                 close(srcFd);
-                return false;
+                return -1;
             }
             memset((void*)pSrcData, 0, srcSize + 1);
             read(srcFd, (void*)pSrcData, srcSize);
@@ -198,7 +204,7 @@ bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
             int keyFd;
             if ((keyFd = open(keyPath, O_CREAT | O_RDWR | O_TRUNC, 0644)) < 0) {
                 SYS_LOGE("unpack dhcp key, open %s error(%s)", keyPath, strerror(errno));
-                return false;
+                return -1;
             }
 
             //write key to file
@@ -209,5 +215,5 @@ bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
         }
     }
 
-    return true;
+    return ARM_TOOL;
 }

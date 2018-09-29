@@ -808,4 +808,3 @@ int setImgPath(const char *path)
     free(itemReadBuf);
     return result;
 }
-

@@ -81,9 +81,14 @@ typedef struct {
  *
  */
 
+ enum {
+    PC_TOOL = 0,
+    ARM_TOOL
+};
+
 int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, int* pOutLen);
 
-bool hdcpKeyUnpack(const char* inBuf, int inBufLen,
+int hdcpKeyUnpack(const char* inBuf, int inBufLen,
     const char *srcAicPath, const char *desAicPath, const char *keyPath);
 
 #ifdef __cplusplus

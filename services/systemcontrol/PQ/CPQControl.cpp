@@ -2673,7 +2673,7 @@ int CPQControl::GetHistParam(ve_hist_t *hist)
     memset(hist, 0, sizeof(ve_hist_s));
     int ret = VPPDeviceIOCtl(AMVECM_IOC_G_HIST_AVG, hist);
     if (ret < 0) {
-        SYS_LOGE("GetAVGHistParam, error(%s)!\n", strerror(errno));
+        //SYS_LOGE("GetAVGHistParam, error(%s)!\n", strerror(errno));
         hist->ave = -1;
     }
     return ret;

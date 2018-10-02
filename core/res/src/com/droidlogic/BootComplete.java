@@ -130,9 +130,6 @@ public class BootComplete extends BroadcastReceiver {
 
             if (needCecExtend(sm, context)) {
                 new HdmiCecExtend(context);
-            }else if(needCecTv(sm, context)) {
-                Log.d(TAG,"init HdmiCecTv");
-                new HdmiCecTv(context);
             }
 
             //start optimization service
@@ -220,9 +217,6 @@ public class BootComplete extends BroadcastReceiver {
             Log.i(TAG, "onKeyguardExitResult: " + success);
         }
     };
-    private boolean needCecTv(SystemControlManager sm, Context context) {
-        return sm.getPropertyInt("ro.hdmi.device_type",-1) == HdmiDeviceInfo.DEVICE_TV;
-    }
 
     private class RemoteServiceConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName className, IBinder service) {

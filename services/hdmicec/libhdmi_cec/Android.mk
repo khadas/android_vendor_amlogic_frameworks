@@ -6,13 +6,18 @@ LOCAL_SRC_FILES:= \
     HdmiCecControl.cpp
 
 LOCAL_C_INCLUDES += \
+   $(LOCAL_PATH)/../../systemcontrol/PQ/include \
+   $(LOCAL_PATH)/../../systemcontrol \
    $(LOCAL_PATH)/../binder \
    hardware/libhardware/include
 
 LOCAL_SHARED_LIBRARIES := \
+    vendor.amlogic.hardware.systemcontrol@1.0 \
+    libsystemcontrolservice \
     libcutils \
     libutils \
-    liblog
+    liblog \
+    libbinder
 
 LOCAL_MODULE:= libhdmi_cec_static
 

@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <HdmiCecBase.h>
+#include "SystemControlClient.h"
 #include <utils/StrongPointer.h>
 
 #define CEC_FILE        "/dev/cec"
@@ -35,6 +36,11 @@
 #define DEV_TYPE_AUDIO_SYSTEM           5
 #define DEV_TYPE_PURE_CEC_SWITCH        6
 #define DEV_TYPE_VIDEO_PROCESSOR        7
+
+#define HDMIRX_SYSFS                    "/sys/class/hdmirx/hdmirx0/cec"
+#define CEC_STATE_BOOT_ENABLED          "2"
+#define CEC_STATE_ENABLED               "1"
+#define CEC_STATE_UNABLED               "0"
 
 namespace android {
 
@@ -70,7 +76,9 @@ enum cec_message_para_value{
  * @mExtendControl   Flag for extend cec device
  */
 typedef struct hdmi_device {
-    int                         mDeviceType;
+    int                         *mDeviceTypes;
+    int                         mTotalDevice;
+    bool                        isTvDeviceType;
     int                         mAddrBitmap;
     int                         mFd;
     bool                        isCecEnabled;
@@ -107,7 +115,7 @@ public:
     void setEventObserver(const sp<HdmiCecEventListener> &eventListener);
 private:
     void init();
-
+    void getDeviceTypes();
     void getBootConnectStatus();
     static void *__threadLoop(void *data);
     void threadLoop();
@@ -116,13 +124,15 @@ private:
     int send(const cec_message_t* message);
     int readMessage(unsigned char *buf, int msgCount);
     void checkConnectStatus();
+    bool mFirstEnableCec;
 
     bool assertHdmiCecDevice();
     bool hasHandledByExtend(const cec_message_t* message);
-    bool isWakeUpMsg(char *msgBuf, int len, int deviceType);
-    bool messageValidate(hdmi_cec_event_t* event, int deviceType);
+    bool isWakeUpMsg(char *msgBuf, int len);
+    bool messageValidate(hdmi_cec_event_t* event);
     hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;
+    sp<SystemControlClient> mSystemControl;
 };
 
 

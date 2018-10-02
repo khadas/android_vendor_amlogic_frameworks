@@ -13,10 +13,14 @@ LOCAL_C_INCLUDES += \
    hardware/libhardware/include \
    system/libhidl/transport/include/hidl \
    system/core/libutils/include \
-   system/core/liblog/include
+   system/core/liblog/include \
+   vendor/amlogic/common/frameworks/services/systemcontrol \
+   vendor/amlogic/common/frameworks/services/systemcontrol/PQ/include
 
 LOCAL_SHARED_LIBRARIES := \
     vendor.amlogic.hardware.hdmicec@1.0 \
+    vendor.amlogic.hardware.systemcontrol@1.0 \
+    libsystemcontrolservice \
     libbase \
     libhidlbase \
     libhidltransport \

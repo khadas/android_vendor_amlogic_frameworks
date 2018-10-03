@@ -24,11 +24,11 @@ package com.droidlogic.app;
 import android.content.Context;
 import android.util.Log;
 import android.os.Environment;
-import android.os.ServiceManager;
+//import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.os.storage.StorageManager;
-import android.os.storage.DiskInfo;
-import android.os.storage.VolumeInfo;
+//import android.os.storage.DiskInfo;
+//import android.os.storage.VolumeInfo;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -56,7 +56,7 @@ import android.os.Parcelable;
 import android.os.RemoteException;
 
 import com.droidlogic.app.SystemControlManager;
-import com.droidlogic.app.IDroidVoldManager;
+//import com.droidlogic.app.IDroidVoldManager;
 
 public class FileListManager {
     private String TAG = "FileListManager";
@@ -375,11 +375,11 @@ public class FileListManager {
                     map.put(KEY_SIZE, 1);
                     map.put(KEY_SELE, SELE_NO);
                     map.put(KEY_RDWR, null);
-                    DiskInfo disk = (DiskInfo)getDisk.invoke(vol);
+                    /*DiskInfo disk = (DiskInfo)getDisk.invoke(vol);
                     if (disk.isUsb()) {
                         map.put(KEY_TYPE, TYPE_UDISK);
                     }
-                    else {
+                    else */{
                         map.put(KEY_TYPE, TYPE_SDCARD);
                     }
 

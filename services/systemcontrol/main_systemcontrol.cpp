@@ -51,7 +51,7 @@ int main(int argc, char** argv)
         path = argv[1];
     }
 
-    bool treble = property_get_bool("persist.system_control.treble", true);
+    bool treble = property_get_bool("persist.vendor.system_control.treble", true);
     if (treble) {
         android::ProcessState::initWithDriver("/dev/vndbinder");
     }

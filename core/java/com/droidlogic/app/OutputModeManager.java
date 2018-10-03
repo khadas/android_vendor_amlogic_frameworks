@@ -32,7 +32,7 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
 import android.media.AudioManager;
-import android.media.AudioSystem;
+//import android.media.AudioSystem;
 import android.content.ContentResolver;
 
 public class OutputModeManager {
@@ -91,12 +91,12 @@ public class OutputModeManager {
     public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
     public static final String ENV_COLORATTRIBUTE           = "ubootenv.var.colorattribute";
 
-    public static final String PROP_BEST_OUTPUT_MODE        = "ro.platform.best_outputmode";
-    public static final String PROP_HDMI_ONLY               = "ro.platform.hdmionly";
-    public static final String PROP_SUPPORT_4K              = "ro.platform.support.4k";
-    public static final String PROP_DEEPCOLOR               = "sys.open.deepcolor";
-    public static final String PROP_DTSDRCSCALE             = "persist.sys.dtsdrcscale";
-    public static final String PROP_DTSEDID                 = "persist.sys.dts.edid";
+    public static final String PROP_BEST_OUTPUT_MODE        = "ro.vendor.platform.best_outputmode";
+    public static final String PROP_HDMI_ONLY               = "ro.vendor.platform.hdmionly";
+    public static final String PROP_SUPPORT_4K              = "ro.vendor.platform.support.4k";
+    public static final String PROP_DEEPCOLOR               = "vendor.sys.open.deepcolor";
+    public static final String PROP_DTSDRCSCALE             = "persist.vendor.sys.dtsdrcscale";
+    public static final String PROP_DTSEDID                 = "persist.vendor.sys.dts.edid";
 
     public static final String FULL_WIDTH_480               = "720";
     public static final String FULL_HEIGHT_480              = "480";
@@ -170,6 +170,17 @@ public class OutputModeManager {
     public static final String SOUND_EFFECT_AGC_MAX_LEVEL       = "sound_effect_agc_level";
     public static final String SOUND_EFFECT_AGC_ATTRACK_TIME       = "sound_effect_agc_attrack";
     public static final String SOUND_EFFECT_AGC_RELEASE_TIME       = "sound_effect_agc_release";
+
+    public static final String DIGITAL_SOUND                = "digital_sound";
+    public static final String PCM                          = "PCM";
+    public static final String RAW                          = "RAW";
+    public static final String HDMI                         = "HDMI";
+    public static final String SPDIF                        = "SPDIF";
+    public static final String HDMI_RAW                     = "HDMI passthrough";
+    public static final String SPDIF_RAW                    = "SPDIF passthrough";
+    public static final int IS_PCM                          = 0;
+    public static final int IS_SPDIF_RAW                    = 1;
+    public static final int IS_HDMI_RAW                     = 2;
 
     public static final String DRC_MODE                     = "drc_mode";
     public static final String DTSDRC_MODE                  = "dtsdrc_mode";
@@ -542,6 +553,31 @@ public class OutputModeManager {
         task.start();
     }
 
+    public String getDigitalVoiceMode(){
+        return getBootenv(ENV_DIGIT_AUDIO, PCM);
+    }
+
+    public int autoSwitchHdmiPassthough () {
+        String mAudioCapInfo = readSysfsTotal(SYS_AUDIO_CAP);
+        if (mAudioCapInfo.contains("Dobly_Digital+")) {
+            setDigitalMode(HDMI_RAW);
+            return IS_HDMI_RAW;
+        } else if (mAudioCapInfo.contains("AC-3")
+                || (getPropertyBoolean(PROP_DTSEDID, false) && mAudioCapInfo.contains("DTS"))) {
+            setDigitalMode(SPDIF_RAW);
+            return IS_SPDIF_RAW;
+        } else {
+            setDigitalMode(PCM);
+            return IS_PCM;
+        }
+    }
+
+    public void setDigitalMode(String mode) {
+        // value : "PCM" ,"RAW","SPDIF passthrough","HDMI passthrough"
+        setBootenv(ENV_DIGIT_AUDIO, mode);
+        mSystenControl.setDigitalMode(mode);
+    }
+
     public void enableDobly_DRC (boolean enable) {
         if (enable) {       //open DRC
             writeSysfs(AUIDO_DSP_AC3_DRC, "drchighcutscale 0x64");
@@ -727,20 +763,20 @@ public class OutputModeManager {
             case DIGITAL_PCM:
                 mAudioManager.setParameters(PARA_PCM);
                 Settings.Global.putInt(mResolver,
-                        Settings.Global.ENCODED_SURROUND_OUTPUT,
-                        Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER);
+                        "encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
+                        1/*Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER*/);
                 break;
             case DIGITAL_AUTO:
                 mAudioManager.setParameters(PARA_AUTO);
                 Settings.Global.putInt(mResolver,
-                        Settings.Global.ENCODED_SURROUND_OUTPUT,
-                        Settings.Global.ENCODED_SURROUND_OUTPUT_AUTO);
+                        "encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
+                        0/*Settings.Global.ENCODED_SURROUND_OUTPUT_AUTO*/);
                 break;
             default:
                 mAudioManager.setParameters(PARA_PCM);
                 Settings.Global.putInt(mResolver,
-                        Settings.Global.ENCODED_SURROUND_OUTPUT,
-                        Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER);
+                        "encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
+                        1/*Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER*/);
                 break;
         }
     }
@@ -808,11 +844,11 @@ public class OutputModeManager {
         } else {
             final int virtualsurround = Settings.Global.getInt(mResolver, VIRTUAL_SURROUND, VIRTUAL_SURROUND_OFF);
             setVirtualSurround(virtualsurround);
-            int device = mAudioManager.getDevicesForStream(AudioManager.STREAM_MUSIC);
+            /*int device = mAudioManager.getDevicesForStream(AudioManager.STREAM_MUSIC);
             if ((device & AudioSystem.DEVICE_OUT_SPEAKER) != 0) {
                 final int soundoutput = Settings.Global.getInt(mResolver, SOUND_OUTPUT_DEVICE, SOUND_OUTPUT_DEVICE_SPEAKER);
                 setSoundOutputStatus(soundoutput);
-            }
+            }*/
         }
     }
 

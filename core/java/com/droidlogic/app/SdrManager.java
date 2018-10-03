@@ -27,7 +27,7 @@ import android.util.Log;
 public class SdrManager {
     private static final String TAG                 = "SdrManager";
 
-    private static final String KEY_SDR_MODE        = "persist.sys.sdr.state";
+    private static final String KEY_SDR_MODE        = "persist.vendor.sys.sdr.state";
 
     public static final int MODE_OFF = 0;
     public static final int MODE_AUTO = 2;

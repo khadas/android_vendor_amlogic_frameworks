@@ -122,7 +122,7 @@ void SysWrite::setProperty(const char *key, const char *value){
     int err;
     err = property_set(key, value);
     if (err < 0) {
-        SYS_LOGE("failed to set system property \n");
+        SYS_LOGE("failed to set system property %s\n", key);
     }
 }
 
@@ -228,17 +228,21 @@ void SysWrite::setLogLevel(int level){
 void SysWrite::writeSys(const char *path, const char *val){
     int fd;
 
+    SYS_LOGE("writeSysFs, path = %s =%s \n", path, val);
+
     if((fd = open(path, O_RDWR)) < 0) {
         SYS_LOGE("writeSysFs, open %s fail.", path);
         goto exit;
     }
 
-    if(mLogLevel > LOG_LEVEL_1)
+    //if(mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("write %s, val:%s\n", path, val);
 
     write(fd, val, strlen(val));
 
 exit:
+    SYS_LOGI("write %s, val:%s end\n", path, val);
+
     close(fd);
 }
 

@@ -3,7 +3,7 @@ package com.droidlogic.app;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-import android.media.AudioManager;
+//import android.media.AudioManager;
 
 import vendor.amlogic.hardware.systemcontrol.V1_0.ISystemControlCallback;
 
@@ -26,11 +26,11 @@ public class SystemControlEvent extends ISystemControlCallback.Stub {
 
 
     private Context mContext = null;
-    private final AudioManager mAudioManager;
+    //private final AudioManager mAudioManager;
 
     public SystemControlEvent(Context context) {
         mContext = context;
-        mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+       // mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
     }
 
     @Override
@@ -42,12 +42,12 @@ public class SystemControlEvent extends ISystemControlCallback.Stub {
             boolean  plugged = (event - EVENT_HDMI_PLUG_OUT) ==1 ? true : false;
             intent.putExtra(EXTRA_HDMI_PLUGGED_STATE, plugged);
         } else if (event == EVENT_HDMI_AUDIO_OUT || event == EVENT_HDMI_AUDIO_IN) {
-            mAudioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_OUT_HDMI, (event - EVENT_HDMI_AUDIO_OUT), "", "");
+            //mAudioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_OUT_HDMI, (event - EVENT_HDMI_AUDIO_OUT), "", "");
             return;
         }  else {
             intent = new Intent(ACTION_SYSTEM_CONTROL_EVENT);
             intent.putExtra(EVENT_TYPE, event);
         }
-        mContext.sendStickyBroadcastAsUser(intent, android.os.UserHandle.ALL);
+        mContext.sendStickyBroadcast(intent);
     }
 }

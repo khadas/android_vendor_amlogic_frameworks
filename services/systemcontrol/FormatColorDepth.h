@@ -27,7 +27,7 @@
 
 #define DISPLAY_HDMI_COLOR_ATTR         "/sys/class/amhdmitx/amhdmitx0/attr"//set deep color fmt and dept
 #define DISPLAY_HDMI_VALID_MODE         "/sys/class/amhdmitx/amhdmitx0/valid_mode"//testing if tv support this displaymode and  deepcolor combination, then if cat result is 1: support, 0: not
-#define PROP_DEFAULT_COLOR              "ro.platform.default_color"
+#define PROP_DEFAULT_COLOR              "ro.vendor.platform.default_color"
 #define UBOOTENV_COLORATTRIBUTE         "ubootenv.var.colorattribute"
 
 

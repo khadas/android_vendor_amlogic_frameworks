@@ -492,6 +492,7 @@ private:
 
     // bootAnimation flag
     int mBootanimStatus;
+    bool setDolbyVisionState = true;
 #ifndef RECOVERY_MODE
     sp<SystemControlNotify> mNotifyListener;
 #endif

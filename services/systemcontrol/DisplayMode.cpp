@@ -517,7 +517,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 #ifndef RECOVERY_MODE
     notifyEvent(EVENT_OUTPUT_MODE_CHANGE);
 #endif
-    if (!cvbsMode && (OUPUT_MODE_STATE_INIT != state) && isDolbyVisionEnable()) {
+    if (!cvbsMode && (OUPUT_MODE_STATE_INIT != state) && isDolbyVisionEnable() && setDolbyVisionState) {
         setDolbyVisionEnable(getDolbyVisionType());
     }
     //audio
@@ -1407,6 +1407,7 @@ void DisplayMode::setDolbyVisionEnable(int state) {
                     }
                 }
                 pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
+                setDolbyVisionState = false;
                 if ((resolveResolutionValue(outputmode) > resolveResolutionValue(tvmode))
                         || (strstr(outputmode, "smpte") != NULL)) {
                     SYS_LOGI("CurMode[%s] is not support dolbyvision, need setmode to [%s]", outputmode, tvmode);
@@ -1414,6 +1415,7 @@ void DisplayMode::setDolbyVisionEnable(int state) {
                 } else {
                     setSourceOutputMode(outputmode);
                 }
+                setDolbyVisionState = true;
             }
             pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, DV_POLICY_FOLLOW_SINK);
             pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY_OLD, DV_HDR10_POLICY);

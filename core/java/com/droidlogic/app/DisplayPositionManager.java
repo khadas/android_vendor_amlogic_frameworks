@@ -42,7 +42,7 @@ public class DisplayPositionManager {
 
     public DisplayPositionManager(Context context) {
         mContext = context;
-        mSystenControl = new SystemControlManager(mContext);
+        mSystenControl = SystemControlManager.getInstance();
         mOutputModeManager = new OutputModeManager(mContext);
         initPostion();
     }

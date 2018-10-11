@@ -38,7 +38,7 @@ public class HdrManager {
 
     public HdrManager(Context context){
         mContext = context;
-        mSystemControl = new SystemControlManager(context);
+        mSystemControl = SystemControlManager.getInstance();
     }
 
     public int getHdrMode() {

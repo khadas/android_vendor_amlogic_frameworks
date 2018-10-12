@@ -11,7 +11,7 @@ LOCAL_STATIC_JAVA_LIBRARIES := android.hidl.base-V1.0-java \
     vendor.amlogic.hardware.hdmicec-V1.0-java \
     vendor.amlogic.hardware.droidvold-V1.0-java
 
-LOCAL_JNI_SHARED_LIBRARIES := libremotecontrol_jni
+LOCAL_JNI_SHARED_LIBRARIES := libremotecontrol_jni libjniuevent
 
 #LOCAL_SDK_VERSION := current
 ifndef PRODUCT_SHIPPING_API_LEVEL
@@ -35,3 +35,4 @@ LOCAL_PRIVILEGED_MODULE := true
 include $(BUILD_PACKAGE)
 
 
+include $(call all-makefiles-under,$(LOCAL_PATH))

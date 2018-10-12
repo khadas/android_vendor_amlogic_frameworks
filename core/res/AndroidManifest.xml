@@ -64,6 +64,7 @@
         <service android:name="com.droidlogic.NetflixService" />
         <service android:name="com.droidlogic.DialogBluetoothService" />
         <service android:name="com.droidlogic.EsmService" />
+        <service android:name="com.droidlogic.DDRBandwidthService" />
         <service android:name="com.droidlogic.WifiSuspendService" />
         <service android:name="com.droidlogic.OneTouchPlayService" />
         <receiver android:name="com.droidlogic.BootComplete">

@@ -118,6 +118,10 @@ public class BootComplete extends BroadcastReceiver {
         if (mHasTvUiMode)
             context.startService(new Intent(context, EsmService.class));
 
+        if (sm.getPropertyBoolean("vendor.sys.bandwidth.enable", false))
+            context.startService(new Intent(context, DDRBandwidthService.class));
+
+
         Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
         context.startService(gattServiceIntent);
 

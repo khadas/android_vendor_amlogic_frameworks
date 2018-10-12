@@ -66,6 +66,12 @@
 #define CFG_AUTOBACKLIGHT_LUTHIGH               "auto.backlight.lutvalue_high"
 #define CFG_AUTOBACKLIGHT_LUTLOW                "auto.backlight.lutvalue_low"
 
+//For HDMI
+#define CFG_SECTION_HDMI                        "HDMI"
+#define CFG_EDID_VERSION_DEF                    "hdmi.edid.version.def"
+#define CFG_HDCP_SWITCHER_DEF                   "hdmi.hdcp.switcher.def"
+#define CFG_COLOR_RANGE_MODE_DEF                "hdmi.color.range.mode.def"
+
 static const int MAX_CONFIG_FILE_LINE_LEN = 512;
 
 typedef enum _LINE_TYPE {

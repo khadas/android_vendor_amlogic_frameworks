@@ -1049,3 +1049,20 @@ int SSMAction::SSMRead43Stretch(int offset, int *rw_val) {
 
     return ret;
 }
+
+int SSMAction::SSMEdidRestoreDefault(int rw_val) {
+    int ret = 0;
+    ret |= SSMWriteNTypes(CUSTOMER_DATA_POS_HDMI1_EDID_START, 1, &rw_val);
+    ret |= SSMWriteNTypes(CUSTOMER_DATA_POS_HDMI2_EDID_START, 1, &rw_val);
+    ret |= SSMWriteNTypes(CUSTOMER_DATA_POS_HDMI3_EDID_START, 1, &rw_val);
+    ret |= SSMWriteNTypes(CUSTOMER_DATA_POS_HDMI4_EDID_START, 1, &rw_val);
+    return ret;
+}
+
+int SSMAction::SSMHdcpSwitcherRestoreDefault(int rw_val) {
+    return SSMWriteNTypes(CUSTOMER_DATA_POS_HDMI_HDCP_SWITCHER_START, 1, &rw_val);
+}
+
+int SSMAction::SSMSColorRangeModeRestoreDefault(int rw_val) {
+    return SSMWriteNTypes(CUSTOMER_DATA_POS_HDMI_COLOR_RANGE_START, 1, &rw_val);
+}

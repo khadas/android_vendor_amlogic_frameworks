@@ -137,6 +137,9 @@ public:
     int SSMReadAutoAspect(int offset, int *rw_val);
     int SSMSave43Stretch(int offset, int rw_val);
     int SSMRead43Stretch(int offset, int *rw_val);
+    int SSMEdidRestoreDefault(int rw_val);
+    int SSMHdcpSwitcherRestoreDefault(int rw_val);
+    int SSMSColorRangeModeRestoreDefault(int rw_val);
 
     int m_dev_fd;
     static SSMAction *mInstance;

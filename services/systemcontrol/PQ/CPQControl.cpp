@@ -5241,6 +5241,25 @@ void CPQControl::resetAllUserSettingParam()
     config_val = mPQConfigFile->GetInt(CFG_SECTION_PQ, CFG_EYEPROJECTMODE_DEF, 0);
     mSSMAction->SSMSaveEyeProtectionMode(config_val);
 
+    buf = mPQConfigFile->GetString(CFG_SECTION_HDMI, CFG_EDID_VERSION_DEF, NULL);
+    if (strcmp(buf, "edid_20") == 0) {
+        mSSMAction->SSMEdidRestoreDefault(1);
+    } else {
+        mSSMAction->SSMEdidRestoreDefault(0);
+    }
+
+    config_val = mPQConfigFile->GetInt(CFG_SECTION_HDMI, CFG_HDCP_SWITCHER_DEF, 0);
+    mSSMAction->SSMHdcpSwitcherRestoreDefault(0);
+
+    buf = mPQConfigFile->GetString(CFG_SECTION_HDMI, CFG_COLOR_RANGE_MODE_DEF, NULL);
+    if (strcmp(buf, "full") == 0) {
+        mSSMAction->SSMSColorRangeModeRestoreDefault(1);
+    } else if (strcmp(buf, "limit") == 0) {
+        mSSMAction->SSMSColorRangeModeRestoreDefault(2);
+    } else {
+        mSSMAction->SSMSColorRangeModeRestoreDefault(0);
+    }
+
     return;
 }
 

@@ -122,7 +122,7 @@ public class BootComplete extends BroadcastReceiver {
                 break;
             }*/
             //DroidVoldManager
-            //new DroidVoldManager(context);
+            new DroidVoldManager(context);
 
             //use to check whether disable camera or not
             new UsbCameraManager(context).bootReady();

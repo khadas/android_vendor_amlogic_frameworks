@@ -1598,27 +1598,27 @@ public class SystemControlManager {
         return -1;
     }
 
-    public int SetBacklight(int inputtSrc, int value, int isSave) {
-          synchronized (mLock) {
-            try {
-                return mProxy.setBacklight(value, isSave);
-            } catch (RemoteException e) {
-                Log.e(TAG, "SetBacklight:" + e);
-            }
-        }
-        return -1;
-    }
+     public int SetBacklight(int value, int isSave) {
+           synchronized (mLock) {
+             try {
+                 return mProxy.setBacklight(value, isSave);
+             } catch (RemoteException e) {
+                 Log.e(TAG, "SetBacklight:" + e);
+             }
+         }
+         return -1;
+     }
 
-    public int GetBacklight(int inputtSrc) {
-          synchronized (mLock) {
-            try {
-                return mProxy.getBacklight();
-            } catch (RemoteException e) {
-                Log.e(TAG, "GetBacklight:" + e);
-            }
-        }
-        return -1;
-    }
+     public int GetBacklight() {
+           synchronized (mLock) {
+             try {
+                 return mProxy.getBacklight();
+             } catch (RemoteException e) {
+                 Log.e(TAG, "GetBacklight:" + e);
+             }
+         }
+         return -1;
+     }
 
      public int SaveBacklight(int value) {
            synchronized (mLock) {

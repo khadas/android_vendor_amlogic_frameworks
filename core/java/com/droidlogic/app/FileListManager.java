@@ -457,7 +457,7 @@ public class FileListManager {
                             e.printStackTrace();
                         }
                         Log.i(TAG, "getDevices() diskFlag:" + diskFlag);
-                        if (diskFlag == 8 || diskFlag == 9) {
+                        if (diskFlag == 8) {
                             map.put(KEY_TYPE, TYPE_UDISK);
                         }
                         else if (diskFlag == 4){

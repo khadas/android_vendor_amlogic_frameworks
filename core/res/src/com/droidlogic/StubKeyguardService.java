@@ -27,19 +27,19 @@ import android.os.DeadObjectException;
 import android.os.Trace;
 import android.util.Log;
 
-import com.android.internal.policy.IKeyguardDismissCallback;
-import com.android.internal.policy.IKeyguardDrawnCallback;
-import com.android.internal.policy.IKeyguardExitCallback;
-import com.android.internal.policy.IKeyguardService;
-import com.android.internal.policy.IKeyguardStateCallback;
+//import com.android.internal.policy.IKeyguardDismissCallback;
+//import com.android.internal.policy.IKeyguardDrawnCallback;
+//import com.android.internal.policy.IKeyguardExitCallback;
+//import com.android.internal.policy.IKeyguardService;
+//import com.android.internal.policy.IKeyguardStateCallback;
 import java.util.ArrayList;
 
-import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+//import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 public class StubKeyguardService extends Service {
     static final String TAG = "KeyguardService";
-    static final String PERMISSION = android.Manifest.permission.CONTROL_KEYGUARD;
-    private final ArrayList<IKeyguardStateCallback> mKeyguardStateCallbacks = new ArrayList<>();
+    static final String PERMISSION = "android.permission.CONTROL_KEYGUARD";//android.Manifest.permission.CONTROL_KEYGUARD;
+    //private final ArrayList<IKeyguardStateCallback> mKeyguardStateCallbacks = new ArrayList<>();
 
     @Override
     public void onCreate() {
@@ -47,7 +47,7 @@ public class StubKeyguardService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        return mBinder;
+        return null;//mBinder;
     }
 
     void checkPermission() {
@@ -55,15 +55,17 @@ public class StubKeyguardService extends Service {
         // Avoid deadlock by avoiding calling back into the system process.
         if (Binder.getCallingUid() == Process.SYSTEM_UID) return;
 
+/*
         // Otherwise,explicitly check for caller permission ...
         if (getBaseContext().checkCallingOrSelfPermission(PERMISSION) != PERMISSION_GRANTED) {
             Log.w(TAG, "Caller needs permission '" + PERMISSION + "' to call " + Debug.getCaller());
             throw new SecurityException("Access denied to process: " + Binder.getCallingPid()
                     + ", must have permission " + PERMISSION);
-        }
+        }*/
     }
 
     void stateCallback_l() {
+        /*
         int size = mKeyguardStateCallbacks.size();
         for (int i = size - 1; i >= 0; i--) {
             final IKeyguardStateCallback callback = mKeyguardStateCallbacks.get(i);
@@ -82,8 +84,10 @@ public class StubKeyguardService extends Service {
                 }
             }
         }
+        */
     }
 
+/*
     private final IKeyguardService.Stub mBinder = new IKeyguardService.Stub() {
 
         @Override // Binder interface
@@ -233,5 +237,6 @@ public class StubKeyguardService extends Service {
             checkPermission();
         }
     };
+    */
 }
 

@@ -13,20 +13,25 @@ import android.provider.Settings;
 import android.content.ContentResolver;
 import android.util.Log;
 import android.media.AudioManager;
-import android.media.AudioSystem;
+//import android.media.AudioSystem;
 import android.provider.Settings;
 
-import android.view.IWindowManager;
-import android.os.ServiceManager;
-import android.app.KeyguardManager;
-import android.app.KeyguardManager.KeyguardLock;
+//import android.view.IWindowManager;
+//import android.os.ServiceManager;
+//import android.app.KeyguardManager;
+//import android.app.KeyguardManager.KeyguardLock;
 
 import android.content.ComponentName;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
-import com.android.internal.policy.IKeyguardExitCallback;
-import com.android.internal.policy.IKeyguardService;
+//import com.android.internal.policy.IKeyguardExitCallback;
+//import com.android.internal.policy.IKeyguardService;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 
 import com.droidlogic.app.OutputModeManager;
 import com.droidlogic.app.PlayBackManager;
@@ -45,9 +50,10 @@ public class BootComplete extends BroadcastReceiver {
     private static final String DROID_SETTINGS_PACKAGE = "com.droidlogic.tv.settings";
     private static final String DROID_SETTINGS_ENCRYPTKEEPERFBE = "com.droidlogic.tv.settings.CryptKeeperFBE";
 
-    IKeyguardService mService = null;
-    RemoteServiceConnection mConnection;
+    //IKeyguardService mService = null;
+    //RemoteServiceConnection mConnection;
     private SystemControlEvent sce =  null;
+    AudioManager mAudioManager;
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent.getAction();
@@ -59,7 +65,7 @@ public class BootComplete extends BroadcastReceiver {
             sce = new SystemControlEvent(context);
             //sm.setListener(sce);
 
-            final AudioManager audioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
+            mAudioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
             final OutputModeManager outputModeManager = new OutputModeManager(context);
 
             if (SettingsPref.getFirstRun(context)) {
@@ -147,13 +153,14 @@ public class BootComplete extends BroadcastReceiver {
             if (sm.getPropertyBoolean("net.wifi.suspend", false))
                 context.startService(new Intent(context, WifiSuspendService.class));
 
-            if (sm.getPropertyBoolean("ro.platform.has.tvuimode", false))
+            if (sm.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false))
                 context.startService(new Intent(context, EsmService.class));
 
             Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
             context.startService(gattServiceIntent);
 
-            String rotProp = sm.getPropertyString("persist.sys.app.rotation", "");
+            /*  AML default rotation config, cannot use with shipping_api_level=28
+            String rotProp = sm.getPropertyString("persist.vendor.sys.app.rotation", "");
             ContentResolver res = context.getContentResolver();
             int acceRotation = Settings.System.getIntForUser(res,
                 Settings.System.ACCELEROMETER_ROTATION,
@@ -167,13 +174,18 @@ public class BootComplete extends BroadcastReceiver {
                             UserHandle.USER_CURRENT);
                     }
             }
+            */
+
+            /* @hidden-api-issue-start
             Log.d(TAG,"setWireDeviceConnectionState");
             //simulate DEVPATH=/devices/virtual/amhdmitx/amhdmitx0/hdmi_audio uevent funtion
             audioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_OUT_HDMI, (outputModeManager.isHDMIPlugged() == true) ? 1 : 0, "", "");
-
+            @hidden-api-issue-end */
+            setWiredDeviceConnectionState(0x80000010, (outputModeManager.isHDMIPlugged() == true) ? 1 : 0, "", "");
             //bindKeyguardService(context);
 
             // Dissmiss keyguard first.
+            /* used for quick bootup
             final IWindowManager wm = IWindowManager.Stub
                     .asInterface(ServiceManager.getService(Context.WINDOW_SERVICE));
             try {
@@ -185,8 +197,34 @@ public class BootComplete extends BroadcastReceiver {
             KeyguardManager km= (KeyguardManager)context.getSystemService(Context.KEYGUARD_SERVICE);
             KeyguardLock kl = km.newKeyguardLock("unLock");
             kl.disableKeyguard();
+            */
 
             enableCryptKeeperComponent(context);
+        }
+    }
+
+        private void setWiredDeviceConnectionState(int type, int state, String address, String name) {
+        try {
+            Class<?> audioManager = Class.forName("android.media.AudioManager");
+            Method setwireState = audioManager.getMethod("setWiredDeviceConnectionState",
+                                    int.class, int.class, String.class, String.class);
+        Log.d(TAG,"setWireDeviceConnectionState "+setwireState);
+
+            setwireState.invoke(mAudioManager, type, state, address, name);
+
+        } catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (NoSuchMethodException ex) {
+            ex.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
     }
 
@@ -213,14 +251,20 @@ public class BootComplete extends BroadcastReceiver {
         return sm.getPropertyInt("ro.hdmi.device_type", -1) == HdmiDeviceInfo.DEVICE_PLAYBACK;
     }
 
+    /*
     class KeyguardExitCallback extends IKeyguardExitCallback.Stub {
-
         @Override
         public void onKeyguardExitResult(final boolean success) throws RemoteException {
             Log.i(TAG, "onKeyguardExitResult: " + success);
         }
     };
+    */
 
+    private boolean needCecTv(SystemControlManager sm, Context context) {
+        return sm.getPropertyInt("ro.hdmi.device_type",-1) == HdmiDeviceInfo.DEVICE_TV;
+    }
+
+/*
     private class RemoteServiceConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName className, IBinder service) {
             Log.v(TAG, "onServiceConnected()");
@@ -259,4 +303,5 @@ public class BootComplete extends BroadcastReceiver {
             Log.v(TAG, "Service already bound");
         }
     }
+*/
 }

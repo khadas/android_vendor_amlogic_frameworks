@@ -17,6 +17,7 @@ import android.util.Log;
 import java.io.File;
 import java.util.List;
 import java.util.Scanner;
+import com.droidlogic.app.SystemControlManager;
 
 public class NetflixService extends Service {
     private static final String TAG = "NetflixService";
@@ -35,7 +36,7 @@ public class NetflixService extends Service {
 
     private boolean mIsNetflixFg = false;
     private Context mContext;
-
+    SystemControlManager mSCM;
     private BroadcastReceiver mReceiver = new BroadcastReceiver(){
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -56,7 +57,7 @@ public class NetflixService extends Service {
     public void onCreate() {
         super.onCreate();
         mContext = this;
-
+        mSCM = new SystemControlManager(this);
         IntentFilter filter = new IntentFilter(NETFLIX_DIAL_STOP);
         filter.setPriority (IntentFilter.SYSTEM_HIGH_PRIORITY);
         mContext.registerReceiver (mReceiver, filter);
@@ -123,6 +124,27 @@ public class NetflixService extends Service {
         return false;
     }
 
+    public static String setSystemProperty(String key, String defValue) {
+        String getValue = defValue;
+        try {
+            Class[] typeArgs = new Class[2];
+            typeArgs[0] = String.class;
+            typeArgs[1] = String.class;
+
+            Object[] valueArgs = new Object[2];
+            valueArgs[0] = key;
+            valueArgs[1] = defValue;
+
+            getValue = (String)Class.forName("android.os.SystemProperties")
+                    .getMethod("set", typeArgs)
+                    .invoke(null, valueArgs);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return getValue;
+    }
+
     class ObserverThread extends Thread {
         public ObserverThread (String name) {
             super (name);
@@ -148,7 +170,8 @@ public class NetflixService extends Service {
                     mContext.sendBroadcast (intent);
                 }
 
-                if (SystemProperties.getBoolean ("sys.display-size.check", true)) {
+                if (SystemProperties.getBoolean ("sys.display-size.check", true) ||
+                    SystemProperties.getBoolean ("vendor.display-size.check", true)) {
                     try {
                         Scanner sc = new Scanner (new File(VIDEO_SIZE_DEVICE));
                         if (sc.hasNext("\\d+x\\d+")) {
@@ -157,14 +180,19 @@ public class NetflixService extends Service {
                             int h = Integer.parseInt (parts[1]);
                             //Log.i(TAG, "Video resolution: " + w + "x" + h);
 
-                            String prop = SystemProperties.get ("sys.display-size", "0x0");
-                            String[] parts_prop = prop.split ("x");
-                            int wd = Integer.parseInt (parts_prop[0]);
-                            int wh = Integer.parseInt (parts_prop[1]);
+                            String nexflixProps[] = {"sys.display-size", "vendor.display-size"};
+                            for (String propName:nexflixProps) {
+                                String prop = SystemProperties.get (propName, "0x0");
+                                String[] parts_prop = prop.split ("x");
+                                int wd = Integer.parseInt (parts_prop[0]);
+                                int wh = Integer.parseInt (parts_prop[1]);
 
-                            if ((w != wd) || (h != wh)) {
-                                SystemProperties.set ("sys.display-size", String.format("%dx%d", w, h));
-                                //Log.i(TAG, "set sys.display-size property to " + String.format("%dx$d", w, h));
+                                if ((w != wd) || (h != wh)) {
+                                    mSCM.setProperty(propName, String.format("%dx%d", w, h));
+                                    //setSystemProperty(propName, String.format("%dx%d", w, h));
+                                    //SystemProperties.set (propName, String.format("%dx%d", w, h));
+                                    //Log.i(TAG, "set sys.display-size property to " + String.format("%dx$d", w, h));
+                                }
                             }
                         } else {
                             //Log.i(TAG, "Video resolution no pattern found" + sc.nextLine());

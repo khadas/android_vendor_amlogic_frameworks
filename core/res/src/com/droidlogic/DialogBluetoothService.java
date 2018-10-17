@@ -59,8 +59,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import android.media.AudioManager;
 
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothHidHost;
+//import android.bluetooth.BluetoothHidHost;
 
 /**
  * Service for managing connection and data communication with a GATT server hosted on a
@@ -77,6 +83,9 @@ public class DialogBluetoothService extends Service {
         "RemoteB008",
         "Amlogic_RC"
     };
+
+    public static final int DEVICE_BIT_IN = 0x80000000;
+    public static final int DEVICE_IN_WIRED_HEADSET = DEVICE_BIT_IN | 0x10;
 
     // Time to connect to bonded devices for boot
     private static final int CONNECT_DELAY_MS_BOOT = 100;
@@ -160,9 +169,9 @@ public class DialogBluetoothService extends Service {
             final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             String macAddress = device.getAddress();
             String deviceName = device.getName();
-            if (BluetoothHidHost.ACTION_CONNECTION_STATE_CHANGED.equals(action)) {
+            /*if (BluetoothHidHost.ACTION_CONNECTION_STATE_CHANGED.equals(action)) {
             }
-            else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
+            else */if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
                 Log.i(TAG, ">ACL LINK CONNECTED ["+device.getName()+"] - checking for supported devices after delay");
 
                 if (isRemoteAudioCapable(device)) {
@@ -294,7 +303,7 @@ public class DialogBluetoothService extends Service {
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
         filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
         //filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        filter.addAction(BluetoothHidHost.ACTION_CONNECTION_STATE_CHANGED);
+        //filter.addAction(BluetoothHidHost.ACTION_CONNECTION_STATE_CHANGED);
         registerReceiver(receiver, filter);
 
         // On service start, check for supported devices
@@ -655,11 +664,39 @@ public class DialogBluetoothService extends Service {
         for (Iterator<BluetoothDevice> it = bondedDevices.iterator(); it.hasNext();) {
             BluetoothDevice dev = (BluetoothDevice) it.next();
             if (isRemoteAudioCapable(dev)) {
+
+            /* @hidden-api-issue-start*/
                 Log.i(TAG, "amlogic rc " + (status == 1 ? "input" : "remove"));
                 connectedState = status;
-                mAudioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_IN_WIRED_HEADSET, connectedState, dev.getAddress(), dev.getName());
+                //mAudioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_IN_WIRED_HEADSET, connectedState, dev.getAddress(), dev.getName());
+                setWiredDeviceConnectionState(/*AudioManager.*/DEVICE_IN_WIRED_HEADSET, connectedState, dev.getAddress(), dev.getName());
+           /* @hidden-api-issue-end */
                 break;
             }
+        }
+    }
+
+    private void setWiredDeviceConnectionState(int type, int state, String address, String name) {
+        try {
+            Class<?> audioManager = Class.forName("android.media.AudioManager");
+            Method setwireState = audioManager.getMethod("setWiredDeviceConnectionState",
+                                    int.class, int.class, String.class, String.class);
+
+            setwireState.invoke(mAudioManager, type, state, address, name);
+
+        } catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (NoSuchMethodException ex) {
+            ex.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
     }
 

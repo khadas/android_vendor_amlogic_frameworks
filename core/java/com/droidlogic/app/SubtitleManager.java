@@ -10,11 +10,12 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
-import android.os.ServiceManager;
+//import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.provider.MediaStore;
 import android.util.Log;
 import java.lang.Integer;
+import java.lang.reflect.Method;
 import java.lang.Thread;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -65,6 +66,18 @@ public class SubtitleManager {
                 Log.e(TAG,"[start]Exception e:" + e);
             }
             return ret;
+        }
+
+        public IBinder getSubtitleService() {
+            try {
+                Class<?> sm = Class.forName("android.os.ServiceManager");
+                Method getSubtitleService = sm.getMethod("getService", String.class);
+                IBinder mSubtitleService = (IBinder)getSubtitleService.invoke(null, "subtitle_service");
+                return mSubtitleService;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
         }
 
         private void checkDebug() {
@@ -443,7 +456,7 @@ public class SubtitleManager {
             try {
                 synchronized (this) {
                     while (true) {
-                        IBinder b = ServiceManager.getService ("subtitle_service"/*Context.SUBTITLE_SERVICE*/);
+                        IBinder b = getSubtitleService();
                         mService = ISubTitleService.Stub.asInterface (b);
                         LOGI("[getService] mService:" + mService + ", retry:" + retry);
                         if (null != mService || retry <= 0) {

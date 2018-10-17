@@ -271,7 +271,7 @@ void DisplayMode::setLogLevel(int level){
 bool DisplayMode::getBootEnv(const char* key, char* value) {
     const char* p_value = mUbootenv->getValue(key);
 
-    if (mLogLevel > LOG_LEVEL_1)
+    //if (mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("getBootEnv key:%s value:%s", key, p_value);
 
 	if (p_value) {
@@ -937,6 +937,7 @@ void* DisplayMode::bootanimDetect(void* data) {
     DisplayMode *pThiz = (DisplayMode*)data;
     char bootanimState[MODE_LEN] = {"stopped"};
     char fs_mode[MODE_LEN] = {0};
+    char recovery_state[MODE_LEN] = {0};
     char outputmode[MODE_LEN] = {0};
     char bootvideo[MODE_LEN] = {0};
 
@@ -969,8 +970,14 @@ void* DisplayMode::bootanimDetect(void* data) {
         pThiz->setBootanimStatus(1);
     }
 
-    if ((!strcmp(fs_mode, "recovery")) || (!strcmp(bootvideo, "1"))) {
+    // Cannot access amldisplay_prop in P, selinux never allowed!
+    // check service property instead
+    pThiz->pSysWrite->getPropertyString("init.svc.recovery", recovery_state, "stopped");
+    SYS_LOGE("recovery running state is:%s!\n", recovery_state);
+    if ((!strcmp(recovery_state, "running"))|| (!strcmp(fs_mode, "recovery")) || (!strcmp(bootvideo, "1"))) {
         //recovery or bootvideo mode
+        SYS_LOGE("recovery  or bootvideo mode");
+        usleep(1000000LL);
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
         //need close fb1, because uboot logo show in fb1
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
@@ -983,7 +990,14 @@ void* DisplayMode::bootanimDetect(void* data) {
         }
     }
 
-    pThiz->pTxAuth->setBootAnimFinished(true);
+    if (pThiz->pTxAuth)
+        pThiz->pTxAuth->setBootAnimFinished(true);
+    else
+        SYS_LOGE("pThiz->pTxAuth=NULL");
+
+    SYS_LOGE("recovery  or bootvideo end");
+    usleep(1000000LL);
+
     return NULL;
 }
 

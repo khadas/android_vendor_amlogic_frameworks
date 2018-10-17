@@ -54,10 +54,10 @@ public interface IDroidVoldManager extends android.os.IInterface {
 
                 case TRANSACTION_shutdown: {
                     data.enforceInterface(DESCRIPTOR);
-                    android.os.storage.IStorageShutdownObserver _arg0;
+                    /*android.os.storage.IStorageShutdownObserver _arg0;
                     _arg0 = android.os.storage.IStorageShutdownObserver.Stub.asInterface(data.readStrongBinder());
                     this.shutdown(_arg0);
-                    reply.writeNoException();
+                    reply.writeNoException();*/
                     return true;
                 }
 
@@ -89,9 +89,9 @@ public interface IDroidVoldManager extends android.os.IInterface {
 
                 case TRANSACTION_getDisks: {
                     data.enforceInterface(DESCRIPTOR);
-                    android.os.storage.DiskInfo[] _result = this.getDisks();
+                    /*android.os.storage.DiskInfo[] _result = this.getDisks();
                     reply.writeNoException();
-                    reply.writeTypedArray(_result, android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);
+                    reply.writeTypedArray(_result, android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);*/
                     return true;
                 }
 
@@ -100,9 +100,9 @@ public interface IDroidVoldManager extends android.os.IInterface {
                     data.enforceInterface(DESCRIPTOR);
                     int _arg0;
                     _arg0 = data.readInt();
-                    android.os.storage.VolumeInfo[] _result = this.getVolumes(_arg0);
+                    /*android.os.storage.VolumeInfo[] _result = this.getVolumes(_arg0);
                     reply.writeNoException();
-                    reply.writeTypedArray(_result, android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);
+                    reply.writeTypedArray(_result, android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);*/
                     return true;
                 }
 
@@ -111,9 +111,9 @@ public interface IDroidVoldManager extends android.os.IInterface {
                     data.enforceInterface(DESCRIPTOR);
                     int _arg0;
                     _arg0 = data.readInt();
-                    android.os.storage.VolumeRecord[] _result = this.getVolumeRecords(_arg0);
+                    /*android.os.storage.VolumeRecord[] _result = this.getVolumeRecords(_arg0);
                     reply.writeNoException();
-                    reply.writeTypedArray(_result, android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);
+                    reply.writeTypedArray(_result, android.os.Parcelable.PARCELABLE_WRITE_RETURN_VALUE);*/
                     return true;
                 }
 
@@ -193,7 +193,7 @@ public interface IDroidVoldManager extends android.os.IInterface {
 
                 return _result;
             }
-
+/*
             @Override
             public void shutdown(android.os.storage.IStorageShutdownObserver observer) throws android.os.RemoteException {
                 android.os.Parcel _data = android.os.Parcel.obtain();
@@ -209,7 +209,7 @@ public interface IDroidVoldManager extends android.os.IInterface {
                     _data.recycle();
                 }
             }
-
+*/
 
             @Override
             public android.os.storage.StorageVolume[] getVolumeList(int uid, java.lang.String packageName, int flags)
@@ -254,7 +254,7 @@ public interface IDroidVoldManager extends android.os.IInterface {
 
                 return _result;
             }
-
+/*
             @Override
             public android.os.storage.DiskInfo[] getDisks() throws android.os.RemoteException {
                 android.os.Parcel _data = android.os.Parcel.obtain();
@@ -311,7 +311,7 @@ public interface IDroidVoldManager extends android.os.IInterface {
 
                 return _result;
             }
-
+*/
             @Override
             public void mount(java.lang.String volId) throws android.os.RemoteException {
                 android.os.Parcel _data = android.os.Parcel.obtain();
@@ -389,12 +389,12 @@ public interface IDroidVoldManager extends android.os.IInterface {
     }
 
     public int formatVolume(java.lang.String mountPoint) throws android.os.RemoteException;
-    public void shutdown(android.os.storage.IStorageShutdownObserver observer) throws android.os.RemoteException;
+    //public void shutdown(android.os.storage.IStorageShutdownObserver observer) throws android.os.RemoteException;
     public android.os.storage.StorageVolume[] getVolumeList(int uid, java.lang.String packageName, int flags) throws android.os.RemoteException;
     public int mkdirs(java.lang.String callingPkg, java.lang.String path) throws android.os.RemoteException;
-    public android.os.storage.DiskInfo[] getDisks() throws android.os.RemoteException;
-    public android.os.storage.VolumeInfo[] getVolumes(int flags) throws android.os.RemoteException;
-    public android.os.storage.VolumeRecord[] getVolumeRecords(int flags) throws android.os.RemoteException;
+    //public android.os.storage.DiskInfo[] getDisks() throws android.os.RemoteException;
+    //public android.os.storage.VolumeInfo[] getVolumes(int flags) throws android.os.RemoteException;
+    //public android.os.storage.VolumeRecord[] getVolumeRecords(int flags) throws android.os.RemoteException;
     public void mount(java.lang.String volId) throws android.os.RemoteException;
     public void unmount(java.lang.String volId) throws android.os.RemoteException;
     public void format(java.lang.String volId) throws android.os.RemoteException;

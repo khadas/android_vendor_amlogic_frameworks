@@ -48,6 +48,7 @@ void HdmiCecControl::init()
     char value[PROPERTY_VALUE_MAX] = {0};
     mCecDevice.isTvDeviceType = false;
     mCecDevice.mDeviceTypes = NULL;
+    mCecDevice.mAddedPhyAddrs = NULL;
     mCecDevice.mTotalDevice = 0;
     getDeviceTypes();
     memset(value, 0, PROPERTY_VALUE_MAX);
@@ -96,6 +97,7 @@ int HdmiCecControl::closeCecDevice()
     close(mCecDevice.mFd);
     delete mCecDevice.mpPortData;
     delete mCecDevice.mDeviceTypes;
+    delete mCecDevice.mAddedPhyAddrs;
     ALOGD("[hcc] %s, cec has closed.", __FUNCTION__);
     return 0;
 }
@@ -123,6 +125,7 @@ int HdmiCecControl::openCecDevice()
     }
     //int ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_DEV_TYPE, mCecDevice.mDeviceType);
     getBootConnectStatus();
+    mCecDevice.mAddedPhyAddrs = new int[ADDR_BROADCAST];
     pthread_create(&mCecDevice.mThreadId, NULL, __threadLoop, this);
     pthread_setname_np(mCecDevice.mThreadId, "hdmi_cec_loop");
     return mCecDevice.mFd;
@@ -323,6 +326,8 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
                     message.length = 1;
                     sendMessage(&message, false);
                     ret = false;
+                } else {
+                    mCecDevice.mAddedPhyAddrs[(int)(event->cec.initiator)] = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
                 }
                 break;
             default:
@@ -334,7 +339,7 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
 
 void HdmiCecControl::checkConnectStatus()
 {
-    unsigned int prevStatus, bit;
+    unsigned int index, prevStatus, bit;
     int i, port, connect, ret;
     hdmi_cec_event_t event;
 
@@ -356,6 +361,15 @@ void HdmiCecControl::checkConnectStatus()
                 event.hotplug.connected = connect;
                 event.hotplug.port_id = mCecDevice.mpPortData[i].port_id;
                 mEventListener->onEventUpdate(&event);
+            }
+            if (connect == 0) {
+                for (index = 0; index < ADDR_BROADCAST; index++) {
+                    if (mCecDevice.mAddedPhyAddrs[index] == mCecDevice.mpPortData[i].physical_address) {
+                        mCecDevice.mAddedPhyAddrs[index] = 0;
+                        ALOGD("[hcc] mCecDevice.mAddedPhyAddrs[%d]: set zero.", index);
+                        break;
+                    }
+                }
             }
             prevStatus &= ~(bit);
             prevStatus |= ((connect ? 1 : 0) << port);
@@ -567,7 +581,6 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
     if (mCecDevice.mExtendControl == 0x03 && hasHandledByExtend(message)) {
         return HDMI_RESULT_SUCCESS;
     }
-
     return send(message);
 }
 

@@ -37,6 +37,9 @@
 #define DEV_TYPE_PURE_CEC_SWITCH        6
 #define DEV_TYPE_VIDEO_PROCESSOR        7
 
+
+#define ADDR_BROADCAST  15
+
 #define HDMIRX_SYSFS                    "/sys/class/hdmirx/hdmirx0/cec"
 #define CEC_STATE_BOOT_ENABLED          "2"
 #define CEC_STATE_ENABLED               "1"
@@ -77,6 +80,7 @@ enum cec_message_para_value{
  */
 typedef struct hdmi_device {
     int                         *mDeviceTypes;
+    int                         *mAddedPhyAddrs;
     int                         mTotalDevice;
     bool                        isTvDeviceType;
     int                         mAddrBitmap;

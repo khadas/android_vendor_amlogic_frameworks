@@ -414,7 +414,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         getHdmiOutputMode((char *)outputmode, &data);
     }
 
-    bool deepColorEnabled = pSysWrite->getPropertyBoolean(PROP_DEEPCOLOR, false);
+    bool deepColorEnabled = pSysWrite->getPropertyBoolean(PROP_DEEPCOLOR, true);
     pSysWrite->readSysfs(HDMI_TX_FRAMRATE_POLICY, value);
     if ((OUPUT_MODE_STATE_SWITCH == state) && (strcmp(value, "0") == 0)) {
         char curDisplayMode[MODE_LEN] = {0};
@@ -1145,7 +1145,7 @@ void DisplayMode::updateDeepColor(bool cvbsMode, output_mode_state state, const 
     if (!cvbsMode && (mDisplayType != DISPLAY_TYPE_TV)) {
         char colorAttribute[MODE_LEN] = {0};
         FormatColorDepth deepColor;
-        if (pSysWrite->getPropertyBoolean(PROP_DEEPCOLOR, false)) {
+        if (pSysWrite->getPropertyBoolean(PROP_DEEPCOLOR, true)) {
             char mode[MAX_STR_LEN] = {0};
             if (isDolbyVisionEnable() && isTvSupportDolbyVision(mode)) {
                  char type[MODE_LEN] = {0};

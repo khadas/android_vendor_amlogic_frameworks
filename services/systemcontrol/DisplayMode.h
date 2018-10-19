@@ -210,7 +210,7 @@ using namespace android;
 #define PROP_FS_MODE                    "const.filesystem.mode"
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
-#define PROP_DEEPCOLOR                  "sys.open.deepcolor" //default close this function, when reboot
+#define PROP_DEEPCOLOR                  "vendor.sys.open.deepcolor" //default close this function, when reboot
 #define PROP_BOOTCOMPLETE               "dev.bootcomplete"
 #define PROP_DOLBY_VISION_ENABLE        "persist.vendor.sys.dolbyvision.enable"
 #define PROP_DOLBY_VISION_TYPE          "persist.vendor.sys.dolbyvision.type"

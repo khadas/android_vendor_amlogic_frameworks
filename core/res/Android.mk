@@ -14,7 +14,9 @@ LOCAL_STATIC_JAVA_LIBRARIES := android.hidl.base-V1.0-java \
 LOCAL_JNI_SHARED_LIBRARIES := libremotecontrol_jni
 
 #LOCAL_SDK_VERSION := current
-#LOCAL_PRIVATE_PLATFORM_APIS := true
+ifndef PRODUCT_SHIPPING_API_LEVEL
+LOCAL_PRIVATE_PLATFORM_APIS := true
+endif
 
 LOCAL_PACKAGE_NAME := droidlogic-res
 LOCAL_CERTIFICATE := platform

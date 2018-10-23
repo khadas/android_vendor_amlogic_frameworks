@@ -21,8 +21,6 @@
 
 #define LOG_TAG "SystemControlHal"
 
-#include <vendor/amlogic/hardware/systemcontrol/1.0/ISystemControl.h>
-#include <vendor/amlogic/hardware/systemcontrol/1.0/types.h>
 #include <log/log.h>
 
 #include <atomic>
@@ -41,7 +39,7 @@ namespace vendor {
 namespace amlogic {
 namespace hardware {
 namespace systemcontrol {
-namespace V1_0 {
+namespace V1_1 {
 namespace implementation {
 
 #define ENABLE_LOG_PRINT 0

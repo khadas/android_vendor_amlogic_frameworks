@@ -28,8 +28,8 @@
 #include <vector>
 
 #include "PQType.h"
-#include <vendor/amlogic/hardware/systemcontrol/1.0/ISystemControl.h>
-using ::vendor::amlogic::hardware::systemcontrol::V1_0::ISystemControl;
+#include <vendor/amlogic/hardware/systemcontrol/1.1/ISystemControl.h>
+using ::vendor::amlogic::hardware::systemcontrol::V1_1::ISystemControl;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::ISystemControlCallback;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::DroidDisplayInfo;

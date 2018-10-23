@@ -20,8 +20,8 @@ LOCAL_C_INCLUDES += \
 
 LOCAL_SHARED_LIBRARIES := \
     vendor.amlogic.hardware.hdmicec@1.0 \
-    vendor.amlogic.hardware.systemcontrol@1.0 \
     vendor.amlogic.hardware.tvserver@1.0 \
+    vendor.amlogic.hardware.systemcontrol@1.1 \
     libsystemcontrolservice \
     libbase \
     libhidlbase \

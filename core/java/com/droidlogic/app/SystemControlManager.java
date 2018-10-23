@@ -22,7 +22,7 @@ import java.util.NoSuchElementException;
 
 import android.hidl.manager.V1_0.IServiceManager;
 import android.hidl.manager.V1_0.IServiceNotification;
-import vendor.amlogic.hardware.systemcontrol.V1_0.ISystemControl;
+import vendor.amlogic.hardware.systemcontrol.V1_1.ISystemControl;
 import vendor.amlogic.hardware.systemcontrol.V1_0.ISystemControlCallback;
 import vendor.amlogic.hardware.systemcontrol.V1_0.Result;
 import vendor.amlogic.hardware.systemcontrol.V1_0.DroidDisplayInfo;

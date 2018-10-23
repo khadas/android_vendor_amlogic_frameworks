@@ -19,8 +19,9 @@ LOCAL_JAVA_LIBRARIES := \
 	android.hidl.manager-V1.0-java
 
 LOCAL_STATIC_JAVA_LIBRARIES := \
-	vendor.amlogic.hardware.systemcontrol-V1.0-java \
-	vendor.amlogic.hardware.droidvold-V1.0-java
+        vendor.amlogic.hardware.systemcontrol-V1.0-java \
+	vendor.amlogic.hardware.systemcontrol-V1.1-java \
+	vendor.amlogic.hardware.droidvold-V1.0-java \
 
 include $(BUILD_JAVA_LIBRARY)
 

@@ -14,6 +14,7 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_SHARED_LIBRARIES += \
   vendor.amlogic.hardware.systemcontrol@1.0 \
+  vendor.amlogic.hardware.systemcontrol@1.1 \
   libbase \
   libhidlbase \
   libhidltransport
@@ -97,8 +98,9 @@ LOCAL_SHARED_LIBRARIES := \
   libhwbinder
 
 LOCAL_SHARED_LIBRARIES += \
-  vendor.amlogic.hardware.systemcontrol@1.0 \
   vendor.amlogic.hardware.droidvold@1.0 \
+  vendor.amlogic.hardware.systemcontrol@1.0 \
+  vendor.amlogic.hardware.systemcontrol@1.1 \
   libbase \
   libhidlbase \
   libhidltransport

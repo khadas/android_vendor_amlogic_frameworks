@@ -540,6 +540,9 @@ class KeymasterHidlTest : public ::testing::VtsHalHidlTargetTestBase {
         }
         AbortIfNeeded();
     }
+    KeymasterHidlTest() {}
+    ~KeymasterHidlTest() {}
+    KeymasterHidlTest(const KeymasterHidlTest& obj) {}
 
     // SetUpTestCase runs only once per test case, not once per test.
     static void SetUpTestCase() {
@@ -837,11 +840,8 @@ class KeymasterHidlTest : public ::testing::VtsHalHidlTargetTestBase {
                 *cert_chain = hidl_cert_chain;
             });
         if (!rc.isOk()) {
-            ALOGE("AttestKey %s failed", key_blob.to_string().c_str());
+            ALOGE("AttestKey %s unkown", key_blob.to_string().c_str());
             error = ErrorCode::UNKNOWN_ERROR;
-        } else {
-            ALOGI("AttestKey %s succeeded", key_blob.to_string().c_str());
-            error = ErrorCode::OK;
         }
 
         return error;
@@ -1218,65 +1218,222 @@ bool KeymasterHidlTest::supports_attestation_;
 hidl_string KeymasterHidlTest::name_;
 hidl_string KeymasterHidlTest::author_;
 
-typedef KeymasterHidlTest KeymasterVersionTest;
+typedef KeymasterHidlTest AttestationTest;
 
-
-bool check_AttestationKey()
-{
-    ErrorCode error;
-    KeymasterHidlTest::SetUpTestCase();
-    KeymasterHidlTest pKeymasterHidlTest;
-    error = pKeymasterHidlTest.GenerateKey(AuthorizationSetBuilder()
+/*
+ * AttestationTest.RsaAttestation
+ *
+ * Verifies that attesting to RSA keys works and generates the expected output.
+ */
+bool RsaAttestation(AttestationTest test) {
+    if (ErrorCode::OK != test.GenerateKey(AuthorizationSetBuilder()
                                              .Authorization(TAG_NO_AUTH_REQUIRED)
                                              .RsaSigningKey(1024, 3)
                                              .Digest(Digest::NONE)
                                              .Padding(PaddingMode::NONE)
-                                             .Authorization(TAG_INCLUDE_UNIQUE_ID));
-    if (error != ErrorCode::OK) {
-        ALOGE("check_AttestationKey GenerateKey RsaSigningKey failed!");
+                                             .Authorization(TAG_INCLUDE_UNIQUE_ID))) {
+        ALOGE("RsaAttestation GenerateKey failed!!!");
         return false;
     }
-
-
-    error = pKeymasterHidlTest.GenerateKey(AuthorizationSetBuilder()
-                                             .Authorization(TAG_NO_AUTH_REQUIRED)
-                                             .EcdsaSigningKey(EcCurve::P_256)
-                                             .Digest(Digest::SHA_2_256)
-                                             .Authorization(TAG_INCLUDE_UNIQUE_ID));
-    if (error != ErrorCode::OK) {
-        ALOGE("check_AttestationKey GenerateKey EcdsaSigningKey failed!");
-        return false;
-    }
-
 
     hidl_vec<hidl_vec<uint8_t>> cert_chain;
-    error = pKeymasterHidlTest.AttestKey(AuthorizationSetBuilder()
+    if (ErrorCode::OK !=
+              test.AttestKey(AuthorizationSetBuilder()
                             .Authorization(TAG_ATTESTATION_CHALLENGE, HidlBuf("challenge"))
                             .Authorization(TAG_ATTESTATION_APPLICATION_ID, HidlBuf("foo")),
-                        &cert_chain);
-    if (error != ErrorCode::OK) {
-        ALOGE("check_AttestationKey AttestKey failed!");
+                        &cert_chain)) {
+        ALOGE("RsaAttestation AttestKey failed!!!");
         return false;
     }
 
     if (cert_chain.size() < 2U) {
-        ALOGE("check_AttestationKey cert_chain size failed! actual size %u", cert_chain.size());
+        ALOGE("RsaAttestation cert_chain size failed! actual size %u", cert_chain.size());
         return false;
     }
 
     if (!verify_chain(cert_chain)) {
-        ALOGE("check_AttestationKey verify_chain failed!");
+        ALOGE("RsaAttestation verify_chain failed!");
         return false;
     }
+
     if (!
         verify_attestation_record("challenge", "foo",                     //
-                                  pKeymasterHidlTest.key_characteristics_.softwareEnforced,  //
-                                  pKeymasterHidlTest.key_characteristics_.teeEnforced,       //
+                                  test.key_characteristics_.softwareEnforced,  //
+                                  test.key_characteristics_.teeEnforced,       //
                                   cert_chain[0])) {
-        ALOGE("check_AttestationKey verify_attestation_record failed!");
+        ALOGE("RsaAttestation verify_attestation_record failed!");
         return false;
     }
     return true;
+}
+
+/*
+ * AttestationTest.RsaAttestationRequiresAppId
+ *
+ * Verifies that attesting to RSA requires app ID.
+ */
+bool RsaAttestationRequiresAppId(AttestationTest test) {
+    if (ErrorCode::OK !=
+              test.GenerateKey(AuthorizationSetBuilder()
+                              .Authorization(TAG_NO_AUTH_REQUIRED)
+                              .RsaSigningKey(1024, 3)
+                              .Digest(Digest::NONE)
+                              .Padding(PaddingMode::NONE)
+                              .Authorization(TAG_INCLUDE_UNIQUE_ID))) {
+        ALOGE("RsaAttestationRequiresAppId GenerateKey failed!!!");
+        return false;
+    }
+
+    hidl_vec<hidl_vec<uint8_t>> cert_chain;
+    if (ErrorCode::ATTESTATION_APPLICATION_ID_MISSING !=
+              test.AttestKey(AuthorizationSetBuilder().Authorization(
+                            TAG_ATTESTATION_CHALLENGE, HidlBuf("challenge")),
+                        &cert_chain)) {
+        ALOGE("RsaAttestationRequiresAppId AttestKey!");
+    }
+    return true;
+}
+
+/*
+ * AttestationTest.EcAttestation
+ *
+ * Verifies that attesting to EC keys works and generates the expected output.
+ */
+bool EcAttestation(AttestationTest test) {
+    if (ErrorCode::OK != test.GenerateKey(AuthorizationSetBuilder()
+                                             .Authorization(TAG_NO_AUTH_REQUIRED)
+                                             .EcdsaSigningKey(EcCurve::P_256)
+                                             .Digest(Digest::SHA_2_256)
+                                             .Authorization(TAG_INCLUDE_UNIQUE_ID))) {
+        ALOGE("EcAttestation GenerateKey failed!!!");
+        return false;
+    }
+
+    hidl_vec<hidl_vec<uint8_t>> cert_chain;
+    if (ErrorCode::OK !=
+              test.AttestKey(AuthorizationSetBuilder()
+                            .Authorization(TAG_ATTESTATION_CHALLENGE, HidlBuf("challenge"))
+                            .Authorization(TAG_ATTESTATION_APPLICATION_ID, HidlBuf("foo")),
+                        &cert_chain)){
+        ALOGE("EcAttestation AttestKey failed!!!");
+        return false;
+    }
+
+    if (cert_chain.size() < 2U) {
+        ALOGE("EcAttestation cert_chain size failed! actual size %u", cert_chain.size());
+        return false;
+    }
+
+    if (!verify_chain(cert_chain)) {
+        ALOGE("EcAttestation verify_chain failed!");
+        return false;
+    }
+
+    if (!
+        verify_attestation_record("challenge", "foo",                     //
+                                  test.key_characteristics_.softwareEnforced,  //
+                                  test.key_characteristics_.teeEnforced,       //
+                                  cert_chain[0])) {
+        ALOGE("EcAttestation verify_attestation_record!");
+        return false;
+    }
+    return true;
+}
+
+/*
+ * AttestationTest.EcAttestationRequiresAttestationAppId
+ *
+ * Verifies that attesting to EC keys requires app ID
+ */
+bool EcAttestationRequiresAttestationAppId(AttestationTest test) {
+    if (ErrorCode::OK !=
+              test.GenerateKey(AuthorizationSetBuilder()
+                              .Authorization(TAG_NO_AUTH_REQUIRED)
+                              .EcdsaSigningKey(EcCurve::P_256)
+                              .Digest(Digest::SHA_2_256)
+                              .Authorization(TAG_INCLUDE_UNIQUE_ID))) {
+        ALOGE("EcAttestationRequiresAttestationAppId GenerateKey failed!!!");
+        return false;
+    }
+
+    hidl_vec<hidl_vec<uint8_t>> cert_chain;
+    if (ErrorCode::ATTESTATION_APPLICATION_ID_MISSING !=
+              test.AttestKey(AuthorizationSetBuilder().Authorization(
+                            TAG_ATTESTATION_CHALLENGE, HidlBuf("challenge")),
+                        &cert_chain)) {
+        ALOGE("EcAttestationRequiresAttestationAppId AttestKey!");
+    }
+    return true;
+}
+
+/*
+ * AttestationTest.AesAttestation
+ *
+ * Verifies that attesting to AES keys fails in the expected way.
+ */
+bool AesAttestation(AttestationTest test) {
+    if (ErrorCode::OK !=
+              test.GenerateKey(AuthorizationSetBuilder()
+                              .Authorization(TAG_NO_AUTH_REQUIRED)
+                              .AesEncryptionKey(128)
+                              .EcbMode()
+                              .Padding(PaddingMode::PKCS7))) {
+        ALOGE("AesAttestation GenerateKey failed!!!");
+        return false;
+    }
+
+    hidl_vec<hidl_vec<uint8_t>> cert_chain;
+    if (ErrorCode::INCOMPATIBLE_ALGORITHM !=
+              test.AttestKey(
+            AuthorizationSetBuilder()
+                .Authorization(TAG_ATTESTATION_CHALLENGE, HidlBuf("challenge"))
+                .Authorization(TAG_ATTESTATION_APPLICATION_ID, HidlBuf("foo")),
+            &cert_chain)) {
+        ALOGE("AesAttestation AttestKey!");
+    }
+    return true;
+}
+/*
+ * AttestationTest.HmacAttestation
+ *
+ * Verifies that attesting to HMAC keys fails in the expected way.
+ */
+bool HmacAttestation(AttestationTest test) {
+    if (ErrorCode::OK !=
+              test.GenerateKey(AuthorizationSetBuilder()
+                              .Authorization(TAG_NO_AUTH_REQUIRED)
+                              .HmacKey(128)
+                              .EcbMode()
+                              .Digest(Digest::SHA_2_256)
+                              .Authorization(TAG_MIN_MAC_LENGTH, 128))) {
+        ALOGE("HmacAttestation GenerateKey failed!!!");
+        return false;
+    }
+
+    hidl_vec<hidl_vec<uint8_t>> cert_chain;
+    if (ErrorCode::INCOMPATIBLE_ALGORITHM !=
+              test.AttestKey(
+            AuthorizationSetBuilder()
+                .Authorization(TAG_ATTESTATION_CHALLENGE, HidlBuf("challenge"))
+                .Authorization(TAG_ATTESTATION_APPLICATION_ID, HidlBuf("foo")),
+            &cert_chain)) {
+        ALOGE("HmacAttestation AttestKey!");
+    }
+    return true;
+}
+
+bool check_AttestationKey()
+{
+    KeymasterHidlTest::SetUpTestCase();
+    AttestationTest test;
+    bool result = RsaAttestation(test)
+        && RsaAttestationRequiresAppId(test)
+        && EcAttestation(test)
+        && EcAttestationRequiresAttestationAppId(test)
+        && AesAttestation(test)
+        && HmacAttestation(test);
+    ALOGD("check_AttestationKey result %d", result);
+    return result;
 }
 
 //}  // namespace test

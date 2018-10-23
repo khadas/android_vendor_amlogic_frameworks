@@ -39,8 +39,8 @@
 
 using namespace android;
 using ::android::hardware::configureRpcThreadpool;
-using ::vendor::amlogic::hardware::systemcontrol::V1_0::implementation::SystemControlHal;
-using ::vendor::amlogic::hardware::systemcontrol::V1_0::ISystemControl;
+using ::vendor::amlogic::hardware::systemcontrol::V1_1::implementation::SystemControlHal;
+using ::vendor::amlogic::hardware::systemcontrol::V1_1::ISystemControl;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
 
 int main(int argc, char** argv)

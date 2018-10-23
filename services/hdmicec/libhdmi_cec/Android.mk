@@ -14,8 +14,8 @@ LOCAL_C_INCLUDES += \
    hardware/libhardware/include
 
 LOCAL_SHARED_LIBRARIES := \
-    vendor.amlogic.hardware.systemcontrol@1.0 \
     vendor.amlogic.hardware.tvserver@1.0 \
+    vendor.amlogic.hardware.systemcontrol@1.1 \
     libsystemcontrolservice \
     libcutils \
     libutils \

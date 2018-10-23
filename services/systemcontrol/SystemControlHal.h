@@ -19,10 +19,12 @@
  *  - 1 system control hwbinder service
  */
 
-#ifndef ANDROID_DROIDLOGIC_SYSTEM_CONTROL_V1_0_SYSTEM_CONTROL_HAL_H
-#define ANDROID_DROIDLOGIC_SYSTEM_CONTROL_V1_0_SYSTEM_CONTROL_HAL_H
+#ifndef ANDROID_DROIDLOGIC_SYSTEM_CONTROL_V1_1_SYSTEM_CONTROL_HAL_H
+#define ANDROID_DROIDLOGIC_SYSTEM_CONTROL_V1_1_SYSTEM_CONTROL_HAL_H
 
-#include <vendor/amlogic/hardware/systemcontrol/1.0/ISystemControl.h>
+#include <vendor/amlogic/hardware/systemcontrol/1.1/ISystemControl.h>
+#include <vendor/amlogic/hardware/systemcontrol/1.0/types.h>
+
 #include <SystemControlNotify.h>
 #include <SystemControlService.h>
 
@@ -30,10 +32,10 @@ namespace vendor {
 namespace amlogic {
 namespace hardware {
 namespace systemcontrol {
-namespace V1_0 {
+namespace V1_1 {
 namespace implementation {
 
-using ::vendor::amlogic::hardware::systemcontrol::V1_0::ISystemControl;
+using ::vendor::amlogic::hardware::systemcontrol::V1_1::ISystemControl;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::ISystemControlCallback;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::DroidDisplayInfo;
@@ -256,7 +258,7 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
 };
 
 }  // namespace implementation
-}  // namespace V1_0
+}  // namespace V1_1
 }  // namespace systemcontrol
 }  // namespace hardware
 }  // namespace android

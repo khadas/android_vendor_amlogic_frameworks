@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.util.Log;
 //import android.media.AudioManager;
 
+import java.lang.reflect.Method;
+
 import vendor.amlogic.hardware.systemcontrol.V1_0.ISystemControlCallback;
 
 //this event from native system control service
@@ -24,6 +26,9 @@ public class SystemControlEvent extends ISystemControlCallback.Stub {
     public static final int EVENT_HDMI_AUDIO_OUT                = 4;
     public static final int EVENT_HDMI_AUDIO_IN                 = 5;
 
+    // AudioManager.DEVICE_OUT_HDMI
+    public static final int DEVICE_OUT_AUX_DIGITAL              = 0x400;
+
 
     private Context mContext = null;
     //private final AudioManager mAudioManager;
@@ -42,6 +47,7 @@ public class SystemControlEvent extends ISystemControlCallback.Stub {
             boolean  plugged = (event - EVENT_HDMI_PLUG_OUT) ==1 ? true : false;
             intent.putExtra(EXTRA_HDMI_PLUGGED_STATE, plugged);
         } else if (event == EVENT_HDMI_AUDIO_OUT || event == EVENT_HDMI_AUDIO_IN) {
+            setWiredDeviceConnectionState(DEVICE_OUT_AUX_DIGITAL, (event - EVENT_HDMI_AUDIO_OUT), "", "");
             //mAudioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_OUT_HDMI, (event - EVENT_HDMI_AUDIO_OUT), "", "");
             return;
         }  else {
@@ -49,5 +55,15 @@ public class SystemControlEvent extends ISystemControlCallback.Stub {
             intent.putExtra(EVENT_TYPE, event);
         }
         mContext.sendStickyBroadcast(intent);
+    }
+
+    private void setWiredDeviceConnectionState(int type, int state, String address, String name) {
+        try {
+            Class<?> audioManager = Class.forName("android.media.AudioManager");
+            Method method = audioManager.getMethod("setWiredDeviceConnectionState", int.class, int.class, String.class, String.class);
+            method.invoke(type, state, address, name);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 }

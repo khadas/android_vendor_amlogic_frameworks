@@ -63,7 +63,7 @@ public class BootComplete extends BroadcastReceiver {
             final SystemControlManager sm = new SystemControlManager(context);
             //register system control callback
             sce = new SystemControlEvent(context);
-            //sm.setListener(sce);
+            sm.setListener(sce);
 
             mAudioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
             final OutputModeManager outputModeManager = new OutputModeManager(context);
@@ -181,7 +181,7 @@ public class BootComplete extends BroadcastReceiver {
             //simulate DEVPATH=/devices/virtual/amhdmitx/amhdmitx0/hdmi_audio uevent funtion
             audioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_OUT_HDMI, (outputModeManager.isHDMIPlugged() == true) ? 1 : 0, "", "");
             @hidden-api-issue-end */
-            setWiredDeviceConnectionState(0x80000010, (outputModeManager.isHDMIPlugged() == true) ? 1 : 0, "", "");
+            setWiredDeviceConnectionState(SystemControlEvent.DEVICE_OUT_AUX_DIGITAL, (outputModeManager.isHDMIPlugged() == true) ? 1 : 0, "", "");
             //bindKeyguardService(context);
 
             // Dissmiss keyguard first.

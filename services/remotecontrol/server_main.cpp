@@ -24,21 +24,29 @@
 #include <binder/IPCThreadState.h>
 #include <binder/ProcessState.h>
 #include <binder/IServiceManager.h>
-
 #include "RemoteControlServer.h"
 
 using namespace android;
 
-static void setMicEnableCallback(int flag) {
+static void __setMicEnableCallback(int flag) {
     ALOGD("setMicEnableCallback flag=%d", flag);
 }
+
+static void __onDeviceStatusCallback(int flag) {
+    ALOGD("onDeviceStatusCallback flag=%d", flag);
+}
+
+rc_callbacks_t cb =  {
+    __setMicEnableCallback,
+    __onDeviceStatusCallback
+};
 
 int main(int argc __unused, char** argv __unused)
 {
     //start remote control service
     ProcessState::initWithDriver("/dev/vndbinder");
     RemoteControlServer* rcServer = RemoteControlServer::getInstance();
-    rcServer->setCallback(setMicEnableCallback);
+    rcServer->setCallback(&cb);
 
     /*
      * This thread is just going to process Binder transactions.

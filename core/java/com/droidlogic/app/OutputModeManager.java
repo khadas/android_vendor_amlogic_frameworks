@@ -835,7 +835,7 @@ public class OutputModeManager {
     }
 
     public void initSoundParametersAfterBoot() {
-        final boolean istv = mSystenControl.getPropertyBoolean("ro.platform.has.tvuimode", false);
+        final boolean istv = mSystenControl.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
         if (!istv) {
             final int boxlineout = Settings.Global.getInt(mResolver, BOX_LINE_OUT, BOX_LINE_OUT_OFF);
             enableBoxLineOutAudio(boxlineout == BOX_LINE_OUT_ON);
@@ -853,7 +853,7 @@ public class OutputModeManager {
     }
 
     public void resetSoundParameters() {
-        final boolean istv = mSystenControl.getPropertyBoolean("ro.platform.has.tvuimode", false);
+        final boolean istv = mSystenControl.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
         if (!istv) {
             enableBoxLineOutAudio(false);
             enableBoxHdmiAudio(false);

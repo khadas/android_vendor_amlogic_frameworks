@@ -37,7 +37,7 @@ public class SdrManager {
 
     public SdrManager(Context context){
         mContext = context;
-        mSystemControl = new SystemControlManager(context);
+        mSystemControl = SystemControlManager.getInstance();
     }
 
 

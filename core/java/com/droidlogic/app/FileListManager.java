@@ -120,7 +120,7 @@ public class FileListManager {
         mContext = context;
         mDebug = false;
         mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
-        mSystemControl = new SystemControlManager(context);
+        mSystemControl =  SystemControlManager.getInstance();
 
         try {
             mDroidVold = IDroidVold.getService();

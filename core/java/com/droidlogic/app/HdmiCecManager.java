@@ -48,7 +48,7 @@ public class HdmiCecManager {
 
     public HdmiCecManager(Context context) {
         mContext = context;
-        mSystemControlManager = new SystemControlManager(context);
+        mSystemControlManager = SystemControlManager.getInstance();
     }
 
     public void initCec() {

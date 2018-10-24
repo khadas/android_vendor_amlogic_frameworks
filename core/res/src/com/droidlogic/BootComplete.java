@@ -60,7 +60,7 @@ public class BootComplete extends BroadcastReceiver {
         Log.i(TAG, "action: " + action);
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             final ContentResolver resolver = context.getContentResolver();
-            final SystemControlManager sm = new SystemControlManager(context);
+            final SystemControlManager sm =  SystemControlManager.getInstance();
             //register system control callback
             sce = new SystemControlEvent(context);
             sm.setListener(sce);

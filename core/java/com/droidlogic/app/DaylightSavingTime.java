@@ -34,7 +34,7 @@ public class DaylightSavingTime {
     private static DaylightSavingTime mDaylightSavingTime = null;
 
     private DaylightSavingTime() {
-        mSystemControlManager = new SystemControlManager(null);
+        mSystemControlManager = SystemControlManager.getInstance();
     }
 
     public static synchronized DaylightSavingTime getInstance() {

@@ -38,7 +38,7 @@ public class DolbyVisionSettingManager {
 
     public DolbyVisionSettingManager(Context context){
         mContext = context;
-        mSystenControl = new SystemControlManager(context);
+        mSystenControl = SystemControlManager.getInstance();
     }
 
     public void initSetDolbyVision() {

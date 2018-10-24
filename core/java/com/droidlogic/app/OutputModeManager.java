@@ -225,7 +225,7 @@ public class OutputModeManager {
     public OutputModeManager(Context context) {
         mContext = context;
 
-        mSystenControl = new SystemControlManager(context);
+        mSystenControl = SystemControlManager.getInstance();
         mResolver = mContext.getContentResolver();
         currentOutputmode = readSysfs(DISPLAY_MODE);
         mAudioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);

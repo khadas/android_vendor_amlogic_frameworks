@@ -33,7 +33,8 @@ LOCAL_SRC_FILES:= \
 LOCAL_SHARED_LIBRARIES := \
   libsqlite  \
   libutils  \
-  liblog
+  liblog \
+  libcutils
 
 LOCAL_C_INCLUDES := \
   $(PQ_INCLUDE_PATH) \

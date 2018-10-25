@@ -45,7 +45,6 @@ class CDynamicBackLight : public Thread {
 public:
     CDynamicBackLight();
     ~CDynamicBackLight();
-    static CDynamicBackLight* getInstance();
     int startDected(void);
     void stopDected(void);
     void pauseDected(int pauseTime);
@@ -65,7 +64,6 @@ public:
         mpObserver = pOb;
     };
 private:
-    static CDynamicBackLight* mInstance;
     int mPreBacklightValue;
     int mGD_mvreflsh;
     int mArithmeticPauseTime;

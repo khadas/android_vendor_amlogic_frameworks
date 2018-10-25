@@ -27,8 +27,6 @@
 
 
 #define PI 3.14159265358979
-
-
 CPQControl *CPQControl::mInstance = NULL;
 CPQControl *CPQControl::GetInstance()
 {
@@ -79,7 +77,7 @@ CPQControl::CPQControl()
             SYS_LOGD("open overscan DB success!\n");
         }
     }
-    //SSM file chack
+    //SSM file check
     mSSMAction = SSMAction::getInstance();
     mSSMAction->setObserver(this);
     mSSMAction->init();
@@ -115,9 +113,8 @@ CPQControl::CPQControl()
     if (isFileExist(LDIM_PATH)) {
         SetDynamicBacklight((Dynamic_backlight_status_t)GetDynamicBacklight(), 1);
     } else if (isFileExist(BACKLIGHT_PATH)) {//local diming or pwm
-        mDynamicBackLight = CDynamicBackLight::getInstance();
-        mDynamicBackLight->setObserver(this);
-        mDynamicBackLight->startDected();
+        mDynamicBackLight.setObserver(this);
+        mDynamicBackLight.startDected();
     } else {
         SYS_LOGD("No auto backlight moudle!\n");
     }

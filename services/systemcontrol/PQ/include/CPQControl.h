@@ -21,6 +21,7 @@
 #include "CConfigFile.h"
 #include "COverScandb.h"
 
+
 #define PQ_DB_TV_DEFAULT_PATH     "/vendor/etc/tvconfig/pq/pq.db"
 #define PARAM_PQ_DB_PATH          "/mnt/vendor/param/pq/pq.db"
 #define PQ_DB_BOX_DEFAULT_PATH    "/vendor/etc/tvconfig/pq.db"
@@ -99,12 +100,11 @@
 
 class CPQControl: public CDevicePollCheckThread::IDevicePollCheckObserver,
                          public CDynamicBackLight::IDynamicBackLightObserver,
-                         public SSMAction::ISSMActionObserver{
+                         public SSMAction::ISSMActionObserver {
 public:
     CPQControl();
     ~CPQControl();
     static CPQControl *GetInstance();
-
     virtual void onVframeSizeChange();
     virtual void onHDRStatusChange();
     virtual void resetAllUserSettingParam();
@@ -367,7 +367,7 @@ private:
     SSMAction *mSSMAction;
     static CPQControl *mInstance;
     CDevicePollCheckThread mCDevicePollCheckThread;
-    CDynamicBackLight *mDynamicBackLight;
+    CDynamicBackLight mDynamicBackLight;
     CConfigFile *mPQConfigFile;
 
     int mAmvideoFd;

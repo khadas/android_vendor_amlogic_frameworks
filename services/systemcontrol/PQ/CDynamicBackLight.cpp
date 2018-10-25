@@ -12,18 +12,9 @@
 
 #include "CDynamicBackLight.h"
 
-CDynamicBackLight *CDynamicBackLight::mInstance;
-CDynamicBackLight* CDynamicBackLight::getInstance()
-{
-    if (NULL == mInstance) {
-        mInstance = new CDynamicBackLight();
-    }
-
-    return mInstance;
-}
-
 CDynamicBackLight::CDynamicBackLight()
 {
+    mpObserver = NULL;
     mPreBacklightValue = 255;
     mGD_mvreflsh = 9;
     GD_LUT_MODE = 1;
@@ -44,7 +35,7 @@ int CDynamicBackLight::startDected(void)
         return 0;
     }
 
-    if (run("CDynamicBackLight") < 0) {
+    if (this->run("CDynamicBackLight") < 0) {
         mRunStatus = THREAD_STOPED;
         SYS_LOGE ("StartDected failure!!!!!!");
         return -1;

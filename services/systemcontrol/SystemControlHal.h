@@ -102,6 +102,7 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<void> setSdrMode(const hidl_string& mode) override;
     Return<void> resolveResolutionValue(const hidl_string& mode, resolveResolutionValue_cb _hidl_cb) override;
     Return<void> setCallback(const sp<ISystemControlCallback>& callback) override;
+    Return<Result> setAppInfo(const hidl_string& pkg, const hidl_string& cls) override;
 
     //for 3D
     Return<void> set3DMode(const hidl_string& mode) override;

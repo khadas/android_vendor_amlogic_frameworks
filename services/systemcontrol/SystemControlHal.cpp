@@ -531,6 +531,11 @@ Return<void> SystemControlHal::setCallback(const sp<ISystemControlCallback>& cal
     return Void();
 }
 
+Return<Result> SystemControlHal::setAppInfo(const hidl_string& pkg, const hidl_string& cls) {
+    mSysControl->setAppInfo(pkg, cls);
+    return Result::OK;
+}
+
 //for 3D
 Return<void> SystemControlHal::set3DMode(const hidl_string& mode) {
     ALOGI("set3DMode mode:%s", mode.c_str());

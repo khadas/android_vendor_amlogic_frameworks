@@ -252,7 +252,8 @@ public class BootComplete extends BroadcastReceiver {
     }
 
     private boolean needCecExtend(SystemControlManager sm, Context context) {
-        return sm.getPropertyInt("ro.hdmi.device_type", -1) == HdmiDeviceInfo.DEVICE_PLAYBACK;
+        //return sm.getPropertyInt("ro.hdmi.device_type", -1) == HdmiDeviceInfo.DEVICE_PLAYBACK;
+        return true;
     }
 
     /*

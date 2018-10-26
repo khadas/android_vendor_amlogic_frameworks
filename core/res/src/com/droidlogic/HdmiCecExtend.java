@@ -379,9 +379,6 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
             switch (result) {
             case HdmiControlManager.RESULT_SUCCESS:
             case HdmiControlManager.RESULT_TIMEOUT:
-                if (mLanguangeChanged == false) {
-                    mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_GET_MENU_LANGUAGE), MILIS_DELAY);
-                }
                 break;
             }
         }
@@ -473,7 +470,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
     private void wakeUp(long time, String reason) {
         try {
             Class<?> cls = Class.forName("android.os.PowerManager");
-            Method method = cls.getMethod("wakeup", long.class, String.class);
+            Method method = cls.getMethod("wakeUp", long.class, String.class);
             method.invoke(mPowerManager, time, reason);
         } catch(Exception e) {
             e.printStackTrace();
@@ -508,8 +505,8 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
                 wakeUp(time, "android.policy:POWER");
             }
             break;
+        /*
         case MESSAGE_SET_MENU_LANGUAGE:
-            Log.d(TAG, String.format("opcode = 0x%02x", opcode));
             if (isAutoChangeLanguageOn()) {
                 try {
                     byte lan[] = new byte[3];
@@ -521,6 +518,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
                 }
             }
             break;
+        */
         default:
             break;
         }

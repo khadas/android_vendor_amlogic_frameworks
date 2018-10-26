@@ -346,6 +346,10 @@ void HdmiCecControl::checkConnectStatus()
     prevStatus = mCecDevice.mConnectStatus;
     for (i = 0; i < mCecDevice.mTotalPort && mCecDevice.mpPortData != NULL; i++) {
         port = mCecDevice.mpPortData[i].port_id;
+        if (mCecDevice.mTotalPort == 1 && mCecDevice.mDeviceTypes[0] == DEV_TYPE_PLAYBACK) {
+            //playback for tx hotplug para is always 0
+            port = 0;
+        }
         connect = port;
         ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_CONNECT_STATUS, &connect);
         if (ret) {

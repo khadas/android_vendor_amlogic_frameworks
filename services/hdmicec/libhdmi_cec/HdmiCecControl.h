@@ -132,6 +132,7 @@ private:
 
     bool assertHdmiCecDevice();
     bool hasHandledByExtend(const cec_message_t* message);
+    int preHandleBeforeSend(const cec_message_t* message);
     bool isWakeUpMsg(char *msgBuf, int len);
     bool messageValidate(hdmi_cec_event_t* event);
     hdmi_device_t mCecDevice;

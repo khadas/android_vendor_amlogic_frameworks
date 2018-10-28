@@ -581,7 +581,50 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
     if (mCecDevice.mExtendControl == 0x03 && hasHandledByExtend(message)) {
         return HDMI_RESULT_SUCCESS;
     }
+    if (preHandleBeforeSend(message) < 0) {
+        return HDMI_RESULT_SUCCESS;
+    }
     return send(message);
+}
+
+int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
+{
+    int ret = 0;
+    int opcode, para, value, avrAddr, index;
+    hdmi_cec_event_t event;
+    opcode = message->body[0] & 0xff;
+    switch (opcode) {
+        case CEC_MESSAGE_ROUTING_CHANGE:
+        case CEC_MESSAGE_SET_STREAM_PATH:
+            if (opcode == CEC_MESSAGE_ROUTING_CHANGE)
+                para = ((message->body[3] & 0xff) << 8) + (message->body[4] & 0xff);
+            else if (opcode == CEC_MESSAGE_SET_STREAM_PATH) {
+                para = ((message->body[1] & 0xff) << 8) + (message->body[2] & 0xff);
+            }
+            avrAddr = mCecDevice.mAddedPhyAddrs[DEV_TYPE_AUDIO_SYSTEM];
+            if (avrAddr == para) {
+                ALOGD("[hcc] tv should not send Set Stream Path & Routing Change to avr which does not have sub device and connect to arc port.");
+                for (index = 0; index < mCecDevice.mTotalPort && mCecDevice.mpPortData != NULL; index++) {
+                    if (mCecDevice.mpPortData[index].physical_address == avrAddr && mCecDevice.mpPortData[index].arc_supported) {
+                        ret = -1;
+                        ALOGD("[hcc] Avr connect to arc port.");
+                        break;
+                    }
+                }
+                for (index = 0; index < ADDR_BROADCAST; index++) {
+                    value = mCecDevice.mAddedPhyAddrs[index];
+                    if ((index != DEV_TYPE_AUDIO_SYSTEM) && (value - avrAddr > 0) && ((value & 0xf000) == (avrAddr & 0xf000))) {
+                        ret = 0;
+                         ALOGD("[hcc] Avr has sub device.");
+                        break;
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+    }
+    return ret;
 }
 
 bool HdmiCecControl::hasHandledByExtend(const cec_message_t* message)

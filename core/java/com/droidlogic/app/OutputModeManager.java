@@ -606,7 +606,17 @@ public class OutputModeManager {
         } else {
             setProperty(PROP_DTSDRCSCALE, DEFAULT_DRC_SCALE);
         }
+        setDtsDrcScaleSysfs();
     }
+
+    public void setDtsDrcScaleSysfs() {
+        String prop = getPropertyString(PROP_DTSDRCSCALE, DEFAULT_DRC_SCALE);
+        int val = Integer.parseInt(prop);
+        writeSysfs(AUIDO_DSP_DTS_DEC, String.format("0x%02x", val));
+    }
+    /**
+    * @Deprecated
+    **/
     public void setDTS_DownmixMode(String mode) {
         // 0: Lo/Ro;   1: Lt/Rt;  default 0
         int i = Integer.parseInt(mode);
@@ -616,7 +626,9 @@ public class OutputModeManager {
             writeSysfs(AUIDO_DSP_DTS_DEC, "dtsdmxmode" + " " + "0");
         }
     }
-
+    /**
+    * @Deprecated
+    **/
     public void enableDTS_DRC_scale_control (boolean enable) {
         if (enable) {
             writeSysfs(AUIDO_DSP_DTS_DEC, "dtsdrcscale 0x64");
@@ -624,7 +636,9 @@ public class OutputModeManager {
             writeSysfs(AUIDO_DSP_DTS_DEC, "dtsdrcscale 0");
         }
     }
-
+    /**
+    * @Deprecated
+    **/
     public void enableDTS_Dial_Norm_control (boolean enable) {
         if (enable) {
             writeSysfs(AUIDO_DSP_DTS_DEC, "dtsdialnorm 1");

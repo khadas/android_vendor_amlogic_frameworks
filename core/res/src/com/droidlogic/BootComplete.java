@@ -127,6 +127,10 @@ public class BootComplete extends BroadcastReceiver {
                 outputModeManager.setDoblyMode(OutputModeManager.RF_DRCMODE);
                 break;
             }*/
+
+            /*setThisValue for dts scale*/
+            outputModeManager.setDtsDrcScaleSysfs();
+
             //DroidVoldManager
             //new DroidVoldManager(context);
 

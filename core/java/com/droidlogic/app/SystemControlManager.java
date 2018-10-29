@@ -736,6 +736,7 @@ public class SystemControlManager {
         }
         return "";
     }
+
     /**
      * that use by droidlogic-res.apk only, because need have one callback only
      *
@@ -748,6 +749,16 @@ public class SystemControlManager {
                 mProxy.setCallback(listener);
             } catch (RemoteException e) {
                 Log.e(TAG, "setCallback:" + e);
+            }
+        }
+    }
+
+    public void setAppInfo(String pkg, String cls) {
+        synchronized (mLock) {
+            try {
+                mProxy.setAppInfo(pkg, cls);
+            } catch (RemoteException e) {
+                Log.e(TAG, "setAppInfo:" + e);
             }
         }
     }

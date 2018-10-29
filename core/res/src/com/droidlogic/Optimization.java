@@ -15,23 +15,29 @@ import java.lang.Runnable;
 import java.lang.Thread;
 import java.util.List;
 
+import com.droidlogic.app.SystemControlManager;
+
 public class Optimization extends Service {
     private static String TAG = "Optimization";
     private Context mContext;
 
-    static {
-        System.loadLibrary("optimization");
-    }
+    //static {
+    //    System.loadLibrary("optimization");
+    //}
+
+    SystemControlManager mSCM;
 
     @Override
     public void onCreate() {
         super.onCreate();
         mContext = this;
+
+        mSCM = new SystemControlManager(this);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (SystemProperties.getBoolean("ro.app.optimization", true)) {
+        if (SystemProperties.getBoolean("ro.vendor.app.optimization", true)) {
             new Thread(runnable).start();
         }
         else {
@@ -53,14 +59,15 @@ public class Optimization extends Service {
 
     private Runnable runnable = new Runnable() {
         public void run() {
-            int retProc = -1;
-            int retPkg = -1;
-            boolean isInProcOpt = false;
-            boolean isInPkgOpt = false;
+            //int retProc = -1;
+            //int retPkg = -1;
+            //boolean isInProcOpt = false;
+            //boolean isInPkgOpt = false;
             ActivityManager am = (ActivityManager)mContext.getSystemService(Context.ACTIVITY_SERVICE);
 
             while (true) {
                 try {
+                    /*
                     if (!isInProcOpt) {
                         List< ActivityManager.RunningTaskInfo > task = am.getRunningTasks (1);
                         if (!task.isEmpty()) {
@@ -94,8 +101,16 @@ public class Optimization extends Service {
                         else if (retProc != -4) {
                             isInProcOpt = false;
                         }
-                    }
+                    }*/
 
+                    List< ActivityManager.RunningTaskInfo > task = am.getRunningTasks (1);
+                    if (!task.isEmpty()) {
+                        ComponentName cn = task.get (0).topActivity;
+                        String pkg = cn.getPackageName();
+                        String cls = cn.getClassName();
+
+                        mSCM.setAppInfo(pkg, cls);
+                    }
                     Thread.sleep(50);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -104,6 +119,6 @@ public class Optimization extends Service {
         }
     };
 
-    private native int nativeOptimization(String pkg, String cls);
-    private native int nativeOptimization(String[] proc);
+    //private native int nativeOptimization(String pkg, String cls);
+    //private native int nativeOptimization(String[] proc);
 }

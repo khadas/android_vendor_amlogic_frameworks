@@ -106,6 +106,7 @@ public:
     void setSdrMode(const std::string& mode);
     int64_t resolveResolutionValue(const std::string& mode);
     void setListener(const sp<SystemControlNotify>& listener);
+    void setAppInfo(const std::string& pkg, const std::string& cls);
 
     //3D
     int32_t set3DMode(const std::string& mode3d);

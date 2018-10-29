@@ -7,6 +7,7 @@ import android.os.Parcel;
 import android.os.RemoteException;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
 import android.hidl.manager.V1_0.IServiceManager;
@@ -753,10 +754,10 @@ public class SystemControlManager {
         }
     }
 
-    public void setAppInfo(String pkg, String cls) {
+    public void setAppInfo(String pkg, String cls, ArrayList<String> proc) {
         synchronized (mLock) {
             try {
-                mProxy.setAppInfo(pkg, cls);
+                mProxy.setAppInfo(pkg, cls, proc);
             } catch (RemoteException e) {
                 Log.e(TAG, "setAppInfo:" + e);
             }

@@ -11,6 +11,7 @@ import android.os.IBinder;
 import android.os.SystemProperties;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.lang.Runnable;
 import java.lang.Thread;
 import java.util.List;
@@ -103,14 +104,23 @@ public class Optimization extends Service {
                         }
                     }*/
 
+                    String pkg = "";
+                    String cls = "";
+                    ArrayList<String> proc = new ArrayList<String>();
+                    List< ActivityManager.RunningAppProcessInfo> apInfo = am.getRunningAppProcesses();
+                    for (int i = 0; i < apInfo.size(); i++) {
+                        proc.add(apInfo.get(i).processName);
+                    }
+
                     List< ActivityManager.RunningTaskInfo > task = am.getRunningTasks (1);
                     if (!task.isEmpty()) {
                         ComponentName cn = task.get (0).topActivity;
-                        String pkg = cn.getPackageName();
-                        String cls = cn.getClassName();
-
-                        mSCM.setAppInfo(pkg, cls);
+                        pkg = cn.getPackageName();
+                        cls = cn.getClassName();
                     }
+
+                    mSCM.setAppInfo(pkg, cls, proc);
+
                     Thread.sleep(50);
                 } catch (Exception e) {
                     e.printStackTrace();

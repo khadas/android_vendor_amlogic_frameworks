@@ -531,8 +531,13 @@ Return<void> SystemControlHal::setCallback(const sp<ISystemControlCallback>& cal
     return Void();
 }
 
-Return<Result> SystemControlHal::setAppInfo(const hidl_string& pkg, const hidl_string& cls) {
-    mSysControl->setAppInfo(pkg, cls);
+Return<Result> SystemControlHal::setAppInfo(const hidl_string& pkg, const hidl_string& cls, const hidl_vec<hidl_string>& proc) {
+    std::vector<std::string> procList;
+    for (size_t i = 0; i < proc.size(); i++) {
+        procList.push_back(proc[i]);
+    }
+
+    mSysControl->setAppInfo(pkg, cls, procList);
     return Result::OK;
 }
 

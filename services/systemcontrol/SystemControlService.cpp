@@ -40,7 +40,7 @@
 
 namespace android {
 
-int (*func_optimization)(const char *pkg, const char *cls);
+int (*func_optimization)(const char *pkg, const char *cls, const std::vector<std::string>& procList);
 
 SystemControlService* SystemControlService::instantiate(const char *cfgpath) {
     SystemControlService *sysControlIntf = new SystemControlService(cfgpath);
@@ -80,7 +80,7 @@ SystemControlService::SystemControlService(const char *path)
         else
             ALOGE("has not find initConfig from liboptimization.so , %s", dlerror());
 
-        func_optimization = (int (*)(const char *, const char *))dlsym(handle, "_ZN7android15appOptimizationEPKcS1_");
+        func_optimization = (int (*)(const char *, const char *, const std::vector<std::string>&))dlsym(handle, "_ZN7android15appOptimizationEPKcS1_RKNSt3__16vectorINS2_12basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEENS7_IS9_EEEE");
         if (NULL == func_optimization)
             ALOGE("has not find appOptimization from liboptimization.so , %s", dlerror());
     }
@@ -557,10 +557,10 @@ void SystemControlService::setListener(const sp<SystemControlNotify>& listener) 
     pDisplayMode->setListener(listener);
 }
 
-void SystemControlService::setAppInfo(const std::string& pkg, const std::string& cls) {
+void SystemControlService::setAppInfo(const std::string& pkg, const std::string& cls, const std::vector<std::string>& procList) {
     //ALOGI("setAppInfo pkg :%s, cls:%s", pkg.c_str(), cls.c_str());
     if (func_optimization != NULL) {
-        func_optimization(pkg.c_str(), cls.c_str());
+        func_optimization(pkg.c_str(), cls.c_str(), procList);
     }
 }
 

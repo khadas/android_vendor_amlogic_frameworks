@@ -21,15 +21,14 @@
 extern "C" {
 #endif
 
-typedef struct
-{
+typedef struct {
     unsigned int width;
     unsigned int height;
 #define FB_FORMAT_RGB565    0
 #define FB_FORMAT_ARGB8888  1
     unsigned int format;
     char* data;
-}rc_fb_t;
+} rc_fb_t;
 
 typedef struct rgb888 {
     char r;
@@ -40,23 +39,21 @@ typedef struct rgb888 {
 typedef rc_rgb888_t rc_rgb24_t;
 
 typedef struct rgb565 {
-    short b:5;
-    short g:6;
-    short r:5;
+    short b: 5;
+    short g: 6;
+    short r: 5;
 } rc_rgb565_t;
 
 #pragma pack(1)
-typedef struct
-{
+typedef struct {
     unsigned short  bf_type;
     unsigned long   bf_size;
     unsigned short  bf_reserved1;
     unsigned short  bf_reserved2;
     unsigned long   bf_offbits;
-}BmpFileHeader_t;
+} BmpFileHeader_t;
 
-typedef struct
-{
+typedef struct {
     unsigned long   bi_size;
     unsigned long   bi_width;
     unsigned long   bi_height;
@@ -71,7 +68,7 @@ typedef struct
     unsigned long   bi_ypelspermeter;
     unsigned long   bi_clrused;
     unsigned long   bi_clrimportant;
-}BmpInfoHeader_t;
+} BmpInfoHeader_t;
 
 /*
     PhotoRGBColorTable_t bmp_colors[3];
@@ -89,13 +86,12 @@ typedef struct
     bmp_colors[2].rgb_red       =   0;
     bmp_colors[2].rgb_reserved  =   0;
 */
-typedef struct//color table
-{
+typedef struct { //color table
     unsigned char rgb_blue;
     unsigned char rgb_green;
     unsigned char rgb_red;
     unsigned char rgb_reserved;
-}BmpColorTable_t;
+} BmpColorTable_t;
 #pragma pack()
 
 int RGBA2bmp(char *buf, int width, int height, char* filePath);

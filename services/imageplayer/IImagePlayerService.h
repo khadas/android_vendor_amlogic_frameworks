@@ -26,65 +26,67 @@
 
 namespace android {
 
-struct IMediaHTTPService;
+    struct IMediaHTTPService;
 
-// ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
 
-class IImagePlayerService: public IInterface {
-public:
-    DECLARE_META_INTERFACE(ImagePlayerService);
+    class IImagePlayerService: public IInterface {
+      public:
+        DECLARE_META_INTERFACE(ImagePlayerService);
 
-    //this used by native code
-    virtual int init() = 0;
-    virtual int setDataSource(const char* uri) = 0;
-    virtual int setDataSource (
+        //this used by native code
+        virtual int init() = 0;
+        virtual int setDataSource(const char* uri) = 0;
+        virtual int setDataSource (
             const sp<IMediaHTTPService> &httpService,
             const char *srcUrl) = 0;
-    virtual int setSampleSurfaceSize(int sampleSize, int surfaceW, int surfaceH) = 0;
-    virtual int setRotate(float degrees, int autoCrop) = 0;
-    virtual int setScale(float sx, float sy, int autoCrop) = 0;
-    virtual int setHWScale(float sc) = 0;
-    virtual int setRotateScale(float degrees, float sx, float sy, int autoCrop) = 0;
-    virtual int setTranslate(float tx, float ty) = 0;
-    virtual int setCropRect(int cropX, int cropY, int cropWidth, int cropHeight) = 0;
-    virtual int prepareBuf(const char *uri) = 0;
-    virtual int showBuf() = 0;
-    virtual int start() = 0;
-    virtual int prepare() = 0;
-    virtual int show() = 0;
-    virtual int release() = 0;
-    virtual int notifyProcessDied(const sp<IBinder> &binder) = 0;
-};
-
-// ----------------------------------------------------------------------------
-
-class BnImagePlayerService: public BnInterface<IImagePlayerService> {
-public:
-    enum {
-        IMAGE_INIT = IBinder::FIRST_CALL_TRANSACTION,
-        IMAGE_SET_DATA_SOURCE,
-        IMAGE_SET_SAMPLE_SURFACE_SIZE,
-        IMAGE_SET_ROTATE,
-        IMAGE_SET_SCALE,
-        IMAGE_SET_ROTATE_SCALE,
-        IMAGE_SET_CROP_RECT,
-        IMAGE_START,
-        IMAGE_PREPARE,
-        IMAGE_SHOW,
-        IMAGE_RELEASE,
-        IMAGE_PREPARE_BUF,
-        IMAGE_SHOW_BUF,
-        IMAGE_SET_DATA_SOURCE_URL,
-        IMAGE_NOTIFY_PROCESSDIED,
-        IMAGE_SET_TRANSLATE,
-        IMAGE_SET_HWSCALE,
+        virtual int setSampleSurfaceSize(int sampleSize, int surfaceW,
+                                         int surfaceH) = 0;
+        virtual int setRotate(float degrees, int autoCrop) = 0;
+        virtual int setScale(float sx, float sy, int autoCrop) = 0;
+        virtual int setHWScale(float sc) = 0;
+        virtual int setRotateScale(float degrees, float sx, float sy, int autoCrop) = 0;
+        virtual int setTranslate(float tx, float ty) = 0;
+        virtual int setCropRect(int cropX, int cropY, int cropWidth,
+                                int cropHeight) = 0;
+        virtual int prepareBuf(const char *uri) = 0;
+        virtual int showBuf() = 0;
+        virtual int start() = 0;
+        virtual int prepare() = 0;
+        virtual int show() = 0;
+        virtual int release() = 0;
+        virtual int notifyProcessDied(const sp<IBinder> &binder) = 0;
     };
 
-    virtual status_t onTransact(uint32_t code, const Parcel& data,
-            Parcel* reply, uint32_t flags = 0);
-};
+    // ----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
+    class BnImagePlayerService: public BnInterface<IImagePlayerService> {
+      public:
+        enum {
+            IMAGE_INIT = IBinder::FIRST_CALL_TRANSACTION,
+            IMAGE_SET_DATA_SOURCE,
+            IMAGE_SET_SAMPLE_SURFACE_SIZE,
+            IMAGE_SET_ROTATE,
+            IMAGE_SET_SCALE,
+            IMAGE_SET_ROTATE_SCALE,
+            IMAGE_SET_CROP_RECT,
+            IMAGE_START,
+            IMAGE_PREPARE,
+            IMAGE_SHOW,
+            IMAGE_RELEASE,
+            IMAGE_PREPARE_BUF,
+            IMAGE_SHOW_BUF,
+            IMAGE_SET_DATA_SOURCE_URL,
+            IMAGE_NOTIFY_PROCESSDIED,
+            IMAGE_SET_TRANSLATE,
+            IMAGE_SET_HWSCALE,
+        };
+
+        virtual status_t onTransact(uint32_t code, const Parcel& data,
+                                    Parcel* reply, uint32_t flags = 0);
+    };
+
+    // ----------------------------------------------------------------------------
 
 }; // namespace android
 

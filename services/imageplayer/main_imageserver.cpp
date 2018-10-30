@@ -16,7 +16,7 @@
 */
 
 #define LOG_TAG "imageserver"
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 
 #include <fcntl.h>
 #include <sys/prctl.h>
@@ -27,19 +27,40 @@
 #include <cutils/properties.h>
 #include <utils/Log.h>
 //#include "RegisterExtensions.h"
-
+#include <HidlTransportSupport.h>
 #include "ImagePlayerService.h"
+#include "ImagePlayerHal.h"
 
 using namespace android;
+using ::android::hardware::configureRpcThreadpool;
+using ::vendor::amlogic::hardware::imageserver::V1_0::implementation::ImagePlayerHal;
+using ::vendor::amlogic::hardware::imageserver::V1_0::IImageService;
 
-int main(int argc, char** argv)
-{
-    char value[PROPERTY_VALUE_MAX];
+int main(int argc, char** argv) {
+    ALOGE("imageserver daemon starting");
+    bool treble = property_get_bool("persist.imageserver.treble", true);
 
+    if (treble) {
+        android::ProcessState::initWithDriver("/dev/vndbinder");
+    }
+
+    ALOGI("imageserver daemon starting in %s mode", treble ? "treble" : "normal");
+    configureRpcThreadpool(4, false);
     sp<ProcessState> proc(ProcessState::self());
-    sp<IServiceManager> sm = defaultServiceManager();
-    ALOGI("ServiceManager: %p", sm.get());
-    ImagePlayerService::instantiate();
-    ProcessState::self()->startThreadPool();
+
+    if (treble) {
+        sp<IImageService> player = new ImagePlayerHal();
+
+        if (player == nullptr) {
+            ALOGE("Cannot create ISystemControl service");
+        } else if (player->registerAsService() != OK) {
+            ALOGE("Cannot register ISystemControl service.");
+        } else {
+            ALOGI("Treble ImagePlayerHal service created.");
+        }
+    } else {
+        ImagePlayerService::instantiate();
+    }
+
     IPCThreadState::self()->joinThreadPool();
 }

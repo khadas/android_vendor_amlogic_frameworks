@@ -26,17 +26,17 @@
 
 namespace android {
 
-class TIFF2RGBA {
-  public:
-    TIFF2RGBA();
-    ~TIFF2RGBA();
+    class TIFF2RGBA {
+      public:
+        TIFF2RGBA();
+        ~TIFF2RGBA();
 
-    int tiffDecodeBound(const char *filePath, int *width, int *height);
-    int tiffDecoder(const char *filePath, SkBitmap *pBitmap);
-    void close();
-    TIFF* mTif;
-    int* mRaster;
-};
+        int tiffDecodeBound(const char *filePath, int *width, int *height);
+        int tiffDecoder(const char *filePath, SkBitmap *pBitmap);
+        void close();
+        TIFF* mTif;
+        int* mRaster;
+    };
 
 }  // namespace android
 

@@ -51,6 +51,7 @@ int RGB565toRGB888(const char* src, char* dst, size_t pixel) {
     to = (struct rgb888 *) dst;
 
     int i = 0;
+
     /* traverse pixel of the row */
     while (i++ < (int)pixel) {
         to->r = from->r;
@@ -91,7 +92,7 @@ int ARGB8888_to_RGB888(const char* src, char* dst, size_t pixel) {
             //dst[3*i+j] = src[4*i+j];
             //dst[3*i+j] = (((src[4*i+j]*src[4*i+3])>>8)&0xff);
             //dst[3*i+j] = (((src[4*i+ 2 - j]*src[4*i+3])>>8)&0xff);
-            dst[3*i+j] = src[4*i + 2 - j];
+            dst[3 * i + j] = src[4 * i + 2 - j];
         }
     }
 
@@ -117,23 +118,23 @@ int ARGB8888_to_RGB565(const char* src, char* dst, size_t pixel) {
     //BGRA -> RGB
     for (i = 0; i < (int)pixel; i++) {
 #if 1
-        int id1 = i<<2;
-        int id2 = i<<1;
+        int id1 = i << 2;
+        int id2 = i << 1;
 
         int R = src[id1 + 0];
         int G = src[id1 + 1];
         int B = src[id1 + 2];
 
-        dst[id2 + 1] = ((R&0xF8) | ((G>>5)&0x07));
-        dst[id2] = (((G<<3)&0xE0) | ((B>>3)&0x1F));
+        dst[id2 + 1] = ((R & 0xF8) | ((G >> 5) & 0x07));
+        dst[id2] = (((G << 3) & 0xE0) | ((B >> 3) & 0x1F));
 #else
 
-        int R = src[4*i + 0];
-        int G = src[4*i + 1];
-        int B = src[4*i + 2];
+        int R = src[4 * i + 0];
+        int G = src[4 * i + 1];
+        int B = src[4 * i + 2];
 
-        dst[2*i + 1] = ((R&0xF8) | ((G>>5)&0x07));
-        dst[2*i] = (((G<<3)&0xE0) | ((B>>3)&0x1F));
+        dst[2 * i + 1] = ((R & 0xF8) | ((G >> 5) & 0x07));
+        dst[2 * i] = (((G << 3) & 0xE0) | ((B >> 3) & 0x1F));
 #endif
     }
 
@@ -158,10 +159,12 @@ int ARGB2bmp(char *buf, int width, int height) {
 
     len = width * height * 3;
     rgb_matrix = (char *)malloc(len);
+
     if (!rgb_matrix) {
         ALOGE("RGB2bmp, malloc rgb_matrix memory error");
         return -2;
     }
+
     ARGB8888_to_RGB888(buf, rgb_matrix, width * height);
 
     unsigned char *p_bmp_data = NULL;
@@ -185,18 +188,23 @@ int ARGB2bmp(char *buf, int width, int height) {
     bmp_info_header.bi_bitcount = 24; //RGB 888
 
     p_bmp_data = (unsigned char *)malloc(bmp_file_header.bf_size);
+
     if ( NULL == p_bmp_data ) {
         ALOGE("RGB2bmp, [error]memory not enough:NULL == p_bmp_data\n");
         return -1;
     }
+
     memset(p_bmp_data, 0, bmp_file_header.bf_size);
     memcpy(p_bmp_data, &bmp_file_header, file_header_len);//copy bmp file header
-    memcpy(p_bmp_data + file_header_len, &bmp_info_header, info_header_len);//copy bmp info header
-    memcpy(p_bmp_data + file_header_len + info_header_len, rgb_matrix, len);//copy bmp data
+    memcpy(p_bmp_data + file_header_len, &bmp_info_header,
+           info_header_len);//copy bmp info header
+    memcpy(p_bmp_data + file_header_len + info_header_len, rgb_matrix,
+           len);//copy bmp data
 
     {
         FILE *fp;
         fp = fopen("/sdcard/fb888.bmp", "wb");
+
         if ( NULL == fp ) {
             ALOGE("fb, open file error\n");
             return -2;
@@ -229,7 +237,8 @@ int ARGB2bmp(char *buf, int width, int height) {
 * Note:
 *
 *---------------------------------------------------------------*/
-void Bitmap2bmp(char *buf, unsigned int pic_w, unsigned int pic_h, int format_888) {
+void Bitmap2bmp(char *buf, unsigned int pic_w, unsigned int pic_h,
+                int format_888) {
     char *rgbMatrix = NULL;
     unsigned char *p_bmp_data = NULL;
 
@@ -240,6 +249,7 @@ void Bitmap2bmp(char *buf, unsigned int pic_w, unsigned int pic_h, int format_88
     if (1 == format_888) {
         int len = pic_w * pic_h * 3;
         rgbMatrix = (char *)malloc(len);
+
         if (!rgbMatrix) {
             ALOGE("malloc rgbMatrix memory error");
             return;
@@ -263,18 +273,22 @@ void Bitmap2bmp(char *buf, unsigned int pic_w, unsigned int pic_h, int format_88
         bmp_info_header.bi_bitcount = 24; //RGB 888
 
         p_bmp_data = (unsigned char *)malloc(bmp_file_header.bf_size);
+
         if ( NULL == p_bmp_data ) {
             ALOGE("[error]memory not enough:NULL == p_bmp_data");
             goto MEM_ERR;
         }
+
         memset(p_bmp_data, 0, bmp_file_header.bf_size);
         memcpy(p_bmp_data, &bmp_file_header, file_header_len);//copy bmp file header
-        memcpy(p_bmp_data + file_header_len, &bmp_info_header, info_header_len);//copy bmp info header
-        memcpy(p_bmp_data + file_header_len + info_header_len, rgbMatrix, len);//copy bmp data
-    }
-    else {
+        memcpy(p_bmp_data + file_header_len, &bmp_info_header,
+               info_header_len);//copy bmp info header
+        memcpy(p_bmp_data + file_header_len + info_header_len, rgbMatrix,
+               len);//copy bmp data
+    } else {
         int len = pic_w * pic_h * 2;
         rgbMatrix = (char *)malloc(len);
+
         if (!rgbMatrix) {
             ALOGE("malloc rgbMatrix memory error");
             return;
@@ -286,18 +300,18 @@ void Bitmap2bmp(char *buf, unsigned int pic_w, unsigned int pic_h, int format_88
         int color_table_len;
         BmpColorTable_t bmp_colors[3];
 
-        bmp_colors[0].rgb_blue		=   0;
-        bmp_colors[0].rgb_green		=   0xF8;
-        bmp_colors[0].rgb_red		=   0;
-        bmp_colors[0].rgb_reserved	=   0;
-        bmp_colors[1].rgb_blue		=   0xE0;
-        bmp_colors[1].rgb_green		=   0x07;
-        bmp_colors[1].rgb_red		=   0;
-        bmp_colors[1].rgb_reserved	=   0;
-        bmp_colors[2].rgb_blue		=   0x1F;
-        bmp_colors[2].rgb_green		=   0;
-        bmp_colors[2].rgb_red		=   0;
-        bmp_colors[2].rgb_reserved	=   0;
+        bmp_colors[0].rgb_blue      =   0;
+        bmp_colors[0].rgb_green     =   0xF8;
+        bmp_colors[0].rgb_red       =   0;
+        bmp_colors[0].rgb_reserved  =   0;
+        bmp_colors[1].rgb_blue      =   0xE0;
+        bmp_colors[1].rgb_green     =   0x07;
+        bmp_colors[1].rgb_red       =   0;
+        bmp_colors[1].rgb_reserved  =   0;
+        bmp_colors[2].rgb_blue      =   0x1F;
+        bmp_colors[2].rgb_green     =   0;
+        bmp_colors[2].rgb_red       =   0;
+        bmp_colors[2].rgb_reserved  =   0;
 
         file_header_len = sizeof( BmpFileHeader_t );
         info_header_len = sizeof( BmpInfoHeader_t );
@@ -305,8 +319,10 @@ void Bitmap2bmp(char *buf, unsigned int pic_w, unsigned int pic_h, int format_88
 
         memset( &bmp_file_header, 0, file_header_len );
         bmp_file_header.bf_type = 'MB';
-        bmp_file_header.bf_size = file_header_len + len + info_header_len + color_table_len; //RGB 565
-        bmp_file_header.bf_offbits = file_header_len + info_header_len + color_table_len;
+        bmp_file_header.bf_size = file_header_len + len + info_header_len +
+                                  color_table_len; //RGB 565
+        bmp_file_header.bf_offbits = file_header_len + info_header_len +
+                                     color_table_len;
 
         memset( &bmp_info_header, 0, info_header_len );
         bmp_info_header.bi_size = info_header_len;
@@ -319,23 +335,30 @@ void Bitmap2bmp(char *buf, unsigned int pic_w, unsigned int pic_h, int format_88
         bmp_info_header.bi_compression = 3;//BI_BITFIELDS;
 
         p_bmp_data = (unsigned char *)malloc(bmp_file_header.bf_size);
+
         if ( NULL == p_bmp_data ) {
             ALOGE("[error]memory not enough:NULL == p_bmp_data");
             goto MEM_ERR;
         }
+
         memset(p_bmp_data, 0, bmp_file_header.bf_size);
         memcpy(p_bmp_data, &bmp_file_header, file_header_len);//copy bmp file header
-        memcpy(p_bmp_data + file_header_len, &bmp_info_header, info_header_len);//copy bmp info header
-        memcpy(p_bmp_data + file_header_len + info_header_len, bmp_colors, color_table_len);//copy color table
-        memcpy(p_bmp_data + file_header_len + info_header_len + color_table_len, rgbMatrix, len);//copy bmp data
+        memcpy(p_bmp_data + file_header_len, &bmp_info_header,
+               info_header_len);//copy bmp info header
+        memcpy(p_bmp_data + file_header_len + info_header_len, bmp_colors,
+               color_table_len);//copy color table
+        memcpy(p_bmp_data + file_header_len + info_header_len + color_table_len,
+               rgbMatrix, len);//copy bmp data
     }
 
     {
         FILE *fp;
+
         if (1 == format_888)
             fp = fopen("/sdcard/bitmap888.bmp", "wb");
         else
             fp = fopen("/sdcard/bitmap565.bmp", "wb");
+
         if ( NULL == fp ) {
             ALOGE("open file error\n");
         }
@@ -345,6 +368,7 @@ void Bitmap2bmp(char *buf, unsigned int pic_w, unsigned int pic_h, int format_88
     }
 
     free(rgbMatrix);
+
     if ( NULL != p_bmp_data ) {
         free(p_bmp_data);
         p_bmp_data = NULL;
@@ -379,7 +403,7 @@ int RGBA8888_to_RGB888(const char* src, char* dst, size_t pixel) {
     //RGBA -> BGR
     for (i = 0; i < (int)pixel; i++) {
         for (j = 0; j < 3; j++) {
-            dst[3*i+j] = src[4*i + 2 - j];
+            dst[3 * i + j] = src[4 * i + 2 - j];
 
             //ARGB -> BGR
             //dst[3*i+j] = src[4*i + 3 - j];
@@ -418,11 +442,13 @@ int RGBA2bmp(char *buf, int width, int height, char* filePath) {
 
     len = width * height * 3;
     rgb_matrix = (char *)malloc(len);
+
     if (NULL == rgb_matrix) {
         ALOGE("RGBA2bmp, [error]memory not enough:NULL == rgb_matrix");
         ret = -1;
         goto _ERR;
     }
+
     RGBA8888_to_RGB888(buf, rgb_matrix, width * height);
 
     int file_header_len, info_header_len;
@@ -445,33 +471,42 @@ int RGBA2bmp(char *buf, int width, int height, char* filePath) {
     bmp_info_header.bi_bitcount = 24; //RGB 888
 
     p_bmp_data = (unsigned char *)malloc(bmp_file_header.bf_size);
+
     if ( NULL == p_bmp_data ) {
         ALOGE("RGBA2bmp, [error]memory not enough:NULL == p_bmp_data\n");
         ret = -1;
         goto _ERR;
     }
+
     memset(p_bmp_data, 0, bmp_file_header.bf_size);
     memcpy(p_bmp_data, &bmp_file_header, file_header_len);//copy bmp file header
-    memcpy(p_bmp_data + file_header_len, &bmp_info_header, info_header_len);//copy bmp info header
-    memcpy(p_bmp_data + file_header_len + info_header_len, rgb_matrix, len);//copy bmp data
+    memcpy(p_bmp_data + file_header_len, &bmp_info_header,
+           info_header_len);//copy bmp info header
+    memcpy(p_bmp_data + file_header_len + info_header_len, rgb_matrix,
+           len);//copy bmp data
 
     fp = fopen(filePath, "wb");
+
     if ( NULL == fp ) {
-        ALOGE("RGBA2bmp, [error]open file:%s failure error: '%s' (%d)\n", filePath, strerror(errno), errno);
+        ALOGE("RGBA2bmp, [error]open file:%s failure error: '%s' (%d)\n", filePath,
+              strerror(errno), errno);
         ret = -2;
         goto _ERR;
     }
 
     fwrite(p_bmp_data, bmp_file_header.bf_size, 1, fp);
     fclose(fp);
-    ALOGI("RGBA2bmp, save file success, file len = %d\n", (int)bmp_file_header.bf_size);
+    ALOGI("RGBA2bmp, save file success, file len = %d\n",
+          (int)bmp_file_header.bf_size);
 
 _ERR:
+
     if ( NULL != rgb_matrix )
         free(rgb_matrix);
 
     if ( NULL != p_bmp_data )
         free(p_bmp_data);
+
     return ret;
 }
 

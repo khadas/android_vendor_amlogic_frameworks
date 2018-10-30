@@ -471,6 +471,9 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     char curMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
     if (strstr(curMode, outputmode) == NULL) {
+        if (cvbsMode) {
+            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+        }
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
     } else {
         SYS_LOGI("cur display mode is equals to outputmode, Do not need set it\n");

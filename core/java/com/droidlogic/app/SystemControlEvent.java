@@ -3,9 +3,10 @@ package com.droidlogic.app;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-//import android.media.AudioManager;
+import android.media.AudioManager;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 
 import vendor.amlogic.hardware.systemcontrol.V1_0.ISystemControlCallback;
 
@@ -31,11 +32,11 @@ public class SystemControlEvent extends ISystemControlCallback.Stub {
 
 
     private Context mContext = null;
-    //private final AudioManager mAudioManager;
+    private final AudioManager mAudioManager;
 
     public SystemControlEvent(Context context) {
         mContext = context;
-       // mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+        mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
     }
 
     @Override
@@ -60,9 +61,21 @@ public class SystemControlEvent extends ISystemControlCallback.Stub {
     private void setWiredDeviceConnectionState(int type, int state, String address, String name) {
         try {
             Class<?> audioManager = Class.forName("android.media.AudioManager");
-            Method method = audioManager.getMethod("setWiredDeviceConnectionState", int.class, int.class, String.class, String.class);
-            method.invoke(type, state, address, name);
-        } catch(Exception e) {
+            Method setwireState = audioManager.getMethod("setWiredDeviceConnectionState",
+                                    int.class, int.class, String.class, String.class);
+            Log.d(TAG,"setWireDeviceConnectionState "+setwireState);
+
+            setwireState.invoke(mAudioManager, type, state, address, name);
+
+        } catch(ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException ex) {
+            ex.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
             e.printStackTrace();
         }
     }

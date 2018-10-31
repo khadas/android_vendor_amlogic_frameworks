@@ -776,21 +776,21 @@ public class OutputModeManager {
         switch (mode) {
             case DIGITAL_PCM:
                 mAudioManager.setParameters(PARA_PCM);
-                Settings.Global.putInt(mResolver,
-                        "encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
-                        1/*Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER*/);
+                //Settings.Global.putInt(mResolver,
+                        //"encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
+                        //1/*Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER*/);
                 break;
             case DIGITAL_AUTO:
                 mAudioManager.setParameters(PARA_AUTO);
-                Settings.Global.putInt(mResolver,
-                        "encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
-                        0/*Settings.Global.ENCODED_SURROUND_OUTPUT_AUTO*/);
+                //Settings.Global.putInt(mResolver,
+                        //"encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
+                        //0/*Settings.Global.ENCODED_SURROUND_OUTPUT_AUTO*/);
                 break;
             default:
                 mAudioManager.setParameters(PARA_PCM);
-                Settings.Global.putInt(mResolver,
-                        "encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
-                        1/*Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER*/);
+                //Settings.Global.putInt(mResolver,
+                        //"encoded_surround_output"/*Settings.Global.ENCODED_SURROUND_OUTPUT*/,
+                        //1/*Settings.Global.ENCODED_SURROUND_OUTPUT_NEVER*/);
                 break;
         }
     }

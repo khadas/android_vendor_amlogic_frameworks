@@ -455,14 +455,22 @@ int HDCPRxKey::setHdcpRX22key(const char *value, const int size)
 
         if (!strcmp(rpvalue, "1")) {
             decryptRetRp = PC_TOOL; //use pc tool to combine firmware
-            combineFirmwarewithPCTool(HDCP_RPRX22_KEY_NAME, HDCP_RX22_SRC_FW_PATH, HDCP_RX22_DES_FW_PATH);
-            combineFirmwarewithPCTool(HDCP_RPRP22_KEY_NAME, HDCP_RPRX22_SRC_FW_PATH, HDCP_RPRX22_DES_FW_PATH);
+            if (access(HDCP_RX22_SRC_FW_PATH, F_OK) || access(HDCP_RPRX22_SRC_FW_PATH, F_OK)) {
+                SYS_LOGE("don't exist path:%s\n", HDCP_RX22_SRC_FW_PATH);
+                SYS_LOGE("don't exist path:%s\n", HDCP_RPRX22_SRC_FW_PATH);
+                setHdcpRX22SupportStatus();
+                goto _exit;
+            } else {
+                combineFirmwarewithPCTool(HDCP_RPRX22_KEY_NAME, HDCP_RX22_SRC_FW_PATH, HDCP_RX22_DES_FW_PATH);
+                combineFirmwarewithPCTool(HDCP_RPRP22_KEY_NAME, HDCP_RPRX22_SRC_FW_PATH, HDCP_RPRX22_DES_FW_PATH);
+            }
         }else {
             //1. unpack random number and key to the files
             decryptRetRx = hdcpKeyUnpack(value, keyLen,
                 HDCP_RX22_CFG_AIC_SRC, HDCP_RX22_CFG_AIC_DES, HDCP_RX22_KEY_PATH);
             if (decryptRetRx == -1) {
                 SYS_LOGE("unpack hdcp key fail\n");
+                setHdcpRX22SupportStatus();
                 goto _exit;
             }
 
@@ -482,7 +490,14 @@ int HDCPRxKey::setHdcpRX22key(const char *value, const int size)
                     ret = 0;
                 }
             } else { // decryptRetRx = PC_TooL
-                combineFirmwarewithPCTool(HDCP_RX22_KEY_NAME, HDCP_RX22_SRC_FW_PATH, HDCP_RX22_DES_FW_PATH);
+                if (access(HDCP_RX22_SRC_FW_PATH, F_OK)) {
+                    SYS_LOGE("don't exist path:%s\n", HDCP_RX22_SRC_FW_PATH);
+                    setHdcpRX22SupportStatus();
+                    goto _exit;
+                } else {
+                    combineFirmwarewithPCTool(HDCP_RX22_KEY_NAME, HDCP_RX22_SRC_FW_PATH, HDCP_RX22_DES_FW_PATH);
+                    ret = 0;
+                }
             }
         }
         SYS_LOGD("use tool 0 stand for pc tool, 1 stand for arm tool decryptRetRx = %d, decryptRetRp = %d\n", decryptRetRx, decryptRetRp);
@@ -561,8 +576,15 @@ _reGenetate:
             (unsigned int)lastCrcValue, (unsigned int)keyCrcValue);
         if (!strcmp(rpvalue, "1")) {
             decryptRetRp = PC_TOOL; //use pc tool to combine firmware
-            combineFirmwarewithPCTool(HDCP_RPRX22_KEY_NAME, HDCP_RX22_SRC_FW_PATH, HDCP_RX22_DES_FW_PATH);
-            combineFirmwarewithPCTool(HDCP_RPRP22_KEY_NAME, HDCP_RPRX22_SRC_FW_PATH, HDCP_RPRX22_DES_FW_PATH);
+            if (access(HDCP_RX22_SRC_FW_PATH, F_OK) || access(HDCP_RPRX22_SRC_FW_PATH, F_OK)) {
+                SYS_LOGE("don't exist path:%s\n", HDCP_RX22_SRC_FW_PATH);
+                SYS_LOGE("don't exist path:%s\n", HDCP_RPRX22_SRC_FW_PATH);
+                setHdcpRX22SupportStatus();
+                goto _exit;
+            } else {
+                combineFirmwarewithPCTool(HDCP_RPRX22_KEY_NAME, HDCP_RX22_SRC_FW_PATH, HDCP_RX22_DES_FW_PATH);
+                combineFirmwarewithPCTool(HDCP_RPRP22_KEY_NAME, HDCP_RPRX22_SRC_FW_PATH, HDCP_RPRX22_DES_FW_PATH);
+            }
         } else {
             //1. unpack random number and key to the files
             decryptRetRx = hdcpKeyUnpack(pKeyBuf, keyLen,
@@ -588,7 +610,13 @@ _reGenetate:
                     remove(HDCP_RX22_OUT_2080_BYTE);
                 }
             }else { // decryptRetRx = PC_TOOL
-                combineFirmwarewithPCTool(HDCP_RX22_KEY_NAME, HDCP_RX22_SRC_FW_PATH, HDCP_RX22_DES_FW_PATH);
+                if (access(HDCP_RX22_SRC_FW_PATH, F_OK)) {
+                    SYS_LOGE("don't exist path:%s\n", HDCP_RX22_SRC_FW_PATH);
+                    setHdcpRX22SupportStatus();
+                    goto _exit;
+                } else {
+                    combineFirmwarewithPCTool(HDCP_RX22_KEY_NAME, HDCP_RX22_SRC_FW_PATH, HDCP_RX22_DES_FW_PATH);
+                }
             }
         }
         SYS_LOGD("use tool 0 stand for pc tool, 1 stand for arm tool decryptRetRx = %d, decryptRetRp = %d\n", decryptRetRx, decryptRetRp);

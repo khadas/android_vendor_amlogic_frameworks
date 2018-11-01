@@ -32,6 +32,15 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.InvocationTargetException;
+
+
 /**
  * Created by wangjian on 2014/4/17.
  */
@@ -53,6 +62,9 @@ public class MediaPlayerExt extends MediaPlayer {
     private OnBlurayListener mOnBlurayInfoListener = null;
 
     private EventHandler mEventHandler;
+
+    private MethodHandle h1;
+    private MethodHandles.Lookup lookup = MethodHandles.lookup();
 
     //must sync with IMediaPlayer.cpp (av\media\libmedia)
     private IBinder mIBinder = null; //IMediaPlayer
@@ -448,13 +460,13 @@ public class MediaPlayerExt extends MediaPlayer {
     }
 
    //getMediaInfo by invoke instead of getParameter (WL)
-    public MediaInfo getMediaInfo() {
+    public MediaInfo getMediaInfo(MediaPlayerExt mp) {
         MediaInfo mediaInfo = new MediaInfo();
         Parcel request = Parcel.obtain();
         Parcel p = Parcel.obtain();
         request.writeInterfaceToken(IMEDIA_PLAYER);
         request.writeInt(INVOKE_ID_GET_AM_TRACK_INFO);
-        getMediaInfobyInvoke(request, p);
+        getMediaInfobyInvoke(request, p, mp);
         //super.invoke(request, p);
         //Parcel p = Parcel.obtain();
         //getParameter(KEY_PARAMETER_AML_PLAYER_GET_MEDIA_INFO, p);
@@ -539,16 +551,27 @@ public class MediaPlayerExt extends MediaPlayer {
         return mediaInfo;
     }
 
-    public boolean getMediaInfobyInvoke(Parcel p1, Parcel p2) {
+    public void getMediaInfobyInvoke(Parcel p1, Parcel p2, MediaPlayerExt mp) {
+        Log.i(TAG,"[getMediaInfobyInvoke]mp:"+mp);
         try {
-            Class<?> cls = Class.forName("android.media.MediaPlayer");
-            Object mp = cls.newInstance();
-            Method mpInvoke = cls.getMethod("invoke", Parcel.class, Parcel.class);
-            mpInvoke.invoke(mp, p1, p2);
-            return true;
-        } catch (Exception e) {
+            Field allowedModes = MethodHandles.Lookup.class.getDeclaredField("allowedModes");
+            allowedModes.setAccessible(true);
+            allowedModes.set(lookup, -1);
+            h1 = lookup.findSpecial(MediaPlayer.class, "invoke", MethodType.methodType(void.class, Parcel.class, Parcel.class), MediaPlayerExt.class);
+            h1.invoke(mp, p1, p2);
+        } catch(ClassNotFoundException e) {
             e.printStackTrace();
-            return false;
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException ex) {
+            ex.printStackTrace();
+        } catch (NoSuchFieldException ex) {
+            ex.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch(Throwable t) {
         }
     }
 

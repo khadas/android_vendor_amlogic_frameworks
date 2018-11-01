@@ -269,10 +269,8 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
             if (mPlayback != null) {
                 mPlayback.setVendorCommandListener(this);
                 mVendorId = getCecVendorId();
-                if (!mLanguangeChanged) {
-                    mHandler.removeMessages(MSG_ONE_TOUCH_PLAY);
-                    mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_ONE_TOUCH_PLAY), LONG_MILIS_DELAY);
-                }
+                mHandler.removeMessages(MSG_ONE_TOUCH_PLAY);
+                mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_ONE_TOUCH_PLAY), LONG_MILIS_DELAY);
             }
             mControl.addHotplugEventListener(this);
         } else {
@@ -299,7 +297,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
             }
             if (event.isConnected()) {
                 mHandler.removeMessages(MSG_ONE_TOUCH_PLAY);
-                mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_ONE_TOUCH_PLAY), ONE_TOUCH_PLAY_DELAY);
+                mHandler.sendMessageDelayed(Message.obtain(mHandler, MSG_ONE_TOUCH_PLAY), ONE_TOUCH_PLAY_DELAY*3);
            }
         }
     }
@@ -371,18 +369,6 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
             return mWakeLock.isHeld();
         }
     }
-
-    private final OneTouchPlayCallback mOneTouchPlayCallback = new OneTouchPlayCallback () {
-        @Override
-        public void onComplete(int result) {
-            Log.d(TAG, "oneTouchPlay:" + result);
-            switch (result) {
-            case HdmiControlManager.RESULT_SUCCESS:
-            case HdmiControlManager.RESULT_TIMEOUT:
-                break;
-            }
-        }
-    };
 
     public void sleep(int ms) {
         try {
@@ -545,6 +531,18 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
                     }
                 }
             }).start();
+        }
+    };
+
+    private final OneTouchPlayCallback mOneTouchPlayCallback = new OneTouchPlayCallback () {
+        @Override
+        public void onComplete(int result) {
+            Log.d(TAG, "OneTouchPlayCallback, onComplete: " + result);
+            switch (result) {
+            case HdmiControlManager.RESULT_SUCCESS:
+            case HdmiControlManager.RESULT_TIMEOUT:
+                break;
+            }
         }
     };
 

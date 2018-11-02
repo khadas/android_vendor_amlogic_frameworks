@@ -48,7 +48,8 @@
                  android:allowClearUserData="false"
                  android:killAfterRestore="false"
                  android:icon="@drawable/ic_launcher_droidlogic"
-                 android:supportsRtl="true">
+                 android:supportsRtl="true"
+                 android:directBootAware="true">
 
         <uses-library android:name="droidlogic.software.core" />
         <receiver android:name="com.droidlogic.UsbCameraReceiver">
@@ -58,28 +59,16 @@
             </intent-filter>
         </receiver>
 
-        <service android:name="com.droidlogic.CecService" >
-            <intent-filter>
-                <action android:name="CEC_LANGUAGE_AUTO_SWITCH" />
-            </intent-filter>
-        </service>
-
         <service android:name="com.droidlogic.Optimization" />
         <service android:name="com.droidlogic.NtpService" />
         <service android:name="com.droidlogic.NetflixService" />
         <service android:name="com.droidlogic.DialogBluetoothService" />
         <service android:name="com.droidlogic.EsmService" />
         <service android:name="com.droidlogic.WifiSuspendService" />
-        <!--
-        <service
-            android:name=".StubKeyguardService"
-            android:directBootAware="true"
-            android:exported="true"
-            android:enabled="true" />
-        -->
         <service android:name="com.droidlogic.OneTouchPlayService" />
         <receiver android:name="com.droidlogic.BootComplete">
-            <intent-filter>
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.PRE_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>

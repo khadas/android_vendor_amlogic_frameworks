@@ -8,6 +8,7 @@ public class SettingsPref {
     private static final String FIRST_RUN           = "first_run";
     private static final String WIFI_SAVE_STATE     = "wifi_save_state";
     private static final String SAVED_BUILD_DATE    = "saved_build_date";
+    private static final String SAVED_BOOT_COMPLETED_STATUS    = "saved_boot_completed_status";
 
     public static void setFirstRun(Context c, boolean firstRun) {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
@@ -43,6 +44,18 @@ public class SettingsPref {
         SharedPreferences.Editor editor = sp.edit();
         editor.putString(SAVED_BUILD_DATE, date);
         editor.commit();
+    }
+
+    public static void setSavedBootCompletedStatus(Context c, boolean state) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putBoolean(SAVED_BOOT_COMPLETED_STATUS, state);
+        editor.commit();
+    }
+
+    public static boolean getSavedBootCompletedStatus(Context c) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
+        return sp.getBoolean(SAVED_BOOT_COMPLETED_STATUS, false);
     }
 }
 

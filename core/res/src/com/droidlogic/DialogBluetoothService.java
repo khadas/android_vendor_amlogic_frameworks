@@ -175,6 +175,11 @@ public class DialogBluetoothService extends Service {
                 Log.i(TAG, ">ACL LINK CONNECTED ["+device.getName()+"] - checking for supported devices after delay");
 
                 if (isRemoteAudioCapable(device)) {
+                    Log.i(TAG, "pending.isEmpty()="+pending.isEmpty());
+                    if (!pending.isEmpty()) {
+                        mBluetoothGatt = null;
+                        mConnectionState = STATE_DISCONNECTED;
+                    }
                     pending.add(device);
                     mHandler.removeCallbacks(mConnRunnable);
                     mHandler.postDelayed(mConnRunnable, CONNECTION_DELAY_MS);
@@ -210,7 +215,7 @@ public class DialogBluetoothService extends Service {
         public void run() {
             if (mConnectionState == STATE_DISCONNECTED && mBluetoothGatt == null) {
                 Log. i(TAG, "mConnRunnable, looking on bonded devices in order to find connection target...");
-                pending.clear();
+                //pending.clear();
                 connectToBondedDevices();
             } else {
                 Log.e(TAG, "Ignoring connection attempt. State: " + mConnectionState);

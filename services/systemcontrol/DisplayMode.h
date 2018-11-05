@@ -197,7 +197,7 @@ using namespace android;
 #define VIDEO_LAYER_DISABLE             "1"
 #define VIDEO_LAYER_AUTO_ENABLE         "2"//2:enable video layer when first frame data come
 
-#define PROP_TVSOC_AS_MBOX              "ro.tvsoc.as.mbox"
+#define PROP_TVSOC_AS_MBOX              "tv.soc.as.mbox"
 
 #define PROP_HDMIONLY                   "ro.vendor.platform.hdmionly"
 #define PROP_SUPPORT_4K                 "ro.vendor.platform.support.4k"
@@ -212,7 +212,7 @@ using namespace android;
 #define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
 #define PROP_DEEPCOLOR                  "vendor.sys.open.deepcolor" //default close this function, when reboot
-#define PROP_BOOTCOMPLETE               "dev.bootcomplete"
+#define PROP_BOOTCOMPLETE               "service.bootanim.exit"
 #define PROP_DOLBY_VISION_ENABLE        "persist.vendor.sys.dolbyvision.enable"
 #define PROP_DOLBY_VISION_TYPE          "persist.vendor.sys.dolbyvision.type"
 #define PROP_DOLBY_VISION_PRIORITY      "persist.vendor.sys.graphics.priority"

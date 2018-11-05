@@ -122,14 +122,15 @@ public class FileListManager {
         mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
         mSystemControl =  SystemControlManager.getInstance();
 
-        try {
+        //remove droidvold from andorid p
+        /*try {
             mDroidVold = IDroidVold.getService();
         } catch (NoSuchElementException e) {
             Log.e(TAG, "connectToProxy: droidvold hal service not found."
                     + " Did the service fail to start?", e);
         } catch (RemoteException e) {
             Log.e(TAG, "connectToProxy: droidvold hal service not responding", e);
-        }
+        }*/
 
         checkDebug();
     }
@@ -439,7 +440,7 @@ public class FileListManager {
                         }
                     }
 
-                    if (!skipFlag) {
+                    if (false) {
                         skipFlag = true;//reset skip flag
                         path = "/storage/" + name;
                         map = new HashMap<String, Object>();

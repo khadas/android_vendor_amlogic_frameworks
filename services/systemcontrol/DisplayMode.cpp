@@ -256,7 +256,7 @@ void DisplayMode::reInit() {
 void DisplayMode::setTvModelName() {
     char modelName[MODE_LEN] = {0};
     if (getBootEnv("ubootenv.var.model_name", modelName)) {
-        pSysWrite->setProperty("tv.mode_name", modelName);
+        pSysWrite->setProperty("tv.model_name", modelName);
     }
 }
 

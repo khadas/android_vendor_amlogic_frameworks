@@ -71,7 +71,7 @@ private:
     bool esmSwap(const char* pRpvalue);
     bool genKeyImg(const char* pRpvalue);
     bool combineFirmwarewithArmTool(const char* pSourcePath, const char* pDestPath, const char* pTempPath);
-    bool combineFirmwarewithPCTool(const char* pKeyName, const char* pSourcePath, const char* pDestPath);
+    bool combineFirmwarewithPCTool(const char* pKeyName, const char* pCrcName, const char* pSourcePath, const char* pDestPath);
     void getFirmwareSourcePath(const char* pRpvalue, char* pPath);
     void getFirmwareDestPath(const char* pRpvalue, char* pPath);
     void getRepeaterValue(char* pRvalue);

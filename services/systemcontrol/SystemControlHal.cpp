@@ -44,6 +44,8 @@ namespace systemcontrol {
 namespace V1_0 {
 namespace implementation {
 
+#define ENABLE_LOG_PRINT 0
+
 SystemControlHal::SystemControlHal(SystemControlService * control)
     : mSysControl(control),
     mDeathRecipient(new DeathRecipient(this)) {
@@ -66,11 +68,13 @@ EVENT_HDMI_AUDIO_IN                 = 5,
 void SystemControlHal::onEvent(int event) {
     int clientSize = mClients.size();
 
-    ALOGI("onEvent event:%d, client size:%d", event, clientSize);
+    if (ENABLE_LOG_PRINT)
+        ALOGI("onEvent event:%d, client size:%d", event, clientSize);
 
     for (int i = 0; i < clientSize; i++) {
         if (mClients[i] != nullptr) {
-            ALOGI("%s, client cookie:%d notifyCallback", __FUNCTION__, i);
+            if (ENABLE_LOG_PRINT)
+                ALOGI("%s, client cookie:%d notifyCallback", __FUNCTION__, i);
             mClients[i]->notifyCallback(event);
         }
     }
@@ -85,7 +89,8 @@ Return<void> SystemControlHal::getSupportDispModeList(getSupportDispModeList_cb 
     for (size_t i = 0; i < supportModes.size(); ++i) {
         hidlList[i] = supportModes[i];
 
-        ALOGI("getSupportDispModeList index:%ld mode :%s", (unsigned long)i, supportModes[i].c_str());
+        if (ENABLE_LOG_PRINT)
+            ALOGI("getSupportDispModeList index:%ld mode :%s", (unsigned long)i, supportModes[i].c_str());
     }
 
     _hidl_cb(Result::OK, hidlList);
@@ -96,7 +101,8 @@ Return<void> SystemControlHal::getActiveDispMode(getActiveDispMode_cb _hidl_cb) 
     std::string mode;
     mSysControl->getActiveDispMode(&mode);
 
-    ALOGI("getActiveDispMode mode :%s", mode.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("getActiveDispMode mode :%s", mode.c_str());
     _hidl_cb(Result::OK, mode);
     return Void();
 }
@@ -104,7 +110,8 @@ Return<void> SystemControlHal::getActiveDispMode(getActiveDispMode_cb _hidl_cb) 
 Return<Result> SystemControlHal::setActiveDispMode(const hidl_string &activeDispMode) {
     std::string mode = activeDispMode;
 
-    ALOGI("setActiveDispMode mode :%s", mode.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("setActiveDispMode mode :%s", mode.c_str());
     mSysControl->setActiveDispMode(mode);
     return Result::OK;
 }
@@ -113,7 +120,8 @@ Return<Result> SystemControlHal::isHDCPTxAuthSuccess() {
     int status;
     mSysControl->isHDCPTxAuthSuccess(status);
 
-    ALOGI("isHDCPTxAuthSuccess status :%d", status);
+    if (ENABLE_LOG_PRINT)
+        ALOGI("isHDCPTxAuthSuccess status :%d", status);
     return (status==1)?Result::OK:Result::FAIL;
 }
 
@@ -121,7 +129,8 @@ Return<void> SystemControlHal::getProperty(const hidl_string &key, getProperty_c
     std::string value;
     mSysControl->getProperty(key, &value);
 
-    ALOGI("getProperty key :%s, value:%s", key.c_str(), value.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("getProperty key :%s, value:%s", key.c_str(), value.c_str());
     _hidl_cb(Result::OK, value);
     return Void();
 }
@@ -130,7 +139,8 @@ Return<void> SystemControlHal::getPropertyString(const hidl_string &key, const h
     std::string value;
     mSysControl->getPropertyString(key, &value, def);
 
-    ALOGI("getPropertyString key :%s, value:%s", key.c_str(), value.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("getPropertyString key :%s, value:%s", key.c_str(), value.c_str());
     _hidl_cb(Result::OK, value);
     return Void();
 }
@@ -138,7 +148,8 @@ Return<void> SystemControlHal::getPropertyString(const hidl_string &key, const h
 Return<void> SystemControlHal::getPropertyInt(const hidl_string &key, int32_t def, getPropertyInt_cb _hidl_cb) {
     int32_t value = mSysControl->getPropertyInt(key, def);
 
-    ALOGI("getPropertyInt key :%s, value:%d", key.c_str(), value);
+    if (ENABLE_LOG_PRINT)
+        ALOGI("getPropertyInt key :%s, value:%d", key.c_str(), value);
     _hidl_cb(Result::OK, value);
     return Void();
 }
@@ -146,7 +157,8 @@ Return<void> SystemControlHal::getPropertyInt(const hidl_string &key, int32_t de
 Return<void> SystemControlHal::getPropertyLong(const hidl_string &key, int64_t def, getPropertyLong_cb _hidl_cb) {
     int64_t value = mSysControl->getPropertyLong(key, def);
 
-    ALOGI("getPropertyLong key :%s, value:%ld", key.c_str(), value);
+    if (ENABLE_LOG_PRINT)
+        ALOGI("getPropertyLong key :%s, value:%ld", key.c_str(), value);
     _hidl_cb(Result::OK, value);
     return Void();
 }
@@ -154,7 +166,8 @@ Return<void> SystemControlHal::getPropertyLong(const hidl_string &key, int64_t d
 Return<void> SystemControlHal::getPropertyBoolean(const hidl_string &key, bool def, getPropertyBoolean_cb _hidl_cb) {
     bool value = mSysControl->getPropertyBoolean(key, def);
 
-    ALOGI("getPropertyBoolean key :%s, value:%d", key.c_str(), value);
+    if (ENABLE_LOG_PRINT)
+        ALOGI("getPropertyBoolean key :%s, value:%d", key.c_str(), value);
     _hidl_cb(Result::OK, value);
     return Void();
 }
@@ -162,7 +175,8 @@ Return<void> SystemControlHal::getPropertyBoolean(const hidl_string &key, bool d
 Return<Result> SystemControlHal::setProperty(const hidl_string &key, const hidl_string &value) {
     mSysControl->setProperty(key, value);
 
-    ALOGI("setProperty key :%s, value:%s", key.c_str(), value.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("setProperty key :%s, value:%s", key.c_str(), value.c_str());
     return Result::OK;
 }
 
@@ -170,18 +184,21 @@ Return<void> SystemControlHal::readSysfs(const hidl_string &path, readSysfs_cb _
     std::string value;
     mSysControl->readSysfs(path, value);
 
-    ALOGI("readSysfs path :%s, value:%s", path.c_str(), value.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("readSysfs path :%s, value:%s", path.c_str(), value.c_str());
     _hidl_cb(Result::OK, value);
     return Void();
 }
 
 Return<Result> SystemControlHal::writeSysfs(const hidl_string &path, const hidl_string &value) {
-   ALOGI("writeSysfs path :%s, value:%s", path.c_str(), value.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("writeSysfs path :%s, value:%s", path.c_str(), value.c_str());
     return mSysControl->writeSysfs(path, value)?Result::OK:Result::FAIL;
 }
 
 Return<Result> SystemControlHal::writeSysfsBin(const hidl_string &path, const hidl_array<int32_t, 4096>& key, int32_t size) {
-    ALOGI("writeSysfs bin");
+    if (ENABLE_LOG_PRINT)
+        ALOGI("writeSysfs bin");
     char *value = (char *)malloc(4096);
     memset(value, 0, 4096);
     int i;
@@ -357,15 +374,16 @@ Return<void> SystemControlHal::getBootEnv(const hidl_string &key, getBootEnv_cb 
     std::string value;
     mSysControl->getBootEnv(key, value);
 
-    ALOGI("getBootEnv key :%s, value:%s", key.c_str(), value.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("getBootEnv key :%s, value:%s", key.c_str(), value.c_str());
     _hidl_cb(Result::OK, value);
     return Void();
 }
 
 Return<void> SystemControlHal::setBootEnv(const hidl_string &key, const hidl_string &value) {
     mSysControl->setBootEnv(key, value);
-
-    ALOGI("setBootEnv key :%s, value:%s", key.c_str(), value.c_str());
+    if (ENABLE_LOG_PRINT)
+        ALOGI("setBootEnv key :%s, value:%s", key.c_str(), value.c_str());
     return Void();
 }
 

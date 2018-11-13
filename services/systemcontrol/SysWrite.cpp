@@ -228,14 +228,12 @@ void SysWrite::setLogLevel(int level){
 void SysWrite::writeSys(const char *path, const char *val){
     int fd;
 
-    SYS_LOGE("writeSysFs, path = %s =%s \n", path, val);
-
     if((fd = open(path, O_RDWR)) < 0) {
         SYS_LOGE("writeSysFs, open %s fail.", path);
         goto exit;
     }
 
-    //if(mLogLevel > LOG_LEVEL_1)
+    if (mLogLevel > LOG_LEVEL_1)
         SYS_LOGI("write %s, val:%s\n", path, val);
 
     write(fd, val, strlen(val));
@@ -249,7 +247,8 @@ exit:
 int SysWrite::writeSys(const char *path, const char *val, const int size){
     int fd;
 
-    SYS_LOGE("writeSysFs, size = %d \n", size);
+    if (mLogLevel > LOG_LEVEL_1)
+        SYS_LOGI("writeSysFs, size = %d \n", size);
 
     if ((fd = open(path, O_WRONLY)) < 0) {
         SYS_LOGE("writeSysFs, open %s fail.", path);

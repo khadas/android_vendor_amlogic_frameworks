@@ -1,14 +1,12 @@
 /*
- * \file        HDCPRx22ImgKey.cpp
- * \brief
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
  *
- * \version     1.0.0
- * \date        16/12/1
- * \author      Xindongxu <xindong.xu@amlgic.com>
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
  *
- * Copyright (c) 2016 Amlogic. All Rights Reserved.
- *
+ * Description: C++ file
  */
+
 #define LOG_TAG "SystemControl"
 
 #include <errno.h>

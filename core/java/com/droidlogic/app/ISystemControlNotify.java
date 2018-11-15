@@ -1,7 +1,13 @@
 /*
- * This file is auto-generated.  DO NOT MODIFY.
- * Original file: vendor/amlogic/frameworks/core/java/com/droidlogic/app/ISystemControlNotify.aidl
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
+ * Description:
+ *     AMLOGIC ISystemControlNotify
  */
+
 package com.droidlogic.app;
 
 import android.os.Binder;

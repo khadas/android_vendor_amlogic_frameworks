@@ -1,33 +1,11 @@
-/*-----------------------------------------------------------------------------
- *                 @@@           @@                  @@
- *                @@@@@          @@   @@             @@
- *                @@@@@          @@                  @@
- *       .@@@@@.  @@@@@      @@@ @@   @@     @@@@    @@     @@@       @@@
- *     @@@@@@   @@@@@@@    @@   @@@   @@        @@   @@   @@   @@   @@   @@
- *    @@@@@    @@@@@@@@    @@    @@   @@    @@@@@@   @@   @@   @@   @@   @@
- *   @@@@@@     @@@@@@@    @@    @@   @@   @@   @@   @@   @@   @@   @@   @@
- *   @@@@@@@@     @@@@@    @@   @@@   @@   @@   @@   @@   @@   @@   @@   @@
- *   @@@@@@@@@@@    @@@     @@@@ @@   @@    @@@@@    @@     @@@       @@@@@
- *    @@@@@@@@@@@  @@@@                                                  @@
- *     @@@@@@@@@@@@@@@@                                                  @@
- *       "@@@@@"  @@@@@    S  E  M  I  C  O  N  D  U  C  T  O  R     @@@@@
+/*
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
  *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
  *
- * Copyright (C) 2014 Dialog Semiconductor GmbH and its Affiliates, unpublished
- * work. This computer program includes Confidential, Proprietary Information
- * and is a Trade Secret of Dialog Semiconductor GmbH and its Affiliates. All
- * use, disclosure, and/or  reproduction is prohibited unless authorized in
- * writing. All Rights Reserved.
- *
- * Filename: BluetoothLeService.java
- * Purpose : Service to connect and communicate with Bluetooth LE devices
- * Created : 08-2014
- * By      : Johannes Steensma, Taronga Technology Inc.
- * Country : USA
- *
- *-----------------------------------------------------------------------------
- *
- *-----------------------------------------------------------------------------
+ * Description:
+ *     AMLOGIC DialogBluetoothService
  */
 
 package com.droidlogic;

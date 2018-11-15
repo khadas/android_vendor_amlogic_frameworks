@@ -180,6 +180,8 @@ using namespace android;
 //HDCP RX
 #define HDMI_RX_PLUG_UEVENT             "DEVPATH=/devices/platform/ffd26000.hdmirx/hdmirx/hdmirx0/rx22"               //"DEVPATH=/devices/virtual/switch/hdmirx_hpd"//1:plugin 0:plug out
 #define HDMI_RX_AUTH_UEVENT             "DEVPATH=/devices/platform/ffd26000.hdmirx/hdmirx/hdmirx0/rp_auth"        //"DEVPATH=/devices/virtual/switch/hdmirx_hdcp_auth"//0:FAIL 1:HDCP14 2:HDCP22
+#define HDMI_RX_PLUG_PATH               "sys/class/extcon/rx22"
+#define HDMI_RX_AUTH_PATH               "sys/class/extcon/rp_auth"
 
 #define HDMI_RX_PLUG_OUT                "0"
 #define HDMI_RX_PLUG_IN                 "1"

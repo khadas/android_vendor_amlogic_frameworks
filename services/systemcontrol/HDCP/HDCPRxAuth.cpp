@@ -37,10 +37,33 @@
 #include "HDCPRxKey.h"
 #include "../DisplayMode.h"
 
+static char HdmiRxPlugEvent[128] = {0};
+static char HdmiRxAuthEvent[128] = {0};
+
+static void GetHdmiRxEventPath() {
+    char tmpHdmiRxPlugEvent[128] = {0};
+    char tmpHdmiRxAuthEvent[128] = {0};
+    char tmpHdmiRxPlugEvent1[128] = {0};
+    char tmpHdmiRxAuthEvent1[128] = {0};
+    readlink(HDMI_RX_PLUG_PATH, tmpHdmiRxPlugEvent, 128);
+    readlink(HDMI_RX_AUTH_PATH, tmpHdmiRxAuthEvent, 128);
+
+    //The first 5 characters need to be discarded, event path don't need;
+    strncpy(tmpHdmiRxPlugEvent1, tmpHdmiRxPlugEvent + 5, sizeof(tmpHdmiRxPlugEvent) - 5);
+    strncpy(tmpHdmiRxAuthEvent1, tmpHdmiRxAuthEvent + 5, sizeof(tmpHdmiRxAuthEvent) - 5);
+
+    snprintf(HdmiRxPlugEvent, sizeof(tmpHdmiRxPlugEvent1), "DEVPATH=%s", tmpHdmiRxPlugEvent1);
+    snprintf(HdmiRxAuthEvent, sizeof(tmpHdmiRxAuthEvent1), "DEVPATH=%s", tmpHdmiRxAuthEvent1);
+    SYS_LOGD("mHdmiRxPlugEvent = %s\n", HdmiRxPlugEvent);
+    SYS_LOGD("mHdmiRxAuthEvent = %s\n", HdmiRxAuthEvent);
+
+}
+
 HDCPRxAuth::HDCPRxAuth(HDCPTxAuth *txAuth) :
     pTxAuth(txAuth) {
 
     initKey();
+    GetHdmiRxEventPath();
 
     pthread_t id;
     int ret = pthread_create(&id, NULL, RxUenventThreadLoop, this);
@@ -167,14 +190,14 @@ void* HDCPRxAuth::RxUenventThreadLoop(void* data) {
     memset(&ueventData, 0, sizeof(uevent_data_t));
 
     UEventObserver ueventObserver;
-    ueventObserver.addMatch(HDMI_RX_PLUG_UEVENT);
-    ueventObserver.addMatch(HDMI_RX_AUTH_UEVENT);
+    ueventObserver.addMatch(HdmiRxPlugEvent);
+    ueventObserver.addMatch(HdmiRxAuthEvent);
 
     while (true) {
         ueventObserver.waitForNextEvent(&ueventData);
         SYS_LOGI("HDCP RX switch_name: %s ,switch_state: %s\n", ueventData.switchName, ueventData.switchState);
 
-        if (!strcmp(ueventData.matchName, HDMI_RX_PLUG_UEVENT)) {
+        if (!strcmp(ueventData.matchName, HdmiRxPlugEvent)) {
             if (!strcmp(ueventData.switchState, HDMI_RX_PLUG_IN)) {
                 pThiz->pTxAuth->stop();
                 pThiz->stopVer22();
@@ -186,7 +209,7 @@ void* HDCPRxAuth::RxUenventThreadLoop(void* data) {
                 pThiz->pTxAuth->start();
             }
         }
-        else if (!strcmp(ueventData.matchName, HDMI_RX_AUTH_UEVENT)) {
+        else if (!strcmp(ueventData.matchName, HdmiRxAuthEvent)) {
             if (!strcmp(ueventData.switchState, HDMI_RX_AUTH_FAIL)) {
                 SYS_LOGI("HDCP RX, switch_state: %s error\n", ueventData.switchState);
                 continue;

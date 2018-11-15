@@ -118,10 +118,6 @@ public class BootComplete extends BroadcastReceiver {
         if (mSystemControlManager.getPropertyBoolean("vendor.sys.bandwidth.enable", false))
             context.startService(new Intent(context, DDRBandwidthService.class));
 
-
-        Intent gattServiceIntent = new Intent(context, DialogBluetoothService.class);
-        context.startService(gattServiceIntent);
-
         /*  AML default rotation config, cannot use with shipping_api_level=28
             String rotProp = mSystemControlManager.getPropertyString("persist.vendor.sys.app.rotation", "");
             ContentResolver res = context.getContentResolver();

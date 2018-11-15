@@ -1127,6 +1127,10 @@ int DisplayMode::getBootenvInt(const char* key, int defaultVal) {
  * this function will set mode to 'null', policy to 1, and set mode to previous value later.
  */
 void DisplayMode::setAutoSwitchFrameRate(int state) {
+//default force shift 0.001 clk, if you do not want to do that, open this marco.
+//so you can control switch it from DroidTvSetings app.
+//#define DEFAULT_NO_CLK_OFFSET
+#ifdef DEFAULT_NO_CLK_OFFSET
     if ((state == OUPUT_MODE_STATE_SWITCH_ADAPTER) || pFrameRateAutoAdaption->autoSwitchFlag == true) {
         SYS_LOGI("FrameRate video need set mode to null, and policy to 1 to into adapter policy\n");
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
@@ -1138,6 +1142,7 @@ void DisplayMode::setAutoSwitchFrameRate(int state) {
         }
         pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "0");
     }
+#endif
 }
 
 void DisplayMode::updateDefaultUI() {

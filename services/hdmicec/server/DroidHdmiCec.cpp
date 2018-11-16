@@ -45,7 +45,8 @@ DroidHdmiCec::DroidHdmiCec() : mDeathRecipient(new DeathRecipient(this))
     mHdmiCecControl = new HdmiCecControl();
     mHdmiCecControl->setEventObserver(this);
     ALOGI("--ww--DroidHdmiCec::DroidHdmiCec");
-    mDebug = property_get_bool("persist.hdmicec.debug", true);
+    //mDebug = property_get_bool("persist.hdmicec.debug", true);
+    mDebug = true;
 }
 
 DroidHdmiCec::~DroidHdmiCec()

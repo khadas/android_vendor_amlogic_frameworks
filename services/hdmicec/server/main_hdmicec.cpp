@@ -38,7 +38,8 @@ using ::vendor::amlogic::hardware::hdmicec::V1_0::IDroidHdmiCEC;
 
 int main(int argc __unused, char** argv __unused)
 {
-    bool treble = property_get_bool("persist.hdmi_cec.treble", true);
+    //bool treble = property_get_bool("persist.hdmi_cec.treble", true);
+    bool treble = true;
     if (treble) {
         android::ProcessState::initWithDriver("/dev/vndbinder");
     }

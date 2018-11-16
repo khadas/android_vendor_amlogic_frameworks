@@ -52,8 +52,9 @@ void HdmiCecControl::init()
     mCecDevice.mTotalDevice = 0;
     getDeviceTypes();
     memset(value, 0, PROPERTY_VALUE_MAX);
-    property_get("persist.vendor.sys.hdmi.keep_awake", value, "true");
-    mCecDevice.mExtendControl = (!strcmp(value, "false")) ? 1 : 0;
+    //property_get("persist.vendor.sys.hdmi.keep_awake", value, "true");
+    //mCecDevice.mExtendControl = (!strcmp(value, "false")) ? 1 : 0;
+    mCecDevice.mExtendControl= 1;
     ALOGD("[hcc] ext_control: %d", mCecDevice.mExtendControl);
     mSystemControl = new SystemControlClient();
 }
@@ -68,7 +69,7 @@ void HdmiCecControl::getDeviceTypes() {
         ALOGE("[hcc] alloc mDeviceTypes failed");
         return;
     }
-    property_get("ro.hdmi.device_type", value, "4");
+    property_get("ro.vendor.platform.hdmi.device_type", value, "4");
     type = strtok(value, split);
     mCecDevice.mDeviceTypes[index] = atoi(type);
     while (type != NULL) {
@@ -109,6 +110,7 @@ int HdmiCecControl::closeCecDevice()
  */
 int HdmiCecControl::openCecDevice()
 {
+    int index = 0;
     mCecDevice.mRun = true;
     mCecDevice.mExited = false;
     mCecDevice.mThreadId = 0;
@@ -123,7 +125,11 @@ int HdmiCecControl::openCecDevice()
         ALOGE("[hcc] can't open device. fd < 0");
         return -EINVAL;
     }
-    //int ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_DEV_TYPE, mCecDevice.mDeviceType);
+    for (index = 0; index < mCecDevice.mTotalDevice; index++) {
+        int deviceType =  mCecDevice.mDeviceTypes[index];
+        ALOGD("[hcc] set device type index : %d, type: %d", index, deviceType);
+        int ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_DEV_TYPE, deviceType);
+    }
     getBootConnectStatus();
     mCecDevice.mAddedPhyAddrs = new int[ADDR_BROADCAST];
     pthread_create(&mCecDevice.mThreadId, NULL, __threadLoop, this);

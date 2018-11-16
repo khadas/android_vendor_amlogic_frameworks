@@ -209,9 +209,6 @@ void HdmiCecControl::threadLoop()
         event.cec.destination = cec_logical_address_t((msgBuf[0] >> 0) & 0xf);
         event.cec.length = r - 1;
 
-        ALOGD("[hcc] mExtendControl = %d, isCecControlled = %d",
-                mCecDevice.mExtendControl, mCecDevice.isCecControlled);
-
         if (mCecDevice.isCecControlled) {
              event.eventType |= HDMI_EVENT_CEC_MESSAGE;
             /* call java method to process cec message for ext control */

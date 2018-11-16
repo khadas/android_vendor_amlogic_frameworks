@@ -27,7 +27,7 @@ void HdmiCecBase::printCecMsgBuf(const char *msg_buf, int len)
     for (i = 0; i < len; i++) {
         size += sprintf(buf + size, " %02x", msg_buf[i]);
     }
-    LOGD("%s, msg:%s", __FUNCTION__, buf);
+    ALOGD("%s, msg:%s", __FUNCTION__, buf);
 }
 
 void HdmiCecBase::printCecEvent(const hdmi_cec_event_t *event)
@@ -37,13 +37,13 @@ void HdmiCecBase::printCecEvent(const hdmi_cec_event_t *event)
 
     if (((event->eventType & HDMI_EVENT_CEC_MESSAGE) != 0)
             || ((event->eventType & HDMI_EVENT_RECEIVE_MESSAGE) != 0)) {
-        LOGD("%s, eventType: %d", __FUNCTION__, event->eventType);
+        ALOGD("%s, eventType: %d", __FUNCTION__, event->eventType);
         printCecMessage(&event->cec);
     } else if ((event->eventType & HDMI_EVENT_HOT_PLUG) != 0) {
-        LOGD("%s, hotplug, connected:%d, port_id:%d", __FUNCTION__, event->hotplug.connected,
+        ALOGD("%s, hotplug, connected:%d, port_id:%d", __FUNCTION__, event->hotplug.connected,
                 event->hotplug.port_id);
     } else if ((event->eventType & HDMI_EVENT_ADD_LOGICAL_ADDRESS) != 0) {
-        LOGD("%s, add logical address, logicalAddress:%x", __FUNCTION__, event->logicalAddress);
+        ALOGD("%s, add logical address, logicalAddress:%x", __FUNCTION__, event->logicalAddress);
     }
 }
 
@@ -58,7 +58,7 @@ void HdmiCecBase::printCecMessage(const cec_message_t* message)
     for (i = 0; i < message->length; i++) {
         size += sprintf(buf + size, " %02x", message->body[i]);
     }
-    LOGD("%s, [%x -> %x] len: %d, body:%s", __FUNCTION__, message->initiator, message->destination,
+    ALOGD("%s, [%x -> %x] len: %d, body:%s", __FUNCTION__, message->initiator, message->destination,
             message->length, buf);
 }
 
@@ -73,7 +73,7 @@ void HdmiCecBase::printCecMessage(const cec_message_t* message, int result)
     for (i = 0; i < message->length; i++) {
         size += sprintf(buf + size, " %02x", message->body[i]);
     }
-    LOGD("%s, [%x -> %x] len: %d, body:%s, result: %s", __FUNCTION__,
+    ALOGD("%s, [%x -> %x] len: %d, body:%s, result: %s", __FUNCTION__,
             message->initiator, message->destination, message->length, buf, getResult(result));
 }
 

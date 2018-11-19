@@ -50,6 +50,7 @@ public class BootComplete extends BroadcastReceiver {
 
     private SystemControlEvent mSystemControlEvent;
     private boolean mHasTvUiMode;
+    private boolean mSupportDolbyVision;
     private SystemControlManager mSystemControlManager;
     private AudioManager mAudioManager;
 
@@ -64,6 +65,7 @@ public class BootComplete extends BroadcastReceiver {
         SettingsPref.setSavedBootCompletedStatus(context, true);
         mSystemControlManager =  SystemControlManager.getInstance();
         mHasTvUiMode = mSystemControlManager.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
+        mSupportDolbyVision = mSystemControlManager.getPropertyBoolean("ro.vendor.platform.support.dolbyvision", false);
         final ContentResolver resolver = context.getContentResolver();
         //register system control callback
         mSystemControlEvent = new SystemControlEvent(context);
@@ -88,8 +90,9 @@ public class BootComplete extends BroadcastReceiver {
         //use to check whether disable camera or not
         new UsbCameraManager(context).bootReady();
 
-        if (mHasTvUiMode)
+        if (mSupportDolbyVision) {
             new DolbyVisionSettingManager(context).initSetDolbyVision();
+        }
 
         new PlayBackManager(context).initHdmiSelfadaption();
 

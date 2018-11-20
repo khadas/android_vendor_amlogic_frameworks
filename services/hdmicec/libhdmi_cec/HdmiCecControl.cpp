@@ -319,18 +319,23 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
 {
     bool ret = true;
     cec_message_t message;
+    int initiator = (int)(event->cec.initiator);
+    int devPhyAddr = 0;
     if (mCecDevice.isTvDeviceType) {
         switch (event->cec.body[0]) {
             case CEC_MESSAGE_REPORT_PHYSICAL_ADDRESS:
+                devPhyAddr = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
                 if (event->cec.body[1] == 0) {
                     message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
-                    message.destination = (cec_logical_address_t)event->cec.initiator;
+                    message.destination = (cec_logical_address_t)initiator;
                     message.body[0] = CEC_MESSAGE_GIVE_PHYSICAL_ADDRESS;
                     message.length = 1;
                     sendMessage(&message, false);
                     ret = false;
+                } else if (mCecDevice.mAddedPhyAddrs[initiator] == devPhyAddr && devPhyAddr != 0) {
+                    ret = false;
                 } else {
-                    mCecDevice.mAddedPhyAddrs[(int)(event->cec.initiator)] = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
+                    mCecDevice.mAddedPhyAddrs[initiator] = devPhyAddr;
                 }
                 break;
             default:
@@ -577,6 +582,11 @@ int HdmiCecControl::getPhysicalAddress(uint16_t* addr)
 
 int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
 {
+    int ret = -1;
+    int opcode = 0;
+    int length = message->length;
+    if (length > 0)
+        opcode = message->body[0] & 0xff;
     if (assertHdmiCecDevice())
         return -EINVAL;
 
@@ -591,7 +601,12 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
     if (preHandleBeforeSend(message) < 0) {
         return HDMI_RESULT_SUCCESS;
     }
-    return send(message);
+    ret = send(message);
+    if (length == 0 && ret != SUCCESS && mCecDevice.mAddedPhyAddrs[(int)message->destination] != 0) {
+        ALOGD("[hcc] Polling dest: %x fail, ret = %d.", (int)(message->destination), ret);
+        mCecDevice.mAddedPhyAddrs[(int)message->destination] = 0;
+    }
+    return ret;
 }
 
 int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)

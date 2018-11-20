@@ -72,6 +72,13 @@ enum cec_message_para_value{
     CEC_KEYCODE_POWER_ON_FUNCTION = 0x6D
 };
 
+enum SendMessageResult{
+    SUCCESS = 0,
+    NACK = 1, // not acknowledged
+    BUSY = 2, // bus is busy
+    FAIL = 3,
+};
+
 /**
  * struct for information of cec device.
  * @mDeviceType      Indentify type of cec device, such as TV or BOX.

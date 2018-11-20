@@ -75,6 +75,7 @@ import vendor.amlogic.hardware.hdmicec.V1_0.IDroidHdmiCecCallback;
 import vendor.amlogic.hardware.hdmicec.V1_0.OptionKey;
 import vendor.amlogic.hardware.hdmicec.V1_0.Result;
 import vendor.amlogic.hardware.hdmicec.V1_0.SendMessageResult;
+import com.droidlogic.app.SystemControlManager;
 
 public class HdmiCecExtend implements VendorCommandListener, HotplugEventListener {
     private final String TAG = "HdmiCecExtend";
@@ -230,6 +231,8 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
     private PowerManager mPowerManager;
     private ActiveWakeLock mWakeLock;
 
+    private final SystemControlManager mSystemControl;
+
     private long mNativePtr = 0;
     private final Object mLock = new Object();
     private IDroidHdmiCEC mProxy = null;
@@ -240,6 +243,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
     private static final int HDMI_EVENT_ADD_LOGICAL_ADDRESS = 4;
     private static final int HDMI_EVENT_RECEIVE_MESSAGE = 9;
     static final String PROPERTY_DEVICE_TYPE = "ro.hdmi.device_type";
+    static final String UBOOTENV_REBOOT_MODE = "ubootenv.var.reboot_mode_android";
     /*
     static {
         System.loadLibrary("hdmicec_jni");
@@ -256,7 +260,12 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
                 SendGetMenuLanguage(ADDR_TV);
                 break;
             case MSG_ONE_TOUCH_PLAY:
-                mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
+                String mode = mSystemControl.getBootenv(UBOOTENV_REBOOT_MODE, "normal");
+                Log.i(TAG, "rebootmode: " + mode);
+                if (!mode.equals("quiescent")) {
+                    Log.i(TAG, "rebootmode noraml");
+                    mHandler.postDelayed(mDelayedRun, ONE_TOUCH_PLAY_DELAY);
+                }
                 break;
             default:
                 break;
@@ -272,6 +281,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         mPowerManager = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
         mSettingsObserver = new SettingsObserver(mHandler);
+        mSystemControl = new SystemControlManager(ctx);
         registerContentObserver();
         if (mControl != null) {
             mPlayback = mControl.getPlaybackClient();

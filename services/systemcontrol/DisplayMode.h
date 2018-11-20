@@ -247,6 +247,9 @@ using namespace android;
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
 #define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
 
+#define UBOOTENV_REBOOT_MODE           "ubootenv.var.reboot_mode_android"
+
+
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
 #define FULL_WIDTH_576                  720
@@ -484,6 +487,8 @@ private:
 
     int mDisplayWidth;
     int mDisplayHeight;
+
+    char mRebootMode[128];
 
     char mSocType[64];
     char mDefaultUI[64];//this used for mbox

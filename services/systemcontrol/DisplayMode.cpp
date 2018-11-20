@@ -202,6 +202,9 @@ void DisplayMode::init() {
     parseConfigFile();
     pFrameRateAutoAdaption = new FrameRateAutoAdaption(this);
 
+    getBootEnv(UBOOTENV_REBOOT_MODE, mRebootMode);
+    SYS_LOGI("reboot_mode :%s\n", mRebootMode);
+
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
         mDisplayType, mSocType, mDefaultUI);
     if (DISPLAY_TYPE_MBOX == mDisplayType) {
@@ -470,6 +473,13 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     updateDeepColor(cvbsMode, state, outputmode);
     char curMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
+
+    if (strstr(mRebootMode, "quiescent")) {
+        SYS_LOGI("reboot_mode is quiescent\n");
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+        return;
+    }
+
     if (strstr(curMode, outputmode) == NULL) {
         if (cvbsMode) {
             pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
@@ -1687,6 +1697,11 @@ void DisplayMode::onTxEvent (char* switchName, char* hpdstate, int outputState) 
         notifyEvent((hpdstate[0] == '1') ? EVENT_HDMI_PLUG_IN : EVENT_HDMI_PLUG_OUT);
         if (hpdstate[0] == '1')
             dumpCaps();
+    }
+    if (strstr(mRebootMode, "quiescent")) {
+        SYS_LOGI("reset mRebootMode normal\n");
+        strcpy(mRebootMode, "normal");
+        setBootEnv(UBOOTENV_REBOOT_MODE, mRebootMode);
     }
 #endif
     setSourceDisplay((output_mode_state)outputState);

@@ -33,12 +33,64 @@
 
 namespace android {
 
-HdmiCecControl::HdmiCecControl() : mFirstEnableCec(true) {
+HdmiCecControl::HdmiCecControl() : mFirstEnableCec(true), mMsgHandler(this)
+{
     ALOGD("[hcc] HdmiCecControl");
     init();
 }
 
 HdmiCecControl::~HdmiCecControl(){}
+
+HdmiCecControl::MsgHandler::MsgHandler(HdmiCecControl *hdmiControl)
+{
+    ALOGD("[hcc] HdmiCecControl::MsgHandler Constructor");
+    mControl = hdmiControl;
+}
+
+HdmiCecControl::MsgHandler::~MsgHandler(){}
+
+HdmiCecControl::TvEventListner::TvEventListner(HdmiCecControl *hdmiControl)
+{
+    ALOGD("[hcc] HdmiCecControl::TvEventListner Constructor");
+    mControl = hdmiControl;
+}
+
+HdmiCecControl::TvEventListner::~TvEventListner(){}
+
+void HdmiCecControl::MsgHandler::handleMessage (CMessage &msg)
+{
+    AutoMutex _l(mControl->mLock);
+    ALOGD ("HdmiCecControl::MsgHandler::handleMessage type = %d", msg.mType);
+    switch (msg.mType) {
+        case HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT:
+            mControl->mCecDevice.mFilterOtpEnabled = false;
+            ALOGD ("reset mFilterOtpEnabled to false.");
+            break;
+    }
+}
+
+void HdmiCecControl::TvEventListner::notify (const tv_parcel_t &parcel)
+{
+    AutoMutex _l(mControl->mLock);
+    ALOGD ("HdmiCecControl::TvEventListner::notify type = %d", parcel.msgType);
+    int portId = 0;
+    switch (parcel.msgType) {
+        case HdmiCecControl::TvEventListner::TV_EVENT_SOURCE_SWITCH:
+            portId = parcel.bodyInt[1];
+            ALOGD ("TvEventListner notify port switch from: %d to: %d", mControl->mCecDevice.mSelectedPortId, portId);
+            if (mControl->mCecDevice.mSelectedPortId != -1 &&  mControl->mCecDevice.mSelectedPortId != portId) {
+                mControl->mCecDevice.mFilterOtpEnabled = true;
+                CMessage msg;
+                msg.mType = HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT;
+                msg.mDelayMs = DELAY_TIMEOUT_MS;
+                mControl->mMsgHandler.removeMsg (msg);
+                mControl->mMsgHandler.sendMsg (msg);
+                ALOGD ("Set mFilterOtpEnabled to true.");
+            }
+            mControl->mCecDevice.mSelectedPortId = portId;
+            break;
+    }
+}
 
 /**
  * initialize some cec flags before opening cec deivce.
@@ -120,6 +172,8 @@ int HdmiCecControl::openCecDevice()
     mCecDevice.mAddrBitmap = (1 << CEC_ADDR_BROADCAST);
     mCecDevice.isCecEnabled = true;
     mCecDevice.isCecControlled = false;
+    mCecDevice.mFilterOtpEnabled = false;
+    mCecDevice.mSelectedPortId = -1;
     mCecDevice.mFd = open(CEC_FILE, O_RDWR);
     if (mCecDevice.mFd < 0) {
         ALOGE("[hcc] can't open device. fd < 0");
@@ -134,6 +188,12 @@ int HdmiCecControl::openCecDevice()
     mCecDevice.mAddedPhyAddrs = new int[ADDR_BROADCAST];
     pthread_create(&mCecDevice.mThreadId, NULL, __threadLoop, this);
     pthread_setname_np(mCecDevice.mThreadId, "hdmi_cec_loop");
+    if (mCecDevice.isTvDeviceType) {
+        mMsgHandler.startMsgQueue();
+        mTvSession = TvServerHidlClient::connect(CONNECT_TYPE_HAL);
+        mTvEventListner = new HdmiCecControl::TvEventListner(this);
+        mTvSession->setListener(mTvEventListner);
+    }
     return mCecDevice.mFd;
 }
 
@@ -232,6 +292,10 @@ void HdmiCecControl::threadLoop()
         }
         if (!messageValidate(&event)) {
             ALOGD("[hcc]  receive message is invalid.");
+            continue;
+        }
+        if (!handleOTPMsg(&event)) {
+            ALOGD("[hcc] handleOTPMsg filtered, continue.");
             continue;
         }
         if (mEventListener != NULL && event.eventType != 0) {
@@ -339,6 +403,30 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
             default:
                 break;
         }
+    }
+    return ret;
+}
+
+bool HdmiCecControl::handleOTPMsg(hdmi_cec_event_t* event)
+{
+    bool ret = true;
+    cec_message_t message;
+    int initiator = (int)(event->cec.initiator);
+    int devPhyAddr = 0;
+    int i, portId = 0;
+    if (mCecDevice.isTvDeviceType && (event->cec.body[0] == CEC_MESSAGE_ACTIVE_SOURCE)) {
+        devPhyAddr = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
+        for (i = 0; i < mCecDevice.mTotalPort && mCecDevice.mpPortData != NULL; i++) {
+            if (mCecDevice.mpPortData[i].physical_address == devPhyAddr)
+                portId = mCecDevice.mpPortData[i].port_id;
+        }
+        ALOGD ("#receive <Active Source> from: %d, phyAddress: %02x, mFilterOtpEnabled: %x, mSelectedPortId: %d, portId: %d",
+            initiator, devPhyAddr, mCecDevice.mFilterOtpEnabled, mCecDevice.mSelectedPortId, portId);
+        mLock.lock();
+        if (mCecDevice.mFilterOtpEnabled && mCecDevice.mSelectedPortId != -1 && mCecDevice.mSelectedPortId != portId) {
+            ret = false;
+        }
+        mLock.unlock();
     }
     return ret;
 }

@@ -15,11 +15,13 @@ LOCAL_C_INCLUDES += \
    system/core/libutils/include \
    system/core/liblog/include \
    vendor/amlogic/common/frameworks/services/systemcontrol \
-   vendor/amlogic/common/frameworks/services/systemcontrol/PQ/include
+   vendor/amlogic/common/frameworks/services/systemcontrol/PQ/include \
+   $(LOCAL_PATH)/../../../../tv/frameworks/libtvbinder/include
 
 LOCAL_SHARED_LIBRARIES := \
     vendor.amlogic.hardware.hdmicec@1.0 \
     vendor.amlogic.hardware.systemcontrol@1.0 \
+    vendor.amlogic.hardware.tvserver@1.0 \
     libsystemcontrolservice \
     libbase \
     libhidlbase \
@@ -28,6 +30,7 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     libbinder \
     libhdmicec \
+    libtvbinder \
     liblog
 
 LOCAL_STATIC_LIBRARIES := \

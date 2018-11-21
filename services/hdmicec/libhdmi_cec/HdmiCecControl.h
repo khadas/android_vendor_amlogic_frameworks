@@ -13,7 +13,9 @@
 
 #include <pthread.h>
 #include <HdmiCecBase.h>
+#include <CMsgQueue.h>
 #include "SystemControlClient.h"
+#include "TvServerHidlClient.h"
 #include <utils/StrongPointer.h>
 
 #define CEC_FILE        "/dev/cec"
@@ -49,6 +51,7 @@
 
 
 #define ADDR_BROADCAST  15
+#define DELAY_TIMEOUT_MS  7000
 
 #define HDMIRX_SYSFS                    "/sys/class/hdmirx/hdmirx0/cec"
 #define CEC_STATE_BOOT_ENABLED          "2"
@@ -111,6 +114,8 @@ typedef struct hdmi_device {
     bool                        mRun;
     bool                        mExited;
     int                         mExtendControl;
+    bool                        mFilterOtpEnabled;
+    int                         mSelectedPortId;
 } hdmi_device_t;
 
 class HdmiCecControl : public HdmiCecBase {
@@ -134,6 +139,26 @@ public:
     virtual bool isConnected(int port);
 
     void setEventObserver(const sp<HdmiCecEventListener> &eventListener);
+protected:
+    class MsgHandler: public CMsgQueueThread {
+    public:
+        static const int MSG_FILTER_OTP_TIMEOUT = 0;
+        MsgHandler(HdmiCecControl *hdmiControl);
+        ~MsgHandler();
+    private:
+        virtual void handleMessage (CMessage &msg);
+        HdmiCecControl *mControl;
+    };
+public:
+    class TvEventListner: public TvListener {
+    public:
+        static const int TV_EVENT_SOURCE_SWITCH = 506;
+        TvEventListner(HdmiCecControl *hdmiControl);
+        ~TvEventListner();
+        virtual void notify(const tv_parcel_t &parcel);
+    private:
+        HdmiCecControl *mControl;
+    };
 private:
     void init();
     void getDeviceTypes();
@@ -152,9 +177,14 @@ private:
     int preHandleBeforeSend(const cec_message_t* message);
     bool isWakeUpMsg(char *msgBuf, int len);
     bool messageValidate(hdmi_cec_event_t* event);
+    bool handleOTPMsg(hdmi_cec_event_t* event);
     hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;
     sp<SystemControlClient> mSystemControl;
+    sp<TvServerHidlClient> mTvSession;
+    sp<HdmiCecControl::TvEventListner> mTvEventListner;
+    MsgHandler mMsgHandler;
+    mutable Mutex mLock;
 };
 
 

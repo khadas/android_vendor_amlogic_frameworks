@@ -73,6 +73,9 @@
 
 #include "RGBPicture.h"
 
+#include "ImagePlayerProcessData.h"
+
+
 #define CHECK assert
 #define CHECK_EQ(a,b) CHECK((a)==(b))
 
@@ -972,6 +975,10 @@ namespace android {
         info.frame_height = 100;
         info.format = VIDEO_LAYER_FORMAT_RGB;
         info.rotate = 0;
+
+        copy_data_to_mmap_buf(mDisplayFd, bitmap_addr,
+                             info.frame_width, info.frame_height,
+                             info.format);
 
         ioctl(mDisplayFd, PICDEC_IOC_FRAME_RENDER, &info);
         ioctl(mDisplayFd, PICDEC_IOC_FRAME_POST, NULL);
@@ -2175,6 +2182,10 @@ namespace android {
                 info.frame_width = bitmap->width();
                 info.frame_height = bitmap->height();
 
+                copy_data_to_mmap_buf(mDisplayFd, info.pBuff,
+                             info.frame_width, info.frame_height,
+                             info.format);
+
                 ioctl(mDisplayFd, PICDEC_IOC_FRAME_RENDER, &info);
                 //bitmap->unlockPixels();
             }
@@ -2826,6 +2837,10 @@ namespace android {
         info.format = VIDEO_LAYER_FORMAT_RGBA;
         info.frame_width = bitmap->width();
         info.frame_height = bitmap->height();
+
+        copy_data_to_mmap_buf(mDisplayFd, info.pBuff,
+                        info.frame_width, info.frame_height,
+                        info.format);
 
         ioctl(mDisplayFd, PICDEC_IOC_FRAME_RENDER, &info);
 

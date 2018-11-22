@@ -10,7 +10,9 @@ LOCAL_SRC_FILES:= \
   ImagePlayerService.cpp  \
   SysWrite.cpp \
   RGBPicture.c  \
-  TIFF2RGBA.cpp
+  TIFF2RGBA.cpp \
+  ImagePlayerProcessData.cpp
+
 LOCAL_STATIC_LIBRARIES := libtiff_static
 LOCAL_SHARED_LIBRARIES := \
   vendor.amlogic.hardware.imageserver@1.0 \

@@ -72,7 +72,7 @@ enum cec_message_para_value{
     CEC_KEYCODE_POWER_ON_FUNCTION = 0x6D
 };
 
-enum SendMessageResult{
+enum send_message_result{
     SUCCESS = 0,
     NACK = 1, // not acknowledged
     BUSY = 2, // bus is busy

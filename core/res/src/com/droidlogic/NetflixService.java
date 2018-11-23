@@ -78,7 +78,7 @@ public class NetflixService extends Service {
     public void onCreate() {
         super.onCreate();
         mContext = this;
-        mSCM = new SystemControlManager(this);
+        mSCM = SystemControlManager.getInstance();
         IntentFilter filter = new IntentFilter(NETFLIX_DIAL_STOP);
         filter.setPriority (IntentFilter.SYSTEM_HIGH_PRIORITY);
         mContext.registerReceiver (mReceiver, filter);

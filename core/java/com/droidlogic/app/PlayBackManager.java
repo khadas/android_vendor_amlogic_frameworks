@@ -30,7 +30,7 @@ public class PlayBackManager {
 
     public PlayBackManager(Context context){
         mContext = context;
-        mSystenControl = new SystemControlManager(context);
+        mSystenControl = SystemControlManager.getInstance();
     }
 
     public void initHdmiSelfadaption () {

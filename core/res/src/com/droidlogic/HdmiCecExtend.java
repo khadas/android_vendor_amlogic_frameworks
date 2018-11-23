@@ -281,7 +281,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         mControl = (HdmiControlManager) mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
         mPowerManager = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
         mSettingsObserver = new SettingsObserver(mHandler);
-        mSystemControl = new SystemControlManager(ctx);
+        mSystemControl = SystemControlManager.getInstance();
         registerContentObserver();
         if (mControl != null) {
             mPlayback = mControl.getPlaybackClient();

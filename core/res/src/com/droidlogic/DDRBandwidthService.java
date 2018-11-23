@@ -123,7 +123,7 @@ public class DDRBandwidthService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        mScm = new SystemControlManager(this);
+        mScm = SystemControlManager.getInstance();
         //mWm = IWindowManager.Stub.asInterface(ServiceManager.getService("window"));
         mStat = false;
         ueventInit();

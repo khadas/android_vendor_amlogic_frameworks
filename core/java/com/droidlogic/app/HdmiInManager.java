@@ -26,7 +26,7 @@ public class HdmiInManager {
     public HdmiInManager(Context context){
         mContext = context;
 
-        mSystenControl = new SystemControlManager(context);
+        mSystenControl = SystemControlManager.getInstance();
     }
 
     private boolean getHdmiInEnable() {

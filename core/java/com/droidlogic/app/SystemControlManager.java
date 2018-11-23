@@ -46,17 +46,14 @@ public class SystemControlManager {
 
     private static final int SYSTEM_CONTROL_DEATH_COOKIE = 1000;
 
-    private static SystemControlManager mInstance = null;
+    private static SystemControlManager mInstance;
 
-    private Context mContext;
     private IBinder mIBinder = null;
 
     // Mutex for all mutable shared state.
     private final Object mLock = new Object();
 
-    public SystemControlManager(Context context) {
-        mContext = context;
-
+    private SystemControlManager() {
         try {
             boolean ret = IServiceManager.getService()
                     .registerForNotifications("vendor.amlogic.hardware.systemcontrol@1.0::ISystemControl", "", mServiceNotification);
@@ -70,23 +67,12 @@ public class SystemControlManager {
         connectToProxy();
     }
 
-    public SystemControlManager() {
-        try {
-            boolean ret = IServiceManager.getService()
-                    .registerForNotifications("vendor.amlogic.hardware.systemcontrol@1.0::ISystemControl", "", mServiceNotification);
-            if (!ret) {
-                Log.e(TAG, "Failed to register service start notification");
-            }
-        } catch (RemoteException e) {
-            Log.e(TAG, "Failed to register service start notification", e);
-            return;
-        }
-        connectToProxy();
+    private static class InstanceHolder {
+        private static final SystemControlManager INSTANCE = new SystemControlManager();
     }
 
     public static SystemControlManager getInstance() {
-         if (null == mInstance) mInstance = new SystemControlManager();
-         return mInstance;
+         return InstanceHolder.INSTANCE;
      }
 
     private void connectToProxy() {

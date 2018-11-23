@@ -43,7 +43,7 @@ public class Optimization extends Service {
         super.onCreate();
         mContext = this;
 
-        mSCM = new SystemControlManager(this);
+        mSCM = SystemControlManager.getInstance();
     }
 
     @Override

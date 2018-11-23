@@ -19,6 +19,8 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioManager;
+import android.net.Uri;
 import android.os.IBinder;
 import android.os.Process;
 import android.os.SystemProperties;
@@ -58,6 +60,7 @@ public class NetflixService extends Service {
     private boolean mIsNetflixFg = false;
     private Context mContext;
     SystemControlManager mSCM;
+    AudioManager mAudioManager;
     private BroadcastReceiver mReceiver = new BroadcastReceiver(){
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -79,6 +82,7 @@ public class NetflixService extends Service {
         super.onCreate();
         mContext = this;
         mSCM = SystemControlManager.getInstance();
+        mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         IntentFilter filter = new IntentFilter(NETFLIX_DIAL_STOP);
         filter.setPriority (IntentFilter.SYSTEM_HIGH_PRIORITY);
         mContext.registerReceiver (mReceiver, filter);
@@ -127,6 +131,7 @@ public class NetflixService extends Service {
         }
 
         if (reason == WAKEUP_REASON_CUSTOM) {
+            /* response slowly while system start, use startActivity instead
             Intent netflixIntent = new Intent();
             netflixIntent.setAction("com.netflix.ninja.intent.action.NETFLIX_KEY");
             netflixIntent.setPackage("com.netflix.ninja");
@@ -135,6 +140,12 @@ public class NetflixService extends Service {
 
             Log.i(TAG, "start netflix by power on");
             mContext.sendBroadcast(netflixIntent,"com.netflix.ninja.permission.NETFLIX_KEY");
+            */
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("nflx://www.netflix.com/"));
+            intent.putExtra("deeplink", "&source_type=19");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            mContext.startActivity(intent);
         }
     }
 
@@ -252,6 +263,7 @@ public class NetflixService extends Service {
                     intent.putExtra ("pid", fg?getNetflixPid():-1);
                     mContext.sendBroadcast (intent);
 
+                    mAudioManager.setParameters("continuous_audio_mode=" + (fg ? "1" : "0"));
                     mSCM.setProperty ("vendor.netflix.state", fg ? "fg" : "bg");
                 }
 

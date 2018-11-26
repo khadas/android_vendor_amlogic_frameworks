@@ -40,6 +40,7 @@ import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
 import com.droidlogic.HdmiCecExtend;
 import com.droidlogic.app.DolbyVisionSettingManager;
+import com.droidlogic.app.AudioSettingManager;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
@@ -53,6 +54,7 @@ public class BootComplete extends BroadcastReceiver {
     private boolean mSupportDolbyVision;
     private SystemControlManager mSystemControlManager;
     private AudioManager mAudioManager;
+    private AudioSettingManager mAudioSettingManager;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -64,6 +66,7 @@ public class BootComplete extends BroadcastReceiver {
         }
         SettingsPref.setSavedBootCompletedStatus(context, true);
         mSystemControlManager =  SystemControlManager.getInstance();
+        mAudioSettingManager = new AudioSettingManager(context);
         mHasTvUiMode = mSystemControlManager.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
         mSupportDolbyVision = mSystemControlManager.getPropertyBoolean("ro.vendor.platform.support.dolbyvision", false);
         final ContentResolver resolver = context.getContentResolver();

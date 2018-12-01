@@ -484,7 +484,7 @@ void HdmiCecControl::setOption(int flag, int value)
     int ret = -1;
     switch (flag) {
         case HDMI_OPTION_ENABLE_CEC:
-            ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_ENALBE_CEC, value);
+            //ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_ENALBE_CEC, value);
             mCecDevice.isCecEnabled = (value == 1) ? true : false;
             if (!mCecDevice.isCecEnabled) {
                 mSystemControl->writeSysfs(HDMIRX_SYSFS, CEC_STATE_UNABLED);

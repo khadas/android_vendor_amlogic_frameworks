@@ -60,11 +60,33 @@ HdmiCecControl::TvEventListner::~TvEventListner(){}
 void HdmiCecControl::MsgHandler::handleMessage (CMessage &msg)
 {
     AutoMutex _l(mControl->mLock);
+    cec_message_t message;
     ALOGD ("HdmiCecControl::MsgHandler::handleMessage type = %d", msg.mType);
     switch (msg.mType) {
         case HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT:
             mControl->mCecDevice.mFilterOtpEnabled = false;
             ALOGD ("reset mFilterOtpEnabled to false.");
+            break;
+        case HdmiCecControl::MsgHandler::GET_MENU_LANGUAGE:
+        case HdmiCecControl::MsgHandler::GIVE_OSD_NAEM:
+            if (mControl->mCecDevice.isPlaybackDeviceType) {
+                if (mControl->mCecDevice.mAddrBitmap & (1 << CEC_ADDR_PLAYBACK_1) != 0) {
+                    message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_1;
+                } else if (mControl->mCecDevice.mAddrBitmap & (1 << CEC_ADDR_PLAYBACK_2) != 0) {
+                    message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_2;
+                } else {
+                    message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_3;
+                }
+                message.destination = (cec_logical_address_t)DEV_TYPE_TV;
+                message.length = 1;
+                if (msg.mType == HdmiCecControl::MsgHandler::GIVE_OSD_NAEM) {
+                    message.body[0] = CEC_MESSAGE_GIVE_OSD_NAME;
+                } else if (msg.mType == HdmiCecControl::MsgHandler::GET_MENU_LANGUAGE) {
+                    message.body[0] = CEC_MESSAGE_GET_MENU_LANGUAGE;
+                }
+                mControl->sendMessage(&message, true);
+                ALOGD ("handle message for playback.");
+            }
             break;
     }
 }
@@ -99,6 +121,7 @@ void HdmiCecControl::init()
 {
     char value[PROPERTY_VALUE_MAX] = {0};
     mCecDevice.isTvDeviceType = false;
+    mCecDevice.isPlaybackDeviceType = false;
     mCecDevice.mDeviceTypes = NULL;
     mCecDevice.mAddedPhyAddrs = NULL;
     mCecDevice.mTotalDevice = 0;
@@ -132,8 +155,11 @@ void HdmiCecControl::getDeviceTypes() {
     mCecDevice.mTotalDevice = index + 1;
     index = 0;
     for (index = 0; index < mCecDevice.mTotalDevice; index++) {
-        if (mCecDevice.mDeviceTypes[index] == DEV_TYPE_TV)
+        if (mCecDevice.mDeviceTypes[index] == DEV_TYPE_TV) {
             mCecDevice.isTvDeviceType = true;
+        } else if (mCecDevice.mDeviceTypes[index] == DEV_TYPE_PLAYBACK) {
+            mCecDevice.isPlaybackDeviceType = true;
+        }
         ALOGD("[hcc] mCecDevice.mDeviceTypes[%d]: %d", index, mCecDevice.mDeviceTypes[index]);
     }
 }
@@ -188,11 +214,14 @@ int HdmiCecControl::openCecDevice()
     mCecDevice.mAddedPhyAddrs = new int[ADDR_BROADCAST];
     pthread_create(&mCecDevice.mThreadId, NULL, __threadLoop, this);
     pthread_setname_np(mCecDevice.mThreadId, "hdmi_cec_loop");
+    mMsgHandler.startMsgQueue();
     if (mCecDevice.isTvDeviceType) {
-        mMsgHandler.startMsgQueue();
         mTvSession = TvServerHidlClient::connect(CONNECT_TYPE_HAL);
         mTvEventListner = new HdmiCecControl::TvEventListner(this);
         mTvSession->setListener(mTvEventListner);
+    } else if (mCecDevice.isPlaybackDeviceType) {
+        mCecDevice.mTvOsdName = 0;
+        getDeviceExtraInfo(1);
     }
     return mCecDevice.mFd;
 }
@@ -403,6 +432,15 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
             default:
                 break;
         }
+    } else if (mCecDevice.isPlaybackDeviceType) {
+        switch (event->cec.body[0]) {
+            case CEC_MESSAGE_SET_OSD_NAME:
+                mCecDevice.mTvOsdName = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
+                break;
+            case CEC_MESSAGE_SET_MENU_LANGUAGE:
+                handleSetMenuLanguage(event);
+                break;
+        }
     }
     return ret;
 }
@@ -431,6 +469,47 @@ bool HdmiCecControl::handleOTPMsg(hdmi_cec_event_t* event)
     return ret;
 }
 
+bool HdmiCecControl::handleSetMenuLanguage(hdmi_cec_event_t* event)
+{
+    bool ret = true;
+    static const int samsungTvOsdName = (0x54 << 8) + 0x56;
+    static const int zhoLanguage = (0x7a << 16) + (0x68 << 8) + 0x6f;  //Simplified Chinese
+    static const int chiLanguage = (0x63 << 16) + (0x68 << 8) + 0x69;  //Traditional Chinese
+    int para = ((event->cec.body[1] & 0xff) << 16) + ((event->cec.body[2] & 0xff) << 8) +  (event->cec.body[3] & 0xff);
+    if (mCecDevice.mTvOsdName == 0) {
+        getDeviceExtraInfo(0);
+    }
+    if (mCecDevice.mTvOsdName == samsungTvOsdName) {
+        if (para == chiLanguage) {
+            event->cec.body[1] = 0x7a;
+            event->cec.body[2] = 0x68;
+            event->cec.body[3] = 0x6f;
+            ALOGD ("compatible for samsungtv language setting.");
+        }
+    }
+    return ret;
+}
+
+void HdmiCecControl::handleHotplug(int port, bool connected)
+{
+    if (mCecDevice.isPlaybackDeviceType && (connected != 0)) {
+        getDeviceExtraInfo(1);
+    }
+}
+
+void HdmiCecControl::getDeviceExtraInfo(int flag)
+{
+    CMessage msg;
+    msg.mType = HdmiCecControl::MsgHandler::GIVE_OSD_NAEM;
+    msg.mDelayMs = DELAY_TIMEOUT_MS*flag;
+    mMsgHandler.removeMsg (msg);
+    mMsgHandler.sendMsg (msg);
+    msg.mType = HdmiCecControl::MsgHandler::GET_MENU_LANGUAGE;
+    msg.mDelayMs = DELAY_TIMEOUT_MS*flag*2;
+    mMsgHandler.removeMsg (msg);
+    mMsgHandler.sendMsg (msg);
+    ALOGD ("getDeviceExtraInfo.");
+}
 void HdmiCecControl::checkConnectStatus()
 {
     unsigned int index, prevStatus, bit;
@@ -459,6 +538,7 @@ void HdmiCecControl::checkConnectStatus()
                 event.hotplug.connected = connect;
                 event.hotplug.port_id = mCecDevice.mpPortData[i].port_id;
                 mEventListener->onEventUpdate(&event);
+                handleHotplug(mCecDevice.mpPortData[i].port_id, connect);
             }
             if (connect == 0) {
                 for (index = 0; index < ADDR_BROADCAST; index++) {

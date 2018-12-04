@@ -103,6 +103,8 @@ typedef struct hdmi_device {
     int                         *mAddedPhyAddrs;
     int                         mTotalDevice;
     bool                        isTvDeviceType;
+    bool                        isPlaybackDeviceType;
+    bool                        isAvrDeviceType;
     int                         mAddrBitmap;
     int                         mFd;
     bool                        isCecEnabled;
@@ -116,6 +118,7 @@ typedef struct hdmi_device {
     int                         mExtendControl;
     bool                        mFilterOtpEnabled;
     int                         mSelectedPortId;
+    int                         mTvOsdName;
 } hdmi_device_t;
 
 class HdmiCecControl : public HdmiCecBase {
@@ -143,6 +146,10 @@ protected:
     class MsgHandler: public CMsgQueueThread {
     public:
         static const int MSG_FILTER_OTP_TIMEOUT = 0;
+        static const int GET_MENU_LANGUAGE = 1;
+        static const int SET_MENU_LANGUAGE = 2;
+        static const int GIVE_OSD_NAEM = 3;
+        static const int SET_OSD_NAEM = 4;
         MsgHandler(HdmiCecControl *hdmiControl);
         ~MsgHandler();
     private:
@@ -178,6 +185,9 @@ private:
     bool isWakeUpMsg(char *msgBuf, int len);
     bool messageValidate(hdmi_cec_event_t* event);
     bool handleOTPMsg(hdmi_cec_event_t* event);
+    bool handleSetMenuLanguage(hdmi_cec_event_t* event);
+    void handleHotplug(int port, bool connected);
+    void getDeviceExtraInfo(int flag);
     hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;
     sp<SystemControlClient> mSystemControl;

@@ -24,7 +24,7 @@
 #include <dlfcn.h>
 
 #include "CPQControl.h"
-
+#include "TvServerHidlClient.h"
 
 #define PI 3.14159265358979
 CPQControl *CPQControl::mInstance = NULL;
@@ -39,7 +39,6 @@ CPQControl::CPQControl()
 {
     mIsHdrLastTime = false;
     mInitialized = false;
-    mAutoSwitchPCModeFlag = 1;
     mAmvideoFd = -1;
     mDiFd = -1;
     //Load config file
@@ -632,25 +631,58 @@ int CPQControl::SetPQMode(int pq_mode, int is_save , int is_autoswitch)
 {
     SYS_LOGD("%s, pq_mode = %d\n", __FUNCTION__, pq_mode);
     int ret = -1;
-    mAutoSwitchPCModeFlag = is_autoswitch;
 
     source_input_param_t source_input_param = GetCurrentSourceInputInfo();
     int cur_mode = GetPQMode();
 
     if (cur_mode == pq_mode) {
         SYS_LOGD("Same PQ mode,no need set again!\n");
-        return 0;
-    }
+        ret = 0;
+    } else {
+        if ((source_input_param.source_input == SOURCE_HDMI1) ||
+            (source_input_param.source_input == SOURCE_HDMI2) ||
+            (source_input_param.source_input == SOURCE_HDMI3) ||
+            (source_input_param.source_input == SOURCE_HDMI4)) {//HDMI
+            if (cur_mode == VPP_PICTURE_MODE_GAME) {
+                if (pq_mode == VPP_PICTURE_MODE_MONITOR) {
+                    ret = setPQModeByTvService(MODE_OFF, MODE_ON, is_autoswitch);//game mode off and monitor mode on;
+                } else {
+                    ret = setPQModeByTvService(MODE_OFF, MODE_STABLE, is_autoswitch);
+                }
+            } else if (cur_mode == VPP_PICTURE_MODE_MONITOR) {
+                if (pq_mode == VPP_PICTURE_MODE_GAME) {
+                    ret = setPQModeByTvService(MODE_ON, MODE_OFF, is_autoswitch);//game mode on and monitor mode off;
+                } else {
+                    ret = setPQModeByTvService(MODE_STABLE, MODE_OFF, is_autoswitch);//monitor mode off;
+                }
+                Cpq_LoadBasicRegs(source_input_param);
+            } else {
+                if (pq_mode == VPP_PICTURE_MODE_GAME) {
+                    ret = setPQModeByTvService(MODE_ON, MODE_STABLE, is_autoswitch);//game mode on;
+                } else if (pq_mode == VPP_PICTURE_MODE_MONITOR) {
+                    ret = setPQModeByTvService(MODE_STABLE, MODE_ON, is_autoswitch);//monitor mode on;
+                }
+            }
+        } else if ((source_input_param.source_input == SOURCE_AV1) ||
+            (source_input_param.source_input == SOURCE_AV2) ||
+            (source_input_param.source_input == SOURCE_TV)) {//ATV OR AV
+            if (cur_mode == VPP_PICTURE_MODE_GAME) {//game mode off
+                ret = setPQModeByTvService(MODE_OFF, MODE_STABLE, is_autoswitch);
+            } else if (pq_mode == VPP_PICTURE_MODE_GAME) {//game mode on
+                ret = setPQModeByTvService(MODE_ON, MODE_STABLE, is_autoswitch);
+            }
+        }
 
-    ret = Cpq_SetPQMode((vpp_picture_mode_t)pq_mode, source_input_param);
-    if ((ret == 0) && (is_save == 1)) {
-        ret = SavePQMode(pq_mode);
+        ret = Cpq_SetPQMode((vpp_picture_mode_t)pq_mode, source_input_param);
+        if ((ret == 0) && (is_save == 1)) {
+            ret = SavePQMode(pq_mode);
+        }
     }
 
     if (ret < 0) {
-        SYS_LOGE("%s failed!\n",__FUNCTION__);
+        SYS_LOGE("%s failed!\n", __FUNCTION__);
     } else {
-        SYS_LOGD("%s success!\n",__FUNCTION__);
+        SYS_LOGD("%s success!\n", __FUNCTION__);
     }
 
     return ret;
@@ -685,6 +717,33 @@ int CPQControl::SavePQMode(int pq_mode)
     return ret;
 }
 
+static Mutex amLock;
+static sp<TvServerHidlClient> mTvService = nullptr;
+static const sp<TvServerHidlClient> &getTvService()
+{
+    Mutex::Autolock _l(amLock);
+    if (mTvService == nullptr) {
+        mTvService = new TvServerHidlClient(CONNECT_TYPE_HAL);
+    }
+
+    return mTvService;
+}
+
+int CPQControl::setPQModeByTvService(pq_status_update_e gameStatus, pq_status_update_e pcStatus, int autoSwitchMonitorModeFlag)
+{
+    SYS_LOGE("%s: gameStatus: %d, pcStatus: %d!\n", __FUNCTION__, gameStatus, pcStatus);
+
+    int ret = -1;
+    const sp<TvServerHidlClient> &TvService = getTvService();
+    if ( TvService == NULL) {
+        SYS_LOGE("%s: get tvservice failed!\n", __FUNCTION__);
+    } else {
+        ret = TvService->vdinUpdateForPQ(gameStatus, pcStatus, autoSwitchMonitorModeFlag);
+    }
+    SYS_LOGE("%s success!\n", __FUNCTION__);
+    return ret;
+}
+
 int CPQControl::Cpq_SetPQMode(vpp_picture_mode_t pq_mode, source_input_param_t source_input_param)
 {
     vpp_pq_para_t pq_para;
@@ -693,37 +752,37 @@ int CPQControl::Cpq_SetPQMode(vpp_picture_mode_t pq_mode, source_input_param_t s
     if (pq_mode == VPP_PICTURE_MODE_USER) {
         ret = mSSMAction->SSMReadBrightness(source_input_param.source_input, &pq_para.brightness);
         if (ret < 0) {
-            SYS_LOGE("Cpq_SetPQMode: SSMReadBrightness failed!\n");
+            SYS_LOGE("%s: SSMReadBrightness failed!\n", __FUNCTION__);
             return ret;
         }
 
         ret = mSSMAction->SSMReadContrast(source_input_param.source_input, &pq_para.contrast);
         if (ret < 0) {
-            SYS_LOGE("Cpq_SetPQMode: SSMReadContrast failed!\n");
+            SYS_LOGE("%s: SSMReadContrast failed!\n", __FUNCTION__);
             return ret;
         }
 
         ret = mSSMAction->SSMReadSaturation(source_input_param.source_input, &pq_para.saturation);
         if (ret < 0) {
-            SYS_LOGE("Cpq_SetPQMode: SSMReadSaturation failed!\n");
+            SYS_LOGE("%s: SSMReadSaturation failed!\n", __FUNCTION__);
             return ret;
         }
 
         ret = mSSMAction->SSMReadHue(source_input_param.source_input, &pq_para.hue);
         if (ret < 0) {
-            SYS_LOGE("Cpq_SetPQMode: SSMReadHue failed!\n");
+            SYS_LOGE("%s: SSMReadHue failed!\n", __FUNCTION__);
             return ret;
         }
 
         ret = mSSMAction->SSMReadSharpness(source_input_param.source_input, &pq_para.sharpness);
         if (ret < 0) {
-            SYS_LOGE("Cpq_SetPQMode: SSMReadSharpness failed!\n");
+            SYS_LOGE("%s: SSMReadSharpness failed!\n", __FUNCTION__);
             return ret;
         }
     } else {
         ret = GetPQParams(source_input_param, pq_mode, &pq_para);
         if (ret < 0) {
-            SYS_LOGE("Cpq_SetPQMode: GetPQParams failed!\n");
+            SYS_LOGE("%s: GetPQParams failed!\n", __FUNCTION__);
             return ret;
         }
     }

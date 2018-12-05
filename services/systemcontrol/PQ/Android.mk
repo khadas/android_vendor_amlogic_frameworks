@@ -11,8 +11,9 @@ else ifeq ($(CSV_RET), 3)
   $(error "Csv file's Size must be integer or defined in common.h")
 endif
 
-PQ_INCLUDE_PATH := $(wildcard $(BOARD_AML_VENDOR_PATH)/frameworks/services/systemcontrol/PQ/include)
+PQ_INCLUDE_PATH := $(wildcard $(BOARD_AML_VENDOR_PATH)frameworks/services/systemcontrol/PQ/include)
 LIB_SQLITE_PATH := $(wildcard external/sqlite/dist)
+LIB_TV_BINDER_PATH := $(wildcard $(BOARD_AML_VENDOR_PATH)tv/frameworks/libtvbinder)
 
 LOCAL_SRC_FILES:= \
   CPQdb.cpp \
@@ -31,12 +32,16 @@ LOCAL_SRC_FILES:= \
   CConfigFile.cpp
 
 LOCAL_SHARED_LIBRARIES := \
+  vendor.amlogic.hardware.tvserver@1.0 \
   libsqlite  \
   libutils  \
   liblog \
-  libcutils
+  libcutils \
+  libtvbinder \
+  libbinder
 
 LOCAL_C_INCLUDES := \
+  $(LIB_TV_BINDER_PATH)/include \
   $(PQ_INCLUDE_PATH) \
   $(LIB_SQLITE_PATH)
 

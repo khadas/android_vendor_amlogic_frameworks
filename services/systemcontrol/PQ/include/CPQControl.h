@@ -21,7 +21,6 @@
 #include "CConfigFile.h"
 #include "COverScandb.h"
 
-
 #define PQ_DB_TV_DEFAULT_PATH     "/vendor/etc/tvconfig/pq/pq.db"
 #define PARAM_PQ_DB_PATH          "/mnt/vendor/param/pq/pq.db"
 #define PQ_DB_BOX_DEFAULT_PATH    "/vendor/etc/tvconfig/pq.db"
@@ -124,6 +123,7 @@ public:
     int SetPQMode(int pq_mode, int is_save, int is_autoswitch);
     int GetPQMode(void);
     int SavePQMode(int pq_mode);
+    int setPQModeByTvService(pq_status_update_e gameStatus, pq_status_update_e pcStatus, int autoSwitchMonitorModeFlag);
     int Cpq_SetPQMode(vpp_picture_mode_t pq_mode, source_input_param_t source_input_param);
     int SetPQParams(vpp_pq_para_t pq_para, source_input_param_t source_input_param);
     int GetPQParams(source_input_param_t source_input_param, vpp_picture_mode_t pq_mode, vpp_pq_para_t *pq_para);
@@ -339,7 +339,6 @@ private:
     tvin_trans_fmt_t cpq_setting_last_trans_fmt;
     bool mIsHdrLastTime;
     bool mInitialized;
-    int mAutoSwitchPCModeFlag;
     //cfg
     bool mbCpqCfg_seperate_db_enable;
     bool mbCpqCfg_brightness_contrast_enable;

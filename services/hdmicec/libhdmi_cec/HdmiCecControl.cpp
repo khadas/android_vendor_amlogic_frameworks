@@ -438,7 +438,12 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
                 mCecDevice.mTvOsdName = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
                 break;
             case CEC_MESSAGE_SET_MENU_LANGUAGE:
-                handleSetMenuLanguage(event);
+                if (mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.set_menu_language", true)) {
+                    handleSetMenuLanguage(event);
+                }else {
+                    ret = false;
+                    ALOGD ("Auto Language Change disable");
+                }
                 break;
         }
     }

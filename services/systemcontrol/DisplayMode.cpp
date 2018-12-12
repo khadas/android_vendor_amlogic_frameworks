@@ -1672,7 +1672,8 @@ void DisplayMode::initHdrSdrMode() {
     pSysWrite->getPropertyString(PROP_HDR_MODE_STATE, mode, HDR_MODE_AUTO);
     setHdrMode(mode);
     memset(mode, 0, sizeof(mode));
-    pSysWrite->getPropertyString(PROP_SDR_MODE_STATE, mode, SDR_MODE_OFF);
+    bool flag = pSysWrite->getPropertyBoolean(PROP_ENABLE_SDR2HDR, false);
+    pSysWrite->getPropertyString(PROP_SDR_MODE_STATE, mode, flag ? SDR_MODE_AUTO : SDR_MODE_OFF);
     setSdrMode(mode);
 }
 

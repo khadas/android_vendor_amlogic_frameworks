@@ -223,6 +223,7 @@ using namespace android;
 #define PROP_SDR_MODE_STATE             "persist.vendor.sys.sdr.state"
 #define PROP_DISPLAY_SIZE_CHECK         "vendor.display-size.check"
 #define PROP_DISPLAY_SIZE               "vendor.display-size"
+#define PROP_ENABLE_SDR2HDR             "ro.vendor.sdr2hdr.enable"
 
 #define HDR_MODE_OFF                    "0"
 #define HDR_MODE_ON                     "1"

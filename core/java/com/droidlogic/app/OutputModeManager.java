@@ -819,11 +819,16 @@ public class OutputModeManager {
             case DIGITAL_MANUAL:
                 if (submode == null)
                     submode = "";
-
+                boolean isTv = mSystenControl.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
                 Settings.Global.putInt(mResolver,
                         NRDP_EXTERNAL_SURROUND, NRDP_DISABLE);
-                Settings.Global.putInt(mResolver,
-                        DIGITAL_AUDIO_FORMAT, DIGITAL_MANUAL);
+                if (isTv) {
+                    Settings.Global.putInt(mResolver,
+                            DIGITAL_AUDIO_FORMAT, DIGITAL_AUTO);
+                    break;
+                } else
+                    Settings.Global.putInt(mResolver,
+                            DIGITAL_AUDIO_FORMAT, DIGITAL_MANUAL);
                 Settings.Global.putString(mResolver,
                         DIGITAL_AUDIO_SUBFORMAT, submode);
                 if (surround != ENCODED_SURROUND_OUTPUT_MANUAL)

@@ -12,7 +12,7 @@
 
 #include "HdmiCecBase.h"
 
-int mLogLevel = LOG_LEVEL_2;
+int mLogLevel = LOG_LEVEL_1;
 
 namespace android {
 

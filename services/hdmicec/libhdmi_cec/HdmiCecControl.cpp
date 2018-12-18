@@ -43,7 +43,6 @@ HdmiCecControl::~HdmiCecControl(){}
 
 HdmiCecControl::MsgHandler::MsgHandler(HdmiCecControl *hdmiControl)
 {
-    ALOGD("[hcc] HdmiCecControl::MsgHandler Constructor");
     mControl = hdmiControl;
 }
 
@@ -51,7 +50,6 @@ HdmiCecControl::MsgHandler::~MsgHandler(){}
 
 HdmiCecControl::TvEventListner::TvEventListner(HdmiCecControl *hdmiControl)
 {
-    ALOGD("[hcc] HdmiCecControl::TvEventListner Constructor");
     mControl = hdmiControl;
 }
 
@@ -212,6 +210,9 @@ int HdmiCecControl::openCecDevice()
     }
     getBootConnectStatus();
     mCecDevice.mAddedPhyAddrs = new int[ADDR_BROADCAST];
+    for (index = 0; index < ADDR_BROADCAST; index++) {
+        mCecDevice.mAddedPhyAddrs[index] = 0;
+    }
     pthread_create(&mCecDevice.mThreadId, NULL, __threadLoop, this);
     pthread_setname_np(mCecDevice.mThreadId, "hdmi_cec_loop");
     mMsgHandler.startMsgQueue();
@@ -320,7 +321,7 @@ void HdmiCecControl::threadLoop()
             }
         }
         if (!messageValidate(&event)) {
-            ALOGD("[hcc]  receive message is invalid.");
+            ALOGD("[hcc] messageValidate fail, drop : %02x.", event.cec.body[0]);
             continue;
         }
         if (!handleOTPMsg(&event)) {
@@ -513,7 +514,6 @@ void HdmiCecControl::getDeviceExtraInfo(int flag)
     msg.mDelayMs = DELAY_TIMEOUT_MS*flag*2;
     mMsgHandler.removeMsg (msg);
     mMsgHandler.sendMsg (msg);
-    ALOGD ("getDeviceExtraInfo.");
 }
 void HdmiCecControl::checkConnectStatus()
 {
@@ -773,7 +773,7 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
 int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
 {
     int ret = 0;
-    int opcode, para, value, avrAddr, index;
+    int opcode, para, value, avrAddr, index, dest;
     hdmi_cec_event_t event;
     opcode = message->body[0] & 0xff;
     switch (opcode) {
@@ -798,7 +798,19 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
                     value = mCecDevice.mAddedPhyAddrs[index];
                     if ((index != DEV_TYPE_AUDIO_SYSTEM) && (value - avrAddr > 0) && ((value & 0xf000) == (avrAddr & 0xf000))) {
                         ret = 0;
-                         ALOGD("[hcc] Avr has sub device.");
+                        ALOGD("[hcc] Avr has sub device.");
+                        break;
+                    }
+                }
+            }
+            if (opcode == CEC_MESSAGE_ROUTING_CHANGE) {
+                //wake up device when change to the current input.
+                value = 0;
+                for (index = 0; index < ADDR_BROADCAST; index++) {
+                    value = mCecDevice.mAddedPhyAddrs[index];
+                    if (para == value && value != 0) {
+                        dest = index;
+                        wakeUpCecDevice(dest);
                         break;
                     }
                 }
@@ -808,6 +820,18 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
             break;
     }
     return ret;
+}
+
+void HdmiCecControl::wakeUpCecDevice(int logicalAddress)
+{
+    cec_message_t message;
+    message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
+    message.destination = (cec_logical_address_t)logicalAddress;
+    message.body[0] = CEC_MESSAGE_USER_CONTROL_PRESSED;
+    message.body[1] = (CEC_KEYCODE_POWER_ON_FUNCTION & 0xff);
+    message.length = 2;
+    ALOGD("[hcc] send wakeUp message.");
+    sendMessage(&message, false);
 }
 
 bool HdmiCecControl::hasHandledByExtend(const cec_message_t* message)

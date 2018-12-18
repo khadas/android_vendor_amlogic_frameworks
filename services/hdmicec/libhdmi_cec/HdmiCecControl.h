@@ -187,6 +187,7 @@ private:
     bool handleOTPMsg(hdmi_cec_event_t* event);
     bool handleSetMenuLanguage(hdmi_cec_event_t* event);
     void handleHotplug(int port, bool connected);
+    void wakeUpCecDevice(int logicalAddress);
     void getDeviceExtraInfo(int flag);
     hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;

@@ -70,6 +70,10 @@ enum {
  * HDMI CEC messages para value
  */
 enum cec_message_para_value{
+    CEC_KEYCODE_UP = 0x01,
+    CEC_KEYCODE_DOWN = 0x02,
+    CEC_KEYCODE_LEFT = 0x03,
+    CEC_KEYCODE_RIGHT = 0x04,
     CEC_KEYCODE_POWER = 0x40,
     CEC_KEYCODE_ROOT_MENU = 0x09,
     CEC_KEYCODE_POWER_ON_FUNCTION = 0x6D
@@ -119,6 +123,8 @@ typedef struct hdmi_device {
     bool                        mFilterOtpEnabled;
     int                         mSelectedPortId;
     int                         mTvOsdName;
+    int                         mActiveLogicalAddr;
+    int                         mActiveRoutingPath;
 } hdmi_device_t;
 
 class HdmiCecControl : public HdmiCecBase {

@@ -59,7 +59,7 @@ void HdmiCecControl::MsgHandler::handleMessage (CMessage &msg)
 {
     AutoMutex _l(mControl->mLock);
     cec_message_t message;
-    ALOGD ("HdmiCecControl::MsgHandler::handleMessage type = %d", msg.mType);
+    //ALOGD ("HdmiCecControl::MsgHandler::handleMessage type = %d", msg.mType);
     switch (msg.mType) {
         case HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT:
             mControl->mCecDevice.mFilterOtpEnabled = false;
@@ -92,22 +92,27 @@ void HdmiCecControl::MsgHandler::handleMessage (CMessage &msg)
 void HdmiCecControl::TvEventListner::notify (const tv_parcel_t &parcel)
 {
     AutoMutex _l(mControl->mLock);
-    ALOGD ("HdmiCecControl::TvEventListner::notify type = %d", parcel.msgType);
-    int portId = 0;
+    //ALOGD ("HdmiCecControl::TvEventListner::notify type = %d", parcel.msgType);
+    int portId = 0, offSet = 4;
     switch (parcel.msgType) {
         case HdmiCecControl::TvEventListner::TV_EVENT_SOURCE_SWITCH:
-            portId = parcel.bodyInt[1];
-            ALOGD ("TvEventListner notify port switch from: %d to: %d", mControl->mCecDevice.mSelectedPortId, portId);
-            if (mControl->mCecDevice.mSelectedPortId != -1 &&  mControl->mCecDevice.mSelectedPortId != portId) {
-                mControl->mCecDevice.mFilterOtpEnabled = true;
-                CMessage msg;
-                msg.mType = HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT;
-                msg.mDelayMs = DELAY_TIMEOUT_MS;
-                mControl->mMsgHandler.removeMsg (msg);
-                mControl->mMsgHandler.sendMsg (msg);
-                ALOGD ("Set mFilterOtpEnabled to true.");
+            portId = parcel.bodyInt[0] - offSet; //hdmi: 1-4; non hdmi/home: 0
+            ALOGD ("TvEventListner notify port switch from: %d to: %d", mControl->mCecDevice.mSelectedPortId, portId > 0 ? portId : 0);
+            if (portId >= 1 && portId <= 4) {
+                if (mControl->mCecDevice.mSelectedPortId != portId) {
+                    mControl->mCecDevice.mFilterOtpEnabled = true;
+                    CMessage msg;
+                    msg.mType = HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT;
+                    msg.mDelayMs = DELAY_TIMEOUT_MS;
+                    mControl->mMsgHandler.removeMsg (msg);
+                    mControl->mMsgHandler.sendMsg (msg);
+                    mControl->mCecDevice.mSelectedPortId = portId;
+                    ALOGD ("Set mFilterOtpEnabled to true.");
+                }
+                mControl->mCecDevice.mSelectedPortId = portId;
+            } else {
+                mControl->mCecDevice.mSelectedPortId = 0;
             }
-            mControl->mCecDevice.mSelectedPortId = portId;
             break;
     }
 }
@@ -430,6 +435,18 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
                     mCecDevice.mAddedPhyAddrs[initiator] = devPhyAddr;
                 }
                 break;
+            case CEC_MESSAGE_ROUTING_INFORMATION:
+                if (((event->cec.body[1]) & 0x0f) != 0) {
+                    message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
+                    message.destination = (cec_logical_address_t)ADDR_BROADCAST;
+                    message.body[0] = CEC_MESSAGE_SET_STREAM_PATH;
+                    message.body[1] = event->cec.body[1] & 0xff;
+                    message.body[2] = event->cec.body[2] & 0xff;
+                    message.length = 3;
+                    ALOGD ("send <Set Stream Path> to get <Active Source> in order to correct mActiveSource then to control sub device.");
+                    sendMessage(&message, false);
+                }
+                break;
             default:
                 break;
         }
@@ -457,18 +474,22 @@ bool HdmiCecControl::handleOTPMsg(hdmi_cec_event_t* event)
     cec_message_t message;
     int initiator = (int)(event->cec.initiator);
     int devPhyAddr = 0;
+    int mask = 0xf000;
     int i, portId = 0;
     if (mCecDevice.isTvDeviceType && (event->cec.body[0] == CEC_MESSAGE_ACTIVE_SOURCE)) {
         devPhyAddr = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
         for (i = 0; i < mCecDevice.mTotalPort && mCecDevice.mpPortData != NULL; i++) {
-            if (mCecDevice.mpPortData[i].physical_address == devPhyAddr)
+            if (mCecDevice.mpPortData[i].physical_address == (devPhyAddr & mask))
                 portId = mCecDevice.mpPortData[i].port_id;
         }
         ALOGD ("#receive <Active Source> from: %d, phyAddress: %02x, mFilterOtpEnabled: %x, mSelectedPortId: %d, portId: %d",
             initiator, devPhyAddr, mCecDevice.mFilterOtpEnabled, mCecDevice.mSelectedPortId, portId);
         mLock.lock();
-        if (mCecDevice.mFilterOtpEnabled && mCecDevice.mSelectedPortId != -1 && mCecDevice.mSelectedPortId != portId) {
+        if (mCecDevice.mFilterOtpEnabled && mCecDevice.mSelectedPortId > 0 && mCecDevice.mSelectedPortId != portId) {
             ret = false;
+        } else {
+            mCecDevice.mActiveLogicalAddr = initiator;
+            mCecDevice.mActiveRoutingPath = devPhyAddr;
         }
         mLock.unlock();
     }
@@ -773,8 +794,9 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
 int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
 {
     int ret = 0;
-    int opcode, para, value, avrAddr, index, dest;
+    int initiator, dest, opcode, para, value, avrAddr, index;
     hdmi_cec_event_t event;
+    dest = message->destination;
     opcode = message->body[0] & 0xff;
     switch (opcode) {
         case CEC_MESSAGE_ROUTING_CHANGE:
@@ -814,6 +836,19 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
                         break;
                     }
                 }
+            }
+            break;
+        case CEC_MESSAGE_USER_CONTROL_PRESSED:
+            para = (message->body[1] & 0xff);
+            if (dest != mCecDevice.mActiveLogicalAddr && (para >= CEC_KEYCODE_UP && para <= CEC_KEYCODE_RIGHT)) {
+                //send user control press to sub device of avr
+                cec_message_t msg;
+                msg.initiator = (cec_logical_address_t)message->initiator;
+                msg.destination = (cec_logical_address_t)mCecDevice.mActiveLogicalAddr;
+                msg.body[0] = message->body[0] & 0xff;
+                msg.body[1] = message->body[1] & 0xff;
+                msg.length = 2;
+                sendMessage(&msg, false);
             }
             break;
         default:

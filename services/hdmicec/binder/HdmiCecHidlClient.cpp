@@ -34,8 +34,10 @@ Mutex HdmiCecHidlClient::mLock;
 HdmiCecHidlClient::HdmiCecHidlClient(cec_connect_type_t type): mType(type)
 {
     mHdmiCecService = getHdmiCecService();
-    mHdmiCecHidlCallback = new HdmiCecHidlCallback(this);
-    Return<void> ret = mHdmiCecService->setCallback(mHdmiCecHidlCallback, static_cast<ConnectType>(type));
+    if (type != CONNECT_TYPE_POWER) {
+        mHdmiCecHidlCallback = new HdmiCecHidlCallback(this);
+        Return<void> ret = mHdmiCecService->setCallback(mHdmiCecHidlCallback, static_cast<ConnectType>(type));
+    }
 }
 
 HdmiCecHidlClient::~HdmiCecHidlClient()

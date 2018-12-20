@@ -51,7 +51,8 @@ using ::android::hardware::Void;
 
 typedef enum {
     CONNECT_TYPE_HAL            = 0,
-    CONNECT_TYPE_EXTEND         = 1
+    CONNECT_TYPE_EXTEND         = 1,
+    CONNECT_TYPE_POWER          = 2
 } cec_connect_type_t;
 
 class HdmiCecHidlClient {

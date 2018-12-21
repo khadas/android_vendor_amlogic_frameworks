@@ -312,10 +312,11 @@ void HdmiCecControl::threadLoop()
 
         if (mCecDevice.isCecControlled) {
              event.eventType |= HDMI_EVENT_CEC_MESSAGE;
-            /* call java method to process cec message for ext control */
+            /* call java method to process cec message for ext control
             if (mCecDevice.mExtendControl) {
                 event.eventType |= HDMI_EVENT_RECEIVE_MESSAGE;
             }
+            */
         } else {
             /* wakeup playback device */
             if (isWakeUpMsg((char*)msgBuf, r)) {
@@ -325,14 +326,8 @@ void HdmiCecControl::threadLoop()
                 ALOGD("[hcc] receive wake up message for hdmi_tx");
             }
         }
-        if (!messageValidate(&event)) {
-            ALOGD("[hcc] messageValidate fail, drop : %02x.", event.cec.body[0]);
-            continue;
-        }
-        if (!handleOTPMsg(&event)) {
-            ALOGD("[hcc] handleOTPMsg filtered, continue.");
-            continue;
-        }
+        messageValidateAndHandle(&event);
+        handleOTPMsg(&event);
         if (mEventListener != NULL && event.eventType != 0) {
             mEventListener->onEventUpdate(&event);
         }
@@ -414,9 +409,8 @@ bool HdmiCecControl::isWakeUpMsg(char *msgBuf, int len)
 * @param deviceType is type of device
 */
 
-bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
+void HdmiCecControl::messageValidateAndHandle(hdmi_cec_event_t* event)
 {
-    bool ret = true;
     cec_message_t message;
     int initiator = (int)(event->cec.initiator);
     int devPhyAddr = 0;
@@ -430,9 +424,17 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
                     message.body[0] = CEC_MESSAGE_GIVE_PHYSICAL_ADDRESS;
                     message.length = 1;
                     sendMessage(&message, false);
-                    ret = false;
+                    event->eventType &= ~HDMI_EVENT_CEC_MESSAGE;
+                    ALOGD("[hcc] receviced message: %02x validate fail and drop", event->cec.body[0]);
                 } else {
                     mCecDevice.mAddedPhyAddrs[initiator] = devPhyAddr;
+                }
+                break;
+            case CEC_MESSAGE_REPORT_POWER_STATUS:
+                if (initiator == mCecDevice.mActiveLogicalAddr
+                    && (event->cec.body[0] == POWER_STATUS_STANDBY
+                    || event->cec.body[0] == POWER_STATUS_TRANSIENT_TO_STANDBY)) {
+                    turnOnDevice(initiator);
                 }
                 break;
             case CEC_MESSAGE_ROUTING_INFORMATION:
@@ -459,18 +461,16 @@ bool HdmiCecControl::messageValidate(hdmi_cec_event_t* event)
                 if (mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.set_menu_language", true)) {
                     handleSetMenuLanguage(event);
                 }else {
-                    ret = false;
+                    event->eventType &= ~HDMI_EVENT_CEC_MESSAGE;
                     ALOGD ("Auto Language Change disable");
                 }
                 break;
         }
     }
-    return ret;
 }
 
-bool HdmiCecControl::handleOTPMsg(hdmi_cec_event_t* event)
+void HdmiCecControl::handleOTPMsg(hdmi_cec_event_t* event)
 {
-    bool ret = true;
     cec_message_t message;
     int initiator = (int)(event->cec.initiator);
     int devPhyAddr = 0;
@@ -486,14 +486,14 @@ bool HdmiCecControl::handleOTPMsg(hdmi_cec_event_t* event)
             initiator, devPhyAddr, mCecDevice.mFilterOtpEnabled, mCecDevice.mSelectedPortId, portId);
         mLock.lock();
         if (mCecDevice.mFilterOtpEnabled && mCecDevice.mSelectedPortId > 0 && mCecDevice.mSelectedPortId != portId) {
-            ret = false;
+            event->eventType &= ~HDMI_EVENT_CEC_MESSAGE;
+            ALOGD("[hcc] handleOTPMsg filtered, continue.");
         } else {
             mCecDevice.mActiveLogicalAddr = initiator;
             mCecDevice.mActiveRoutingPath = devPhyAddr;
         }
         mLock.unlock();
     }
-    return ret;
 }
 
 bool HdmiCecControl::handleSetMenuLanguage(hdmi_cec_event_t* event)
@@ -832,7 +832,7 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
                     value = mCecDevice.mAddedPhyAddrs[index];
                     if (para == value && value != 0) {
                         dest = index;
-                        wakeUpCecDevice(dest);
+                        turnOnDevice(dest);
                         break;
                     }
                 }
@@ -857,16 +857,25 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
     return ret;
 }
 
-void HdmiCecControl::wakeUpCecDevice(int logicalAddress)
+void HdmiCecControl::turnOnDevice(int logicalAddress)
 {
     cec_message_t message;
     message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
     message.destination = (cec_logical_address_t)logicalAddress;
     message.body[0] = CEC_MESSAGE_USER_CONTROL_PRESSED;
+    message.body[1] = (CEC_KEYCODE_POWER & 0xff);
+    message.length = 2;
+    sendMessage(&message, false);
+    message.body[0] = CEC_MESSAGE_USER_CONTROL_RELEASED;
+    message.length = 1;
+    sendMessage(&message, false);
     message.body[1] = (CEC_KEYCODE_POWER_ON_FUNCTION & 0xff);
     message.length = 2;
-    ALOGD("[hcc] send wakeUp message.");
     sendMessage(&message, false);
+    message.body[0] = CEC_MESSAGE_USER_CONTROL_RELEASED;
+    message.length = 1;
+    sendMessage(&message, false);
+    ALOGD("[hcc] send wakeUp message.");
 }
 
 bool HdmiCecControl::hasHandledByExtend(const cec_message_t* message)

@@ -86,6 +86,14 @@ enum send_message_result{
     FAIL = 3,
 };
 
+enum power_status{
+    POWER_STATUS_UNKNOWN = -1,
+    POWER_STATUS_ON = 0,
+    POWER_STATUS_STANDBY = 1,
+    POWER_STATUS_TRANSIENT_TO_ON = 2,
+    POWER_STATUS_TRANSIENT_TO_STANDBY = 3,
+};
+
 /**
  * struct for information of cec device.
  * @mDeviceType      Indentify type of cec device, such as TV or BOX.
@@ -189,11 +197,11 @@ private:
     bool hasHandledByExtend(const cec_message_t* message);
     int preHandleBeforeSend(const cec_message_t* message);
     bool isWakeUpMsg(char *msgBuf, int len);
-    bool messageValidate(hdmi_cec_event_t* event);
-    bool handleOTPMsg(hdmi_cec_event_t* event);
+    void messageValidateAndHandle(hdmi_cec_event_t* event);
+    void handleOTPMsg(hdmi_cec_event_t* event);
     bool handleSetMenuLanguage(hdmi_cec_event_t* event);
     void handleHotplug(int port, bool connected);
-    void wakeUpCecDevice(int logicalAddress);
+    void turnOnDevice(int logicalAddress);
     void getDeviceExtraInfo(int flag);
     hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;

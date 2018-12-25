@@ -863,12 +863,14 @@ void HdmiCecControl::turnOnDevice(int logicalAddress)
     message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
     message.destination = (cec_logical_address_t)logicalAddress;
     message.body[0] = CEC_MESSAGE_USER_CONTROL_PRESSED;
+    /*
     message.body[1] = (CEC_KEYCODE_POWER & 0xff);
     message.length = 2;
     sendMessage(&message, false);
     message.body[0] = CEC_MESSAGE_USER_CONTROL_RELEASED;
     message.length = 1;
     sendMessage(&message, false);
+    */
     message.body[1] = (CEC_KEYCODE_POWER_ON_FUNCTION & 0xff);
     message.length = 2;
     sendMessage(&message, false);

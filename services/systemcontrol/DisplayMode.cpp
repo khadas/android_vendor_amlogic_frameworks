@@ -1480,6 +1480,7 @@ void DisplayMode::setDolbyVisionEnable(int state) {
             pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY, DV_HDR10_POLICY);
         }
 
+        setSdrMode(SDR_MODE_OFF);
         usleep(100000);//100ms
         pSysWrite->writeSysfs(DOLBY_VISION_ENABLE_OLD, DV_ENABLE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE_OLD, DV_MODE_IPT_TUNNEL);
@@ -1651,6 +1652,7 @@ void DisplayMode::initGraphicsPriority() {
  * */
 void DisplayMode::setHdrMode(const char* mode) {
     if ((atoi(mode) >= 0) && (atoi(mode) <= 2)) {
+        SYS_LOGI("setHdrMode state: %s\n", mode);
         pSysWrite->writeSysfs(DISPLAY_HDMI_HDR_MODE, mode);
         pSysWrite->setProperty(PROP_HDR_MODE_STATE, mode);
     }
@@ -1662,6 +1664,7 @@ void DisplayMode::setHdrMode(const char* mode) {
  * */
 void DisplayMode::setSdrMode(const char* mode) {
     if ((atoi(mode) == 0) || atoi(mode) == 2) {
+        SYS_LOGI("setSdrMode state: %s\n", mode);
         pSysWrite->writeSysfs(DISPLAY_HDMI_SDR_MODE, mode);
         pSysWrite->setProperty(PROP_SDR_MODE_STATE, mode);
     }

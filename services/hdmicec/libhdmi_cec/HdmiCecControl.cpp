@@ -776,7 +776,9 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
 {
     if (assertHdmiCecDevice())
         return -EINVAL;
-
+    if (!mCecDevice.isCecEnabled) {
+        return -EINVAL;
+    }
     if (isExtend) {
         ALOGD("[hcc] isExtend = %d, mExtendControl = %d", isExtend, mCecDevice.mExtendControl);
         return sendExtMessage(message);

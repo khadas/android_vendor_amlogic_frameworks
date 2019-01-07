@@ -169,9 +169,11 @@ public class DialogBluetoothService extends Service {
             }
             else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
                 Log.i(TAG, ">ACL LINK DISCONNECTED ["+device.getName()+"]");
-                pending.remove(device);
-                if (pending.isEmpty())
-                      mHandler.removeCallbacks(mConnRunnable);
+                if (isRemoteAudioCapable(device)) {
+                    pending.remove(device);
+                    if (pending.isEmpty())
+                        mHandler.removeCallbacks(mConnRunnable);
+                }
             }
             else if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)) {
                 int bondStateNow = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE);

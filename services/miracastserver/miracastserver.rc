@@ -1,0 +1,6 @@
+on property:dev.bootcomplete=1
+    start miracast
+
+service miracast /vendor/bin/miracastserver
+    user root
+    group system root dhcp

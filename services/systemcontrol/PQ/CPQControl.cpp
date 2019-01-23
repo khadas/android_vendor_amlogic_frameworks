@@ -2458,10 +2458,14 @@ int CPQControl::Cpq_SetDisplayModeForDecoder(tv_source_input_t source_input, vpp
         for (i=0;i<ve_pq_load_reg.length;i++) {
             value = Cpq_GetScreenModeValue(display_mode);
             ve_pq_table[i].src_timing = (0x1<<31) | ((value & 0x7f) << 24) | ((source_input & 0x7f) << 16 ) | (flag[i]);
+            source_input_param_t source_input_param;
+            source_input_param.source_input = mCurentSourceInputInfo.source_input;
+            source_input_param.sig_fmt = sig_fmt[i];
+            source_input_param.trans_fmt = mCurentSourceInputInfo.trans_fmt;
             if (mbCpqCfg_seperate_db_enable) {
-                ret = mpOverScandb->PQ_GetOverscanParams(mCurentSourceInputInfo, display_mode, &cutwin_tmp);
+                ret = mpOverScandb->PQ_GetOverscanParams(source_input_param, display_mode, &cutwin_tmp);
             } else {
-                ret = mPQdb->PQ_GetOverscanParams(mCurentSourceInputInfo, display_mode, &cutwin_tmp);
+                ret = mPQdb->PQ_GetOverscanParams(source_input_param, display_mode, &cutwin_tmp);
             }
 
             if (ret == 0) {
@@ -2496,7 +2500,7 @@ int CPQControl::Cpq_SetDisplayModeForDecoder(tv_source_input_t source_input, vpp
                     cutwin[i].ve = cutwin_tmp.ve;
                     cutwin[i].vs = cutwin_tmp.vs;
                 }
-
+                SYS_LOGD("signal_fmt:0x%x, he: %d hs: %d ve: %d vs: %d!\n", sig_fmt[i], cutwin[i].he, cutwin[i].hs, cutwin[i].ve, cutwin[i].vs);
                 ve_pq_table[i].value1 = ((cutwin[i].he & 0xffff)<<16) | (cutwin[i].hs & 0xffff);
                 ve_pq_table[i].value2 = ((cutwin[i].ve & 0xffff)<<16) | (cutwin[i].vs & 0xffff);
             } else {

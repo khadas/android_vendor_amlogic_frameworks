@@ -28,6 +28,9 @@ import com.droidlogic.app.SystemControlManager;
 
 public class DDRBandwidthService extends Service {
     private static final String TAG = "DDRBandwidthService";
+    private static final String DECODER_DEVICE = "/devices/platform/vdec";
+    private static final String UEVENT_ACTION = "ACTION";
+    private static final String UEVENT_SEQNUM = "SEQNUM";
     private static final String BANDWIDTH_BUSY_PATH = "/sys/class/aml_ddr/busy";
     private static final String BANDWIDTH_THRESHOLD_PATH = "/sys/class/aml_ddr/threshold";
     private static final String BANDWIDTH_URGENT_PATH = "/sys/class/aml_ddr/urgent";
@@ -37,6 +40,7 @@ public class DDRBandwidthService extends Service {
     private static final String PORPERTY_BUSY = "vendor.sys.bandwidth.busy";
     private static final String PORPERTY_THRESHOLD = "vendor.sys.bandwidth.threshold";
     private static final String PORPERTY_POLICY = "vendor.sys.bandwidth.policy";
+    private static final String PORPERTY_MODE = "vendor.sys.bandwidth.mode";
     private static final int POLICY_URGENT_CONFIG = 0x1;
     private static final int POLICY_MALI_CORE_REDUCE = 0x2;
     private static final int POLICY_DISABLE_ANIMATION = 0x4;
@@ -51,15 +55,31 @@ public class DDRBandwidthService extends Service {
     private boolean mStat;
     private int mPolicy;
     private int mCpuType;
+    private int mMode;
+    private int mUeventSeq = -1;
 
     private UEventObserver mUEventObserver = new UEventObserver() {
         @Override
         public void onUEvent(UEvent event) {
-            String val = event.get("STATE");
-            if ("ACA=1".equals(val)) {
-                handleBandwidthBusy(true);
+            if (mMode == 0) {
+                String val = event.get("STATE");
+                if ("ACA=1".equals(val)) {
+                    handleBandwidthBusy(true);
+                } else {
+                    handleBandwidthBusy(false);
+                }
             } else {
-                handleBandwidthBusy(false);
+                String val = event.get(UEVENT_ACTION);
+                int seq = Integer.parseInt(event.get(UEVENT_SEQNUM));
+                //Log.d(TAG, "event: "+val+","+seq);
+                if (seq <= mUeventSeq)
+                    return;
+                mUeventSeq = seq;
+                if ("add".equals(val)) {
+                    handleBandwidthBusy(true);
+                } else if ("remove".equals(val)) {
+                    handleBandwidthBusy(false);
+                }
             }
         }
     };
@@ -72,8 +92,13 @@ public class DDRBandwidthService extends Service {
         mPolicy = mScm.getPropertyInt(PORPERTY_POLICY, DEFAULTL_POLICY_VALUE);
         val = mScm.readSysFs(BANDWIDTH_CPU_PATH);
         mCpuType = Integer.parseInt(val, 16);
-        mScm.writeSysFs(BANDWIDTH_MODE_PATH, "2");
-        mUEventObserver.startObserving("ddr_extcon_bandwidth");
+        mMode = mScm.getPropertyInt(PORPERTY_MODE, 0);
+        if (mMode == 0) {
+            mScm.writeSysFs(BANDWIDTH_MODE_PATH, "2");
+            mUEventObserver.startObserving("ddr_extcon_bandwidth");
+        } else {
+            mUEventObserver.startObserving(DECODER_DEVICE);
+        }
     }
 
     private void handleBandwidthBusy(boolean busy) {
@@ -86,8 +111,8 @@ public class DDRBandwidthService extends Service {
                 mScm.writeSysFs(BANDWIDTH_URGENT_PATH, busy?"3F0010 4":"3F0010 0");
                 mScm.writeSysFs(BANDWIDTH_URGENT_PATH, busy?"3 1":"3 0");
             } else if (mCpuType >= MESON_CPU_MAJOR_ID_GXL) {
-                mScm.writeSysFs(BANDWIDTH_URGENT_PATH, busy?"3F10 4":"3F10 0");
-                mScm.writeSysFs(BANDWIDTH_URGENT_PATH, busy?"7 1":"7 0");
+                mScm.writeSysFs(BANDWIDTH_URGENT_PATH, busy?"2611 4":"2611 0");
+                mScm.writeSysFs(BANDWIDTH_URGENT_PATH, busy?"6 1":"6 0");
             }
         }
         if ((mPolicy & POLICY_MALI_CORE_REDUCE) != 0) {

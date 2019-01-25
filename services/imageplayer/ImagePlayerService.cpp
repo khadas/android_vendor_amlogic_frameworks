@@ -70,7 +70,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <fcntl.h>
-
+#include <stdio.h>
 #include "RGBPicture.h"
 
 #include "ImagePlayerProcessData.h"
@@ -420,8 +420,15 @@ namespace {
             return false;
 
         if (!strncasecmp("file://", uri, 7)) {
-            SkFILEStream stream(uri + 7);
-            return verifyBySkCodec(&stream, bitmap);
+            FILE* file = fopen(uri+7,"rb");
+            if ( file == NULL ) {
+                ALOGE("cannot open file %s %d\n",uri+7, errno);
+                return false;
+            }
+            SkFILEStream stream(file);
+            ret = verifyBySkCodec(&stream, bitmap);
+            fclose(file);
+            return ret;
         }
 
         if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
@@ -2080,6 +2087,7 @@ namespace android {
         SkBitmap *dstBitmap = fillSurface(mBufBitmap);
 
         if (dstBitmap != NULL) {
+
             delete mBufBitmap;
             mBufBitmap = dstBitmap;
         }
@@ -2621,8 +2629,15 @@ namespace android {
             return false;
 
         if (!strncasecmp("file://", uri, 7)) {
-            SkFILEStream stream(uri + 7);
-            return verifyBySkCodec(&stream, bitmap);
+            FILE* file = fopen(uri+7,"rb");
+            if ( file == NULL ) {
+                ALOGE("cannot open file %s %d\n",uri+7, errno);
+                return false;
+            }
+            SkFILEStream stream(file);
+            ret = verifyBySkCodec(&stream, bitmap);
+            fclose(file);
+            return ret;
         }
 
         if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {

@@ -1411,8 +1411,8 @@ void DisplayMode::setDolbyVisionEnable(int state) {
     char outputmode[MODE_LEN] = {0};
     int value_state = state;
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
-    if (isTvSupportDolbyVision(tvmode))
-        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
     if (DOLBY_VISION_SET_DISABLE != value_state) {
         pSysWrite->setProperty(PROP_DOLBY_VISION_ENABLE, "true");
         //if TV
@@ -1511,10 +1511,9 @@ void DisplayMode::setDolbyVisionEnable(int state) {
         }
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
     }
-    if (isTvSupportDolbyVision(tvmode)) {
-        usleep(300000);//300ms
-        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
-    }
+
+    usleep(300000);//300ms
+    pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
 }
 
 /* *

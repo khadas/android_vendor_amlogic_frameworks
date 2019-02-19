@@ -67,6 +67,7 @@
         <service android:name="com.droidlogic.DDRBandwidthService" />
         <service android:name="com.droidlogic.WifiSuspendService" />
         <service android:name="com.droidlogic.OneTouchPlayService" />
+        <service android:name="com.droidlogic.NetworkSwitchService" />
         <receiver android:name="com.droidlogic.BootComplete">
             <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.PRE_BOOT_COMPLETED" />

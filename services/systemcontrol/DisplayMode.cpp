@@ -521,9 +521,9 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     initHdrSdrMode();
 
-    if (0 == pSysWrite->getPropertyInt(PROP_BOOTCOMPLETE, 0)) {
+    /*if (0 == pSysWrite->getPropertyInt(PROP_BOOTCOMPLETE, 0)) {
         setVideoPlayingAxis();
-    }
+    }*/
 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
     //4. turn on phy and clear avmute
@@ -540,15 +540,16 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     //5. start HDMI HDCP authenticate
     if (!cvbsMode) {
         pTxAuth->start();
+        pTxAuth->setBootAnimFinished(true);
     }
 
     if (OUPUT_MODE_STATE_INIT == state) {
-        startBootanimDetectThread();
+        /* startBootanimDetectThread();
         char bootvideo[MODE_LEN] = {0};
         pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
         if (strcmp(bootvideo, "1") == 0) {
             startBootvideoDetectThread();
-        }
+        }*/
     } else {
         pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
     }

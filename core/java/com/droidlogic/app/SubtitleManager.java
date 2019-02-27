@@ -49,7 +49,7 @@ public class SubtitleManager {
         private MediaPlayerExt mMediaPlayer = null;
         private ISubTitleService mService = null;
         private boolean mInvokeFromMp = false;
-        private boolean mThreadStop = false;
+        private boolean mThreadStop = true;
         private String mPath = null;
         private Thread mThread = null;
         private int RETRY_MAX = 10;
@@ -244,7 +244,7 @@ public class SubtitleManager {
                 return;
             }
 
-            mThreadStop = false;
+            //mThreadStop = false;
             if (mPath != null) {
                 if (!mOpen) {
                     setIOType();//first set io type to distinguish subtitle buffer source from dev or socket
@@ -281,6 +281,7 @@ public class SubtitleManager {
             LOGI("[show]total:" + total() + ", mThread:" + mThread);
             if (total() > 0) {
                 if (mThread == null) {
+                    mThreadStop = false;
                     mThread = new Thread (runnable);
                     mThread.start();
                 }

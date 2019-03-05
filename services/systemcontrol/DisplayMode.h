@@ -211,8 +211,6 @@ using namespace android;
 #define PROP_HAS_CVBS_MODE              "ro.vendor.platform.has.cvbsmode"
 #define PROP_BEST_OUTPUT_MODE           "ro.vendor.platform.best_outputmode"
 #define PROP_BOOTANIM                   "init.svc.bootanim"
-#define PROP_FS_MODE                    "const.filesystem.mode"
-#define PROP_BOOTANIM_DELAY             "const.bootanim.delay"
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
 #define PROP_DEEPCOLOR                  "vendor.sys.open.deepcolor" //default close this function, when reboot
 #define PROP_BOOTCOMPLETE               "service.bootanim.exit"
@@ -409,13 +407,13 @@ class DisplayMode : public HDCPTxAuth::TxUevntCallbak,
                                       private FrameRateAutoAdaption::Callbak
 {
 public:
-    DisplayMode(const char *path);
     DisplayMode(const char *path, Ubootenv *ubootenv);
     ~DisplayMode();
 
     void init();
     void reInit();
 
+    void setRecoveryMode(bool isRecovery);
     void setTvModelName();
     void setLogLevel(int level);
     int dump(char *result);
@@ -502,6 +500,7 @@ private:
     const char* pConfigPath;
     int mDisplayType;
     bool mVideoPlaying;
+    bool mIsRecovery = false;
 
     mutex_t mEnvLock;
 

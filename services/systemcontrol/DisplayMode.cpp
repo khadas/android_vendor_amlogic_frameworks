@@ -172,10 +172,6 @@ static void copy_changed_values(
     copy_if_gt0(&set->pixclock, &base->pixclock, 9);
 }
 
-DisplayMode::DisplayMode(const char *path) {
-    DisplayMode(path, NULL);
-}
-
 DisplayMode::DisplayMode(const char *path, Ubootenv *ubootenv)
     :mDisplayType(DISPLAY_TYPE_MBOX),
     mDisplayWidth(FULL_WIDTH_1080),
@@ -265,6 +261,10 @@ void DisplayMode::setTvModelName() {
     if (getBootEnv("ubootenv.var.model_name", modelName)) {
         pSysWrite->setProperty("tv.model_name", modelName);
     }
+}
+
+void DisplayMode::setRecoveryMode(bool isRecovery) {
+    mIsRecovery = isRecovery;
 }
 
 HDCPTxAuth *DisplayMode:: geTxAuth() {
@@ -544,8 +544,9 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     }
 
     if (OUPUT_MODE_STATE_INIT == state) {
-        /* startBootanimDetectThread();
-        char bootvideo[MODE_LEN] = {0};
+        startBootanimDetectThread();
+
+        /* char bootvideo[MODE_LEN] = {0};
         pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
         if (strcmp(bootvideo, "1") == 0) {
             startBootvideoDetectThread();
@@ -977,68 +978,22 @@ void DisplayMode::startBootanimDetectThread() {
 //if detected bootanim is running, then close uboot logo
 void* DisplayMode::bootanimDetect(void* data) {
     DisplayMode *pThiz = (DisplayMode*)data;
-    char bootanimState[MODE_LEN] = {"stopped"};
     char fs_mode[MODE_LEN] = {0};
     char recovery_state[MODE_LEN] = {0};
-    char outputmode[MODE_LEN] = {0};
     char bootvideo[MODE_LEN] = {0};
 
-    pThiz->pSysWrite->getPropertyString(PROP_FS_MODE, fs_mode, "android");
-    pThiz->pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
-
-    //not in the recovery mode
-    if (strcmp(fs_mode, "recovery")) {
-        //some boot videos maybe need 2~3s to start playing, so if the bootamin property
-        //don't run after about 4s, exit the loop.
-        int timeout = 40;
-        while (timeout > 0) {
-            //init had started boot animation, will set init.svc.* running
-            pThiz->pSysWrite->getPropertyString(PROP_BOOTANIM, bootanimState, "stopped");
-            if (!strcmp(bootanimState, "running"))
-                break;
-
-            usleep(100000);
-            timeout--;
-        }
-
-        int delayMs = pThiz->pSysWrite->getPropertyInt(PROP_BOOTANIM_DELAY, 100);
-        usleep(delayMs * 1000);
-        usleep(1000 * 1000);
-    }
-
-    pThiz->pSysWrite->getPropertyString(PROP_BOOTVIDEO_SERVICE, bootvideo, "0");
-    SYS_LOGI("boot animation detect boot video:%s\n", bootvideo);
-    if (strcmp(bootvideo, "1") != 0) {
-        pThiz->setBootanimStatus(1);
-    }
-
-    // Cannot access amldisplay_prop in P, selinux never allowed!
-    // check service property instead
-    pThiz->pSysWrite->getPropertyString("init.svc.recovery", recovery_state, "stopped");
-    SYS_LOGE("recovery running state is:%s!\n", recovery_state);
-    if ((!strcmp(recovery_state, "running"))|| (!strcmp(fs_mode, "recovery")) || (!strcmp(bootvideo, "1"))) {
-        //recovery or bootvideo mode
-        SYS_LOGE("recovery  or bootvideo mode");
+    if (pThiz->mIsRecovery) {
+        SYS_LOGI("this is recovery mode");
         usleep(1000000LL);
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "1");
         //need close fb1, because uboot logo show in fb1
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_BLANK, "1");
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
         pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-        //not boot video running
-        if (strcmp(bootvideo, "1")) {
-            //open fb0, let bootanimation show in it
-            pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
-        }
+        pThiz->pSysWrite->writeSysfs(DISPLAY_FB0_BLANK, "0");
+    } else {
+        SYS_LOGI("this is android mode");
     }
-
-    if (pThiz->pTxAuth)
-        pThiz->pTxAuth->setBootAnimFinished(true);
-    else
-        SYS_LOGE("pThiz->pTxAuth=NULL");
-
-    SYS_LOGE("recovery  or bootvideo end");
-    usleep(1000000LL);
 
     return NULL;
 }

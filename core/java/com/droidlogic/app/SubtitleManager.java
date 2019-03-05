@@ -272,8 +272,11 @@ public class SubtitleManager {
                 if (mService != null) {
                     mService.close();
                 }
-            } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                if (mContext != null && serConn != null) {
+                    mContext.unbindService(serConn);
+                }
+            } catch (Exception e) {
+                LOGE("unbindService not registered");
             }
         }
 
@@ -512,7 +515,6 @@ public class SubtitleManager {
         };
 
         public void release() {
-            mOpen= false;
             close();
         }
 

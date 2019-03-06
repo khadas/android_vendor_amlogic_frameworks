@@ -59,6 +59,31 @@ static const char* COLOR_ATTRIBUTE_LIST2[] = {
     COLOR_RGB_8BIT,
 };
 
+//this is prior selected list  of Low Power Mode 4k2k50hz, 4k2k60hz smpte50hz, smpte60hz
+static const char* COLOR_ATTRIBUTE_LIST3[] = {
+    COLOR_YCBCR420_8BIT,
+    COLOR_YCBCR420_10BIT,
+    COLOR_YCBCR420_12BIT,
+    COLOR_YCBCR422_8BIT,
+    COLOR_YCBCR422_10BIT,
+    COLOR_YCBCR422_12BIT,
+    COLOR_YCBCR444_8BIT,
+    COLOR_RGB_8BIT,
+};
+
+//this is prior selected list of Low Power Mode other display mode
+static const char* COLOR_ATTRIBUTE_LIST4[] = {
+    COLOR_YCBCR444_8BIT,
+    COLOR_YCBCR422_8BIT,
+    COLOR_RGB_8BIT,
+    COLOR_YCBCR444_10BIT,
+    COLOR_YCBCR422_10BIT,
+    COLOR_RGB_10BIT,
+    COLOR_YCBCR444_12BIT,
+    COLOR_YCBCR422_12BIT,
+    COLOR_RGB_12BIT,
+};
+
 FormatColorDepth::FormatColorDepth() {
     mUbootenv = new Ubootenv();
 }
@@ -166,11 +191,21 @@ void FormatColorDepth::getBestHdmiDeepColorAttr(const char *outputmode, char* co
     //filter some color value options, aimed at some modes.
     if (!strcmp(outputmode, MODE_4K2K60HZ) || !strcmp(outputmode, MODE_4K2K50HZ)
         || !strcmp(outputmode, MODE_4K2KSMPTE60HZ) || !strcmp(outputmode, MODE_4K2KSMPTE50HZ)) {
-        colorList = COLOR_ATTRIBUTE_LIST1;
-        length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST1);
+        if (mSysWrite.getPropertyBoolean(LOW_POWER_DEFAULT_COLOR, false)) {
+            colorList = COLOR_ATTRIBUTE_LIST3;
+            length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST3);
+        } else {
+            colorList = COLOR_ATTRIBUTE_LIST1;
+            length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST1);
+        }
     } else {
-        colorList = COLOR_ATTRIBUTE_LIST2;
-        length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST2);
+        if (mSysWrite.getPropertyBoolean(LOW_POWER_DEFAULT_COLOR, false)) {
+            colorList = COLOR_ATTRIBUTE_LIST4;
+            length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST4);
+        } else {
+            colorList = COLOR_ATTRIBUTE_LIST2;
+            length = ARRAY_SIZE(COLOR_ATTRIBUTE_LIST2);
+        }
     }
 
     for (int i = 0; i < length; i++) {

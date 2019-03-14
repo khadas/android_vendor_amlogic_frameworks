@@ -115,7 +115,7 @@ public class BootComplete extends BroadcastReceiver {
 	if (mSystemControlManager.getPropertyBoolean("ro.vendor.platform.support.network_led", false) == true)
             context.startService(new Intent(context, NetworkSwitchService.class));
 
-        if (mSystemControlManager.getPropertyBoolean("net.wifi.suspend", false))
+        if (mSystemControlManager.getPropertyBoolean("ro.vendor.platform.wifi.suspend", false))
             context.startService(new Intent(context, WifiSuspendService.class));
 
         if (mHasTvUiMode)

@@ -104,6 +104,7 @@ public class MediaPlayerExt extends MediaPlayer {
 
     private final static String IMEDIA_PLAYER = "android.media.IMediaPlayer";
     private static final int INVOKE_ID_GET_AM_TRACK_INFO        = 11;
+    private static final int INVOKE_ID_USE_CUSTOMIZED_EXTRACTOR  = 1001;
 
     //must sync with IMediaPlayerService.cpp (av\media\libmedia)
     private IBinder mIBinderService = null; //IMediaPlayerService
@@ -458,6 +459,18 @@ public class MediaPlayerExt extends MediaPlayer {
         public int total_ts_num;
         public TsProgrameInfo[] tsprogrameInfo;
     }
+    public void setUseLocalExtractor(MediaPlayerExt mp) {
+        /* setUseLocalExtractor use INVOKE_ID_USE_CUSTOMIZED_EXTRACTOR */
+        /* para: 1: enable ffmpeg extractor force                      */
+        /*       0: disable ffmpeg extractor force                     */
+        Parcel request = Parcel.obtain();
+        Parcel p = Parcel.obtain();
+        request.writeInterfaceToken(IMEDIA_PLAYER);
+        request.writeInt(INVOKE_ID_USE_CUSTOMIZED_EXTRACTOR);
+        request.writeInt(1);
+        MediaPlayerInvoke(request, p, mp);
+    }
+
 
    //getMediaInfo by invoke instead of getParameter (WL)
     public MediaInfo getMediaInfo(MediaPlayerExt mp) {
@@ -466,7 +479,7 @@ public class MediaPlayerExt extends MediaPlayer {
         Parcel p = Parcel.obtain();
         request.writeInterfaceToken(IMEDIA_PLAYER);
         request.writeInt(INVOKE_ID_GET_AM_TRACK_INFO);
-        getMediaInfobyInvoke(request, p, mp);
+        MediaPlayerInvoke(request, p, mp);
         //super.invoke(request, p);
         //Parcel p = Parcel.obtain();
         //getParameter(KEY_PARAMETER_AML_PLAYER_GET_MEDIA_INFO, p);
@@ -551,7 +564,7 @@ public class MediaPlayerExt extends MediaPlayer {
         return mediaInfo;
     }
 
-    public void getMediaInfobyInvoke(Parcel p1, Parcel p2, MediaPlayerExt mp) {
+    public void MediaPlayerInvoke(Parcel p1, Parcel p2, MediaPlayerExt mp) {
         Log.i(TAG,"[getMediaInfobyInvoke]mp:"+mp);
         try {
             Field allowedModes = MethodHandles.Lookup.class.getDeclaredField("allowedModes");

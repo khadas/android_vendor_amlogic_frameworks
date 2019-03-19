@@ -44,6 +44,7 @@
 #define SSC_PATH                  "/sys/class/lcd/ss"
 #define TEST_SCREEN               "/sys/class/video/test_screen"
 #define PQ_SET_RW_INTERFACE       "/sys/class/amvecm/pq_reg_rw"
+#define SYS_DISPLAY_MODE_PATH     "/sys/class/display/mode"
 
 #define FINAL_GAIN_REG_NUM        46
 
@@ -333,6 +334,7 @@ private:
     int pqReadSys(const char *path, char *buf, int count);
     void pqTransformStringToInt(const char *buf, int *val);
     unsigned int GetSharpnessRegVal(int addr);
+    bool isCVBSOutMode(void);
 
     tv_source_input_t cpq_setting_last_source;
     tvin_sig_fmt_t cpq_setting_last_sig_fmt;

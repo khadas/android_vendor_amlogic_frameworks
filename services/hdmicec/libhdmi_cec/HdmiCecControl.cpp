@@ -68,9 +68,9 @@ void HdmiCecControl::MsgHandler::handleMessage (CMessage &msg)
         case HdmiCecControl::MsgHandler::GET_MENU_LANGUAGE:
         case HdmiCecControl::MsgHandler::GIVE_OSD_NAEM:
             if (mControl->mCecDevice.isPlaybackDeviceType) {
-                if (mControl->mCecDevice.mAddrBitmap & (1 << CEC_ADDR_PLAYBACK_1) != 0) {
+                if (((mControl->mCecDevice.mAddrBitmap >> CEC_ADDR_PLAYBACK_1) & 0x1) != 0) {
                     message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_1;
-                } else if (mControl->mCecDevice.mAddrBitmap & (1 << CEC_ADDR_PLAYBACK_2) != 0) {
+                } else if (((mControl->mCecDevice.mAddrBitmap >> CEC_ADDR_PLAYBACK_2) & 0x1) != 0) {
                     message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_2;
                 } else {
                     message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_3;
@@ -851,6 +851,12 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
                 msg.body[1] = message->body[1] & 0xff;
                 msg.length = 2;
                 sendMessage(&msg, false);
+            }
+            break;
+        case CEC_MESSAGE_STANDBY:
+            if (mCecDevice.isPlaybackDeviceType && !mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.onekeypoweroff", false)) {
+                ALOGD("[hcc] filter <Standby>.");
+                ret = -1;
             }
             break;
         default:

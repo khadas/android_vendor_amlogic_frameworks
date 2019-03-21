@@ -310,8 +310,7 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
         Log.d(TAG, "HdmiHotplugEvent, connected:" + event.isConnected());
         if (mPlayback != null) {
             updatePortInfo();
-            if (!(event.isConnected() && !mLanguangeChanged)) {
-                mLanguangeChanged = false;
+            if (!event.isConnected()) {
                 mPortInfo = null;
             }
             if (event.isConnected()) {
@@ -545,8 +544,6 @@ public class HdmiCecExtend implements VendorCommandListener, HotplugEventListene
                         /* to wake up tv in case of last oneTouchPlayAction timeout and not finish when wake up playback and try to start a new action */
                         SendCecMessage(ADDR_TV, buildCecMsg(MESSAGE_TEXT_VIEW_ON, new byte[0]));
                         mPlayback.oneTouchPlay(mOneTouchPlayCallback);
-                    } else {//need update menu language
-                        updateMenuLanguage();
                     }
                 }
             }).start();

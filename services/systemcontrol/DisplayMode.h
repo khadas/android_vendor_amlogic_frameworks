@@ -267,6 +267,8 @@ using namespace android;
 #define FULL_HEIGHT_4K2K                2160
 #define FULL_WIDTH_4K2KSMPTE            4096
 #define FULL_HEIGHT_4K2KSMPTE           2160
+#define FULL_WIDTH_PANEL                1024
+#define FULL_HEIGHT_PANEL               600
 
 enum {
     EVENT_OUTPUT_MODE_CHANGE            = 0,
@@ -308,6 +310,7 @@ enum {
 #define MODE_4K2KSMPTE30HZ              "smpte30hz"
 #define MODE_4K2KSMPTE50HZ              "smpte50hz"
 #define MODE_4K2KSMPTE60HZ              "smpte60hz"
+#define MODE_PANEL                      "panel"
 
 #define MODE_480I_PREFIX                "480i"
 #define MODE_480P_PREFIX                "480p"
@@ -344,7 +347,8 @@ enum {
     DISPLAY_MODE_4K2KSMPTE50HZ          = 20,
     DISPLAY_MODE_4K2KSMPTE60HZ          = 21,
     DISPLAY_MODE_768P                   = 22,
-    DISPLAY_MODE_TOTAL                  = 23
+    DISPLAY_MODE_PANEL                  = 23,
+    DISPLAY_MODE_TOTAL                  = 24
 };
 
 typedef enum {

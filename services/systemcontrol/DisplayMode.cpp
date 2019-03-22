@@ -71,6 +71,7 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2KSMPTE50HZ,
     MODE_4K2KSMPTE60HZ,
     MODE_768P,
+    MODE_PANEL,
 };
 
 // Sink reference table, sorted by priority, per CDF
@@ -424,6 +425,12 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
         pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curDisplayMode);
         if (!strcmp(outputmode, curDisplayMode)) {
+
+            //if cur mode is cvbsmode, and same to outputmode, return.
+            if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)
+                    || !strcmp(outputmode, MODE_PANEL) || !strcmp(outputmode, "null")) {
+                return;
+            }
             //deep color disabled, only need check output mode same or not
             if (!deepColorEnabled) {
                 SYS_LOGI("deep color is Disabled, and curDisplayMode is same to outputmode, return\n");
@@ -460,7 +467,8 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     // 2.stop hdcp tx
     pTxAuth->stop();
 
-    if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)) {
+    if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)
+            || !strcmp(outputmode, MODE_PANEL) || !strcmp(outputmode, "null")){
         cvbsMode = true;
     }
 
@@ -474,14 +482,14 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     char curMode[MODE_LEN] = {0};
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, curMode);
 
-    if (strstr(mRebootMode, "quiescent")) {
+    if (strstr(mRebootMode, "quiescent") && (strstr(outputmode, MODE_PANEL) == NULL)) {
         SYS_LOGI("reboot_mode is quiescent\n");
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         return;
     }
 
     if (strstr(curMode, outputmode) == NULL) {
-        if (cvbsMode) {
+        if (cvbsMode && (strstr(outputmode, MODE_PANEL) == NULL)) {
             pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         }
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
@@ -559,7 +567,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     setBootEnv(UBOOTENV_OUTPUTMODE, (char *)outputmode);
     if (strstr(outputmode, "cvbs") != NULL) {
         setBootEnv(UBOOTENV_CVBSMODE, (char *)outputmode);
-    } else {
+    } else if (strstr(outputmode, "hz") != NULL) {
         setBootEnv(UBOOTENV_HDMIMODE, (char *)outputmode);
     }
     SYS_LOGI("set output mode:%s done\n", outputmode);
@@ -1287,6 +1295,10 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
         strcpy(keyValue, "4k2ksmpte");
         defaultWidth = FULL_WIDTH_4K2KSMPTE;
         defaultHeight = FULL_HEIGHT_4K2KSMPTE;
+    } else if (strstr(curMode, MODE_PANEL)) {
+        strcpy(keyValue, MODE_PANEL);
+        defaultWidth = FULL_WIDTH_PANEL;
+        defaultHeight = FULL_HEIGHT_PANEL;
     } else {
         strcpy(keyValue, MODE_1080P_PREFIX);
         defaultWidth = FULL_WIDTH_1080;
@@ -1337,6 +1349,8 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
         strcpy(keyValue, MODE_4K2K_PREFIX);
     } else if (strstr(curMode, MODE_4K2KSMPTE_PREFIX)) {
         strcpy(keyValue, "4k2ksmpte");
+    } else if (strstr(curMode, MODE_PANEL)) {
+        strcpy(keyValue, MODE_PANEL);
     }
 
     mutex_lock(&mEnvLock);

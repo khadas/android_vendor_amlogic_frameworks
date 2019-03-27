@@ -775,7 +775,7 @@ public class SubtitleManager {
                     try {
                         if (mService != null) {
                             if (mMediaPlayer != null && mMediaPlayer.isPlaying() ) {
-                                if (getSubTypeDetial() == 6) { //6:dvb type
+                                if (getSubTypeDetial() == 6 || getSubTypeDetial() == 9) { //6:dvb type 9:teletext type
                                     pos = getCurrentPcr();
                                 } else {
                                     pos = mMediaPlayer.getCurrentPosition();

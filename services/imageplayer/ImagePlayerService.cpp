@@ -960,6 +960,8 @@ namespace android {
             close(mDisplayFd);
         }
 
+        mMovieThread = new MovieThread(this);
+        mDeathNotifier = new DeathNotifier(this);
 
         //if video exit with some exception, need restore video attribute
         initVideoAxis();
@@ -993,8 +995,6 @@ namespace android {
         free(bitmap_addr);
 #endif
 
-        mMovieThread = new MovieThread(this);
-        mDeathNotifier = new DeathNotifier(this);
         ALOGI("init success display fd:%d", mDisplayFd);
 
         return RET_OK;

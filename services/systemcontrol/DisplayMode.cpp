@@ -1666,6 +1666,7 @@ void DisplayMode::setSdrMode(const char* mode) {
         SYS_LOGI("setSdrMode state: %s\n", mode);
         pSysWrite->writeSysfs(DISPLAY_HDMI_SDR_MODE, mode);
         pSysWrite->setProperty(PROP_SDR_MODE_STATE, mode);
+        setBootEnv(UBOOTENV_SDR2HDR, (char *)mode);
     }
 }
 

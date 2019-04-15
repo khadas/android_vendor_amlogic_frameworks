@@ -90,6 +90,7 @@ public class OutputModeManager {
     public static final String ENV_OUTPUT_MODE              = "ubootenv.var.outputmode";
     public static final String ENV_DIGIT_AUDIO              = "ubootenv.var.digitaudiooutput";
     public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
+    public static final String ENV_IS_BEST_DOLBYVISION      = "ubootenv.var.bestdolbyvision";
     public static final String ENV_COLORATTRIBUTE           = "ubootenv.var.colorattribute";
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.vendor.platform.best_outputmode";
@@ -540,6 +541,15 @@ public class OutputModeManager {
         return Boolean.parseBoolean(isBestOutputmode.equals("") ? "true" : isBestOutputmode);
     }
 
+    public void setBestDolbyVision(boolean enable) {
+        mSystenControl.setBootenv(ENV_IS_BEST_DOLBYVISION, enable ? "true" : "false");
+    }
+
+    public boolean isBestDolbyVsion() {
+        String isBestDolbyVsion = mSystenControl.getBootenv(ENV_IS_BEST_DOLBYVISION, "true");
+        Log.e("TEST", "isBestDolbyVsion:" + isBestDolbyVsion);
+        return Boolean.parseBoolean(isBestDolbyVsion.equals("") ? "true" : isBestDolbyVsion);
+    }
     public boolean isDeepColor() {
         return getPropertyBoolean(PROP_DEEPCOLOR, false);
     }

@@ -556,8 +556,10 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 #ifndef RECOVERY_MODE
     notifyEvent(EVENT_OUTPUT_MODE_CHANGE);
 #endif
-    if (!cvbsMode && (OUPUT_MODE_STATE_INIT != state) && isDolbyVisionEnable() && setDolbyVisionState) {
-        setDolbyVisionEnable(getDolbyVisionType());
+
+    if (!cvbsMode && pSysWrite->getPropertyBoolean(PROP_DOLBY_VISION_FEATURE, false)
+            && setDolbyVisionState) {
+        initDolbyVision(state);
     }
     //audio
     memset(value, 0, sizeof(0));
@@ -1420,7 +1422,7 @@ bool DisplayMode::isDolbyVisionEnable() {
     return pSysWrite->getPropertyBoolean(PROP_DOLBY_VISION_ENABLE, false);
 }
 
-void DisplayMode::setDolbyVisionEnable(int state) {
+void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state) {
     char tvmode[MAX_STR_LEN] = {0};
     char outputmode[MODE_LEN] = {0};
     int value_state = state;
@@ -1478,10 +1480,14 @@ void DisplayMode::setDolbyVisionEnable(int state) {
                     }
                 }
                 setDolbyVisionState = false;
-                if ((resolveResolutionValue(outputmode) > resolveResolutionValue(tvmode))
-                        || (strstr(outputmode, "smpte") != NULL)) {
-                    SYS_LOGI("CurMode[%s] is not support dolbyvision, need setmode to [%s]", outputmode, tvmode);
-                    setSourceOutputMode(tvmode);
+                if (mode_state != OUPUT_MODE_STATE_SWITCH) {
+                    if (strstr(tvmode, MODE_4K2K60HZ)) {
+                        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+                        setSourceOutputMode(MODE_4K2K60HZ);
+                    } else if (strstr(tvmode, MODE_1080P) || strstr(tvmode, MODE_4K2K30HZ)){
+                        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+                        setSourceOutputMode(MODE_1080P);
+                    }
                 } else {
                     pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
                     setSourceOutputMode(outputmode);
@@ -1528,6 +1534,22 @@ void DisplayMode::setDolbyVisionEnable(int state) {
 
     usleep(300000);//300ms
     pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+}
+
+void DisplayMode::initDolbyVision(output_mode_state state) {
+    char dv_mode[MAX_STR_LEN];
+    char bestDolbyVision[MODE_LEN] = {0};
+    if (isTvSupportDolbyVision(dv_mode) && (!getBootEnv(UBOOTENV_BESTDOLBYVISION, bestDolbyVision) || strstr(bestDolbyVision, "true") != NULL)) {
+        if (strstr(dv_mode, "LL_YCbCr_422_12BIT") != NULL) {
+            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE_LL_YUV,  state);
+        } else if (strstr(dv_mode, "DV_RGB_444_8BIT") != NULL) {
+            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE,  state);
+        } else if (strstr(dv_mode, "LL_RGB_444_12BIT") != NULL) {
+            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE_LL_RGB,  state);
+        }
+    } else if ((OUPUT_MODE_STATE_INIT != state) && isDolbyVisionEnable()) {
+        setDolbyVisionEnable(getDolbyVisionType(),  state);
+    }
 }
 
 /* *

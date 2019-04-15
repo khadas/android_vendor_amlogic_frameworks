@@ -516,7 +516,7 @@ void SystemControl::getPosition(const String16& mode, int &x, int &y, int &w, in
 }
 
 void SystemControl::setDolbyVisionEnable(int state) {
-    pDisplayMode->setDolbyVisionEnable(state);
+    pDisplayMode->setDolbyVisionEnable(state, OUPUT_MODE_STATE_SWITCH);
 }
 
 int32_t SystemControl::getDolbyVisionType() {

@@ -500,7 +500,7 @@ void SystemControlService::getPosition(const std::string& mode, int &x, int &y, 
 }
 
 void SystemControlService::setDolbyVisionEnable(int state) {
-    pDisplayMode->setDolbyVisionEnable(state);
+    pDisplayMode->setDolbyVisionEnable(state, OUPUT_MODE_STATE_SWITCH);
 }
 
 bool SystemControlService::isTvSupportDolbyVision(std::string& mode) {

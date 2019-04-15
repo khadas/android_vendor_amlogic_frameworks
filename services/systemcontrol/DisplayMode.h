@@ -216,6 +216,7 @@ using namespace android;
 #define PROP_BOOTVIDEO_SERVICE          "service.bootvideo"
 #define PROP_DEEPCOLOR                  "vendor.sys.open.deepcolor" //default close this function, when reboot
 #define PROP_BOOTCOMPLETE               "service.bootanim.exit"
+#define PROP_DOLBY_VISION_FEATURE       "ro.vendor.platform.support.dolbyvision"
 #define PROP_DOLBY_VISION_ENABLE        "persist.vendor.sys.dolbyvision.enable"
 #define PROP_DOLBY_VISION_TYPE          "persist.vendor.sys.dolbyvision.type"
 #define PROP_DOLBY_VISION_PRIORITY      "persist.vendor.sys.graphics.priority"
@@ -247,6 +248,7 @@ using namespace android;
 #define UBOOTENV_CVBSMODE               "ubootenv.var.cvbsmode"
 #define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
+#define UBOOTENV_BESTDOLBYVISION        "ubootenv.var.bestdolbyvision"
 #define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
 
 #define UBOOTENV_REBOOT_MODE           "ubootenv.var.reboot_mode_android"
@@ -414,7 +416,7 @@ public:
     void setDigitalMode(const char* mode);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
-    void setDolbyVisionEnable(int state);
+    void setDolbyVisionEnable(int state, output_mode_state mode_state);
     int  getDolbyVisionType();
     bool isDolbyVisionEnable();
     bool isTvSupportDolbyVision(char *mode);
@@ -473,6 +475,7 @@ private:
     void updateWindowAxis(const char* outputmode);
     void initGraphicsPriority();
 	void initHdrSdrMode();
+    void initDolbyVision(output_mode_state state);
     bool isEdidChange();
     bool isBestOutputmode();
     bool modeSupport(char *mode, int sinkType);

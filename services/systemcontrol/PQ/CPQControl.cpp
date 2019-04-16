@@ -329,8 +329,6 @@ int CPQControl::LoadPQSettings(source_input_param_t source_input_param)
         SYS_LOGD("All PQ moudle disabled!\n");
         ve_pq_moudle_state_t state = VE_PQ_MOUDLE_OFF;
         ret = VPPDeviceIOCtl(AMVECM_IOC_S_PQ_STATUE, &state);
-    } else if (isCVBSOutMode()) {
-        SYS_LOGD("Now is cvbs out mode, no need load PQ param!\n");
     } else {
         SYS_LOGD("source_input: %d\n", source_input_param.source_input);
         SYS_LOGD("sig_fmt: 0x%x(%d)\n", source_input_param.sig_fmt, source_input_param.sig_fmt);
@@ -347,7 +345,7 @@ int CPQControl::LoadPQSettings(source_input_param_t source_input_param)
             && (cpq_setting_last_sig_fmt == source_input_param.sig_fmt)
             && (cpq_setting_last_trans_fmt == source_input_param.trans_fmt)
             && (hdrStatus == mIsHdrLastTime)) {
-            SYS_LOGD("Same signal,no need load PQ param!\n");
+            SYS_LOGD("Same signal,no need load!\n");
             return ret;
         }
 
@@ -5406,21 +5404,5 @@ bool CPQControl::isFileExist(const char *file_name)
        return false;
     } else {
        return true;
-    }
-}
-
-bool CPQControl::isCVBSOutMode(void)
-{
-    char buf[32] = {0};
-    if ((pqReadSys(SYS_DISPLAY_MODE_PATH, buf, sizeof(buf)) < 0) || (strlen(buf) == 0)) {
-        SYS_LOGD("Read /sys/class/display/mode failed!\n");
-        return false;
-    } else {
-        SYS_LOGD( "%s: current output mode is %s!\n", __FUNCTION__, buf);
-        if (strstr(buf, "480cvbs") || strstr(buf, "576cvbs")) {
-            return true;
-        } else {
-            return false;
-        }
     }
 }

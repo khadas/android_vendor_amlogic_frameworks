@@ -205,4 +205,55 @@ public class DisplayPositionManager {
         mOutputModeManager.savePosition(x, y, w, h);
         mOutputModeManager.setOsdMouse(x, y, w, h);
     }
+
+    /*
+    **return (position[0], position[1]) is left-top coordinate
+    **       (position[2], position[3]) is right-bottom coordinate
+     */
+    public int[] getCoordinate(){
+        int [] position = mOutputModeManager.getPosition(mCurrentMode);
+        position[2] = position[0] + position[2] - 1;
+        position[3] = position[1] + position[3] - 1;
+        return position;
+    }
+
+    /*
+    ** parames: leftOffset, topOffset, rightOffset, bottomOffset
+    **          positive number the coordinate will add
+    **          negative number the coordinate will lessen
+    **          (0, 0, 1919, 1079) ---> (5, 6, -2, 0) = (5, 6, 1917, 1079)
+    */
+    public void zoomByOffset(int leftOffset, int topOffset, int rightOffset, int bottomOffset) {
+        int [] position = mOutputModeManager.getPosition(mCurrentMode);
+
+        int x1 = position[0] + leftOffset;
+        int y1 = position[1] + topOffset;
+        int x2 = position[0] + position[2] + rightOffset - 1;
+        int y2 = position[1] + position[3] + bottomOffset - 1;
+        if (x1 < 0) {
+            x1 = 0;
+        } else if (x1 > (20 * mMaxBottom) / 100) {
+            x1 = (20 * mMaxBottom) / 100;
+        }
+
+        if (y1 < 0) {
+            y1 = 0;
+        } else if (y1 > (20 * mMaxBottom) / 100) {
+            y1 = (20 * mMaxBottom) / 100;
+        }
+
+        if (x2 < (80 * mMaxRight) / 100) {
+            x2 = (80 * mMaxRight) / 100;
+        } else if (x2 > mMaxRight) {
+            x2 =  mMaxRight;
+        }
+
+        if (y2 < (80 * mMaxBottom) / 100) {
+            y2 = (80 * mMaxBottom) / 100;
+        } else if (y2 > mMaxBottom) {
+            y2 =  mMaxBottom;
+        }
+
+        zoomByPosition(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
+    }
 }

@@ -288,6 +288,9 @@ public class SubtitleManager {
                     mThread = new Thread (runnable);
                     mThread.start();
                 }
+            } else {
+                Log.i("SubtitleManager","no sub close subtitle.");
+                close();
             }
         }
 

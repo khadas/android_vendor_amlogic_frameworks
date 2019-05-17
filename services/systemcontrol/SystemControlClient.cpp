@@ -27,14 +27,15 @@
 #include <string.h>
 #include <sys/types.h>
 #include <android-base/logging.h>
-#include <common.h>
-
 #include <SystemControlClient.h>
 
 namespace android {
 
+Mutex SystemControlClient::mLock;
+
 SystemControlClient::SystemControlClient() {
     //mSysCtrl = ISystemControl::getService();
+    Mutex::Autolock _l(mLock);
     sp<ISystemControl> ctrl = ISystemControl::tryGetService();
     while (ctrl == nullptr) {
          usleep(200*1000);//sleep 200ms
@@ -52,7 +53,13 @@ SystemControlClient::SystemControlClient() {
         LOG(INFO) << "Link to system service death notification successful";
     }
 
+    mSystemControlHidlCallback = new SystemControlHidlCallback(this);
+    ctrl->setCallback(mSystemControlHidlCallback);
     mSysCtrl =ctrl ;
+}
+
+SystemControlClient::~SystemControlClient() {
+
 }
 
 bool SystemControlClient::getProperty(const std::string& key, std::string& value) {
@@ -65,7 +72,7 @@ bool SystemControlClient::getProperty(const std::string& key, std::string& value
     return true;
 }
 
-bool SystemControlClient::getPropertyString(const std::string& key, std::string& value, std::string& def) {
+bool SystemControlClient::getPropertyString(const std::string& key, std::string& value, const std::string& def) {
     mSysCtrl->getPropertyString(key, def, [&value](const Result &ret, const hidl_string& v) {
         if (Result::OK == ret) {
             value = v;
@@ -366,8 +373,8 @@ void SystemControlClient::getDroidDisplayInfo(int &type __unused, std::string& s
     });*/
 }
 
-void SystemControlClient::loopMountUnmount(int &isMount, const std::string& path)  {
-    mSysCtrl->loopMountUnmount(isMount, path);
+void SystemControlClient::loopMountUnmount(const bool &isMount, const std::string& path)  {
+    mSysCtrl->loopMountUnmount((int)isMount, path);
 }
 
 void SystemControlClient::setMboxOutputMode(const std::string& mode) {
@@ -479,9 +486,20 @@ void SystemControlClient::setSdrMode(const std::string& mode) {
     mSysCtrl->setSdrMode(mode);
 }
 
+void SystemControlClient::setAppInfo(const std::string& pkg, const std::string& cls, const std::vector<std::string> &proc) {
+    hidl_vec< hidl_string> procList;
+    size_t size = proc.size();
+    procList.resize(size);
+    for (int i = 0; i< proc.size(); ++i) {
+        procList[i] = proc[i];
+    }
+    mSysCtrl->setAppInfo(pkg, cls, procList);
+}
+
+/*
 void SystemControlClient::setListener(const sp<ISystemControlCallback> callback) {
     Return<void> ret = mSysCtrl->setCallback(callback);
-}
+}*/
 
 bool SystemControlClient::getSupportDispModeList(std::vector<std::string>& supportDispModes) {
     mSysCtrl->getSupportDispModeList([&supportDispModes](const Result &ret, const hidl_vec<hidl_string> list) {
@@ -1089,9 +1107,50 @@ int SystemControlClient::factoryGetSharpnessParams(int inputSrc, int sig_fmt, in
 }
 //PQ end
 
+
+void SystemControlClient::setListener(const sp<SysCtrlListener> &listener)
+{
+    mListener = listener;
+}
+
+// callback from systemcontrol service
+Return<void> SystemControlClient::SystemControlHidlCallback::notifyCallback(const int event)
+{
+    ALOGI("notifyCallback event type:%d", event);
+    sp<SysCtrlListener> listener;
+    {
+        Mutex::Autolock _l(mLock);
+        listener = SysCtrlClient->mListener;
+    }
+
+
+    if (listener != NULL) {
+        listener->notify(event);
+    }
+    return Void();
+}
+
+Return<void> SystemControlClient::SystemControlHidlCallback::notifyFBCUpgradeCallback(int state, int param) {
+    ALOGI("notifyFBCUpgradeCallback state:%d, param:%d", state, param);
+    sp<SysCtrlListener> listener;
+    {
+        Mutex::Autolock _l(mLock);
+        listener = SysCtrlClient->mListener;
+    }
+
+
+    if (listener != NULL) {
+        listener->notifyFBCUpgrade(state, param);
+    }
+
+    return Void();
+}
+
+
 void SystemControlClient::SystemControlDeathRecipient::serviceDied(uint64_t cookie,
         const ::android::wp<::android::hidl::base::V1_0::IBase>& who) {
     LOG(ERROR) << "system control service died. need release some resources";
+    Mutex::Autolock _l(mLock);
 }
 
 }; // namespace android

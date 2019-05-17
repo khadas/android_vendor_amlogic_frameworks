@@ -4,12 +4,6 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := $(call all-subdir-java-files)
 LOCAL_JAVA_LIBRARIES := droidlogic \
-    android.hidl.base-V1.0-java \
-    android.hidl.manager-V1.0-java
-
-LOCAL_STATIC_JAVA_LIBRARIES := android.hidl.base-V1.0-java \
-    vendor.amlogic.hardware.hdmicec-V1.0-java \
-    vendor.amlogic.hardware.droidvold-V1.0-java
 
 LOCAL_JNI_SHARED_LIBRARIES := libremotecontrol_jni libjniuevent
 

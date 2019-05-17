@@ -18,10 +18,8 @@ import android.media.AudioManager;
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 
-import vendor.amlogic.hardware.systemcontrol.V1_0.ISystemControlCallback;
-
 //this event from native system control service
-public class SystemControlEvent extends ISystemControlCallback.Stub {
+public class SystemControlEvent implements SystemControlManager.HdmiHotPlugListener{
     private static final String TAG                             = "SystemControlEvent";
 
     public static final String ACTION_SYSTEM_CONTROL_EVENT      = "droidlogic.intent.action.SYSTEM_CONTROL_EVENT";
@@ -50,7 +48,7 @@ public class SystemControlEvent extends ISystemControlCallback.Stub {
     }
 
     @Override
-    public void notifyCallback(int event) {
+    public void HdmiHotPlugEvent(int event) {
         Log.i(TAG, "system control callback event: " + event);
         Intent intent;
         if (event == EVENT_HDMI_PLUG_OUT || event == EVENT_HDMI_PLUG_IN) {

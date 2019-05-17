@@ -23,9 +23,9 @@
 #define ANDROID_SYSTEMCONTROLCLIENT_H
 
 #include <utils/Errors.h>
-#include "ISystemControlNotify.h"
 #include <string>
 #include <vector>
+#include <utils/Mutex.h>
 
 #include "PQType.h"
 #include <vendor/amlogic/hardware/systemcontrol/1.1/ISystemControl.h>
@@ -41,15 +41,24 @@ using ::android::hardware::hidl_vec;
 using ::android::hardware::hidl_string;
 using ::android::hardware::hidl_array;
 using ::android::hardware::Return;
+using ::android::hardware::Void;
+
 
 namespace android {
+
+class SysCtrlListener : virtual public RefBase {
+public:
+    virtual void notify(int event) = 0;
+    virtual void notifyFBCUpgrade(int state, int param) = 0;
+};
 
 class SystemControlClient  : virtual public RefBase {
 public:
     SystemControlClient();
+    ~SystemControlClient();
 
     bool getProperty(const std::string& key, std::string& value);
-    bool getPropertyString(const std::string& key, std::string& value, std::string& def);
+    bool getPropertyString(const std::string& key, std::string& value, const std::string& def);
     int32_t getPropertyInt(const std::string& key, int32_t def);
     int64_t getPropertyLong(const std::string& key, int64_t def);
 
@@ -81,13 +90,13 @@ public:
         int &fb0w, int &fb0h, int &fb0bits, int &fb0trip,
         int &fb1w, int &fb1h, int &fb1bits, int &fb1trip);
 
-    void loopMountUnmount(int &isMount, const std::string& path);
+    void loopMountUnmount(const bool &isMount, const std::string& path);
 
     void setMboxOutputMode(const std::string& mode);
     void setSinkOutputMode(const std::string& mode);
 
     void setDigitalMode(const std::string& mode);
-    void setListener(const sp<ISystemControlCallback> callback);
+    //void setListener(const sp<ISystemControlCallback> callback);
     void setOsdMouseMode(const std::string& mode);
     void setOsdMousePara(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
@@ -102,6 +111,7 @@ public:
     void getGraphicsPriority(std::string& mode);
     void setHdrMode(const std::string& mode);
     void setSdrMode(const std::string& mode);
+    void setAppInfo(const std::string& pkg, const std::string& cls, const std::vector<std::string> &proc);
 
     int32_t set3DMode(const std::string& mode3d);
     void init3DSetting(void);
@@ -234,15 +244,30 @@ public:
     int factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type);
     //PQ end
 
+    void setListener(const sp<SysCtrlListener> &listener);
+
  private:
+     class SystemControlHidlCallback : public ISystemControlCallback {
+     public:
+         SystemControlHidlCallback(SystemControlClient *client): SysCtrlClient(client) {};
+         Return<void> notifyCallback(const int event) override;
+         Return<void> notifyFBCUpgradeCallback(int state, int param) ;
+     private:
+         SystemControlClient *SysCtrlClient;
+     };
+
     struct SystemControlDeathRecipient : public android::hardware::hidl_death_recipient  {
         // hidl_death_recipient interface
         virtual void serviceDied(uint64_t cookie,
             const ::android::wp<::android::hidl::base::V1_0::IBase>& who) override;
     };
     sp<SystemControlDeathRecipient> mDeathRecipient = nullptr;
+    static SystemControlClient *mInstance;
 
     sp<ISystemControl> mSysCtrl;
+    static Mutex mLock;
+    sp<SysCtrlListener> mListener;
+    sp<SystemControlHidlCallback> mSystemControlHidlCallback = nullptr;
 
 };
 

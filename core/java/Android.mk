@@ -14,15 +14,6 @@ ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
 LOCAL_PROPRIETARY_MODULE := true
 endif
 
-LOCAL_JAVA_LIBRARIES := \
-	android.hidl.base-V1.0-java \
-	android.hidl.manager-V1.0-java
-
-LOCAL_STATIC_JAVA_LIBRARIES := \
-        vendor.amlogic.hardware.systemcontrol-V1.0-java \
-	vendor.amlogic.hardware.systemcontrol-V1.1-java \
-	vendor.amlogic.hardware.droidvold-V1.0-java \
-
 include $(BUILD_JAVA_LIBRARY)
 
 #copy xml to permissions directory

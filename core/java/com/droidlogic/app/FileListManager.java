@@ -24,11 +24,8 @@ package com.droidlogic.app;
 import android.content.Context;
 import android.util.Log;
 import android.os.Environment;
-//import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.os.storage.StorageManager;
-//import android.os.storage.DiskInfo;
-//import android.os.storage.VolumeInfo;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -43,12 +40,6 @@ import java.util.StringTokenizer;
 import java.util.NoSuchElementException;
 import java.lang.String;
 
-import vendor.amlogic.hardware.droidvold.V1_0.IDroidVold;
-import vendor.amlogic.hardware.droidvold.V1_0.IDroidVoldCallback;
-import vendor.amlogic.hardware.droidvold.V1_0.Result;
-
-import android.hidl.manager.V1_0.IServiceManager;
-import android.hidl.manager.V1_0.IServiceNotification;
 import android.os.Bundle;
 import android.os.HwBinder;
 import android.os.Parcel;
@@ -56,7 +47,6 @@ import android.os.Parcelable;
 import android.os.RemoteException;
 
 import com.droidlogic.app.SystemControlManager;
-//import com.droidlogic.app.IDroidVoldManager;
 
 public class FileListManager {
     private String TAG = "FileListManager";
@@ -65,7 +55,7 @@ public class FileListManager {
 
     private StorageManager mStorageManager;
     private static SystemControlManager mSystemControl;
-    private IDroidVold mDroidVold;
+    //private IDroidVold mDroidVold;
 
     public static final String STORAGE = "/storage";
     public static final String MEDIA_RW = "/mnt/media_rw";
@@ -121,17 +111,6 @@ public class FileListManager {
         mDebug = false;
         mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
         mSystemControl =  SystemControlManager.getInstance();
-
-        //remove droidvold from andorid p
-        /*try {
-            mDroidVold = IDroidVold.getService();
-        } catch (NoSuchElementException e) {
-            Log.e(TAG, "connectToProxy: droidvold hal service not found."
-                    + " Did the service fail to start?", e);
-        } catch (RemoteException e) {
-            Log.e(TAG, "connectToProxy: droidvold hal service not responding", e);
-        }*/
-
         checkDebug();
     }
 
@@ -451,12 +430,6 @@ public class FileListManager {
                         map.put(KEY_SELE, SELE_NO);
                         map.put(KEY_RDWR, null);
                         int diskFlag = 0;
-                        try {
-                            diskFlag = mDroidVold.getDiskFlag(path);
-                        } catch (Exception e) {
-                            Log.e(TAG, "[getDevices]Exception e:" + e);
-                            e.printStackTrace();
-                        }
                         Log.i(TAG, "getDevices() diskFlag:" + diskFlag);
                         if (diskFlag == 8) {
                             map.put(KEY_TYPE, TYPE_UDISK);

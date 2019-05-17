@@ -32,7 +32,7 @@
 #include <utils/Log.h>
 #include <HidlTransportSupport.h>
 
-#include "SystemControl.h"
+//#include "SystemControl.h"
 #include "SystemControlService.h"
 #include "SystemControlHal.h"
 
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
         }
     }
     else {
-        SystemControl *control = SystemControl::instantiate(path);
+        //SystemControl *control = SystemControl::instantiate(path);
     }
 
     /*

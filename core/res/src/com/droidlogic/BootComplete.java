@@ -38,7 +38,6 @@ import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
-import com.droidlogic.HdmiCecExtend;
 import com.droidlogic.app.DolbyVisionSettingManager;
 import com.droidlogic.app.AudioSettingManager;
 
@@ -72,7 +71,7 @@ public class BootComplete extends BroadcastReceiver {
         final ContentResolver resolver = context.getContentResolver();
         //register system control callback
         mSystemControlEvent = new SystemControlEvent(context);
-        mSystemControlManager.setListener(mSystemControlEvent);
+        mSystemControlManager.setHdmiHotPlugListener(mSystemControlEvent);
         final OutputModeManager outputModeManager = new OutputModeManager(context);
 
         mAudioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
@@ -98,10 +97,6 @@ public class BootComplete extends BroadcastReceiver {
         }
 
         new PlayBackManager(context).initHdmiSelfadaption();
-
-        if (needCecExtend(mSystemControlManager, context)) {
-            new HdmiCecExtend(context);
-        }
 
         //start optimization service
         context.startService(new Intent(context, Optimization.class));

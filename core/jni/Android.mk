@@ -144,4 +144,4 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
-include $(LOCAL_PATH)/hdmi_cec/Android.mk
+include $(call all-makefiles-under,$(LOCAL_PATH))

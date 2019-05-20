@@ -39,6 +39,7 @@
 #include <SkRefCnt.h>
 #include <SkCanvas.h>
 #include <SkCodec.h>
+#include <SkAndroidCodec.h>
 #include <SkColorPriv.h>
 #include <SkColorSpace.h>
 #include <SkColorSpaceXform.h>
@@ -1645,23 +1646,26 @@ namespace android {
     SkBitmap* ImagePlayerService::decode(SkStreamAsset *stream,
                                          InitParameter *mParameter) {
         std::unique_ptr<SkStream> s = stream->fork();
-        std::unique_ptr<SkCodec> codec(SkCodec::MakeFromStream(std::move(s)));
+        std::unique_ptr<SkCodec> c(SkCodec::MakeFromStream(std::move(s)));
 
-        if (!codec) {
+        if (!c) {
+            ALOGE("decode make codec from stream null!");
             return NULL;
         }
+        std::unique_ptr<SkAndroidCodec> codec = SkAndroidCodec::MakeFromCodec(std::move(c),
+            SkAndroidCodec::ExifOrientationBehavior::kRespect);
 
         SkImageInfo imageInfo = codec->getInfo();
         auto alphaType = imageInfo.isOpaque() ? kOpaque_SkAlphaType :
                          kPremul_SkAlphaType;
         auto info = SkImageInfo::Make(imageInfo.width(), imageInfo.height(),
                                       kN32_SkColorType, alphaType);
-        ALOGE("codec bmpinfo %d %d %d\n", imageInfo.width(), imageInfo.height(),
+        ALOGI("codec bmpinfo %d %d %d\n", imageInfo.width(), imageInfo.height(),
               SkCodec::kIncompleteInput);
         SkBitmap decodingBitmap;
         decodingBitmap.setInfo(info);
         decodingBitmap.tryAllocPixels(info);
-        SkCodec::Result result = codec->getPixels(info, decodingBitmap.getPixels(),
+        SkCodec::Result result = codec->getAndroidPixels(info, decodingBitmap.getPixels(),
                                  decodingBitmap.rowBytes());
 
         if ((SkCodec::kSuccess != result) && (SkCodec::kIncompleteInput != result)) {
@@ -1903,6 +1907,7 @@ namespace android {
             stream = new SkMemoryStream(data);
         } else if (!strncasecmp("http://", mImageUrl, 7)
                    || !strncasecmp("https://", mImageUrl, 8)) {
+            ALOGI("SkHttpStream:%s", mImageUrl);
             stream = new SkHttpStream(mImageUrl, mHttpService);
         } else {
             ALOGI("SkFILEStream:%s", mImageUrl);

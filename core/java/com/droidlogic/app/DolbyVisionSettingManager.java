@@ -28,7 +28,7 @@ public class DolbyVisionSettingManager {
     private static final String TAG                 = "DolbyVisionSettingManager";
 
     private static final String PROP_DOLBY_VISION_ENABLE  = "persist.vendor.sys.dolbyvision.enable";
-    private static final String PROP_DOLBY_VISION_TYPE = "persist.vendor.sys.dolbyvision.type";
+    private static final String PROP_DOLBY_VISION_TV_ENABLE  = "persist.vendor.sys.tv.dolbyvision.enable";
 
     public static final int DOVISION_DISABLE        = 0;
     public static final int DOVISION_ENABLE         = 1;
@@ -73,7 +73,11 @@ public class DolbyVisionSettingManager {
      *                   Disable return false
      */
     public boolean isDolbyVisionEnable() {
-        return mSystenControl.getPropertyBoolean(PROP_DOLBY_VISION_ENABLE, false);
+        if (!isTvSupportDolbyVision().equals("")) {
+            return mSystenControl.getPropertyBoolean(PROP_DOLBY_VISION_TV_ENABLE, false);
+        } else {
+            return mSystenControl.getPropertyBoolean(PROP_DOLBY_VISION_ENABLE, false);
+        }
     }
 
     public int getDolbyVisionType() {

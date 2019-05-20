@@ -219,6 +219,8 @@ using namespace android;
 #define PROP_DOLBY_VISION_FEATURE       "ro.vendor.platform.support.dolbyvision"
 #define PROP_DOLBY_VISION_ENABLE        "persist.vendor.sys.dolbyvision.enable"
 #define PROP_DOLBY_VISION_TYPE          "persist.vendor.sys.dolbyvision.type"
+#define PROP_DOLBY_VISION_TV_ENABLE     "persist.vendor.sys.tv.dolbyvision.enable"
+#define PROP_DOLBY_VISION_TV_TYPE       "persist.vendor.sys.tv.dolbyvision.type"
 #define PROP_DOLBY_VISION_PRIORITY      "persist.vendor.sys.graphics.priority"
 #define PROP_HDR_MODE_STATE             "persist.vendor.sys.hdr.state"
 #define PROP_SDR_MODE_STATE             "persist.vendor.sys.sdr.state"

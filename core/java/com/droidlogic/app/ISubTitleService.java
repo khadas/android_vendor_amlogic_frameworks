@@ -311,6 +311,38 @@ public interface ISubTitleService extends android.os.IInterface {
                         reply.writeString(_result);
                         return true;
                     }
+
+                    case TRANSACTION_getInBmpTxtType: {
+                        data.enforceInterface(DESCRIPTOR);
+                        java.lang.String _result = this.getInBmpTxtType();
+                        reply.writeNoException();
+                        reply.writeString(_result);
+                        return true;
+                    }
+
+                    case TRANSACTION_getExtBmpTxtType: {
+                        data.enforceInterface(DESCRIPTOR);
+                        java.lang.String _result = this.getExtBmpTxtType();
+                        reply.writeNoException();
+                        reply.writeString(_result);
+                        return true;
+                    }
+
+                    case TRANSACTION_getExtSubTypeAll: {
+                        data.enforceInterface(DESCRIPTOR);
+                        java.lang.String _result = this.getExtSubTypeAll();
+                        reply.writeNoException();
+                        reply.writeString(_result);
+                        return true;
+                    }
+
+                    case TRANSACTION_getInSubLanAll: {
+                        data.enforceInterface(DESCRIPTOR);
+                        java.lang.String _result = this.getInSubLanAll();
+                        reply.writeNoException();
+                        reply.writeString(_result);
+                        return true;
+                    }
                 }
 
                 return super.onTransact (code, data, reply, flags);
@@ -864,6 +896,82 @@ public interface ISubTitleService extends android.os.IInterface {
                         }
                         return _result;
                     }
+
+                    @Override
+                    public java.lang.String getInBmpTxtType() throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+                        java.lang.String _result;
+
+                        try {
+                            _data.writeInterfaceToken (DESCRIPTOR);
+                            mRemote.transact (Stub.TRANSACTION_getInBmpTxtType, _data, _reply, 0);
+                            _reply.readException();
+                            _result = _reply.readString();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                        return _result;
+                    }
+
+                    @Override
+                    public java.lang.String getExtBmpTxtType() throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+                        java.lang.String _result;
+
+                        try {
+                            _data.writeInterfaceToken (DESCRIPTOR);
+                            mRemote.transact (Stub.TRANSACTION_getExtBmpTxtType, _data, _reply, 0);
+                            _reply.readException();
+                            _result = _reply.readString();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                        return _result;
+                    }
+
+                    @Override
+                    public java.lang.String getExtSubTypeAll() throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+                        java.lang.String _result;
+
+                        try {
+                            _data.writeInterfaceToken (DESCRIPTOR);
+                            mRemote.transact (Stub.TRANSACTION_getExtSubTypeAll, _data, _reply, 0);
+                            _reply.readException();
+                            _result = _reply.readString();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                        return _result;
+                    }
+
+                    @Override
+                    public java.lang.String getInSubLanAll() throws android.os.RemoteException{
+                        android.os.Parcel _data = android.os.Parcel.obtain();
+                        android.os.Parcel _reply = android.os.Parcel.obtain();
+                        java.lang.String _result;
+
+                        try {
+                            _data.writeInterfaceToken (DESCRIPTOR);
+                            mRemote.transact (Stub.TRANSACTION_getInSubLanAll, _data, _reply, 0);
+                            _reply.readException();
+                            _result = _reply.readString();
+                        }
+                        finally {
+                            _reply.recycle();
+                            _data.recycle();
+                        }
+                        return _result;
+                    }
             }
 
             static final int TRANSACTION_open = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
@@ -896,6 +1004,10 @@ public interface ISubTitleService extends android.os.IInterface {
             static final int TRANSACTION_setSurfaceViewParam = (android.os.IBinder.FIRST_CALL_TRANSACTION + 27);
             static final int TRANSACTION_setIOType = (android.os.IBinder.FIRST_CALL_TRANSACTION + 28);
             static final int TRANSACTION_getPcrscr = (android.os.IBinder.FIRST_CALL_TRANSACTION + 29);
+            static final int TRANSACTION_getInBmpTxtType = (android.os.IBinder.FIRST_CALL_TRANSACTION + 30);
+            static final int TRANSACTION_getExtBmpTxtType = (android.os.IBinder.FIRST_CALL_TRANSACTION + 31);
+            static final int TRANSACTION_getExtSubTypeAll = (android.os.IBinder.FIRST_CALL_TRANSACTION + 32);
+            static final int TRANSACTION_getInSubLanAll = (android.os.IBinder.FIRST_CALL_TRANSACTION + 33);
     }
 
     public void open (java.lang.String path) throws android.os.RemoteException;
@@ -931,4 +1043,8 @@ public interface ISubTitleService extends android.os.IInterface {
     public void setSurfaceViewParam(int x, int y, int w, int h) throws android.os.RemoteException;
     public void setIOType(int type) throws android.os.RemoteException;
     public java.lang.String getPcrscr() throws android.os.RemoteException;
+    public java.lang.String getInBmpTxtType() throws android.os.RemoteException;
+    public java.lang.String getExtBmpTxtType() throws android.os.RemoteException;
+    public java.lang.String getExtSubTypeAll() throws android.os.RemoteException;
+    public java.lang.String getInSubLanAll() throws android.os.RemoteException;
 }

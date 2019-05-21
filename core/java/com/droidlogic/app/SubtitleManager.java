@@ -35,6 +35,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.List;
 
 import android.content.ComponentName;
 import android.content.Intent;
@@ -460,6 +461,74 @@ public class SubtitleManager {
 
             LOGI("[getSubTypeStr]type:" + type);
             return type;
+        }
+
+        public List<String> getExtSubTypeAll() {
+            LOGI("[getSubTypeStr]mService:" + mService);
+            String subTypeAll = null;
+
+            try {
+                if (mService != null) {
+                    subTypeAll = mService.getExtSubTypeAll();
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+
+            LOGI("[getSubTypeStr]subTypeAll:" + subTypeAll);
+            return string2List(subTypeAll);
+        }
+
+        public List<String> string2List(String str) {
+            LOGI("[stringConvert2List]str:" + str);
+            if (str != null && !str.equals("")) {
+                String[] strArray = str.split(",");
+                ArrayList<String> typeStrs = new ArrayList<String>();
+                for (int i = 0; i < strArray.length; i++) {
+                    typeStrs.add(strArray[i]);
+                }
+                return typeStrs;
+            }
+            return null;
+        }
+
+        public List<String> getInBmpTxtType() {
+            LOGI("[getInBmpTxtType]mService:" + mService);
+            String bmpTxtType = null;
+            try {
+                if (mService != null) {
+                    bmpTxtType = mService.getInBmpTxtType();
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+            return string2List(bmpTxtType);
+        }
+
+        public List<String> getInSubLanAll() {
+            LOGI("[getInSubLanAll]mService:" + mService);
+            String subLanStr = null;
+            try {
+                if (mService != null) {
+                    subLanStr = mService.getInSubLanAll();
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+            return string2List(subLanStr);
+        }
+
+        public List<String> getExtBmpTxtType() {
+            LOGI("[getExtBmpTxtType]mService:" + mService);
+            String bmpTxtType = null;
+            try {
+                if (mService != null) {
+                    bmpTxtType = mService.getExtBmpTxtType();
+                }
+            } catch (RemoteException e) {
+                throw new RuntimeException (e);
+            }
+            return string2List(bmpTxtType);
         }
 
         public String getSubName (int idx) {

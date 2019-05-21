@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     }
 
     ALOGI("imageserver daemon starting in %s mode", treble ? "treble" : "normal");
-    configureRpcThreadpool(4, false);
+    configureRpcThreadpool(1, false);
     sp<ProcessState> proc(ProcessState::self());
 
     if (treble) {

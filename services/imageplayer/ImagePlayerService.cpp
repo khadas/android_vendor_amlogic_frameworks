@@ -2004,29 +2004,31 @@ namespace android {
 
     int ImagePlayerService::prepareBuf(const char *uri) {
         Mutex::Autolock autoLock(mLock);
-
         ALOGI("prepare buffer image path:%s", uri);
-        char path[MAX_FILE_PATH_LEN];
-        SkStreamAsset *stream;
-
-        if (!strncasecmp("file://", uri, 7)) {
-            strncpy(path, uri + 7, MAX_FILE_PATH_LEN - 1);
-            stream = new SkFILEStream(path);
-        } else if (!strncasecmp("http://", uri, 7)
-                   || !strncasecmp("https://", uri, 8)) {
-            strncpy(path, uri, MAX_FILE_PATH_LEN - 1);
-            stream = new SkHttpStream(path, mHttpService);
-        } else {
-            return RET_ERR_INVALID_OPERATION;
-        }
 
         if (mBufBitmap != NULL) {
             delete mBufBitmap;
             mBufBitmap = NULL;
         }
 
-        mMovieImage = false;
-        mFrameIndex = 0;
+        if (mMovieImage) {
+            mMovieImage = false;
+            MovieThreadStop();
+            mFrameIndex = 0;
+        }
+
+        SkStreamAsset *stream;
+
+        if (!strncasecmp("file://", uri, 7)) {
+            strncpy(mImageUrl, uri + 7, MAX_FILE_PATH_LEN - 1);
+            stream = new SkFILEStream(mImageUrl);
+        } else if (!strncasecmp("http://", uri, 7)
+                   || !strncasecmp("https://", uri, 8)) {
+            strncpy(mImageUrl, uri, MAX_FILE_PATH_LEN - 1);
+            stream = new SkHttpStream(mImageUrl, mHttpService);
+        } else {
+            return RET_ERR_INVALID_OPERATION;
+        }
 
         if (isMovieByExtenName(uri)) {
             ALOGI("it's a movie image, show it with thread");
@@ -2043,7 +2045,7 @@ namespace android {
                 mBufBitmap = decode(stream, NULL);
             }
         } else if (isTiffByExtenName(uri)) {
-            mBufBitmap = decodeTiff(path);
+            mBufBitmap = decodeTiff(mImageUrl);
         } else {
             bool canDecode = true;
             SkBitmap *bitmap = NULL;
@@ -2732,6 +2734,10 @@ namespace android {
     }
 
     bool ImagePlayerService::MovieShow() {
+        if (!mMovieImage) {
+            ALOGE("MovieShow not movie!");
+            return false;
+        }
         SkStreamRewindable *stream;
         stream = getSkStream();
 
@@ -2763,6 +2769,10 @@ namespace android {
             SkCodec::Options opts;
             opts.fFrameIndex = mFrameIndex;
             //opts.fHasPriorFrame = false;
+            if (&frameInfos[mFrameIndex] == nullptr) {
+                ALOGE("MovieShow Could not get frame %d", mFrameIndex);
+                return false;
+            }
             const size_t requiredFrame = frameInfos[mFrameIndex].fRequiredFrame;
 
             if (requiredFrame != SkCodec::kNone) {
@@ -2883,7 +2893,7 @@ namespace android {
     }
 
     int ImagePlayerService::MovieThreadStop() {
-        if (mMovieThread->isRunning()) {
+        if (mMovieThread != nullptr && mMovieThread->isRunning()) {
             ALOGI("MovieThread is running, need stop it firstly");
             status_t result = mMovieThread->requestExitAndWait();
 

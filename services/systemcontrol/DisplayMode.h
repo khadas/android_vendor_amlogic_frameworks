@@ -315,6 +315,9 @@ enum {
 #define MODE_4K2KSMPTE50HZ              "smpte50hz"
 #define MODE_4K2KSMPTE60HZ              "smpte60hz"
 #define MODE_PANEL                      "panel"
+#define MODE_PAL_M                      "pal_m"
+#define MODE_PAL_N                      "pal_n"
+#define MODE_NTSC_M                      "ntsc_m"
 
 #define MODE_480I_PREFIX                "480i"
 #define MODE_480P_PREFIX                "480p"
@@ -352,7 +355,10 @@ enum {
     DISPLAY_MODE_4K2KSMPTE60HZ          = 21,
     DISPLAY_MODE_768P                   = 22,
     DISPLAY_MODE_PANEL                  = 23,
-    DISPLAY_MODE_TOTAL                  = 24
+    DISPLAY_MODE_PAL_M                  = 24,
+    DISPLAY_MODE_PAL_N                  = 25,
+    DISPLAY_MODE_NTSC_M                  = 26,
+    DISPLAY_MODE_TOTAL                  = 27
 };
 
 typedef enum {

@@ -72,6 +72,9 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2KSMPTE60HZ,
     MODE_768P,
     MODE_PANEL,
+    MODE_PAL_M,
+    MODE_PAL_N,
+    MODE_NTSC_M,
 };
 
 // Sink reference table, sorted by priority, per CDF
@@ -351,8 +354,7 @@ void DisplayMode::setSourceDisplay(output_mode_state state) {
     getHdmiData(&data);
     if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
         if (HDMI_SINK_TYPE_NONE != data.sinkType) {
-            if ((!strcmp(data.current_mode, MODE_480CVBS) || !strcmp(data.current_mode, MODE_576CVBS))
-                    && (OUPUT_MODE_STATE_INIT == state)) {
+            if ((!strcmp(data.current_mode, MODE_480CVBS) || !strcmp(data.current_mode, MODE_576CVBS) || !strcmp(data.current_mode, MODE_PAL_M) || !strcmp(data.current_mode, MODE_PAL_N) || !strcmp(data.current_mode, MODE_NTSC_M)) && (OUPUT_MODE_STATE_INIT == state)) {
                 pSysWrite->writeSysfs(DISPLAY_FB1_FREESCALE, "0");
                 pSysWrite->writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
             }
@@ -427,8 +429,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         if (!strcmp(outputmode, curDisplayMode)) {
 
             //if cur mode is cvbsmode, and same to outputmode, return.
-            if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)
-                    || !strcmp(outputmode, MODE_PANEL) || !strcmp(outputmode, "null")) {
+            if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS) || !strcmp(outputmode, MODE_PANEL) || !strcmp(outputmode, MODE_PAL_M) || !strcmp(outputmode, MODE_PAL_N) || !strcmp(outputmode, MODE_NTSC_M) || !strcmp(outputmode, "null")) {
                 return;
             }
             //deep color disabled, only need check output mode same or not
@@ -467,8 +468,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     // 2.stop hdcp tx
     pTxAuth->stop();
 
-    if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)
-            || !strcmp(outputmode, MODE_PANEL) || !strcmp(outputmode, "null")){
+    if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS) || !strcmp(outputmode, MODE_PANEL) || !strcmp(outputmode, MODE_PAL_M) || !strcmp(outputmode, MODE_PAL_N) || !strcmp(outputmode, MODE_NTSC_M) || !strcmp(outputmode, "null")) {
         cvbsMode = true;
     }
 
@@ -1265,14 +1265,34 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
     char ubootvar[100] = {0};
     int defaultWidth = 0;
     int defaultHeight = 0;
-    if (strstr(curMode, "480")) {
+    if (strstr(curMode, MODE_480CVBS)) {
+        strcpy(keyValue, MODE_480CVBS);
+        defaultWidth = FULL_WIDTH_480;
+        defaultHeight = FULL_HEIGHT_480;
+    } else if (strstr(curMode, "480")) {
         strcpy(keyValue, strstr(curMode, MODE_480P_PREFIX) ? MODE_480P_PREFIX : MODE_480I_PREFIX);
         defaultWidth = FULL_WIDTH_480;
         defaultHeight = FULL_HEIGHT_480;
+    } else if (strstr(curMode, MODE_576CVBS)) {
+        strcpy(keyValue, MODE_576CVBS);
+        defaultWidth = FULL_WIDTH_576;
+        defaultHeight = FULL_HEIGHT_576;
     } else if (strstr(curMode, "576")) {
         strcpy(keyValue, strstr(curMode, MODE_576P_PREFIX) ? MODE_576P_PREFIX : MODE_576I_PREFIX);
         defaultWidth = FULL_WIDTH_576;
         defaultHeight = FULL_HEIGHT_576;
+    } else if (strstr(curMode, MODE_PAL_M)) {
+	strcpy(keyValue, MODE_PAL_M);
+	defaultWidth = FULL_WIDTH_480;
+	defaultHeight = FULL_HEIGHT_480;
+    } else if (strstr(curMode, MODE_PAL_N)) {
+	strcpy(keyValue, MODE_PAL_N);
+	defaultWidth = FULL_WIDTH_576;
+	defaultHeight = FULL_HEIGHT_576;
+    } else if (strstr(curMode, MODE_NTSC_M)) {
+	strcpy(keyValue, MODE_NTSC_M);
+	defaultWidth = FULL_WIDTH_480;
+	defaultHeight = FULL_HEIGHT_480;
     } else if (strstr(curMode, MODE_720P_PREFIX)) {
         strcpy(keyValue, MODE_720P_PREFIX);
         defaultWidth = FULL_WIDTH_720;
@@ -1335,10 +1355,20 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
 
     char keyValue[20] = {0};
     char ubootvar[100] = {0};
-    if (strstr(curMode, "480")) {
+    if (strstr(curMode, MODE_480CVBS)) {
+        strcpy(keyValue, MODE_480CVBS);
+    } else if (strstr(curMode, "480")) {
         strcpy(keyValue, strstr(curMode, MODE_480P_PREFIX) ? MODE_480P_PREFIX : MODE_480I_PREFIX);
+    } else if (strstr(curMode, MODE_576CVBS)) {
+        strcpy(keyValue, MODE_576CVBS);
     } else if (strstr(curMode, "576")) {
         strcpy(keyValue, strstr(curMode, MODE_576P_PREFIX) ? MODE_576P_PREFIX : MODE_576I_PREFIX);
+    } else if (strstr(curMode, MODE_PAL_M)) {
+	strcpy(keyValue, MODE_PAL_M);
+    } else if (strstr(curMode, MODE_PAL_N)) {
+	strcpy(keyValue, MODE_PAL_N);
+    } else if (strstr(curMode, MODE_NTSC_M)) {
+	strcpy(keyValue, MODE_NTSC_M);
     } else if (strstr(curMode, MODE_720P_PREFIX)) {
         strcpy(keyValue, MODE_720P_PREFIX);
     } else if (strstr(curMode, MODE_768P_PREFIX)) {
@@ -1619,7 +1649,7 @@ int DisplayMode::getDolbyVisionType() {
  */
 void DisplayMode::DetectDolbyVisionOutputMode(output_mode_state state, char* outputmode) {
     bool cvbsMode = false;
-    if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS)) {
+    if (!strcmp(outputmode, MODE_480CVBS) || !strcmp(outputmode, MODE_576CVBS) || !strcmp(outputmode, MODE_PAL_M) || !strcmp(outputmode, MODE_PAL_N) || !strcmp(outputmode, MODE_NTSC_M)) {
         cvbsMode = true;
     }
     if (!cvbsMode && OUPUT_MODE_STATE_INIT == state

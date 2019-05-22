@@ -104,15 +104,23 @@ public class SubtitleManager {
         }
 
         private void checkDebug() {
-            if (SystemProperties.getBoolean ("vendor.sys.subtitle.debug", true) ) {
-                mDebug = true;
+            try {
+                if (SystemProperties.getBoolean ("vendor.sys.subtitle.debug", true) ) {
+                    mDebug = true;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception:" + e);
             }
         }
 
         private boolean optionEnable() {
             boolean ret = false;
-            if (SystemProperties.getBoolean ("vendor.sys.subtitleOption.enable", false) ) {
-                ret = true;
+            try {
+                if (SystemProperties.getBoolean ("vendor.sys.subtitleOption.enable", false) ) {
+                    ret = true;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception:" + e);
             }
             return ret;
         }
@@ -187,12 +195,15 @@ public class SubtitleManager {
             if (path == null) {
                 return;
             }
-
-            final Uri uri = Uri.parse (path);
-            if ("file".equals (uri.getScheme())) {
-                path = uri.getPath();
+            try {
+                final Uri uri = Uri.parse (path);
+                if ("file".equals (uri.getScheme())) {
+                    path = uri.getPath();
+                }
+                    mPath = path;
+            } catch (Exception e) {
+                Log.e(TAG, "Exception:" +e);
             }
-            mPath = path;
         }
 
         private int open (String path) {
@@ -208,7 +219,8 @@ public class SubtitleManager {
                     ret = 0;
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
             LOGI("[open] innerTotal:" + innerTotal() +", mIOType:" + mIOType);
             if (innerTotal() > 0 && mIOType == IO_TYPE_SOCKET && mMediaPlayer != null) {
@@ -229,7 +241,8 @@ public class SubtitleManager {
                     mService.openIdx (idx);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
 
             if (idx < innerTotal() && mIOType == IO_TYPE_SOCKET && mMediaPlayer != null) {
@@ -247,9 +260,13 @@ public class SubtitleManager {
             //mThreadStop = false;
             if (mPath != null) {
                 if (!mOpen) {
+                try {
                     setIOType();//first set io type to distinguish subtitle buffer source from dev or socket
                     mOpen = (open (mPath) == 0) ? true : false;
+                } catch (Exception e) {
+                    Log.e(TAG, "Exception:" + e);
                 }
+            }
                 if (mOpen) {
                     show();
 
@@ -291,6 +308,7 @@ public class SubtitleManager {
             } else {
                 Log.i("SubtitleManager","no sub close subtitle.");
                 close();
+                mService = null;
             }
         }
 
@@ -301,7 +319,8 @@ public class SubtitleManager {
                     mService.option();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -314,7 +333,8 @@ public class SubtitleManager {
                     ret = mService.getSubTotal();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
             LOGI("[total]ret:" + ret);
             return ret;
@@ -329,7 +349,8 @@ public class SubtitleManager {
                     ret = mService.getInnerSubTotal();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
             LOGI("[innerTotal]ret:" + ret);
             return ret;
@@ -342,7 +363,8 @@ public class SubtitleManager {
                     mService.nextSub();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -353,7 +375,8 @@ public class SubtitleManager {
                     mService.preSub();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -364,7 +387,8 @@ public class SubtitleManager {
                     mService.hide();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -375,7 +399,8 @@ public class SubtitleManager {
                     mService.display();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -386,7 +411,8 @@ public class SubtitleManager {
                     mService.clear();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -397,7 +423,8 @@ public class SubtitleManager {
                     mService.resetForSeek();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -410,7 +437,8 @@ public class SubtitleManager {
                     ret = mService.getSubType();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
 
             LOGI("[getSubType]ret:" + ret);
@@ -426,7 +454,8 @@ public class SubtitleManager {
                     type = mService.getSubTypeStr();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
 
             LOGI("[getSubTypeStr]type:" + type);
@@ -442,7 +471,8 @@ public class SubtitleManager {
                     name = mService.getSubName (idx);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
 
             LOGI("[getSubName]name[" + idx + "]:" + name);
@@ -458,7 +488,8 @@ public class SubtitleManager {
                     language = mService.getSubLanguage (idx);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
 
             LOGI("[getSubLanguage]language[" + idx + "]:" + language);
@@ -474,7 +505,8 @@ public class SubtitleManager {
                     name = mService.getCurName();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
 
             LOGI("[getCurName] name:" + name);
@@ -518,7 +550,11 @@ public class SubtitleManager {
         };
 
         public void release() {
-            close();
+            try {
+                close();
+            } catch (Exception e) {
+                Log.e(TAG, "Exception:" + e);
+            }
         }
 
         public int getSubTypeDetial() {
@@ -530,7 +566,8 @@ public class SubtitleManager {
                     ret = mService.getSubTypeDetial();
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
 
             LOGI("[getSubTypeDetial] ret:" + ret);
@@ -544,7 +581,8 @@ public class SubtitleManager {
                     mService.setTextColor (color);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -555,7 +593,8 @@ public class SubtitleManager {
                     mService.setTextSize (size);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -566,7 +605,8 @@ public class SubtitleManager {
                     mService.setGravity (gravity);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -577,7 +617,8 @@ public class SubtitleManager {
                     mService.setTextStyle (style);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -588,7 +629,8 @@ public class SubtitleManager {
                     mService.setPosHeight (height);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -599,7 +641,8 @@ public class SubtitleManager {
                     mService.setImgSubRatio (ratioW, ratioH, maxW, maxH);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -610,7 +653,8 @@ public class SubtitleManager {
                     mService.load(path);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
@@ -621,20 +665,29 @@ public class SubtitleManager {
                     mService.setSurfaceViewParam(x, y, w, h);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, ", getService:");
+                getService();
             }
         }
 
         public void resetTrackIdx() {
-            if (mInnerTrackIdx != null) {
-                mInnerTrackIdx.clear();
+            try {
+                if (mInnerTrackIdx != null) {
+                    mInnerTrackIdx.clear();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception:" + e);
             }
         }
 
         public void storeTrackIdx(int idx) {
             LOGI("[storeTrackIdx] idx:" + idx);
-            mInnerTrackIdx.add(idx);
-        }
+            try {
+                mInnerTrackIdx.add(idx);
+                } catch (Exception e) {
+                    Log.e(TAG, "Exception:" + e);
+                }
+            }
 
         private void setIOType(int type) {
             LOGI("[setIOType] type:" + type);
@@ -643,14 +696,16 @@ public class SubtitleManager {
                     mService.setIOType(type);
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException (e);
+                Log.i(TAG, "getServer:");
+                getService();
             }
         }
 
         private void setIOType() {
             LOGI("[setIOType]mMediaPlayer:" + mMediaPlayer);
 
-            mIOType = IO_TYPE_SOCKET;       //default amnuplayer
+            try {
+                mIOType = IO_TYPE_SOCKET;       //default amnuplayer
             if (mMediaPlayer != null) {
                 String typeStr = mMediaPlayer.getStringParameter(mMediaPlayer.KEY_PARAMETER_AML_PLAYER_TYPE_STR);
                 LOGI("[setIOType]typeStr:" + typeStr);
@@ -658,7 +713,10 @@ public class SubtitleManager {
                     mIOType = IO_TYPE_SOCKET;
                 }
             }
-            setIOType(mIOType);
+                setIOType(mIOType);
+            } catch (Exception e) {
+                Log.e(TAG, "Exception:" + e);
+            }
         }
 
         private int getIOType() {
@@ -673,7 +731,9 @@ public class SubtitleManager {
 
                 @Override
                 public void handleMessage (Message msg) {
-                    switch (msg.arg1) {
+
+                   try {
+                        switch (msg.arg1) {
                         case AML_SUBTITLE_START:
                             LOGI("[handleMessage]AML_SUBTITLE_START mPath:" + mPath);
                             if (mPath != null) {
@@ -689,8 +749,11 @@ public class SubtitleManager {
                             }
                         break;
                     }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Exception:" + e);
+                    }
                 }
-        }
+            }
 
         private String readSysfs (String path) {
             if (!new File (path).exists() ) {

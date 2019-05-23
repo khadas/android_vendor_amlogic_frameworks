@@ -33,7 +33,7 @@ enum {
     LOG_LEVEL_TOTAL         = 3
 };
 #define MAX_STR_LEN         4096
-#define LOG_LEVEL_DEFAULT   LOG_LEVEL_1
+#define LOG_LEVEL_DEFAULT   LOG_LEVEL_TOTAL
 
 class SysWrite {
   public:

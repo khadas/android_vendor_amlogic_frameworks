@@ -173,6 +173,7 @@ namespace android {
         SkBitmap* scaleAndCrop(SkBitmap *srcBitmap, float sx, float sy);
         SkBitmap* fillSurface(SkBitmap *bitmap);
         bool isSupportFromat(const char *uri, SkBitmap **bitmap);
+        bool checkVideoInUse(int retryNum);
 
         TIFF2RGBA *mTif;
 

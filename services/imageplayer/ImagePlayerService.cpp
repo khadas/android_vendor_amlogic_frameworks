@@ -92,6 +92,10 @@
 #define PICDEC_IOC_FRAME_POST       _IOW(PICDEC_IOC_MAGIC, 0x01, unsigned int)
 
 #define VIDEO_ZOOM_SYSFS            "/sys/class/video/zoom"
+#define VIDEO_INUSE                 "/sys/class/video/video_inuse"
+#define VIDEO_VDEC                  "/sys/class/vdec/core"
+
+#define CHECK_VIDEO_INUSE_RETRY_COUNT 50
 
 #define VIDEO_LAYER_FORMAT_RGB      0
 #define VIDEO_LAYER_FORMAT_RGBA     1
@@ -958,15 +962,19 @@ namespace android {
         mParameter->cropWidth = SURFACE_4K_WIDTH;
         mParameter->cropHeight = SURFACE_4K_HEIGHT;
 
-        if (mDisplayFd >= 0) {
-            close(mDisplayFd);
-        }
-
         mMovieThread = new MovieThread(this);
         mDeathNotifier = new DeathNotifier(this);
 
         //if video exit with some exception, need restore video attribute
         initVideoAxis();
+
+        if (mDisplayFd >= 0) {
+            close(mDisplayFd);
+        }
+
+        if (!checkVideoInUse(CHECK_VIDEO_INUSE_RETRY_COUNT)) {
+            return RET_ERR_BAD_VALUE;
+        }
 
         mDisplayFd = open(PICDEC_SYSFS, O_RDWR);
 
@@ -1638,6 +1646,7 @@ namespace android {
             mTif = NULL;
         }
 
+        mSysWrite->writeSysfs(VIDEO_INUSE, "0");
         resetRotateScale();
         resetTranslate();
         resetHWScale();
@@ -1933,9 +1942,8 @@ namespace android {
     //render to video layer
     int ImagePlayerService::prepare() {
         Mutex::Autolock autoLock(mLock);
-        FrameInfo_t info;
-
         ALOGI("prepare image path:%s", mImageUrl);
+        FrameInfo_t info;
 
         if ((mFileDescription < 0) && (0 == strlen(mImageUrl))) {
             ALOGE("prepare decode image fd error");
@@ -2036,7 +2044,6 @@ namespace android {
         }
 
         SkStreamAsset *stream;
-
         if (!strncasecmp("file://", uri, 7)) {
             strncpy(mImageUrl, uri + 7, MAX_FILE_PATH_LEN - 1);
             stream = new SkFILEStream(mImageUrl);
@@ -2112,7 +2119,6 @@ namespace android {
             delete mBufBitmap;
             mBufBitmap = dstBitmap;
         }
-
         return RET_OK;
     }
 
@@ -2865,6 +2871,30 @@ namespace android {
 
         mFrameIndex++;
         return true;
+    }
+
+    bool ImagePlayerService::checkVideoInUse(int retryNum) {
+        int videoInUseInt = -1;
+        char videoInUse[MAX_STR_LEN + 1] = {0};
+        char vdec[MAX_STR_LEN + 1] = {0};
+        char* vdec_empty = "connected vdec list empty";
+        ALOGD("checkVideoInUse");
+        do {
+            mSysWrite->readSysfs(VIDEO_INUSE, videoInUse);
+            mSysWrite->readSysfs(VIDEO_VDEC, vdec);
+            ALOGD("checkVideoInUse %s", videoInUse);
+            ALOGD("check vdec%s", vdec);
+            videoInUseInt = atoi(videoInUse);
+            usleep(100 * 1000);
+        } while((retryNum-- != 0) && (videoInUseInt != 0 || (strcmp(vdec, vdec_empty) != 0)));
+
+        if (videoInUseInt == 0) {
+            usleep(1000 * 1000);
+            ALOGE("checkVideoInUse succeeds.");
+            return true;
+        }
+        ALOGE("checkVideoInUse fails. %d", videoInUseInt);
+        return false;
     }
 
     void ImagePlayerService::MovieRenderPost(SkBitmap *bitmap) {

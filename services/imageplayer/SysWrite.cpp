@@ -19,7 +19,7 @@
  *  - 1 write property or sysfs in daemon
  */
 
-#define LOG_TAG "SystemControl"
+#define LOG_TAG "ImagePlayerService"
 //#define LOG_NDEBUG 0
 #include <unistd.h>
 #include <stdio.h>

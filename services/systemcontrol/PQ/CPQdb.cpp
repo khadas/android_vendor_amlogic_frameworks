@@ -22,6 +22,8 @@
 #define ID_FIELD            "TableID"
 #define CM_LEVEL_NAME       "CMLevel"
 #define LEVEL_NAME          "Level"
+#define CVBS_NAME_ID        "TVOUT_CVBS"
+#define TABLE_NAME_ID       "TableName"
 
 CPQdb::CPQdb()
 {
@@ -2062,9 +2064,9 @@ String8 CPQdb::GetTableName(const char *GeneralTableName, source_input_param_t s
     getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
                  "TVIN_PORT = %d and "
                  "TVIN_SIG_FMT = %d and "
-                 "TVIN_TRANS_FMT = %d ;", GeneralTableName, source_input_param.source_input,
-                 source_input_param.sig_fmt, source_input_param.trans_fmt);
-
+                 "TVIN_TRANS_FMT = %d and "
+                 "TVOUT_CVBS = %d ;", GeneralTableName, source_input_param.source_input,
+                 source_input_param.sig_fmt, source_input_param.trans_fmt, mOutPutType);
     ret = this->select(sqlmaster, c);
     if (ret == 0) {
         if (c.moveToFirst()) {
@@ -2580,3 +2582,38 @@ int CPQdb::GetFileAttrIntValue(const char *fp, int flag)
     return -1;
 }
 
+bool CPQdb::CheckCVBSParamValidStatus()
+{
+    bool ret = false;
+    char sqlmaster[256];
+    CSqlite::Cursor tempCursor;
+
+    getSqlParams(__FUNCTION__, sqlmaster,
+                 "select sql from sqlite_master where type = 'table' and tbl_name= 'GeneralNR2Table';");
+
+    int retVal = this->select(sqlmaster, tempCursor);
+    if ((retVal == 0) && (tempCursor.moveToFirst())) {
+        SYS_LOGD("result is %s!\n", tempCursor.getString(0).c_str());
+        if (strstr(tempCursor.getString(0).c_str(), CVBS_NAME_ID) != NULL) {
+            getSqlParams(__FUNCTION__, sqlmaster, "select %s from GeneralNR2Table where "
+                         "TVIN_PORT = %d and "
+                         "TVIN_SIG_FMT = %d and "
+                         "TVIN_TRANS_FMT = %d and "
+                         "TVOUT_CVBS = %d;", TABLE_NAME_ID, SOURCE_MPEG,
+                         TVIN_SIG_FMT_HDMI_1920X1080P_60HZ, TVIN_TFMT_2D, 1);
+            if ((this->select(sqlmaster, tempCursor) == 0) && (tempCursor.moveToFirst())) {
+                ret = true;
+            } else {
+                SYS_LOGD("%s: new db, but don't have cvbs param!\n", __FUNCTION__);
+                ret = false;
+            }
+        } else {
+            SYS_LOGD("%s: old db, don't have cvbs param!\n", __FUNCTION__);
+            ret = false;
+        }
+    } else {
+        SYS_LOGE("%s: error!\n", __FUNCTION__);
+        ret = false;
+    }
+    return ret;
+}

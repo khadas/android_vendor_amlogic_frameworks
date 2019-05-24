@@ -33,6 +33,13 @@ CDevicePollCheckThread::CDevicePollCheckThread()
         mEpoll.add(mHDRStatusFile.getFd(), &m_event);
         HDR_fd = mHDRStatusFile.getFd();
     }
+
+    //TX
+    if (mTXStatusFile.openFile(TX_MOUDLE_PATH) > 0) {
+        m_event.data.fd = mTXStatusFile.getFd();
+        m_event.events = EPOLLIN | EPOLLET;
+        mEpoll.add(mTXStatusFile.getFd(), &m_event);
+    }
 }
 
 CDevicePollCheckThread::~CDevicePollCheckThread()
@@ -66,6 +73,8 @@ bool CDevicePollCheckThread::threadLoop()
                     mpObserver->onVframeSizeChange();
                 } else if (fd == mHDRStatusFile.getFd()) {//HDR
                     mpObserver->onHDRStatusChange();
+                } else if (fd == mTXStatusFile.getFd()) {//TX
+                    mpObserver->onTXStatusChange();
                 }
 
                 if ((mEpoll)[i].events & EPOLLOUT) {

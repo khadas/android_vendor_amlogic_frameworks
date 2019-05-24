@@ -35,6 +35,13 @@ typedef enum initial_type_e {
     TYPE_OVERSCAN,
 } initial_type_t;
 
+typedef enum output_type_e {
+    OUTPUT_TYPE_HDMI = -1,
+    OUTPUT_TYPE_PAL,
+    OUTPUT_TYPE_NTSC,
+    OUTPUT_TYPE_MAX,
+} output_type_t;
+
 #define PROP_DEBUG_PQ "systemcontrol.debug.pq.enable"
 
 #define getSqlParams(func, buffer, args...) \
@@ -137,6 +144,7 @@ public:
     bool PQ_GetLDIM_Regs(vpu_ldim_param_s *vpu_ldim_param);
     int GetFileAttrIntValue(const char *fp, int flag);
     bool CheckHdrStatus(const char *tableName);
+    bool CheckCVBSParamValidStatus(void);
 
 private:
     String8 GetTableName(const char *GeneralTableName, source_input_param_t source_input_param);
@@ -165,5 +173,6 @@ private:
     int sha1_nodes;
 public:
     bool mHdrStatus = false;
+    output_type_t mOutPutType = OUTPUT_TYPE_HDMI;
 };
 #endif

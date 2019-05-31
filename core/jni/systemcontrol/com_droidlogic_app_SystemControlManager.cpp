@@ -133,7 +133,7 @@ static jlong GetPropertyLong(JNIEnv* env, jclass clazz __unused, jstring jkey, j
     const sp<SystemControlClient>& scc = getSystemControlClient();
     if (scc != NULL) {
         const char *key = env->GetStringUTFChars(jkey, nullptr);
-        signed long result = scc->getPropertyLong(key, jdef);
+        jlong result = scc->getPropertyLong(key, jdef);
         env->ReleaseStringUTFChars(jkey, key);
         return result;
     } else
@@ -527,7 +527,7 @@ static jstring GetDeepColorAttr(JNIEnv* env, jclass clazz __unused, jstring jmod
 }
 
 static jlong ResolveResolutionValue(JNIEnv* env, jclass clazz __unused, jstring jmode) {
-    signed long  value = 0;
+    jlong value = 0;
     const sp<SystemControlClient>& scc = getSystemControlClient();
     if (scc != NULL) {
         const char *mode = env->GetStringUTFChars(jmode, nullptr);

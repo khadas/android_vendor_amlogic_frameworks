@@ -75,6 +75,7 @@
 #include "RGBPicture.h"
 
 #include "ImagePlayerProcessData.h"
+#include "GetInMemory.h"
 
 
 #define CHECK assert
@@ -1908,12 +1909,24 @@ namespace android {
         } else if (!strncasecmp("http://", mImageUrl, 7)
                    || !strncasecmp("https://", mImageUrl, 8)) {
             ALOGI("SkHttpStream:%s", mImageUrl);
-            stream = new SkHttpStream(mImageUrl, mHttpService);
+            stream = getStreamForHttps(mImageUrl);
         } else {
             ALOGI("SkFILEStream:%s", mImageUrl);
             stream = new SkFILEStream(mImageUrl);
         }
 
+        return stream;
+    }
+
+    SkStreamAsset* ImagePlayerService::getStreamForHttps(char* url) {
+        ALOGD("getStreamForHttps url %s", url);
+        char* path = getFileByCurl(url);
+        if (path == nullptr) {
+            ALOGE("getStreamForHttps fails");
+            return nullptr;
+        }
+        ALOGD("getStreamForHttps image path %s", path);
+        SkStreamAsset *stream = new SkFILEStream(path);
         return stream;
     }
 
@@ -2030,7 +2043,7 @@ namespace android {
         } else if (!strncasecmp("http://", uri, 7)
                    || !strncasecmp("https://", uri, 8)) {
             strncpy(mImageUrl, uri, MAX_FILE_PATH_LEN - 1);
-            stream = new SkHttpStream(mImageUrl, mHttpService);
+            stream = getStreamForHttps(mImageUrl);
         } else {
             return RET_ERR_INVALID_OPERATION;
         }
@@ -2054,6 +2067,7 @@ namespace android {
         } else {
             bool canDecode = true;
             SkBitmap *bitmap = NULL;
+            ALOGD("prepare buffer codec to get bitmap");
 
             if (!isSupportFromat(uri, &bitmap)) {
                 ALOGE("prepare buffer codec can not support it");
@@ -2647,10 +2661,12 @@ namespace android {
             return ret;
         }
 
+        /*
         if (!strncasecmp("http://", uri, 7) || !strncasecmp("https://", uri, 8)) {
             SkHttpStream httpStream(uri, mHttpService);
             return verifyBySkCodec(&httpStream, bitmap);
         }
+        */
 
         return false;
     }

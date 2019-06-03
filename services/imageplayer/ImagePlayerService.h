@@ -154,6 +154,7 @@ namespace android {
         bool copyTo(SkBitmap* dst, SkColorType dstCT, const SkBitmap& src,
                     SkBitmap::Allocator* alloc);
         SkStreamAsset* getSkStream();
+        SkStreamAsset* getStreamForHttps(char* url);
         SkBitmap* decode(SkStreamAsset *stream, InitParameter *parameter);
         SkBitmap* decodeTiff(const char *filePath);
         SkBitmap* scale(SkBitmap *srcBitmap, float sx, float sy);

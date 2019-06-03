@@ -805,8 +805,10 @@ public class OutputModeManager {
 
     public void saveDigitalAudioFormatMode(int mode, String submode) {
         String tmp;
-        int surround = Settings.Global.getInt(mResolver,
-                ENCODED_SURROUND_OUTPUT, -1);
+        // trigger AudioService retrieve support audio format value
+        Settings.Global.putInt(mResolver,
+                ENCODED_SURROUND_OUTPUT/*Settings.Global.ENCODED_SURROUND_OUTPUT*/, -1);
+        int surround = -1;
         switch (mode) {
             case DIGITAL_SPDIF:
                 Settings.Global.putInt(mResolver,

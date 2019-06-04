@@ -54,6 +54,8 @@ public class SubtitleManager {
         private String mPath = null;
         private Thread mThread = null;
         private int RETRY_MAX = 10;
+        private int TV_SUB_MPEG2 = 0;  //close caption mpeg2
+        private int TV_SUB_H264 = 2;    //close caption h264
         private boolean mOpen = false;
 
         private Context mContext;
@@ -307,10 +309,21 @@ public class SubtitleManager {
                     mThread.start();
                 }
             } else {
-                Log.i("SubtitleManager","no sub close subtitle.");
-                close();
-                mService = null;
+                if (!isTvSubtile()) {
+                    Log.i("SubtitleManager","no sub close subtitle.");
+                    close();
+                    mService = null;
+                }
             }
+        }
+
+        private boolean isTvSubtile() {
+            int isTvType = -1;
+            isTvType = SystemProperties.getInt("vendor.sys.subtitleService.tvType", -1);
+            if (isTvType == TV_SUB_H264 || isTvType == TV_SUB_MPEG2) {
+                return true;
+            }
+            return false;
         }
 
         public void option() {

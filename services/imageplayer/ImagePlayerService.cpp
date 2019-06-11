@@ -984,7 +984,7 @@ namespace android {
             return RET_ERR_OPEN_SYSFS;
         }
 
-#if 1//workround: need post a frame to video layer
+#if 0   //workround: need post a frame to video layer
         FrameInfo_t info;
 
         char* bitmap_addr = (char*)malloc(100 * 100 * 3);

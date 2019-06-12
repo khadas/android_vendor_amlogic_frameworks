@@ -77,7 +77,6 @@
 #include "ImagePlayerProcessData.h"
 #include "GetInMemory.h"
 
-
 #define CHECK assert
 #define CHECK_EQ(a,b) CHECK((a)==(b))
 
@@ -100,6 +99,9 @@
 #define VIDEO_LAYER_FORMAT_RGB      0
 #define VIDEO_LAYER_FORMAT_RGBA     1
 #define VIDEO_LAYER_FORMAT_ARGB     2
+
+using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
+using ::android::hardware::hidl_string;
 
 namespace android {
     class DeathNotifier: public IBinder::DeathRecipient {
@@ -2874,27 +2876,43 @@ namespace android {
     }
 
     bool ImagePlayerService::checkVideoInUse(int retryNum) {
+        ALOGD("checkVideoInUse");
         int videoInUseInt = -1;
         char videoInUse[MAX_STR_LEN + 1] = {0};
-        char vdec[MAX_STR_LEN + 1] = {0};
+        std::string vdec;
         char* vdec_empty = "connected vdec list empty";
-        ALOGD("checkVideoInUse");
+
         do {
             mSysWrite->readSysfs(VIDEO_INUSE, videoInUse);
-            mSysWrite->readSysfs(VIDEO_VDEC, vdec);
-            ALOGD("checkVideoInUse %s", videoInUse);
-            ALOGD("check vdec%s", vdec);
+            readSysfs(std::string(VIDEO_VDEC), vdec);
             videoInUseInt = atoi(videoInUse);
             usleep(100 * 1000);
-        } while((retryNum-- != 0) && (videoInUseInt != 0 || (strcmp(vdec, vdec_empty) != 0)));
+        } while((retryNum-- != 0) && (videoInUseInt != 0 || (strcmp(vdec.c_str(), vdec_empty) != 0)));
 
-        if (videoInUseInt == 0) {
-            usleep(1000 * 1000);
-            ALOGE("checkVideoInUse succeeds.");
+        if (videoInUseInt == 0 && (strcmp(vdec.c_str(), vdec_empty) == 0)) {
+            ALOGD("checkVideoInUse succeeds.");
             return true;
         }
-        ALOGE("checkVideoInUse fails. %d", videoInUseInt);
+        ALOGE("checkVideoInUse fails. %d vdec %s", videoInUseInt, vdec.c_str());
         return false;
+    }
+
+    void ImagePlayerService::readSysfs(const std::string& path, std::string& value) {
+        if (mSystemControl == nullptr) {
+            mSystemControl = ISystemControl::tryGetService();
+        }
+        if (mSystemControl != nullptr) {
+            mSystemControl->readSysfs(path, [&value](const Result &ret, const hidl_string& v) {
+                if (Result::OK == ret) {
+                    value = v;
+                }
+            });
+            ALOGD("readSysfs path %s value %s", path.c_str(), value.c_str());
+            return;
+        }
+        ALOGE("readSysfs can't get systemcontrol service");
+
+        return;
     }
 
     void ImagePlayerService::MovieRenderPost(SkBitmap *bitmap) {

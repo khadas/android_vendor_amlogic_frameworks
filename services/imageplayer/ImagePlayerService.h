@@ -31,8 +31,13 @@
 #include "TIFF2RGBA.h"
 #include <binder/Binder.h>
 #include "SysWrite.h"
+#include <vendor/amlogic/hardware/systemcontrol/1.1/ISystemControl.h>
+#include <vendor/amlogic/hardware/systemcontrol/1.0/types.h>
+
 #define MAX_FILE_PATH_LEN           1024
 #define MAX_PIC_SIZE                8000
+
+using ::vendor::amlogic::hardware::systemcontrol::V1_1::ISystemControl;
 
 namespace android {
 
@@ -174,6 +179,7 @@ namespace android {
         SkBitmap* fillSurface(SkBitmap *bitmap);
         bool isSupportFromat(const char *uri, SkBitmap **bitmap);
         bool checkVideoInUse(int retryNum);
+        void readSysfs(const std::string& path, std::string& value);
 
         TIFF2RGBA *mTif;
 
@@ -219,6 +225,7 @@ namespace android {
         sp<IMediaHTTPService> mHttpService;
         sp<DeathNotifier> mDeathNotifier;
         SysWrite* mSysWrite;
+        sp<ISystemControl> mSystemControl;
     };
     class MovieThread : public Thread {
       public:

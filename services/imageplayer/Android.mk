@@ -17,6 +17,7 @@ LOCAL_SRC_FILES:= \
 LOCAL_STATIC_LIBRARIES := libtiff_static
 LOCAL_SHARED_LIBRARIES := \
   vendor.amlogic.hardware.imageserver@1.0 \
+  vendor.amlogic.hardware.systemcontrol@1.1 \
   libhidlbase \
   libhidltransport \
   libbinder                   \

@@ -505,6 +505,7 @@ bool HdmiCecControl::handleSetMenuLanguage(hdmi_cec_event_t* event)
     int para = ((event->cec.body[1] & 0xff) << 16) + ((event->cec.body[2] & 0xff) << 8) +  (event->cec.body[3] & 0xff);
     if (mCecDevice.mTvOsdName == 0) {
         getDeviceExtraInfo(0);
+        mCecDevice.mTvOsdName = -1;
     }
     if (mCecDevice.mTvOsdName == samsungTvOsdName) {
         if (para == chiLanguage) {
@@ -780,7 +781,7 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
         return -EINVAL;
     }
     if (isExtend) {
-        ALOGD("[hcc] isExtend = %d, mExtendControl = %d", isExtend, mCecDevice.mExtendControl);
+        //ALOGD("[hcc] isExtend = %d, mExtendControl = %d", isExtend, mCecDevice.mExtendControl);
         return sendExtMessage(message);
     }
     /* don't send message if controlled by extend */
@@ -937,7 +938,7 @@ int HdmiCecControl::send(const cec_message_t* message)
     msgBuf[0] = ((message->initiator & 0xf) << 4) | (message->destination & 0xf);
     memcpy(msgBuf + 1, message->body, message->length);
     ret = write(mCecDevice.mFd, msgBuf, message->length + 1);
-    printCecMessage(message, ret);
+    //printCecMessage(message, ret);
     return ret;
 }
 

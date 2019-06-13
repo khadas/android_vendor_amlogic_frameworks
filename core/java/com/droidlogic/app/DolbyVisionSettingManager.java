@@ -33,6 +33,8 @@ public class DolbyVisionSettingManager {
     public static final int DOVISION_DISABLE        = 0;
     public static final int DOVISION_ENABLE         = 1;
 
+    public static final int OUPUT_MODE_STATE_INIT   = 0;
+    public static final int OUPUT_MODE_STATE_SWITCH = 1;
     private Context mContext;
     private SystemControlManager mSystenControl;
 
@@ -42,9 +44,7 @@ public class DolbyVisionSettingManager {
     }
 
     public void initSetDolbyVision() {
-       if (isDolbyVisionEnable()) {
-            setDolbyVisionEnable(getDolbyVisionType());
-        }
+        mSystenControl.initDolbyVision(OUPUT_MODE_STATE_INIT);
     }
 
     /* *

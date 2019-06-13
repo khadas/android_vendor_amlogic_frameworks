@@ -425,6 +425,10 @@ void SystemControlClient::getDeepColorAttr(const std::string& mode, std::string&
     });
 }
 
+void SystemControlClient::initDolbyVision(int state) {
+    mSysCtrl->initDolbyVision(state);
+}
+
 void SystemControlClient::setDolbyVisionEnable(int state) {
     mSysCtrl->setDolbyVisionState(state);
 }

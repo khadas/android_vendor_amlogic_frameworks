@@ -104,6 +104,7 @@ public:
     void getDeepColorAttr(const std::string& mode, std::string& value);
     void saveDeepColorAttr(const std::string& mode, const std::string& dcValue);
     int64_t resolveResolutionValue(const std::string& mode);
+    void initDolbyVision(int state);
     void setDolbyVisionEnable(int state);
     bool isTvSupportDolbyVision(std::string& mode);
     int32_t getDolbyVisionType();

@@ -514,6 +514,13 @@ void SystemControl::getPosition(const String16& mode, int &x, int &y, int &w, in
         ALOGI("get position x:%d y:%d w:%d h:%d", x, y, w, h);
     }
 }
+void SystemControl::initDolbyVision(int state) {
+    if (state == 0) {
+        pDisplayMode->initDolbyVision(OUPUT_MODE_STATE_INIT);
+    }else {
+        pDisplayMode->initDolbyVision(OUPUT_MODE_STATE_SWITCH);
+    }
+}
 
 void SystemControl::setDolbyVisionEnable(int state) {
     pDisplayMode->setDolbyVisionEnable(state, OUPUT_MODE_STATE_SWITCH);

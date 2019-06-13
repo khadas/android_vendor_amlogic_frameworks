@@ -558,7 +558,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 #endif
 
     if (!cvbsMode && pSysWrite->getPropertyBoolean(PROP_DOLBY_VISION_FEATURE, false)
-            && setDolbyVisionState) {
+            && (OUPUT_MODE_STATE_INIT != state) && setDolbyVisionState) {
         initDolbyVision(state);
     }
     //audio
@@ -1595,7 +1595,7 @@ void DisplayMode::initDolbyVision(output_mode_state state) {
         } else if (strstr(dv_mode, "LL_RGB_444_12BIT") != NULL) {
             setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE_LL_RGB,  state);
         }
-    } else if ((OUPUT_MODE_STATE_INIT != state) && isDolbyVisionEnable()) {
+    } else if (isDolbyVisionEnable()) {
         setDolbyVisionEnable(getDolbyVisionType(),  state);
     }
 }

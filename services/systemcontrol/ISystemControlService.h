@@ -183,6 +183,9 @@ enum {
     WRITE_ATTESTATION_KEY           = IBinder::FIRST_CALL_TRANSACTION + 125,
     WRITE_PLAYREADY_KEY                 = IBinder::FIRST_CALL_TRANSACTION + 126,
     READ_PLAYREADY_KEY                  = IBinder::FIRST_CALL_TRANSACTION + 127,
+
+    //init dolby vision
+    INIT_DOLBY_VISION                = IBinder::FIRST_CALL_TRANSACTION + 128,
 };
 
 // ----------------------------------------------------------------------------
@@ -237,6 +240,7 @@ public:
     virtual void getDeepColorAttr(const String16& mode, String16& value) = 0;
     virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue) = 0;
     virtual int64_t resolveResolutionValue(const String16& mode) = 0;
+    virtual void initDolbyVision(int state) = 0;
     virtual void setDolbyVisionEnable(int state) = 0;
     virtual int32_t getDolbyVisionType() = 0;
     virtual bool isTvSupportDolbyVision(String16& mode) = 0;

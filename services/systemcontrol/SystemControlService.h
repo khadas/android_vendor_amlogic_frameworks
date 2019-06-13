@@ -95,6 +95,7 @@ public:
     void setOsdMousePara(int x, int y, int w, int h);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const std::string& mode, int &x, int &y, int &w, int &h);
+    void initDolbyVision(int state);
     void setDolbyVisionEnable(int state);
     bool isTvSupportDolbyVision(std::string& mode);
     int32_t getDolbyVisionType();

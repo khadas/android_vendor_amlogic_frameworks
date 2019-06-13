@@ -424,6 +424,7 @@ public:
     void setDigitalMode(const char* mode);
     void setPosition(int left, int top, int width, int height);
     void getPosition(const char* curMode, int *position);
+    void initDolbyVision(output_mode_state state);
     void setDolbyVisionEnable(int state, output_mode_state mode_state);
     int  getDolbyVisionType();
     bool isDolbyVisionEnable();
@@ -483,7 +484,6 @@ private:
     void updateWindowAxis(const char* outputmode);
     void initGraphicsPriority();
 	void initHdrSdrMode();
-    void initDolbyVision(output_mode_state state);
     bool isEdidChange();
     bool isBestOutputmode();
     bool modeSupport(char *mode, int sinkType);

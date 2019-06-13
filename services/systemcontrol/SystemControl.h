@@ -95,6 +95,7 @@ public:
     virtual void getDeepColorAttr(const String16& mode, String16& value);
     virtual void saveDeepColorAttr(const String16& mode, const String16& dcValue);
     virtual int64_t resolveResolutionValue(const String16& mode);
+    virtual void initDolbyVision(int state);
     virtual void setDolbyVisionEnable(int state);
     virtual bool isTvSupportDolbyVision(String16& mode);
     virtual int32_t getDolbyVisionType();

@@ -499,6 +499,14 @@ void SystemControlService::getPosition(const std::string& mode, int &x, int &y, 
     }
 }
 
+void SystemControlService::initDolbyVision(int state) {
+    if (state == 0) {
+    pDisplayMode->initDolbyVision(OUPUT_MODE_STATE_INIT);
+    } else {
+    pDisplayMode->initDolbyVision(OUPUT_MODE_STATE_SWITCH);
+    }
+}
+
 void SystemControlService::setDolbyVisionEnable(int state) {
     pDisplayMode->setDolbyVisionEnable(state, OUPUT_MODE_STATE_SWITCH);
 }

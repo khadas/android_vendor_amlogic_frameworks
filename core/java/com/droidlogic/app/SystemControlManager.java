@@ -74,6 +74,7 @@ public class SystemControlManager {
     private native String native_GetDeepColorAttr(String mode);
     private native long native_ResolveResolutionValue(String mode);
     private native String native_IsTvSupportDolbyVision();
+    private native void native_InitDolbyVision(int state);
     private native void native_SetDolbyVisionEnable(int state);
     private native void native_SaveDeepColorAttr(String mode, String dcValue);
     private native void native_SetHdrMode(String mode);
@@ -618,6 +619,16 @@ public class SystemControlManager {
             }
         }
         return "";
+    }
+
+    public void initDolbyVision(int state) {
+        synchronized (mLock) {
+            try {
+                native_InitDolbyVision(state);
+            } catch (Exception e) {
+                Log.e(TAG, "init DolbyVision:" + e);
+            }
+        }
     }
 
     public void setDolbyVisionEnable(int state) {

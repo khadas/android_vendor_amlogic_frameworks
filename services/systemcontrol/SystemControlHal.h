@@ -95,6 +95,7 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<void> getPosition(const hidl_string& mode, getPosition_cb _hidl_cb) override;
     Return<void> saveDeepColorAttr(const hidl_string& mode, const hidl_string& dcValue) override;
     Return<void> getDeepColorAttr(const hidl_string &mode, getDeepColorAttr_cb _hidl_cb) override;
+    Return<void> initDolbyVision(int32_t state) override;
     Return<void> setDolbyVisionState(int32_t state) override;
     Return<void> sinkSupportDolbyVision(sinkSupportDolbyVision_cb _hidl_cb) override;
 

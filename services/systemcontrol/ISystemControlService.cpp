@@ -761,6 +761,18 @@ public:
         ALOGV("get deep color attr %s\n", String8(value).string());
     }
 
+    virtual void initDolbyVision(int state) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeInt32(state);
+        ALOGV("init dolby vision state:%d\n", state);
+
+        if (remote()->transact(INIT_DOLBY_VISION, data, &reply) != NO_ERROR) {
+            ALOGE("init dolby vision could not contact remote\n");
+            return;
+        }
+    }
+
     virtual void setDolbyVisionEnable(int state) {
         Parcel data, reply;
         data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
@@ -1273,6 +1285,12 @@ status_t BnISystemControlService::onTransact(
             reply->writeInt32(y);
             reply->writeInt32(w);
             reply->writeInt32(h);
+            return NO_ERROR;
+        }
+        case INIT_DOLBY_VISION: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            int32_t state = data.readInt32();
+            initDolbyVision(state);
             return NO_ERROR;
         }
         case SET_DOLBY_VISION: {

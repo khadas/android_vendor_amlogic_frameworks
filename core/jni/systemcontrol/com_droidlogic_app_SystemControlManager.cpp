@@ -547,6 +547,13 @@ static jstring IsTvSupportDolbyVision(JNIEnv* env, jclass clazz __unused) {
         return env->NewStringUTF("");
 }
 
+static void InitDolbyVision(JNIEnv* env __unused, jclass clazz __unused, jint state) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    if (scc != NULL) {
+        scc->initDolbyVision(state);
+    }
+}
+
 static void SetDolbyVisionEnable(JNIEnv* env __unused, jclass clazz __unused, jint state) {
     const sp<SystemControlClient>& scc = getSystemControlClient();
     if (scc != NULL) {
@@ -1190,6 +1197,7 @@ static JNINativeMethod SystemControl_Methods[] = {
 {"native_GetDeepColorAttr", "(Ljava/lang/String;)Ljava/lang/String;", (void *) GetDeepColorAttr },
 {"native_ResolveResolutionValue", "(Ljava/lang/String;)J", (void *) ResolveResolutionValue },
 {"native_IsTvSupportDolbyVision", "()Ljava/lang/String;", (void *) IsTvSupportDolbyVision },
+{"native_InitDolbyVision", "(I)V", (void *) InitDolbyVision },
 {"native_SetDolbyVisionEnable", "(I)V", (void *) SetDolbyVisionEnable },
 {"native_SaveDeepColorAttr", "(Ljava/lang/String;Ljava/lang/String;)V", (void *) SaveDeepColorAttr },
 {"native_SetHdrMode", "(Ljava/lang/String;)V", (void *) SetHdrMode },

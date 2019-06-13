@@ -467,6 +467,11 @@ Return<void> SystemControlHal::getDeepColorAttr(const hidl_string &mode, getDeep
     return Void();
 }
 
+Return<void> SystemControlHal::initDolbyVision(int32_t state) {
+    mSysControl->initDolbyVision(state);
+    return Void();
+}
+
 Return<void> SystemControlHal::setDolbyVisionState(int32_t state) {
     mSysControl->setDolbyVisionEnable(state);
     return Void();

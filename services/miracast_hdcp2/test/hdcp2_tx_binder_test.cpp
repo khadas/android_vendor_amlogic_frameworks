@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
+ * Description: C++ file
+ */
 #define LOG_TAG "HDCP_TX_TEST"
 #include <android/hidl/base/1.0/IBase.h>
 #include <vendor/amlogic/hardware/miracast_hdcp2/1.0/IHDCPService.h>

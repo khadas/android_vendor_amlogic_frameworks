@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
+ * Description: C++ file
+ */
 #include <stdint.h>
 uint8_t pes2[] = {
 0x00 ,0x00 ,0x01 ,0xe0 ,0x00 ,0x00 ,0x8b ,0xc0 ,0x0a ,0x3d ,0x8c ,0xd5 ,0x07 ,0x17 ,0x1d ,0x8c ,0xd3 ,0xb2 ,0xb7,

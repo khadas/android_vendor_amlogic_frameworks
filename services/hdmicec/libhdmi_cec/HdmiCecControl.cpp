@@ -768,6 +768,13 @@ int HdmiCecControl::getPhysicalAddress(uint16_t* addr)
     if (assertHdmiCecDevice())
         return -EINVAL;
 
+    if (mCecDevice.isPlaybackDeviceType) {
+        if ((mCecDevice.mConnectStatus & (1)) == 0) {
+            *addr= 0x0;
+            ALOGD("[hcc] return for playback physical addr ");
+            return 0;
+        }
+    }
     int ret = ioctl(mCecDevice.mFd, CEC_IOC_GET_PHYSICAL_ADDR, addr);
     ALOGD("[hcc] %s, physical addr: %x, ret = %d", __FUNCTION__, *addr, ret);
     return ret;

@@ -240,6 +240,7 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     void handleServiceDeath(uint32_t cookie);
 
     SystemControlService *mSysControl;
+    mutable Mutex mLock;
     std::map<uint32_t, sp<ISystemControlCallback>> mClients;
 
     class DeathRecipient : public android::hardware::hidl_death_recipient  {

@@ -145,6 +145,7 @@ public:
     int GetFileAttrIntValue(const char *fp, int flag);
     bool CheckHdrStatus(const char *tableName);
     bool CheckCVBSParamValidStatus(void);
+    bool CheckIdExistInDb(const char *Id, const char *TableName);
 
 private:
     String8 GetTableName(const char *GeneralTableName, source_input_param_t source_input_param);

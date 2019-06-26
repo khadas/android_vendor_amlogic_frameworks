@@ -1724,7 +1724,7 @@ void DisplayMode::getGraphicsPriority(char* mode) {
  * */
 void DisplayMode::initGraphicsPriority() {
     char mode[MODE_LEN] = {0};
-    pSysWrite->getPropertyString(PROP_DOLBY_VISION_PRIORITY, mode, "0");
+    pSysWrite->getPropertyString(PROP_DOLBY_VISION_PRIORITY, mode, "1");
     pSysWrite->writeSysfs(DOLBY_VISION_GRAPHICS_PRIORITY, mode);
     pSysWrite->setProperty(PROP_DOLBY_VISION_PRIORITY, mode);
 }

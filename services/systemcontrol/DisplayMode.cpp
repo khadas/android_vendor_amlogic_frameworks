@@ -1543,7 +1543,7 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
             pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY, DV_HDR10_POLICY);
         }
 
-        setSdrMode(SDR_MODE_OFF);
+        pSysWrite->writeSysfs(DISPLAY_HDMI_SDR_MODE, SDR_MODE_OFF);
         usleep(100000);//100ms
         pSysWrite->writeSysfs(DOLBY_VISION_ENABLE_OLD, DV_ENABLE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE_OLD, DV_MODE_IPT_TUNNEL);
@@ -1572,6 +1572,10 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
         if (DISPLAY_TYPE_TV == mDisplayType) {
             setHdrMode(HDR_MODE_AUTO);
         }
+        char sdrmode[MODE_LEN] = {0};
+        bool flag = pSysWrite->getPropertyBoolean(PROP_ENABLE_SDR2HDR, false);
+        pSysWrite->getPropertyString(PROP_SDR_MODE_STATE, sdrmode, flag ? SDR_MODE_AUTO : SDR_MODE_OFF);
+        setSdrMode(sdrmode);
         char mode[MAX_STR_LEN] = {0};
         if (isTvSupportDolbyVision(mode)) {
             pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");

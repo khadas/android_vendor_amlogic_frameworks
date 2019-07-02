@@ -63,7 +63,7 @@ public class SystemControlEvent implements SystemControlManager.HdmiHotPlugListe
             intent = new Intent(ACTION_SYSTEM_CONTROL_EVENT);
             intent.putExtra(EVENT_TYPE, event);
         }
-        mContext.sendStickyBroadcast(intent);
+        mContext.sendBroadcast(intent);
     }
 
     private void setWiredDeviceConnectionState(int type, int state, String address, String name) {

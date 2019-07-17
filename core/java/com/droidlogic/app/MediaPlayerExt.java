@@ -106,6 +106,7 @@ public class MediaPlayerExt extends MediaPlayer {
     private static final int INVOKE_ID_GET_AM_TRACK_INFO        = 11;
     private static final int INVOKE_ID_USE_CUSTOMIZED_EXTRACTOR  = 1001;
     private static final int INVOKE_ID_GET_HDR_TYPE  = 1002;
+    private static final int INVOKE_ID_SET_SOUND_TRACK  = 1003;
 
     //must sync with IMediaPlayerService.cpp (av\media\libmedia)
     private IBinder mIBinderService = null; //IMediaPlayerService
@@ -484,6 +485,14 @@ public class MediaPlayerExt extends MediaPlayer {
         MediaPlayerInvoke(request, p, mp);
         int type = p.readInt();
         return type;
+   }
+   public void setSoundTrack(MediaPlayerExt mp, int mode) {
+        Parcel request = Parcel.obtain();
+        Parcel p = Parcel.obtain();
+        request.writeInterfaceToken(IMEDIA_PLAYER);
+        request.writeInt(INVOKE_ID_SET_SOUND_TRACK);
+        request.writeInt(mode);
+        MediaPlayerInvoke(request, p, mp);
    }
 
    //getMediaInfo by invoke instead of getParameter (WL)

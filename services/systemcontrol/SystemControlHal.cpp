@@ -570,6 +570,17 @@ Return<Result> SystemControlHal::setAppInfo(const hidl_string& pkg, const hidl_s
     return Result::OK;
 }
 
+Return<void> SystemControlHal::getPrefHdmiDispMode(getPrefHdmiDispMode_cb _hidl_cb) {
+    std::string mode;
+    bool ret = mSysControl->getPrefHdmiDispMode(&mode);
+    ALOGI("getPrefHdmiDispMode mode :%s", mode.c_str());
+    if (ret == true)
+        _hidl_cb(Result::OK, mode);
+    else
+        _hidl_cb(Result::FAIL, mode);
+    return Void();
+}
+
 //for 3D
 Return<void> SystemControlHal::set3DMode(const hidl_string& mode) {
     ALOGI("set3DMode mode:%s", mode.c_str());

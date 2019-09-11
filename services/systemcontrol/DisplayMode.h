@@ -462,6 +462,7 @@ public:
 
     void setBootanimStatus(int status);
     void getBootanimStatus(int *status);
+    bool getPrefHdmiDispMode(char* mode);
 
 private:
 
@@ -496,6 +497,7 @@ private:
     int getBootenvInt(const char* key, int defaultVal);
     void dumpCap(const char * path, const char * hint, char *result);
     void dumpCaps(char *result=NULL);
+
 
     const char* pConfigPath;
     int mDisplayType;

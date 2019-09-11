@@ -584,6 +584,13 @@ void SystemControlService::setAppInfo(const std::string& pkg, const std::string&
     }
 }
 
+bool SystemControlService::getPrefHdmiDispMode(std::string *prefDispMode) {
+    char mode[MODE_LEN] = {0};
+    bool ret = pDisplayMode->getPrefHdmiDispMode(mode);
+    *prefDispMode = mode;
+    return ret;
+}
+
 //3D
 int32_t SystemControlService::set3DMode(const std::string& mode3d) {
     if (mLogLevel > LOG_LEVEL_1) {

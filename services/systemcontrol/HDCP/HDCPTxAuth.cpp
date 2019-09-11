@@ -329,7 +329,9 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
 
     UEventObserver ueventObserver;
     ueventObserver.addMatch(HDMI_TX_POWER_UEVENT);
+    #ifndef HWC_DYNAMIC_SWITCH_VIU
     ueventObserver.addMatch(HDMI_TX_PLUG_UEVENT);
+    #endif
     ueventObserver.addMatch(VIDEO_LAYER1_UEVENT);
     ueventObserver.addMatch(HDMI_TX_HDR_UEVENT);
     ueventObserver.addMatch(HDMI_TX_HDCP_UEVENT);

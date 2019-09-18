@@ -99,6 +99,7 @@ public class OutputModeManager {
     public static final String ENV_IS_BEST_DOLBYVISION      = "ubootenv.var.bestdolbyvision";
     public static final String ENV_COLORATTRIBUTE           = "ubootenv.var.colorattribute";
     public static final String ENV_HDR_POLICY               = "ubootenv.var.hdr_policy";
+    public static final String ENV_HDR_PRIORITY             = "ubootenv.var.hdr_priority";
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.vendor.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.vendor.platform.hdmionly";
@@ -309,6 +310,9 @@ public class OutputModeManager {
     private String DEFAULT_OUTPUT_MODE                      = "720p60hz";
     private String DEFAULT_COLOR_ATTRIBUTE                  = "444,8bit";
 
+    public static final int DOLBY_VISION                    = 0;
+    public static final int HDR10                           = 1;
+
     private static String currentColorAttribute = null;
     private static String currentOutputmode = null;
     private boolean ifModeSetting = false;
@@ -435,6 +439,21 @@ public class OutputModeManager {
         return readSysfs(DISPLAY_MODE);
     }
 
+    public int getHdrPriority() {
+        String curType = getBootenv(ENV_HDR_PRIORITY, Integer.toString(DOLBY_VISION));
+        if (curType.contains(Integer.toString(HDR10))) {
+            return HDR10;
+        } else {
+            return DOLBY_VISION;
+        }
+    }
+    public void setHdrPriority(int type) {
+        if (type == HDR10) {
+            mSystenControl.setBootenv(ENV_HDR_PRIORITY, Integer.toString(HDR10));
+        } else {
+            mSystenControl.setBootenv(ENV_HDR_PRIORITY, Integer.toString(DOLBY_VISION));
+        }
+    }
     public int[] getPosition(String mode) {
         return mSystenControl.getPosition(mode);
     }

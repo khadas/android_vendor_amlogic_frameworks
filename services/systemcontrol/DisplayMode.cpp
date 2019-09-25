@@ -497,13 +497,17 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     if (strstr(mRebootMode, "quiescent") && (strstr(outputmode, MODE_PANEL) == NULL)) {
         SYS_LOGI("reboot_mode is quiescent\n");
+        #ifndef HWC_DYNAMIC_SWITCH_VIU
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+        #endif
         return;
     }
 
     if (strstr(curMode, outputmode) == NULL) {
         if (cvbsMode && (strstr(outputmode, MODE_PANEL) == NULL)) {
+            #ifndef HWC_DYNAMIC_SWITCH_VIU
             pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+            #endif
         }
         #ifdef HWC_DYNAMIC_SWITCH_VIU
         if (DISPLAY_TYPE_TABLET == mDisplayType &&

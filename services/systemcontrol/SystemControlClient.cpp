@@ -494,7 +494,7 @@ void SystemControlClient::setAppInfo(const std::string& pkg, const std::string& 
     hidl_vec< hidl_string> procList;
     size_t size = proc.size();
     procList.resize(size);
-    for (int i = 0; i< proc.size(); ++i) {
+    for (int i = 0; i< (int) proc.size(); ++i) {
         procList[i] = proc[i];
     }
     mSysCtrl->setAppInfo(pkg, cls, procList);

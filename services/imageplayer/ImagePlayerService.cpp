@@ -1144,7 +1144,7 @@ namespace android {
         Mutex::Autolock autoLock(mLock);
 
         bool isAutoCrop = autoCrop != 0;
-        ALOGD("setRotate degrees:%f, isAutoCrop:%d", degrees, isAutoCrop);
+        ALOGD("called setRotate degrees:%f, isAutoCrop:%d", degrees, isAutoCrop);
 
         //ratate always use the origin bitmap
         //reset rotate and scale, because rotate is the always first state
@@ -1168,36 +1168,28 @@ namespace android {
             return RET_OK;
         }
         SkBitmap *dstBitmap = NULL;
-        dstBitmap = rotate(mBitmap, degrees);
+        ALOGD("preCropAndRotate %d %d %d",(int)degrees, mBitmap->width(),mBitmap->height());
+        if (((int)degrees + 360) % 180 == 90
+                && ( mBitmap->width() > surfaceHeight ||  mBitmap->height() > surfaceWidth)) {
+            ALOGD("preCropAndRotate");
+            dstBitmap = preCropAndRotate(mBitmap,degrees);
+        }else {
+            dstBitmap = rotate(mBitmap, degrees);
+            if (dstBitmap != NULL) {
+                if (isAutoCrop && needFillSurface(dstBitmap, 1, 1)) {
+                    SkBitmap *fillBitmap = fillSurface(dstBitmap);
 
+                    if (fillBitmap != NULL) {
+                        clearBmp(dstBitmap);
+                        dstBitmap = fillBitmap;
+                    }
+                }
+            }
+        }
+
+        ALOGD("After rotate, Width: %d, Height: %d", dstBitmap->width(),
+              dstBitmap->height());
         if (dstBitmap != NULL) {
-            if (isAutoCrop && needFillSurface(dstBitmap, 1, 1)) {
-                SkBitmap *fillBitmap = fillSurface(dstBitmap);
-
-                if (fillBitmap != NULL) {
-                    clearBmp(dstBitmap);
-                    dstBitmap = fillBitmap;
-                }
-            }
-
-            ALOGD("After rotate, Width: %d, Height: %d", dstBitmap->width(),
-                  dstBitmap->height());
-
-            if ((dstBitmap->width() > surfaceWidth)
-                    || (dstBitmap->height() > surfaceHeight)) {
-                ALOGD("cropAndFillBitmap");
-                SkBitmap *dstCrop = cropAndFillBitmap(dstBitmap, surfaceWidth, surfaceHeight);
-
-                if (NULL != dstCrop) {
-                    clearBmp(dstBitmap);
-                    dstBitmap = dstCrop;
-                }
-            }
-            if (mRotateBitmap != NULL) {
-                clearBmp(mRotateBitmap);
-            }
-           // mRotateBitmap = dstBitmap;
-
             renderAndShow(dstBitmap);
             clearBmp(dstBitmap);
             return RET_OK;
@@ -1226,26 +1218,25 @@ namespace android {
             ALOGE("///////////////%f",mMovieScale);
             return RET_OK;
         }
+        if (sx == 1.0 && sy == 1.0f ) {
+            renderAndShow(mBitmap);
+            return RET_OK;
+        }
         SkBitmap *dstBitmap = NULL;
         if (sx != sy) {
             ALOGW("scale x and y not the same");
 
             SkBitmap *devbmp = NULL;
             if (needFillSurface(mBitmap, 1, 1)) {
-                devbmp = fillSurface(mBitmap);
-                if (devbmp != NULL) {
-                    dstBitmap = scale(devbmp, sx, sy);
-                    if (dstBitmap != NULL) {
-                        clearBmp(devbmp);
-                        devbmp = NULL;
-                    }
-                }
+                float originalZoomPersent = ( surfaceWidth*1.0/mBitmap->width()) > (surfaceHeight*1.0/mBitmap->height())?
+                                           (surfaceHeight*1.0/mBitmap->height()):( surfaceWidth*1.0/mBitmap->width());
+                sx  = originalZoomPersent*sx;
+                sy = originalZoomPersent*sy;
             }
-            if (dstBitmap == NULL )
-                dstBitmap = scale(mBitmap, sx, sy);
+            dstBitmap = scale(mBitmap, sx, sy);
 
             if (dstBitmap != NULL) {
-                if (isAutoCrop && needFillSurface(dstBitmap,sx, sy)) {
+                if (isAutoCrop && needFillSurface(mBitmap, sx, sy)) {
                     SkBitmap *fillBitmap = fillSurface(dstBitmap);
 
                     if (fillBitmap != NULL) {
@@ -1269,36 +1260,17 @@ namespace android {
             mScalingBitmap = NULL;
 
             if (needFillSurface(mBitmap, 1, 1)) {
-                dstBitmap = fillSurface(mBitmap);
-                if (dstBitmap != NULL) {
-                     ALOGD("fillSurface destBitmap != null)");
-                     if (sx == 1.0 && sy == 1.0f ) {
-                        renderAndShow(dstBitmap);
-                        clearBmp(dstBitmap);
-                        dstBitmap = NULL;
-                        return RET_OK;
-                    }else {
-                        SkBitmap* bmpsScaling = scaleAndCrop(dstBitmap, sx, sy);
-                        clearBmp(dstBitmap);
-                        dstBitmap = bmpsScaling;
-                    }
-                }else {
-                    if (sx == 1.0 && sy == 1.0f ) {
-                        renderAndShow(mBitmap);
-                        return RET_OK;
-                    }
-                    dstBitmap = scaleAndCrop(mBitmap, sx, sy);
-                }
-            }else {
-                if (sx == 1.0 && sy == 1.0f ) {
-                    renderAndShow(mBitmap);
-                    return RET_OK;
-                }
-                dstBitmap = scaleAndCrop(mBitmap, sx, sy);
+                float zoompercent = ( surfaceWidth*1.0/mBitmap->width()) > (surfaceHeight*1.0/mBitmap->height())?
+                                           (surfaceHeight*1.0/mBitmap->height()):( surfaceWidth*1.0/mBitmap->width());
+                sx = sx*zoompercent;
+                sy = sx*zoompercent;
             }
-            renderAndShow(dstBitmap);
-            clearBmp(dstBitmap);
-            dstBitmap = NULL;
+            dstBitmap = scaleAndCrop(mBitmap, sx, sy);
+            if (dstBitmap != NULL) {
+                renderAndShow(dstBitmap);
+                clearBmp(dstBitmap);
+                dstBitmap = NULL;
+            }
         }
 
         return RET_OK;
@@ -1345,6 +1317,7 @@ namespace android {
 
         return RET_OK;
     }
+
     bool ImagePlayerService::needFillSurface(SkBitmap *bitmap, float sx,float sy) {
         if (P2pDisplay == 0) return true;
         if (bitmap == NULL) return false;
@@ -1616,7 +1589,63 @@ namespace android {
         return RET_OK;
     }
 
+    SkBitmap* ImagePlayerService::preCropAndRotate(SkBitmap *srcBitmap, float degrees) {
+        int sourceWidth = srcBitmap->width();
+        int sourceHeight = srcBitmap->height();
 
+        int dstHeight = sourceWidth;
+        int dstWidth = sourceHeight;
+        float scaleSample = surfaceHeight*1.0/dstHeight < surfaceWidth*1.0/dstWidth ?
+                     surfaceHeight*1.0/dstHeight:surfaceWidth*1.0/dstWidth;
+        /* if (destHeight*1.0/surfaceHeight > destWidth*1.0/surfaceWidth) {
+            destHeight = surfaceHeight;
+            destWidth = surfaceWidth*surfaceHeight/destHeight;
+        } else {
+            destWidth = surfaceWidth;
+            destHeight = surfaceWidth*surfaceHeight/destWidth;
+        }
+        ALOGE("prescale to [%dX%d]",destWidth,destHeight);
+
+        canvas = new SkCanvas(*src);
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setDither(true);
+        canvas->clipRect(*srcBitmap, (SkRect::MakeXYWH((sourceWidth-destWidth)/2, (sourceHeight-destHeight)/2, destWidth, destHeight));
+        delete canvas;*/
+        ALOGD("preScale And rotae %f",scaleSample);
+        SkBitmap *devBitmap = new SkBitmap();
+        SkMatrix *matrix = new SkMatrix();
+        double radian = SkDegreesToRadians(degrees);
+
+        dstWidth = sourceWidth * fabs(cos(radian)) + sourceHeight * fabs(sin(
+                           radian));
+        dstHeight = sourceHeight * fabs(cos(radian)) + sourceWidth * fabs(sin(
+                            radian));
+
+        SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
+        SkImageInfo info = SkImageInfo::Make((int)(scaleSample*dstWidth), (int)(scaleSample*dstHeight),
+                                             colorType, srcBitmap->alphaType());
+        devBitmap->setInfo(info);
+        devBitmap->tryAllocPixels(info);
+        ALOGD("preScale And rotae %d x %d",((int)(scaleSample*dstWidth), (int)(scaleSample*dstHeight)));
+        SkCanvas *canvas = new SkCanvas(*devBitmap);
+
+        matrix->postRotate(degrees, sourceWidth / 2, sourceHeight / 2);
+        matrix->postTranslate((dstWidth - sourceWidth) / 2,
+                              (dstHeight - sourceHeight) / 2);
+        matrix->postScale(scaleSample,scaleSample);
+        SkPaint paint;
+
+        paint.setAntiAlias(true);
+        paint.setDither(true);
+        canvas->save();
+        canvas->concat(*matrix);
+        canvas->drawBitmap(*srcBitmap, 0, 0, &paint);
+        canvas->restore();
+        delete canvas;
+        delete matrix;
+        return devBitmap;
+    }
     SkBitmap* ImagePlayerService::decode(SkStreamAsset *stream,
                                          InitParameter *mParameter) {
         std::unique_ptr<SkStream> s = stream->fork();
@@ -2437,9 +2466,6 @@ namespace android {
     }
 
     SkBitmap* ImagePlayerService::fillSurface(SkBitmap *bitmap) {
-        float scaleX = 1.0f;
-        float scaleY = 1.0f;
-
         if (NULL == bitmap ) {
             return NULL;
         }
@@ -2602,7 +2628,6 @@ namespace android {
         mMovieDegree = 0;
         mMovieScale = 1.0f;
         auto data = SkData::MakeFromFileName(file);
-        ALOGD("MovieInit %s",file);
         ALOGD("MovieInit %s",file);
         if (!data) {
             ALOGE("Could not get %s", file);

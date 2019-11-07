@@ -152,7 +152,7 @@ namespace android {
         int convertARGB8888toYUYV(void *dst, const SkBitmap *src);
         int convertRGB565toYUYV(void *dst, const SkBitmap *src);
         int convertIndex8toYUYV(void *dst, const SkBitmap *src);
-
+        SkBitmap* preCropAndRotate(SkBitmap *src, float degrees);
         int post();
         int render(int format, SkBitmap *bitmap);
         bool copyTo(SkBitmap* dst, SkColorType dstCT, const SkBitmap& src,

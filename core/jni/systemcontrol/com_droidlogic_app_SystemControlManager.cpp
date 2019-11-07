@@ -1160,6 +1160,14 @@ static jint StartUpgradeFBC(JNIEnv* env, jclass clazz __unused, jstring jfile_na
     return result;
 }
 
+static jint SetDtvKitSourceEnable(JNIEnv* env __unused, jclass clazz __unused, jint isEnable)
+{
+	const sp<SystemControlClient>& scc = getSystemControlClient();
+	jint result = -1;
+	if (scc != NULL)
+	    result = scc->setDtvKitSourceEnable(isEnable);
+	return result;
+}
 
 static JNINativeMethod SystemControl_Methods[] = {
 {"native_ConnectSystemControl", "(Lcom/droidlogic/app/SystemControlManager;)V", (void *) ConnectSystemControl },
@@ -1268,6 +1276,7 @@ static JNINativeMethod SystemControl_Methods[] = {
 {"native_GetCurrentSourceInfo", "(III)V", (void *) GetCurrentSourceInfo },
 {"native_GetPQDatabaseInfo", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", (void *) GetPQDatabaseInfo },
 {"native_StartUpgradeFBC", "(Ljava/lang/String;II)I", (void *) StartUpgradeFBC },
+{"native_SetDtvKitSourceEnable", "(I)I", (void *)SetDtvKitSourceEnable },
 
 
 };

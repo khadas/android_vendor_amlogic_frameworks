@@ -1115,6 +1115,10 @@ Return<int32_t> SystemControlHal::factorySetSharpnessParams(int32_t inputSrc, in
 Return<int32_t> SystemControlHal::factoryGetSharpnessParams(int32_t inputSrc, int32_t sig_fmt, int32_t trans_fmt, int32_t isHD,int32_t param_type) {
     return mSysControl->factoryGetSharpnessParams(inputSrc, sig_fmt, trans_fmt, isHD, param_type);
 }
+
+Return<int32_t> SystemControlHal::setDtvKitSourceEnable(int32_t isEnable) {
+	return mSysControl->setDtvKitSourceEnable(isEnable);
+}
 //PQ end
 
 void SystemControlHal::handleServiceDeath(uint32_t cookie) {

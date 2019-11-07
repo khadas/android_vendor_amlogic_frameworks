@@ -234,7 +234,8 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<int32_t> factoryGetDecodeLumaParams(int32_t inputSrc, int32_t sig_fmt, int32_t trans_fmt, int32_t param_type) override;
     Return<int32_t> factorySetSharpnessParams(int32_t inputSrc, int32_t sig_fmt, int32_t trans_fmt, int32_t isHD, int32_t param_type, int32_t val) override;
     Return<int32_t> factoryGetSharpnessParams(int32_t inputSrc, int32_t sig_fmt, int32_t trans_fmt, int32_t isHD, int32_t param_type) override;
-    //PQ end
+    Return<int32_t> setDtvKitSourceEnable(int32_t isEnable) override;
+	//PQ end
     virtual void onEvent(int event);
 
   private:

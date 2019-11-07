@@ -5222,6 +5222,12 @@ int CPQControl::GetHDRMode()
     return mode;
 }
 
+int CPQControl::SetDtvKitSourceEnable(bool isEnable)
+{
+	mbDtvKitEnable = isEnable;
+	return 0;
+}
+
 void CPQControl::resetAllUserSettingParam()
 {
     int ret = 0, i = 0, config_val = 0;

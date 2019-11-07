@@ -243,7 +243,8 @@ public:
     int factoryGetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type);
     int factorySetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type, int val);
     int factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type);
-    //PQ end
+    int setDtvKitSourceEnable(int isEnable);
+	//PQ end
 
     void setListener(const sp<SysCtrlListener> &listener);
 

@@ -1116,6 +1116,20 @@ source_input_param_t SystemControlService::getCurrentSourceInfo(void)
     return pCPQControl->GetCurrentSourceInputInfo();
 }
 
+int SystemControlService::setDtvKitSourceEnable(int isEnable)
+{
+	int ret = -1;
+	if (pCPQControl != NULL) {
+		if (isEnable) {
+			ret = pCPQControl->SetDtvKitSourceEnable(true);
+		} else {
+			ret = pCPQControl->SetDtvKitSourceEnable(false);
+		}
+	}
+
+	return ret;
+}
+
 int SystemControlService::setwhiteBalanceGainRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value)
 {
     int ret = -1;

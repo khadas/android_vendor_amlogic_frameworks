@@ -145,6 +145,7 @@ public class SystemControlManager {
     private native void native_GetCurrentSourceInfo(int source, int sig_fmt, int trans_fmt);
     private native void native_GetPQDatabaseInfo(int databasename, String ToolVersion, String ProjectVersion, String GenerateTime);
     private native int native_StartUpgradeFBC(String filename, int mode, int upgrade_blk_size);
+    private native int native_SetDtvKitSourceEnable(int isEnable);
 
     private SystemControlManager() {
         native_ConnectSystemControl(this);
@@ -2729,6 +2730,17 @@ public class SystemControlManager {
          }
          return -1;
     }
+
+	 public int SetDtvKitSourceEnable(int isEnable) {
+		 synchronized (mLock) {
+			 try {
+				 return native_SetDtvKitSourceEnable(isEnable);
+			 } catch (Exception e) {
+				 Log.e(TAG, "SetDtvKitSourceEnable:" + e);
+			 }
+		 }
+		 return -1;
+	}
 
     private static class Mutable<E> {
         public E value;

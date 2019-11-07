@@ -320,6 +320,7 @@ public:
     int GetGrayPattern();
     int SetHDRMode(int mode);
     int GetHDRMode(void);
+	int SetDtvKitSourceEnable(bool isEnable);
 private:
     int VPPOpenModule(void);
     int VPPCloseModule(void );
@@ -378,5 +379,6 @@ private:
     int mDiFd;
     tcon_rgb_ogo_t rgbfrompq[3];
     source_input_param_t mCurentSourceInputInfo;
+	bool mbDtvKitEnable;
 };
 #endif

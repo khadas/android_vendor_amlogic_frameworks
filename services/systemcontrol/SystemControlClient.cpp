@@ -1109,6 +1109,10 @@ int SystemControlClient::factorySetSharpnessParams(int inputSrc, int sig_fmt, in
 int SystemControlClient::factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type) {
     return mSysCtrl->factoryGetSharpnessParams(inputSrc, sig_fmt, trans_fmt, isHD, param_type);
 }
+
+int SystemControlClient::setDtvKitSourceEnable(int isEnable) {
+	return mSysCtrl->setDtvKitSourceEnable(isEnable);
+}
 //PQ end
 
 

@@ -434,21 +434,23 @@ void SystemControlService::loopMountUnmount(int isMount, const std::string& path
         }*/
 
         mDroidVold = IDroidVold::getService();
-        mDeathRecipient = new DroidVoldDeathRecipient();
-        Return<bool> linked = mDroidVold->linkToDeath(mDeathRecipient, 0);
-        if (!linked.isOk()) {
-            //LOG(ERROR) << "Transaction error in linking to system service death: " << linked.description().c_str();
-        } else if (!linked) {
-            //LOG(ERROR) << "Unable to link to system service death notifications";
-        } else {
-            //LOG(INFO) << "Link to system service death notification successful";
-        }
+        if (mDroidVold != nullptr) {
+            mDeathRecipient = new DroidVoldDeathRecipient();
+            Return<bool> linked = mDroidVold->linkToDeath(mDeathRecipient, 0);
+            if (!linked.isOk()) {
+                //LOG(ERROR) << "Transaction error in linking to system service death: " << linked.description().c_str();
+            } else if (!linked) {
+                //LOG(ERROR) << "Unable to link to system service death notifications";
+            } else {
+                //LOG(INFO) << "Link to system service death notification successful";
+            }
 
-        if (isMount == 1) {
-            mDroidVold->mount(path, 0xF, 0);
-        }
-        else {
-            mDroidVold->unmount(path);
+            if (isMount == 1) {
+                mDroidVold->mount(path, 0xF, 0);
+            }
+            else {
+                mDroidVold->unmount(path);
+            }
         }
     }
 }

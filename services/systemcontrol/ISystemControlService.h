@@ -186,6 +186,7 @@ enum {
 
     //init dolby vision
     INIT_DOLBY_VISION                = IBinder::FIRST_CALL_TRANSACTION + 128,
+    GET_MODE_SUPPORT_DEEPCOLOR       = IBinder::FIRST_CALL_TRANSACTION + 129,
 };
 
 // ----------------------------------------------------------------------------
@@ -274,6 +275,7 @@ public:
 	//set/get dolby vision graphics priority
     virtual void setGraphicsPriority(const String16& mode) = 0;
     virtual void getGraphicsPriority(String16& mode) = 0;
+    virtual bool getModeSupportDeepColorAttr(const std::string& mode,const std::string& color) = 0;
 };
 
 // ----------------------------------------------------------------------------

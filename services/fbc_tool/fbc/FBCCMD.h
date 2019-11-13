@@ -17,7 +17,7 @@
 
 #ifndef FBCCMD_H
 #define FBCCMD_H
-
+#include "string.h"
 
 enum FBC_CMC {
     reboot = 0,

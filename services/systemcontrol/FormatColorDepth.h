@@ -24,6 +24,8 @@
 
 #include "SysWrite.h"
 #include "ubootenv/Ubootenv.h"
+#include <string>
+#include <map>
 
 #define DISPLAY_HDMI_COLOR_ATTR         "/sys/class/amhdmitx/amhdmitx0/attr"//set deep color fmt and dept
 #define DISPLAY_HDMI_VALID_MODE         "/sys/class/amhdmitx/amhdmitx0/valid_mode"//testing if tv support this displaymode and  deepcolor combination, then if cat result is 1: support, 0: not
@@ -45,23 +47,25 @@
 #define COLOR_RGB_10BIT                  "rgb,10bit"
 #define COLOR_RGB_8BIT                   "rgb,8bit"
 
+#define EDID_SIZE                        513
 
 class FormatColorDepth
 {
 public:
-    FormatColorDepth();
+    FormatColorDepth(Ubootenv *ubootenv);
     ~FormatColorDepth();
     void getHdmiColorAttribute(const char *outputmode, char * colorAttribute, int state);
     bool isModeSupportDeepColorAttr(const char *mode, const char * color);
     void getBestHdmiDeepColorAttr(const char *outputmode, char *colorAttribute);
-
+    void setFilterEdidList(std::map<int, std::string> filterEdidList);
 private:
     bool getBootEnv(const char* key, char* value);
 
     Ubootenv *mUbootenv;
     void getProperHdmiColorArrtibute(const char * outputmode, char * colorAttribute);
     bool initColorAttribute(char* supportedColorList, int len);
-
+    bool isFilterEdid();
     SysWrite mSysWrite;
+    std::map<int, std::string> mFilterEdid;
 };
 #endif //FORMATCOLORDEPTH_H

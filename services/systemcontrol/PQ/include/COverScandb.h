@@ -16,12 +16,14 @@
 #include "PQType.h"
 #include "CPQLog.h"
 
-
-
 #ifdef TV_DEBUG_PQ_ENABLE
 #define DEBUG_FLAG 1
 #else
 #define DEBUG_FLAG 0
+#endif
+
+#ifdef PROP_DEBUG_PQ
+#undef PROP_DEBUG_PQ
 #endif
 
 #define PROP_DEBUG_PQ "tv.debug.pq.enable"
@@ -45,7 +47,7 @@ public:
     COverScandb();
     ~COverScandb();
     int openOverScanDB(const char *);
-    bool GetOverScanDbVersion(String8& ProjectVersion, String8& GenerateTime);
+    bool GetOverScanDbVersion(String8& ToolVersion, String8& ProjectVersion, String8& GenerateTime);
     int PQ_GetOverscanParams(source_input_param_t source_input_param, vpp_display_mode_t dmode, tvin_cutwin_t *cutwin_t);
     int PQ_SetOverscanParams(source_input_param_t source_input_param, tvin_cutwin_t cutwin_t);
     int PQ_ResetAllOverscanParams(void);

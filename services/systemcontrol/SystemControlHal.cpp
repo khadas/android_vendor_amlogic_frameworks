@@ -49,6 +49,7 @@ SystemControlHal::SystemControlHal(SystemControlService * control)
     mDeathRecipient(new DeathRecipient(this)) {
 
     control->setListener(this);
+    control->setFBCUpgradeListener(this);
 }
 
 SystemControlHal::~SystemControlHal() {
@@ -64,19 +65,40 @@ EVENT_HDMI_AUDIO_OUT                = 4,
 EVENT_HDMI_AUDIO_IN                 = 5,
 */
 void SystemControlHal::onEvent(int event) {
+    AutoMutex _l(mLock);
+    for (auto it = mClients.begin(); it != mClients.end();) {
+        if (it->second == nullptr) {
+            it = mClients.erase(it);
+            continue;
+        }
+        auto ret = (it->second)->notifyCallback(event);
+        if (!ret.isOk() && ret.isDeadObject()) {
+            it = mClients.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void SystemControlHal::onFBCUpgradeEvent(int32_t state, int32_t param) {
     AutoMutex _l( mLock );
     int clientSize = mClients.size();
 
     if (ENABLE_LOG_PRINT)
-        ALOGI("onEvent event:%d, client size:%d", event, clientSize);
-
-    for (int i = 0; i < clientSize; i++) {
-        if (mClients[i] != nullptr) {
-            if (ENABLE_LOG_PRINT)
-                ALOGI("%s, client cookie:%d notifyCallback", __FUNCTION__, i);
-            mClients[i]->notifyCallback(event);
+        ALOGI("onFBCUpgradeEvent: state:%d, param:%d, client size:%d", state, param, clientSize);
+    for (auto it = mClients.begin(); it != mClients.end();) {
+        if (it->second == nullptr) {
+            it = mClients.erase(it);
+            continue;
+        }
+        auto ret = (it->second)->notifyFBCUpgradeCallback(state, param);
+        if (!ret.isOk() && ret.isDeadObject()) {
+            it = mClients.erase(it);
+        } else {
+            ++it;
         }
     }
+
 }
 
 Return<void> SystemControlHal::getSupportDispModeList(getSupportDispModeList_cb _hidl_cb) {
@@ -156,8 +178,9 @@ Return<void> SystemControlHal::getPropertyInt(const hidl_string &key, int32_t de
 Return<void> SystemControlHal::getPropertyLong(const hidl_string &key, int64_t def, getPropertyLong_cb _hidl_cb) {
     int64_t value = mSysControl->getPropertyLong(key, def);
 
-    if (ENABLE_LOG_PRINT)
-        ALOGI("getPropertyLong key :%s, value:%ld", key.c_str(), value);
+    if (ENABLE_LOG_PRINT) {
+        ALOGI("getPropertyLong key :%s, value:%lld", key.c_str(), (long long)value);
+    }
     _hidl_cb(Result::OK, value);
     return Void();
 }
@@ -198,8 +221,7 @@ Return<Result> SystemControlHal::writeSysfs(const hidl_string &path, const hidl_
 Return<Result> SystemControlHal::writeSysfsBin(const hidl_string &path, const hidl_array<int32_t, 4096>& key, int32_t size) {
     if (ENABLE_LOG_PRINT)
         ALOGI("writeSysfs bin");
-    char *value = (char *)malloc(4096);
-    memset(value, 0, 4096);
+    char value[4096] = {0};
     int i;
 
     for (i = 0; i < 4096; ++i) {
@@ -211,7 +233,11 @@ Return<Result> SystemControlHal::writeSysfsBin(const hidl_string &path, const hi
 
 
 Return<void> SystemControlHal::readHdcpRX22Key(int32_t size, readHdcpRX22Key_cb _hidl_cb) {
-    char *value = (char *)malloc(size);
+    char *value = (char *)malloc(4096);
+    if (!value) {
+        ALOGE("readHdcpRX22Key malloc failed");
+        return Void();
+    }
     memset(value, 0, 4096);
     int len = mSysControl->readHdcpRX22Key(value, size);
     int i;
@@ -234,8 +260,7 @@ Return<void> SystemControlHal::readHdcpRX22Key(int32_t size, readHdcpRX22Key_cb 
 
 Return<Result> SystemControlHal::writeHdcpRX22Key(const hidl_array<int32_t, 4096>& key, int32_t size) {
     ALOGI("writeHdcpRX22Key");
-    char *value = (char *)malloc(4096);
-    memset(value, 0, 4096);
+    char value[4096] = {0};
     int i;
 
     for (i = 0; i < 4096; ++i) {
@@ -246,7 +271,11 @@ Return<Result> SystemControlHal::writeHdcpRX22Key(const hidl_array<int32_t, 4096
 }
 
 Return<void> SystemControlHal::readHdcpRX14Key(int32_t size, readHdcpRX14Key_cb _hidl_cb) {
-    char *value = (char *)malloc(size);
+    char *value = (char *)malloc(4096);
+    if (!value) {
+        ALOGE("readHdcpRX14Key malloc failed");
+        return Void();
+    }
     memset(value, 0, 4096);
     int len = mSysControl->readHdcpRX14Key(value, size);
     int i;
@@ -269,8 +298,7 @@ Return<void> SystemControlHal::readHdcpRX14Key(int32_t size, readHdcpRX14Key_cb 
 
 Return<Result> SystemControlHal::writeHdcpRX14Key(const hidl_array<int32_t, 4096>& key, int32_t size) {
     ALOGI("writeHdcpRX14Key");
-    char *value = (char *)malloc(4096);
-    memset(value, 0, 4096);
+    char value[4096] = {0};
     int i;
 
     for (i = 0; i < 4096; ++i) {
@@ -286,7 +314,11 @@ Return<Result> SystemControlHal::writeHdcpRXImg(const hidl_string &path) {
 }
 
 Return<void> SystemControlHal::readAttestationKey(const hidl_string &node, const hidl_string &name, int32_t size, readAttestationKey_cb _hidl_cb) {
-    char *value = (char *)malloc(size);
+    char *value = (char *)malloc(10240);
+    if (!value) {
+        ALOGE("readAttestationKey malloc failed");
+        return Void();
+    }
     memset(value, 0, 10240);
     int len = mSysControl->readAttestationKey(node.c_str(), name.c_str(), value, size);
     int i;
@@ -309,8 +341,7 @@ Return<void> SystemControlHal::readAttestationKey(const hidl_string &node, const
 
 Return<Result> SystemControlHal::writeAttestationKey(const hidl_string &node, const hidl_string &name, const hidl_array<int32_t, 10240>& key) {
     ALOGI("writeAttestationKey");
-    char *value = (char *)malloc(10240);
-    memset(value, 0, 10240);
+    char value[10240] = {0};
     int i;
 
     for (i = 0; i < 10240; ++i) {
@@ -340,7 +371,11 @@ Return<Result> SystemControlHal::writeUnifyKey(const hidl_string &key, const hid
 }
 
 Return<void> SystemControlHal::readPlayreadyKey(const hidl_string &key, int32_t size, readHdcpRX14Key_cb _hidl_cb) {
-    char *value = (char *)malloc(size);
+    char *value = (char *)malloc(4096);
+    if (!value) {
+        ALOGE("readPlayreadyKey malloc failed");
+        return Void();
+    }
     memset(value, 0, 4096);
     int len = mSysControl->readPlayreadyKey(key, value, size);
     int i;
@@ -363,8 +398,7 @@ Return<void> SystemControlHal::readPlayreadyKey(const hidl_string &key, int32_t 
 
 Return<Result> SystemControlHal::writePlayreadyKey(const hidl_string &path, const hidl_array<int32_t, 4096>& key, int32_t size) {
     ALOGI("writePlayreadyKey");
-    char *value = (char *)malloc(4096);
-    memset(value, 0, 4096);
+    char value[4096] = {0};
     int i;
 
     for (i = 0; i < 4096; ++i) {
@@ -391,6 +425,12 @@ Return<void> SystemControlHal::setBootEnv(const hidl_string &key, const hidl_str
         ALOGI("setBootEnv key :%s, value:%s", key.c_str(), value.c_str());
     return Void();
 }
+
+Return<Result> SystemControlHal::getModeSupportDeepColorAttr(const hidl_string &mode, const hidl_string &color) {
+    ALOGI("getModeSupportDeepColorAttr mode = %s color = %s", mode.c_str(), color.c_str());
+    return mSysControl->getModeSupportDeepColorAttr(mode, color)?Result::OK:Result::FAIL;
+}
+
 
 Return<void> SystemControlHal::getDroidDisplayInfo(getDroidDisplayInfo_cb _hidl_cb) {
     DroidDisplayInfo info;
@@ -672,6 +712,28 @@ Return<int32_t> SystemControlHal::saveColorTemperature(int32_t mode) {
     return mSysControl->saveColorTemperature(mode);
 }
 
+Return<int32_t> SystemControlHal::setColorTemperatureUserParam(int32_t mode, int32_t isSave,
+                              int32_t param_type, int32_t value) {
+    return mSysControl->setColorTemperatureUserParam(mode, isSave, param_type, value);
+}
+
+Return<void> SystemControlHal::getColorTemperatureUserParam(getColorTemperatureUserParam_cb _hidl_cb) {
+    tcon_rgb_ogo_t tempParam = mSysControl->getColorTemperatureUserParam();
+    WhiteBalanceParam param;
+    param.en = tempParam.en;
+    param.r_gain = tempParam.r_gain;
+    param.g_gain = tempParam.g_gain;
+    param.b_gain = tempParam.b_gain;
+    param.r_pre_offset = tempParam.r_pre_offset;
+    param.g_pre_offset = tempParam.g_pre_offset;
+    param.b_pre_offset = tempParam.b_pre_offset;
+    param.r_post_offset = tempParam.r_post_offset;
+    param.g_post_offset = tempParam.g_post_offset;
+    param.b_post_offset = tempParam.b_post_offset;
+    _hidl_cb(param);
+    return Void();
+}
+
 Return<int32_t> SystemControlHal::setBrightness(int32_t value, int32_t isSave) {
     return mSysControl->setBrightness(value, isSave);
 }
@@ -790,6 +852,22 @@ Return<int32_t> SystemControlHal::setDynamicBacklight(int32_t mode, int32_t isSa
 
 Return<int32_t> SystemControlHal::getDynamicBacklight(void) {
     return mSysControl->getDynamicBacklight();
+}
+
+Return<int32_t> SystemControlHal::setLocalContrastMode(int32_t mode, int32_t isSave) {
+    return mSysControl->setLocalContrastMode(mode, isSave);
+}
+
+Return<int32_t> SystemControlHal::getLocalContrastMode() {
+    return mSysControl->getLocalContrastMode();
+}
+
+Return<int32_t> SystemControlHal::setColorBaseMode(int32_t mode, int32_t isSave) {
+    return mSysControl->setColorBaseMode(mode, isSave);
+}
+
+Return<int32_t> SystemControlHal::getColorBaseMode() {
+    return mSysControl->getColorBaseMode();
 }
 
 Return<int32_t> SystemControlHal::checkLdimExist(void) {
@@ -950,6 +1028,10 @@ Return<void> SystemControlHal::getCurrentSourceInfo(getCurrentSourceInfo_cb _hid
     srcInput.transFmt = tmpSrcInput.trans_fmt;
     _hidl_cb(Result::OK, srcInput);
     return Void();
+}
+
+Return<int32_t> SystemControlHal::setCurrentHdrInfo(int32_t hdrInfo) {
+    return mSysControl->setCurrentHdrInfo(hdrInfo);
 }
 
 Return<int32_t> SystemControlHal::setwhiteBalanceGainRed(int32_t inputSrc, int32_t sigFmt, int32_t transFmt, int32_t colortemp_mode, int32_t value) {
@@ -1116,15 +1198,39 @@ Return<int32_t> SystemControlHal::factoryGetSharpnessParams(int32_t inputSrc, in
     return mSysControl->factoryGetSharpnessParams(inputSrc, sig_fmt, trans_fmt, isHD, param_type);
 }
 
-Return<int32_t> SystemControlHal::setDtvKitSourceEnable(int32_t isEnable) {
-	return mSysControl->setDtvKitSourceEnable(isEnable);
+Return<void> SystemControlHal::getPQDatabaseInfo(int32_t dataBaseName, getPQDatabaseInfo_cb _hidl_cb) {
+    PQDatabaseInfo Info;
+    tvpq_databaseinfo_t pq_databaseinfo = mSysControl->getPQDatabaseInfo(dataBaseName);
+    Info.ToolVersion    = pq_databaseinfo.ToolVersion;
+    Info.ProjectVersion = pq_databaseinfo.ProjectVersion;
+    Info.GenerateTime   = pq_databaseinfo.GenerateTime;
+    _hidl_cb(Result::OK, Info);
+    return Void();
 }
+
+Return<int32_t> SystemControlHal::setDtvKitSourceEnable(int32_t isEnable) {
+    return mSysControl->setDtvKitSourceEnable(isEnable);
+}
+
 //PQ end
+
+//FBC
+Return<int32_t> SystemControlHal::StartUpgradeFBC(const hidl_string& fileName, int32_t mode, int32_t upgrade_blk_size)
+{
+    return mSysControl->StartUpgradeFBC(fileName, mode, upgrade_blk_size);
+}
+
+Return<int32_t> SystemControlHal::UpdateFBCUpgradeStatus(int32_t state, int32_t param)
+{
+    return mSysControl->UpdateFBCUpgradeStatus(state, param);
+}
 
 void SystemControlHal::handleServiceDeath(uint32_t cookie) {
     AutoMutex _l( mLock );
-    mClients[cookie]->unlinkToDeath(mDeathRecipient);
-    mClients[cookie].clear();
+    if (mClients[cookie] != nullptr) {
+        mClients[cookie]->unlinkToDeath(mDeathRecipient);
+        mClients[cookie].clear();
+    }
 }
 
 SystemControlHal::DeathRecipient::DeathRecipient(sp<SystemControlHal> sch)

@@ -17,6 +17,7 @@
 #include "SystemControlClient.h"
 #include "TvServerHidlClient.h"
 #include <utils/StrongPointer.h>
+#include "EARCSupportMonitor.h"
 
 #define CEC_FILE        "/dev/cec"
 #define MAX_PORT        32
@@ -39,6 +40,11 @@
 #define CEC_IOC_SET_DEV_TYPE            _IOW(CEC_IOC_MAGIC, 0x0D, uint32_t)
 #define CEC_IOC_SET_ARC_ENABLE          _IOW(CEC_IOC_MAGIC, 0x0E, uint32_t)
 #define CEC_IOC_SET_AUTO_DEVICE_OFF     _IOW(CEC_IOC_MAGIC, 0x0F, uint32_t)
+#define CEC_IOC_GET_BOOT_ADDR           _IOW(CEC_IOC_MAGIC, 0x10, uint32_t)
+#define CEC_IOC_GET_BOOT_REASON         _IOW(CEC_IOC_MAGIC, 0x11, uint32_t)
+#define CEC_IOC_GET_BOOT_PORT           _IOW(CEC_IOC_MAGIC, 0x13, uint32_t)
+
+#define CEC_WAKEUP      8
 
 #define DEV_TYPE_TV                     0
 #define DEV_TYPE_RECORDER               1
@@ -51,12 +57,15 @@
 
 
 #define ADDR_BROADCAST  15
-#define DELAY_TIMEOUT_MS  7000
+#define DELAY_TIMEOUT_MS  5000
 
-#define HDMIRX_SYSFS                    "/sys/class/hdmirx/hdmirx0/cec"
-#define CEC_STATE_BOOT_ENABLED          "2"
-#define CEC_STATE_ENABLED               "1"
-#define CEC_STATE_UNABLED               "0"
+#define HDMIRX_SYSFS                   "/sys/class/hdmirx/hdmirx0/cec"
+#define AUTO_WAKEUP_OFF_CEC_ON_BOOT    "2" //0x02 0xAB: tv_auto_power_on, B: hdmi_cec_en
+#define AUTO_WAKEUP_OFF_CEC_ON         "1" //0x01
+#define AUTO_WAKEUP_OFF_CEC_OFF        "0" //0x00
+#define AUTO_WAKEUP_ON_CEC_ON_BOOT     "18" //0x12
+#define AUTO_WAKEUP_ON_CEC_ON          "17" //0x11
+#define AUTO_WAKEUP_ON_CEC_OFF         "16" //0x00
 
 namespace android {
 
@@ -94,6 +103,16 @@ enum power_status{
     POWER_STATUS_TRANSIENT_TO_STANDBY = 3,
 };
 
+enum hdmi_cec_option{
+    HDMI_CONTROL_AUTO_WAKEUP_ENABLED = 1,
+    HDMI_CONTROL_ENABLED = 2,
+    HDMI_SYSTEM_AUDIO_CONTROL_ENABLED = 3,
+    HDMI_CONTROL_AUTO_DEVICE_OFF_ENABLED =4,
+    HDMI_OPTION_SET_LANG = 5,
+    HDMI_CONTROL_AUTO_POWER_ON = 8,
+    HDMI_OPTION_SERVICE_FLAG = 16,
+};
+
 /**
  * struct for information of cec device.
  * @mDeviceType      Indentify type of cec device, such as TV or BOX.
@@ -118,6 +137,7 @@ typedef struct hdmi_device {
     bool                        isPlaybackDeviceType;
     bool                        isAvrDeviceType;
     int                         mAddrBitmap;
+    int                         mLogicalAddress;
     int                         mFd;
     bool                        isCecEnabled;
     bool                        isCecControlled;
@@ -129,8 +149,10 @@ typedef struct hdmi_device {
     bool                        mExited;
     int                         mExtendControl;
     bool                        mFilterOtpEnabled;
-    int                         mSelectedPortId;
+    bool                        mWaitEdidUpdatedFinished;
+    int                         mSelectedDeviceId;
     int                         mTvOsdName;
+    int                         mTvDeviceVendorId;
     int                         mActiveLogicalAddr;
     int                         mActiveRoutingPath;
 } hdmi_device_t;
@@ -154,6 +176,7 @@ public:
     virtual void setOption(int flag, int value);
     virtual void setAudioReturnChannel(int port, bool flag);
     virtual bool isConnected(int port);
+    virtual int getCecWakePort();
 
     void setEventObserver(const sp<HdmiCecEventListener> &eventListener);
 protected:
@@ -164,6 +187,13 @@ protected:
         static const int SET_MENU_LANGUAGE = 2;
         static const int GIVE_OSD_NAEM = 3;
         static const int SET_OSD_NAEM = 4;
+        static const int MSG_WAIT_EDIDUPDATE_FINISHED_TIMEOUT = 5;
+        static const int MSG_GIVE_PHYSICAL_ADDRESS = 6;
+        static const int MSG_SET_STREAM_PATH = 7;
+        static const int MSG_USER_CONTROL_PRESSED = 8;
+        static const int MSG_TURN_ON_DEVICE = 9;
+        static const int MSG_GIVE_DEVICE_VENDOR_ID = 11;
+
         MsgHandler(HdmiCecControl *hdmiControl);
         ~MsgHandler();
     private:
@@ -188,28 +218,35 @@ private:
     void threadLoop();
 
     int sendExtMessage(const cec_message_t* message);
+    int sendMessage(int initiator, int destination, int length, cec_message_type type);
     int send(const cec_message_t* message);
     int readMessage(unsigned char *buf, int msgCount);
     void checkConnectStatus();
-    bool mFirstEnableCec;
 
     bool assertHdmiCecDevice();
     bool hasHandledByExtend(const cec_message_t* message);
-    int preHandleBeforeSend(const cec_message_t* message);
+    int preHandleOfSend(const cec_message_t* message);
+    int postHandleOfSend(const cec_message_t* message, int result);
     bool isWakeUpMsg(char *msgBuf, int len);
     void messageValidateAndHandle(hdmi_cec_event_t* event);
+    void supportForEARC(hdmi_cec_event_t* event, cec_message_t* message, bool send);
     void handleOTPMsg(hdmi_cec_event_t* event);
-    bool handleSetMenuLanguage(hdmi_cec_event_t* event);
+    void handleSetMenuLanguage(hdmi_cec_event_t* event);
     void handleHotplug(int port, bool connected);
     void turnOnDevice(int logicalAddress);
     void getDeviceExtraInfo(int flag);
+    void optionInit();
+    void handleHdmiHpdStatus(int flag);
+
     hdmi_device_t mCecDevice;
     sp<HdmiCecEventListener> mEventListener;
     sp<SystemControlClient> mSystemControl;
     sp<TvServerHidlClient> mTvSession;
     sp<HdmiCecControl::TvEventListner> mTvEventListner;
     MsgHandler mMsgHandler;
+    EARCSupportMonitor *pMonitor;
     mutable Mutex mLock;
+    mutable Mutex mSendLock;
 };
 
 

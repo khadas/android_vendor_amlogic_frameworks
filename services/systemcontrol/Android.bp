@@ -11,7 +11,6 @@ cc_library_static {
         "DisplayMode.cpp",
         "SysTokenizer.cpp",
         "UEventObserver.cpp",
-        "HDCP/aes.cpp",
         "HDCP/HdcpKeyDecrypt.cpp",
         "HDCP/HDCPRxKey.cpp",
         "HDCP/HDCPRxAuth.cpp",
@@ -19,7 +18,7 @@ cc_library_static {
         "FrameRateAutoAdaption.cpp",
         "FormatColorDepth.cpp"
     ],
-    
+
     static_libs: [
         "libcutils",
         "libz",

@@ -42,7 +42,8 @@ using ::vendor::amlogic::hardware::systemcontrol::V1_0::DroidDisplayInfo;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::SourceInputParam;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::NolineParam;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::OverScanParam;
-using ::vendor::amlogic::hardware::systemcontrol::V1_0::TconRgbOgo;
+using ::vendor::amlogic::hardware::systemcontrol::V1_0::WhiteBalanceParam;
+using ::vendor::amlogic::hardware::systemcontrol::V1_0::PQDatabaseInfo;
 using ::android::hardware::hidl_vec;
 using ::android::hardware::hidl_string;
 using ::android::hardware::hidl_array;
@@ -130,6 +131,8 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<int32_t> setColorTemperature(int32_t mode, int32_t isSave) override;
     Return<int32_t> getColorTemperature(void) override;
     Return<int32_t> saveColorTemperature(int32_t mode) override;
+    Return<int32_t> setColorTemperatureUserParam(int32_t mode, int32_t isSave, int32_t param_type, int32_t value) override;
+    Return<void> getColorTemperatureUserParam(getColorTemperatureUserParam_cb _hidl_cb) override;
     Return<int32_t> setBrightness(int32_t value, int32_t isSave) override;
     Return<int32_t> getBrightness(void) override;
     Return<int32_t> saveBrightness(int32_t value) override;
@@ -160,6 +163,10 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<int32_t> saveBacklight(int32_t value) override;
     Return<int32_t> setDynamicBacklight(int32_t mode, int32_t isSave) override;
     Return<int32_t> getDynamicBacklight(void) override;
+    Return<int32_t> setLocalContrastMode(int32_t mode, int32_t isSave) override;
+    Return<int32_t> getLocalContrastMode() override;
+    Return<int32_t> setColorBaseMode(int32_t mode, int32_t isSave) override;
+    Return<int32_t> getColorBaseMode() override;
     Return<int32_t> checkLdimExist(void) override;
     Return<int32_t> factorySetPQMode_Brightness(int32_t inputSrc, int32_t sigFmt, int32_t transFmt, int32_t pq_mode, int32_t value) override;
     Return<int32_t> factoryGetPQMode_Brightness(int32_t inputSrc, int32_t sigFmt, int32_t transFmt, int32_t pq_mode) override;
@@ -193,6 +200,7 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<int32_t> getSSMStatus(void) override;
     Return<int32_t> setCurrentSourceInfo(int32_t sourceInput, int32_t sigFmt, int32_t transFmt) override;
     Return<void> getCurrentSourceInfo(getCurrentSourceInfo_cb _hidl_cb) override;
+    Return<int32_t> setCurrentHdrInfo(int32_t hdrInfo) override;
     Return<int32_t> setwhiteBalanceGainRed(int32_t inputSrc, int32_t sigFmt, int32_t transFmt, int32_t colortemp_mode, int32_t value) override;
     Return<int32_t> setwhiteBalanceGainGreen(int32_t inputSrc, int32_t sigFmt, int32_t transFmt, int32_t colortemp_mode, int32_t value) override;
     Return<int32_t> setwhiteBalanceGainBlue(int32_t inputSrc, int32_t sigFmt, int32_t transFmt, int32_t colortemp_mode, int32_t value) override;
@@ -234,9 +242,17 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<int32_t> factoryGetDecodeLumaParams(int32_t inputSrc, int32_t sig_fmt, int32_t trans_fmt, int32_t param_type) override;
     Return<int32_t> factorySetSharpnessParams(int32_t inputSrc, int32_t sig_fmt, int32_t trans_fmt, int32_t isHD, int32_t param_type, int32_t val) override;
     Return<int32_t> factoryGetSharpnessParams(int32_t inputSrc, int32_t sig_fmt, int32_t trans_fmt, int32_t isHD, int32_t param_type) override;
+    Return<void> getPQDatabaseInfo(int32_t dataBaseName, getPQDatabaseInfo_cb _hidl_cb) override;
     Return<int32_t> setDtvKitSourceEnable(int32_t isEnable) override;
-	//PQ end
+    //PQ end
+
+    //FBC
+    Return<int32_t> StartUpgradeFBC(const hidl_string& fileName, int32_t mode, int32_t upgrade_blk_size) override;
+    Return<int32_t> UpdateFBCUpgradeStatus(int32_t state, int32_t param) override;
+
+    Return<Result> getModeSupportDeepColorAttr(const hidl_string& mode, const hidl_string& color) override;
     virtual void onEvent(int event);
+    virtual void onFBCUpgradeEvent(int32_t state, int32_t param);
 
   private:
     void handleServiceDeath(uint32_t cookie);

@@ -75,6 +75,7 @@ public:
     virtual void setOption(int flag, int value);
     virtual void setAudioReturnChannel(int port, bool flag);
     virtual bool isConnected(int port);
+    virtual int getCecWakePort();
 
     void setEventObserver(const sp<HdmiCecEventListener> &eventListener);
 

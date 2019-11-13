@@ -334,6 +334,20 @@ public:
         return reply.readInt32() != 0;
     }
 
+    virtual bool getModeSupportDeepColorAttr(const std::string& mode,const std::string& color)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISystemControlService::getInterfaceDescriptor());
+        data.writeString16(String16(mode.c_str()));
+        data.writeString16(String16(color.c_str()));
+
+        if (remote()->transact(GET_MODE_SUPPORT_DEEPCOLOR, data, &reply) != NO_ERROR) {
+            ALOGE("getModeSupportDeepColorAttr could not contact remote\n");
+            return false;
+        }
+
+        return reply.readInt32() != 0;
+    }
     virtual int32_t readHdcpRX14Key(char *value, int size)
     {
         Parcel data, reply;
@@ -1454,6 +1468,16 @@ status_t BnISystemControlService::onTransact(
             String16 value;
             getDeepColorAttr(mode, value);
             reply->writeString16(value);
+            return NO_ERROR;
+        }
+        case GET_MODE_SUPPORT_DEEPCOLOR: {
+            CHECK_INTERFACE(ISystemControlService, data, reply);
+            String16 str16mode = data.readString16();
+            String16 str16value = data.readString16();
+            std::string mode = std::string(String8(str16mode).string());
+            std::string value = std::string(String8(str16value).string());
+            bool result = getModeSupportDeepColorAttr(mode, value);
+            reply->writeBool(result);
             return NO_ERROR;
         }
         case RESOLVE_RESOLUTION_VALUE: {

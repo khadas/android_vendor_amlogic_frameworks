@@ -4,7 +4,10 @@ include $(CLEAR_VARS)
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES:= \
     HdmiCecControl.cpp \
-    CMsgQueue.cpp
+    CMsgQueue.cpp \
+    HdmiCecCompat.cpp \
+    UEventObserver.cpp \
+    EARCSupportMonitor.cpp
 
 LOCAL_C_INCLUDES += \
    $(LOCAL_PATH)/../../systemcontrol/PQ/include \

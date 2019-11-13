@@ -33,7 +33,6 @@
 #include "DisplayMode.h"
 #include "FormatColorDepth.h"
 #include "common.h"
-
 //this is prior selected list  of 4k2k50hz, 4k2k60hz smpte50hz, smpte60hz
 static const char* COLOR_ATTRIBUTE_LIST1[] = {
     COLOR_YCBCR420_12BIT,
@@ -84,12 +83,12 @@ static const char* COLOR_ATTRIBUTE_LIST4[] = {
     COLOR_RGB_12BIT,
 };
 
-FormatColorDepth::FormatColorDepth() {
-    mUbootenv = new Ubootenv();
+FormatColorDepth::FormatColorDepth(Ubootenv *ubootenv) {
+    mUbootenv = ubootenv;
 }
 
 FormatColorDepth::~FormatColorDepth() {
-    delete mUbootenv;
+
 }
 
 bool FormatColorDepth::initColorAttribute(char* supportedColorList, int len) {
@@ -220,11 +219,33 @@ void FormatColorDepth::getBestHdmiDeepColorAttr(const char *outputmode, char* co
     }
 }
 
+bool FormatColorDepth::isFilterEdid() {
+    unsigned int edidNumber;
+    char disPlayEdid[EDID_SIZE] = {0};
+    mSysWrite.readSysfs(DISPLAY_EDID_RAW,disPlayEdid);
+    for (edidNumber = 0; edidNumber < mFilterEdid.size(); edidNumber++) {
+        if (!strncmp(mFilterEdid[edidNumber].c_str(),disPlayEdid,EDID_SIZE)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void FormatColorDepth::setFilterEdidList(std::map<int, std::string> filterEdidList) {
+     SYS_LOGI("FormatColorDepth setFilterEdidList size = %d",filterEdidList.size());
+     mFilterEdid = filterEdidList;
+}
+
 bool FormatColorDepth::isModeSupportDeepColorAttr(const char *mode, const char * color) {
     char valueStr[10] = {0};
     char outputmode[MODE_LEN] = {0};
+    SYS_LOGI("isModeSupportDeepColorAttr mode = %s, color = %s",mode,color);
     strcpy(outputmode, mode);
     strcat(outputmode, color);
+    if (isFilterEdid() && !strstr(color,"8bit")) {
+        SYS_LOGI("this mode has been filtered");
+        return false;
+    }
     //try support or not
     mSysWrite.writeSysfs(DISPLAY_HDMI_VALID_MODE, outputmode);
     mSysWrite.readSysfs(DISPLAY_HDMI_VALID_MODE, valueStr);
@@ -233,8 +254,9 @@ bool FormatColorDepth::isModeSupportDeepColorAttr(const char *mode, const char *
 
 bool FormatColorDepth::getBootEnv(const char* key, char* value) {
     const char* p_value = mUbootenv->getValue(key);
-    //SYS_LOGI("getBootEnv key:%s value:%s", key, p_value);
+
     if (p_value) {
+        SYS_LOGI("getBootEnv key:%s value:%s", key, p_value);
         strcpy(value, p_value);
         return true;
     }

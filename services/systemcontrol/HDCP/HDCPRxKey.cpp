@@ -295,8 +295,8 @@ int HDCPRxKey::setHdcpRX14key(const char *value, const int size) {
         SYS_LOGE("size: %d bytes\n", size);
         memcpy(keyContentBuf, value, HDCP_RX14_KEY_CONTENT_SIZE);
         memcpy(sha1_buf1, value+HDCP_RX14_KEY_CONTENT_SIZE, 20);
-        sha1_csum((unsigned char *)keyContentBuf, HDCP_RX14_KEY_CONTENT_SIZE, (unsigned char *)sha1_buf2);
-        if (strcmp(sha1_buf1, sha1_buf1) != 0)
+        SHA1((unsigned char *)sha1_buf2, (unsigned char *)keyContentBuf, HDCP_RX14_KEY_CONTENT_SIZE);
+        if (strcmp(sha1_buf1, sha1_buf2) != 0)
             SYS_LOGE("sha1sum error \n");
     }
     else if (size == HDCP_RX14_KEY_CONTENT_SIZE) {

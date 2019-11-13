@@ -212,6 +212,16 @@ int HdmiCecHidlClient::getPhysicalAddress(uint16_t* addr)
 
 }
 
+int HdmiCecHidlClient::getCecWakePort() {
+    Return<int32_t> ret = mHdmiCecService->getCecWakePort();
+    if (!ret.isOk()) {
+        ALOGE("Failed to get cec wake port.");
+        return -1;
+    }
+    return ret;
+}
+
+
 int HdmiCecHidlClient::sendMessage(const cec_message_t* message, bool isExtend)
 {
     CecMessage hidlMsg;

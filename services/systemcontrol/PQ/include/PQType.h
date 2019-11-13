@@ -60,7 +60,6 @@ typedef enum vpp_display_mode_e {
     VPP_DISPLAY_MODE_CROP_FULL,
     VPP_DISPLAY_MODE_CROP,
     VPP_DISPLAY_MODE_ZOOM,
-    VPP_DISPLAY_MODE_FULL_REAL,//add for N360 by haifeng.liu
     VPP_DISPLAY_MODE_MAX,
 } vpp_display_mode_t;
 
@@ -114,17 +113,18 @@ typedef struct vpp_pq_para_s {
 } vpp_pq_para_t;
 
 typedef enum vpp_gamma_curve_e {
-    VPP_GAMMA_CURVE_AUTO = 1,//choose gamma table by value has been saved.
-    VPP_GAMMA_CURVE_DEFAULT,
-    VPP_GAMMA_CURVE_2_1,
-    VPP_GAMMA_CURVE_2_2,
-    VPP_GAMMA_CURVE_2_3,
-    VPP_GAMMA_CURVE_2_4,
-    VPP_GAMMA_CURVE_2_5,
-    VPP_GAMMA_CURVE_2_6,
-    VPP_GAMMA_CURVE_2_7,
-    VPP_GAMMA_CURVE_2_8,
-    VPP_GAMMA_CURVE_2_9,
+    VPP_GAMMA_CURVE_DEFAULT,//choose gamma table by value has been saved.
+    VPP_GAMMA_CURVE_1,
+    VPP_GAMMA_CURVE_2,
+    VPP_GAMMA_CURVE_3,
+    VPP_GAMMA_CURVE_4,
+    VPP_GAMMA_CURVE_5,
+    VPP_GAMMA_CURVE_6,
+    VPP_GAMMA_CURVE_7,
+    VPP_GAMMA_CURVE_8,
+    VPP_GAMMA_CURVE_9,
+    VPP_GAMMA_CURVE_10,
+    VPP_GAMMA_CURVE_11,
     VPP_GAMMA_CURVE_MAX,
 } vpp_gamma_curve_t;
 
@@ -739,6 +739,23 @@ typedef enum Sharpness_timing_e
     SHARPNESS_TIMING_HD,
 } Sharpness_timing_t;
 
+typedef enum local_contrast_mode_e
+{
+    LOCAL_CONTRAST_MODE_OFF = 0,
+    LOCAL_CONTRAST_MODE_LOW,
+    LOCAL_CONTRAST_MODE_MID,
+    LOCAL_CONTRAST_MODE_HIGH,
+    LOCAL_CONTRAST_MODE_MAX,
+} local_contrast_mode_t;
+
+typedef enum pq_mode_switch_type_e
+{
+    PQ_MODE_SWITCH_TYPE_MANUAL = 0,
+    PQ_MODE_SWITCH_TYPE_AUTO,
+    PQ_MODE_SWITCH_TYPE_INIT,
+    PQ_MODE_SWITCH_TYPE_MAX,
+} pq_mode_switch_type_t;
+
 // ***************************************************************************
 // *** struct definitions *********************************************
 // ***************************************************************************
@@ -749,6 +766,7 @@ typedef struct tvin_info_s {
     color_fmt_e       cfmt;
     unsigned int      fps;
     unsigned int      is_dvi;
+    unsigned int      hdr_info;
 } tvin_info_t;
 
 typedef struct source_input_param_s {
@@ -810,4 +828,10 @@ typedef struct tvpq_nonlinear_s {
     int osd75;
     int osd100;
 } tvpq_nonlinear_t;
+
+typedef struct tvpq_databaseinfo_s {
+    char ToolVersion[32];
+    char ProjectVersion[32];
+    char GenerateTime[32];
+}tvpq_databaseinfo_t;
 #endif

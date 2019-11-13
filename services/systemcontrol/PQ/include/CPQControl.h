@@ -20,6 +20,7 @@
 #include "CDynamicBackLight.h"
 #include "CConfigFile.h"
 #include "COverScandb.h"
+#include "CFbcCommunication.h"
 
 #define PQ_DB_TV_DEFAULT_PATH     "/vendor/etc/tvconfig/pq/pq.db"
 #define PARAM_PQ_DB_PATH          "/mnt/vendor/param/pq/pq.db"
@@ -59,8 +60,16 @@
 #define  SCREEN_MODE_16_9             3
 #define  SCREEN_MODE_NONLINEAR        4
 #define  SCREEN_MODE_NORMAL_NOSCALEUP 5
-#define  SCREEN_MODE_CROP_FULL        6
-#define  SCREEN_MODE_CROP             7
+#define  SCREEN_MODE_4_3_IGNORE       6
+#define  SCREEN_MODE_4_3_LETTER_BOX   7
+#define  SCREEN_MODE_4_3_PAN_SCAN     8
+#define  SCREEN_MODE_4_3_COMBINED     9
+#define  SCREEN_MODE_16_9_IGNORE      10
+#define  SCREEN_MODE_16_9_LETTER_BOX  11
+#define  SCREEN_MODE_16_9_PAN_SCAN    12
+#define  SCREEN_MODE__16_9_COMBINED   13
+#define  SCREEN_MODE_WIDEOPTION_CUSTOM 14
+#define  SCREEN_MODE_WIDEOPTION_AFD   15
 
 //NR Param
 #define NR_3D_YGAIN_ADDR         (0X371C)
@@ -98,6 +107,23 @@
 #define SHARPNESS_HD_BP_DIAG_CORE        (0x3290)
 #define SHARPNESS_HD_PKGAIN_VSLUMA       (0x32fe)
 
+typedef enum db_name_e {
+    DB_NAME_PQ = 0,
+    DB_NAME_OVERSCAN,
+    DB_NAME_MAX,
+} db_name_t;
+
+typedef enum rgb_ogo_type_e{
+    TYPE_INVALID = -1,
+    R_GAIN = 0,
+    G_GAIN,
+    B_GAIN,
+    R_POST_OFFSET,
+    G_POST_OFFSET,
+    B_POST_OFFSET,
+    RGB_TYPE_MAX,
+} rgb_ogo_type_t;
+
 class CPQControl: public CDevicePollCheckThread::IDevicePollCheckObserver,
                          public CDynamicBackLight::IDynamicBackLightObserver,
                          public SSMAction::ISSMActionObserver {
@@ -105,6 +131,8 @@ public:
     CPQControl();
     ~CPQControl();
     static CPQControl *GetInstance();
+    void CPQControlInit(void);
+    void CPQControlUnInit(void);
     virtual void onVframeSizeChange();
     virtual void onHDRStatusChange();
     virtual void onTXStatusChange();
@@ -112,7 +140,7 @@ public:
     virtual void Set_Backlight(int value);
     virtual void GetDynamicBacklighConfig(int *thtf, int *lut_mode, int *heigh_param, int *low_param);
     virtual void GetDynamicBacklighParam(dynamic_backlight_Param_t *DynamicBacklightParam);
-    int LoadPQSettings(source_input_param_t source_input_param);
+    int LoadPQSettings();
     int LoadCpqLdimRegs(void);
     int Cpq_LoadRegs(am_regs_t regs);
     int Cpq_LoadDisplayModeRegs(ve_pq_load_t regs);
@@ -126,19 +154,22 @@ public:
     int GetPQMode(void);
     int SavePQMode(int pq_mode);
     int setPQModeByTvService(pq_status_update_e gameStatus, pq_status_update_e pcStatus, int autoSwitchMonitorModeFlag);
-    int Cpq_SetPQMode(vpp_picture_mode_t pq_mode, source_input_param_t source_input_param);
+    int Cpq_SetPQMode(vpp_picture_mode_t pq_mode, source_input_param_t source_input_param, pq_mode_switch_type_t switch_type);
     int SetPQParams(vpp_pq_para_t pq_para, source_input_param_t source_input_param);
     int GetPQParams(source_input_param_t source_input_param, vpp_picture_mode_t pq_mode, vpp_pq_para_t *pq_para);
     //color Temperature
-    int SetColorTemperature(int temp_mode, int is_save);
+    int SetColorTemperature(int temp_mode, int is_save, rgb_ogo_type_t rgb_ogo_type = TYPE_INVALID, int value = -1);
     int GetColorTemperature(void);
     int SaveColorTemperature(int temp_mode);
+    tcon_rgb_ogo_t GetColorTemperatureUserParam(void);
     int Cpq_SetColorTemperatureWithoutSave(vpp_color_temperature_mode_t Tempmode, tv_source_input_t tv_source_input __unused);
     int Cpq_CheckColorTemperatureParamAlldata(source_input_param_t source_input_param);
     unsigned short Cpq_CalColorTemperatureParamsChecksum(void);
     int Cpq_SetColorTemperatureParamsChecksum(void);
     unsigned short Cpq_GetColorTemperatureParamsChecksum(void);
-    int Cpq_SetColorTemperatureUser(vpp_color_temperature_mode_t temp_mode __unused, tv_source_input_t source_input);
+    int Cpq_SetColorTemperatureUser(tv_source_input_t source_input, rgb_ogo_type_t rgb_ogo_type, int is_save, int value);
+    int Cpq_GetColorTemperatureUser(tv_source_input_t source_input, tcon_rgb_ogo_t *p_tcon_rgb_ogo);
+    int Cpq_SaveColorTemperatureUser(tv_source_input_t source_input, rgb_ogo_type_t rgb_ogo_type, int value);
     int Cpq_RestoreColorTemperatureParamsFromDB(source_input_param_t source_input_param);
     int Cpq_CheckTemperatureDataLable(void);
     int Cpq_SetTemperatureDataLable(void);
@@ -193,11 +224,11 @@ public:
     int SetGammaValue(vpp_gamma_curve_t gamma_curve, int is_save);
     int GetGammaValue();
     //Displaymode
-    int SetDisplayMode(tv_source_input_t source_input, vpp_display_mode_t display_mode, int is_save);
-    int GetDisplayMode(tv_source_input_t source_input);
-    int SaveDisplayMode(tv_source_input_t source_input, vpp_display_mode_t mode);
-    int Cpq_SetDisplayModeForVdin(tv_source_input_t source_input, vpp_display_mode_t display_mode);
-    int Cpq_SetDisplayModeForDecoder(tv_source_input_t source_input, vpp_display_mode_t display_mode);
+    int SetDisplayMode(vpp_display_mode_t display_mode, int is_save);
+    int GetDisplayMode(void);
+    int SaveDisplayMode(vpp_display_mode_t mode);
+    int Cpq_SetDisplayModeAllTiming(tv_source_input_t source_input, vpp_display_mode_t display_mode);
+    int Cpq_SetDisplayModeOneTiming(tv_source_input_t source_input, vpp_display_mode_t display_mode);
     int Cpq_SetVideoScreenMode(int value);
     int Cpq_GetScreenModeValue(vpp_display_mode_t display_mode);
     int Cpq_SetVideoCrop(int Voffset0, int Hoffset0, int Voffset1, int Hoffset1);
@@ -211,6 +242,10 @@ public:
     int SetDynamicBacklight(Dynamic_backlight_status_t mode, int is_save);
     int GetDynamicBacklight(void);
     int GetVideoPlayStatus(void);
+    //local contrast
+    int SetLocalContrastMode(local_contrast_mode_t mode, int is_save);
+    int GetLocalContrastMode(void);
+    int SaveLocalContrastMode(local_contrast_mode_t mode);
     //BlackExtension
     int SetBlackExtensionParam(source_input_param_t source_input_param);
     //Factory
@@ -256,10 +291,10 @@ public:
     int FcatorySSMRestore(void);
 
     int SetColorDemoMode(vpp_color_demomode_t demomode);
-    int SetBaseColorMode(vpp_color_basemode_t basemode, source_input_param_t source_input_param);
-    vpp_color_basemode_t GetBaseColorMode(void);
-    int SaveBaseColorMode(vpp_color_basemode_t basemode);
-    int Cpq_SetBaseColorMode(vpp_color_basemode_t basemode, source_input_param_t source_input_param);
+    int SetColorBaseMode(vpp_color_basemode_t basemode, int isSave);
+    vpp_color_basemode_t GetColorBaseMode(void);
+    int SaveColorBaseMode(vpp_color_basemode_t basemode);
+    int Cpq_SetColorBaseMode(vpp_color_basemode_t basemode, source_input_param_t source_input_param);
     int Cpq_SetRGBOGO(const struct tcon_rgb_ogo_s *rgbogo);
     int Cpq_GetRGBOGO(const struct tcon_rgb_ogo_s *rgbogo);
     int Cpq_LoadGamma(vpp_gamma_curve_t gamma_curve);
@@ -267,8 +302,8 @@ public:
     int Cpq_SetGammaTbl_G(unsigned short green[256]);
     int Cpq_SetGammaTbl_B(unsigned short blue[256]);
     int Cpq_SetGammaOnOff(int onoff);
-    int SetDnlpMode(source_input_param_t source_input_param, int level);
-    int GetDnlpMode(source_input_param_t source_input_param, int *level);
+    int SetDnlpMode(int level);
+    int GetDnlpMode();
     int Cpq_SetVENewDNLP(const ve_dnlp_curve_param_t *pDNLP);
     int Cpq_SetDNLPStatus(ve_dnlp_state_t status);
     int FactorySetDNLPCurveParams(source_input_param_t source_input_param, int level, int final_gain);
@@ -306,9 +341,9 @@ public:
     int SetCVD2Values(void);
     int SetCurrentSourceInputInfo(source_input_param_t source_input_param);
     source_input_param_t GetCurrentSourceInputInfo();
-    int resetLastSourceTypeSettings(void);
     int GetHistParam(ve_hist_t *hist);
     bool isFileExist(const char *file_name);
+    bool CheckHdmiOutFbcExist(void);
     int GetRGBPattern();
     int SetRGBPattern(int r, int g, int b);
     int FactorySetDDRSSC (int step);
@@ -320,7 +355,10 @@ public:
     int GetGrayPattern();
     int SetHDRMode(int mode);
     int GetHDRMode(void);
-	int SetDtvKitSourceEnable(bool isEnable);
+    tvpq_databaseinfo_t GetDBVersionInfo(db_name_t name);
+    int SetCurrentHdrInfo (int hdrInfo);
+    int SetDtvKitSourceEnable(bool isEnable);
+
 private:
     int VPPOpenModule(void);
     int VPPCloseModule(void );
@@ -331,19 +369,14 @@ private:
     int AFEDeviceIOCtl ( int request, ... );
     tvin_sig_fmt_t getVideoResolutionToFmt();
     int Cpq_SetXVYCCMode(vpp_xvycc_mode_t xvycc_mode, source_input_param_t source_input_param);
-    void InitSourceInputInfo();
     int pqWriteSys(const char *path, const char *val);
     int pqReadSys(const char *path, char *buf, int count);
     void pqTransformStringToInt(const char *buf, int *val);
     unsigned int GetSharpnessRegVal(int addr);
+    int Cpq_SetLocalContrastMode(local_contrast_mode_t mode);
     output_type_t GetTxOutPutMode(void);
     bool isCVBSParamValid(void);
 
-    tv_source_input_t cpq_setting_last_source;
-    tvin_sig_fmt_t cpq_setting_last_sig_fmt;
-    tvin_trans_fmt_t cpq_setting_last_trans_fmt;
-    bool mIsHdrLastTime;
-    output_type_t mLastOutPutType;
     bool mInitialized;
     //cfg
     bool mbCpqCfg_seperate_db_enable;
@@ -366,6 +399,9 @@ private:
     bool mbCpqCfg_contrast_withOSD;
     bool mbCpqCfg_hue_withOSD;
     bool mbCpqCfg_display_overscan_enable;
+    bool mbCpqCfg_local_contrast_enable;
+    bool mbCpqCfg_hdmi_out_with_fbc_enable;
+    bool mbCpqCfg_pq_param_check_source_enable;
 
     CPQdb *mPQdb;
     COverScandb *mpOverScandb;
@@ -374,11 +410,17 @@ private:
     CDevicePollCheckThread mCDevicePollCheckThread;
     CDynamicBackLight mDynamicBackLight;
     CConfigFile *mPQConfigFile;
+    CFbcCommunication *mFbcCommunication;
 
     int mAmvideoFd;
     int mDiFd;
+    bool mHdmiOutFbcExist;
     tcon_rgb_ogo_t rgbfrompq[3];
     source_input_param_t mCurentSourceInputInfo;
-	bool mbDtvKitEnable;
+    tv_source_input_t mSourceInputForSaveParam;
+    bool mCurrentHdrStatus;
+    unsigned int mHdmiHdrInfo = 0;
+    bool mbDtvKitEnable;
+    mutable Mutex mLock;
 };
 #endif

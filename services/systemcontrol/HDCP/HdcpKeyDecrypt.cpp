@@ -30,7 +30,7 @@
 #include "common.h"
 
 #include "HdcpKeyDecrypt.h"
-#include "aes.h"
+//#include "aes.h"
 #include "HDCPRxKey.h"
 
 #define KEY_MAX_SIZE   (1024 * 2)
@@ -99,6 +99,7 @@ int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, 
         data = transferBuf;
     }
 
+#if 0 // avoid GPL lisence
     struct aes_context ctx;
     unsigned char iv[16];
     //memset(iv, 0, sizeof(iv));
@@ -115,7 +116,7 @@ int do_aes(bool isEncrypt, unsigned char* pIn, int nInLen, unsigned char* pOut, 
     }
 
     nRet = aes_crypt_cbc(&ctx, isEncrypt, dataLen, iv, pIn, pOut);
-
+#endif
     *pOutLen = dataLen;
     if (transferBuf) delete[] transferBuf;
     return nRet;

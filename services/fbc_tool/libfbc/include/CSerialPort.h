@@ -1,23 +1,14 @@
 /*
-** Copyright 2008, The Android Open Source Project
-**
-** Licensed under the Apache License, Version 2.0 (the "License");
-** you may not use this file except in compliance with the License.
-** You may obtain a copy of the License at
-**
-**     http://www.apache.org/licenses/LICENSE-2.0
-**
-** Unless required by applicable law or agreed to in writing, software
-** distributed under the License is distributed on an "AS IS" BASIS,
-** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-** See the License for the specific language governing permissions and
-** limitations under the License.
-*/
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
+ * Description: header file
+ */
 
 #ifndef __CSERIAL_STREAM__
 #define __CSERIAL_STREAM__
-
-#include "CFile.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -28,10 +19,9 @@
 #include <pthread.h>
 #include <termios.h>
 #include <errno.h>
-
-
-static const int speed_arr[] = {B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300, B38400, B19200, B9600, B4800, B2400, B1200, B300};
-static const int name_arr[] = { 115200, 38400, 19200, 9600, 4800, 2400, 1200, 300, 38400, 19200, 9600, 4800, 2400, 1200, 300};
+#include "CFile.h"
+static const int speed_arr[] = {B230400, B115200, B38400, B19200, B9600, B4800, B2400, B1200, B300, B38400, B19200, B9600, B4800, B2400, B1200, B300};
+static const int name_arr[] = { 230400, 115200, 38400, 19200, 9600, 4800, 2400, 1200, 300, 38400, 19200, 9600, 4800, 2400, 1200, 300};
 static const char *DEV_PATH_S0 = "/dev/ttyS0";
 static const char *DEV_PATH_S1 = "/dev/ttyS1";
 static const char *DEV_PATH_S2 = "/dev/ttyS2";
@@ -53,8 +43,7 @@ public:
     int writeFile(const unsigned char *pData, unsigned int uLen);
     int readFile(unsigned char *pBuf, unsigned int uLen);
     int set_opt(int speed, int db, int sb, char pb, int overtime, bool raw_mode);
-    int setup_serial();
-    unsigned int Calcrc32(unsigned int crc, const unsigned char *ptr, unsigned int buf_len);
+    int setup_serial(unsigned int baud_rate);
     int getDevId()
     {
         return mDevId;
@@ -69,5 +58,4 @@ private:
 
     int mDevId;
 };
-
 #endif

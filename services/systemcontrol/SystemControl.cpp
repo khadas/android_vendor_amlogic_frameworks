@@ -64,10 +64,6 @@ SystemControl::SystemControl(const char *path)
 
     pDisplayMode = new DisplayMode(path, pUbootenv);
     pDisplayMode->init();
-
-    //load PQ
-    pCPQControl = CPQControl::GetInstance();
-
     pDimension = new Dimension(pDisplayMode, pSysWrite);
 
     //if ro.firstboot is true, we should clear first boot flag
@@ -84,7 +80,6 @@ SystemControl::~SystemControl() {
     delete pSysWrite;
     delete pDisplayMode;
     delete pDimension;
-    delete pCPQControl;
 }
 
 int SystemControl::permissionCheck() {
@@ -351,8 +346,14 @@ void SystemControl::setMboxOutputMode(const String16& mode) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set output mode :%s", String8(mode).string());
     }
-
     pDisplayMode->setSourceOutputMode(String8(mode).string());
+}
+
+bool SystemControl::getModeSupportDeepColorAttr(const std::string& mode,const std::string& color) {
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("get DeepColor mode :%s color :%s", mode.c_str(),color.c_str());
+    }
+    return pDisplayMode->getModeSupportDeepColorAttr(mode.c_str(),color.c_str());
 }
 
 bool SystemControl::getSupportDispModeList(std::vector<std::string> *supportDispModes) {

@@ -61,11 +61,20 @@ SystemControlService::SystemControlService(const char *path)
     pDisplayMode = new DisplayMode(path, pUbootenv);
     pDisplayMode->init();
 
+    //Load config file for tvhal
+    mTvhalConfigFile = CConfigFile::GetInstance();
+    mTvhalConfigFile->LoadFromFile(PQ_CONFIG_DEFAULT_PATH);
+    const char *config_value;
+    config_value = mTvhalConfigFile->GetString(CFG_SECTION_PQ, CFG_TVHAL_ENABLE, "disable");
+    if (strcmp(config_value, "enable") == 0) {
+        pCPQControl = NULL;
+    } else {
     //load PQ
-    pCPQControl = CPQControl::GetInstance();
+        pCPQControl = CPQControl::GetInstance();
+        pCPQControl->CPQControlInit();
+    }
 
     pDimension = new Dimension(pDisplayMode, pSysWrite);
-
     //if ro.firstboot is true, we should clear first boot flag
     const char* firstBoot = pUbootenv->getValue("ubootenv.var.firstboot");
     if (firstBoot && (strcmp(firstBoot, "1") == 0)) {
@@ -100,6 +109,7 @@ SystemControlService::~SystemControlService() {
     delete pDimension;
 
     if (pCPQControl != NULL) {
+        pCPQControl->CPQControlUnInit();
         delete pCPQControl;
         pCPQControl = NULL;
     }
@@ -375,10 +385,10 @@ bool SystemControlService::writeHdcpRXImg(const std::string& path) {
 //set or get uboot env
 bool SystemControlService::getBootEnv(const std::string& key, std::string& value) {
     const char* p_value = pUbootenv->getValue(key.c_str());
-	if (p_value) {
+        if (p_value) {
         value = p_value;
         return true;
-	}
+        }
     return false;
 }
 
@@ -443,11 +453,19 @@ void SystemControlService::loopMountUnmount(int isMount, const std::string& path
     }
 }
 
+bool SystemControlService::getModeSupportDeepColorAttr(const std::string& mode,const std::string& color) {
+    bool ret;
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("get DeepColor mode :%s color :%s", mode.c_str(),color.c_str());
+    }
+    ret = pDisplayMode->getModeSupportDeepColorAttr(mode.c_str(),color.c_str());
+    return ret;
+}
+
 void SystemControlService::setSourceOutputMode(const std::string& mode) {
     if (mLogLevel > LOG_LEVEL_1) {
         ALOGI("set output mode :%s", mode.c_str());
     }
-
     pDisplayMode->setSourceOutputMode(mode.c_str());
 }
 
@@ -681,187 +699,357 @@ void SystemControlService::autoDetect3DForMbox() {
 //PQ
 int SystemControlService::loadPQSettings(source_input_param_t source_input_param)
 {
-    return pCPQControl->LoadPQSettings(source_input_param);
+    if (pCPQControl != NULL) {
+        return pCPQControl->LoadPQSettings();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::sysSSMReadNTypes(int id, int data_len, int offset)
 {
-    return pCPQControl->Cpq_SSMReadNTypes(id, data_len, offset);
+    if (pCPQControl != NULL) {
+        return pCPQControl->Cpq_SSMReadNTypes(id, data_len, offset);
+    } else {
+        return -1;
+    }
 }
+
 
 int SystemControlService::sysSSMWriteNTypes(int id, int data_len, int data_buf, int offset)
 {
-    return pCPQControl->Cpq_SSMWriteNTypes(id, data_len, data_buf, offset);
+    if (pCPQControl != NULL) {
+        return pCPQControl->Cpq_SSMWriteNTypes(id, data_len, data_buf, offset);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getActualAddr(int id)
 {
-    return pCPQControl->Cpq_GetSSMActualAddr(id);
+    if (pCPQControl != NULL) {
+        return pCPQControl->Cpq_GetSSMActualAddr(id);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getActualSize(int id)
 {
-    return pCPQControl->Cpq_GetSSMActualSize(id);
+    if (pCPQControl != NULL) {
+        return pCPQControl->Cpq_GetSSMActualSize(id);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getSSMStatus(void)
 {
-    return pCPQControl->Cpq_GetSSMStatus();
+    if (pCPQControl != NULL) {
+        return pCPQControl->Cpq_GetSSMStatus();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setPQmode(int pq_mode, int is_save, int is_autoswitch)
 {
-    return pCPQControl->SetPQMode(pq_mode, is_save, is_autoswitch);
+    if (pCPQControl != NULL) {
+            return pCPQControl->SetPQMode(pq_mode, is_save, is_autoswitch);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getPQmode(void)
 {
-    return (int)pCPQControl->GetPQMode();
+    if (pCPQControl != NULL) {
+        return (int)pCPQControl->GetPQMode();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::savePQmode(int pq_mode)
 {
-    return pCPQControl->SavePQMode(pq_mode);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SavePQMode(pq_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setColorTemperature(int temp_mode, int is_save)
 {
-    return pCPQControl->SetColorTemperature(temp_mode, is_save);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetColorTemperature(temp_mode, is_save);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getColorTemperature(void)
 {
-    return pCPQControl->GetColorTemperature();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetColorTemperature();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveColorTemperature(int temp_mode)
 {
-    return pCPQControl->SaveColorTemperature(temp_mode);
+	if (pCPQControl != NULL) {
+        return pCPQControl->SaveColorTemperature(temp_mode);
+    } else {
+        return -1;
+    }
+}
+
+int SystemControlService::setColorTemperatureUserParam(int mode, int isSave, int param_type, int value)
+{
+	if (pCPQControl != NULL) {
+        return pCPQControl->SetColorTemperature(mode, isSave, (rgb_ogo_type_t)param_type, value);
+    } else {
+        return -1;
+    }
+}
+
+tcon_rgb_ogo_t SystemControlService::getColorTemperatureUserParam(void)
+{
+    tcon_rgb_ogo_t ColorTemperatureUserParam;
+    memset(&ColorTemperatureUserParam, 0, sizeof(tcon_rgb_ogo_t));
+	if (pCPQControl != NULL) {
+        ColorTemperatureUserParam = pCPQControl->GetColorTemperatureUserParam();
+    }
+
+    return ColorTemperatureUserParam;
 }
 
 int SystemControlService::setBrightness(int value, int is_save)
 {
-    return pCPQControl->SetBrightness(value, is_save);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetBrightness(value, is_save);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getBrightness(void)
 {
-    return pCPQControl->GetBrightness();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetBrightness();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveBrightness(int value)
 {
-    return pCPQControl->SaveBrightness(value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SaveBrightness(value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setContrast(int value, int is_save)
 {
-    return pCPQControl->SetContrast(value, is_save);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetContrast(value, is_save);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getContrast(void)
 {
-    return pCPQControl->GetContrast();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetContrast();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveContrast(int value)
 {
-    return pCPQControl->SaveContrast(value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SaveContrast(value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setSaturation(int value, int is_save)
 {
-    return pCPQControl->SetSaturation(value, is_save);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetSaturation(value, is_save);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getSaturation(void)
 {
-    return pCPQControl->GetSaturation();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetSaturation();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveSaturation(int value)
 {
-    return pCPQControl->SaveSaturation(value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SaveSaturation(value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setHue(int value, int is_save )
 {
-    return pCPQControl->SetHue(value, is_save);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetHue(value, is_save);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getHue(void)
 {
-    return pCPQControl->GetHue();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetHue();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveHue(int value)
 {
-    return pCPQControl->SaveHue(value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SaveHue(value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setSharpness(int value, int is_enable, int is_save)
 {
-    return pCPQControl->SetSharpness(value, is_enable, is_save);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetSharpness(value, is_enable, is_save);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getSharpness(void)
 {
-    return pCPQControl->GetSharpness();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetSharpness();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveSharpness(int value)
 {
-    return pCPQControl->SaveSharpness(value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SaveSharpness(value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setNoiseReductionMode(int nr_mode, int is_save)
 {
-    return pCPQControl->SetNoiseReductionMode(nr_mode, is_save);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetNoiseReductionMode(nr_mode, is_save);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getNoiseReductionMode(void)
 {
-    return (int)pCPQControl->GetNoiseReductionMode();
+    if (pCPQControl != NULL) {
+        return (int)pCPQControl->GetNoiseReductionMode();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveNoiseReductionMode(int nr_mode)
 {
-    return pCPQControl->SaveNoiseReductionMode(nr_mode);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SaveNoiseReductionMode(nr_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setEyeProtectionMode(int source_input, int enable, int isSave)
 {
-    return pCPQControl->SetEyeProtectionMode((tv_source_input_t)source_input, enable, isSave);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetEyeProtectionMode((tv_source_input_t)source_input, enable, isSave);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getEyeProtectionMode(int source_input)
 {
-    return pCPQControl->GetEyeProtectionMode((tv_source_input_t)source_input);
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetEyeProtectionMode((tv_source_input_t)source_input);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setGammaValue(int gamma_curve, int is_save)
 {
-    return pCPQControl->SetGammaValue((vpp_gamma_curve_t)gamma_curve, is_save);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetGammaValue((vpp_gamma_curve_t)gamma_curve, is_save);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getGammaValue()
 {
-    return pCPQControl->GetGammaValue();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetGammaValue();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setDisplayMode(int source_input, int mode, int isSave)
 {
-    return pCPQControl->SetDisplayMode((tv_source_input_t)source_input, (vpp_display_mode_t)mode, isSave);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetDisplayMode((vpp_display_mode_t)mode, isSave);
+    } else {
+        return -1;
+    }
 }
+
 
 int SystemControlService::getDisplayMode(int source_input)
 {
-    return pCPQControl->GetDisplayMode((tv_source_input_t)source_input);
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetDisplayMode();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveDisplayMode(int source_input, int mode)
 {
-    return pCPQControl->SaveDisplayMode((tv_source_input_t)source_input, (vpp_display_mode_t)mode);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SaveDisplayMode((vpp_display_mode_t)mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setBacklight(int value, int isSave)
@@ -872,32 +1060,92 @@ int SystemControlService::setBacklight(int value, int isSave)
 
 int SystemControlService::getBacklight(void)
 {
-    return pCPQControl->GetBacklight();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetBacklight();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveBacklight(int value)
 {
-    return pCPQControl->SaveBacklight(value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SaveBacklight(value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setDynamicBacklight(int mode, int isSave)
 {
-    return pCPQControl->SetDynamicBacklight((Dynamic_backlight_status_t)mode, isSave);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetDynamicBacklight((Dynamic_backlight_status_t)mode, isSave);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getDynamicBacklight(void)
 {
-    return pCPQControl->GetDynamicBacklight();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetDynamicBacklight();
+    } else {
+        return -1;
+    }
+}
+
+int SystemControlService::setLocalContrastMode(int mode, int isSave)
+{
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetLocalContrastMode((local_contrast_mode_t)mode, isSave);
+    } else {
+        return -1;
+    }
+}
+
+int SystemControlService::getLocalContrastMode()
+{
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetLocalContrastMode();
+    } else {
+        return -1;
+    }
+}
+
+int SystemControlService::setColorBaseMode(int mode, int isSave)
+{
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetColorBaseMode((vpp_color_basemode_t)mode, isSave);
+    } else {
+        return -1;
+    }
+}
+
+int SystemControlService::getColorBaseMode()
+{
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetColorBaseMode();
+    } else {
+        return -1;
+    }
 }
 
 bool SystemControlService::checkLdimExist(void)
 {
-    return pCPQControl->isFileExist(LDIM_PATH);
+    if (pCPQControl != NULL) {
+        return pCPQControl->isFileExist(LDIM_PATH);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryResetPQMode(void)
 {
-    return pCPQControl->FactoryResetPQMode();
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryResetPQMode();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetPQMode_Brightness(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
@@ -906,7 +1154,12 @@ int SystemControlService::factorySetPQMode_Brightness(int inputSrc, int sigFmt, 
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetPQMode_Brightness(srcInputParam, pq_mode, value);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetPQMode_Brightness(srcInputParam, pq_mode, value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetPQMode_Brightness(int inputSrc, int sigFmt, int transFmt, int pq_mode)
@@ -915,7 +1168,12 @@ int SystemControlService::factoryGetPQMode_Brightness(int inputSrc, int sigFmt, 
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactoryGetPQMode_Brightness(srcInputParam, pq_mode);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetPQMode_Brightness(srcInputParam, pq_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetPQMode_Contrast(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
@@ -924,7 +1182,12 @@ int SystemControlService::factorySetPQMode_Contrast(int inputSrc, int sigFmt, in
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetPQMode_Contrast(srcInputParam, pq_mode, value);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetPQMode_Contrast(srcInputParam, pq_mode, value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetPQMode_Contrast(int inputSrc, int sigFmt, int transFmt, int pq_mode)
@@ -933,7 +1196,11 @@ int SystemControlService::factoryGetPQMode_Contrast(int inputSrc, int sigFmt, in
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactoryGetPQMode_Contrast(srcInputParam, pq_mode);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetPQMode_Contrast(srcInputParam, pq_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetPQMode_Saturation(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
@@ -942,7 +1209,11 @@ int SystemControlService::factorySetPQMode_Saturation(int inputSrc, int sigFmt, 
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetPQMode_Saturation(srcInputParam, pq_mode, value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetPQMode_Saturation(srcInputParam, pq_mode, value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetPQMode_Saturation(int inputSrc, int sigFmt, int transFmt, int pq_mode)
@@ -951,7 +1222,11 @@ int SystemControlService::factoryGetPQMode_Saturation(int inputSrc, int sigFmt, 
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactoryGetPQMode_Saturation(srcInputParam, pq_mode);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetPQMode_Saturation(srcInputParam, pq_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetPQMode_Hue(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
@@ -960,7 +1235,11 @@ int SystemControlService::factorySetPQMode_Hue(int inputSrc, int sigFmt, int tra
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetPQMode_Hue(srcInputParam, pq_mode, value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetPQMode_Hue(srcInputParam, pq_mode, value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetPQMode_Hue(int inputSrc, int sigFmt, int transFmt, int pq_mode)
@@ -969,7 +1248,11 @@ int SystemControlService::factoryGetPQMode_Hue(int inputSrc, int sigFmt, int tra
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactoryGetPQMode_Hue(srcInputParam, pq_mode);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetPQMode_Hue(srcInputParam, pq_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetPQMode_Sharpness(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value)
@@ -978,7 +1261,11 @@ int SystemControlService::factorySetPQMode_Sharpness(int inputSrc, int sigFmt, i
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetPQMode_Sharpness(srcInputParam, pq_mode, value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetPQMode_Sharpness(srcInputParam, pq_mode, value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetPQMode_Sharpness(int inputSrc, int sigFmt, int transFmt, int pq_mode)
@@ -987,12 +1274,20 @@ int SystemControlService::factoryGetPQMode_Sharpness(int inputSrc, int sigFmt, i
     srcInputParam.source_input = (tv_source_input_t)inputSrc;
     srcInputParam.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     srcInputParam.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactoryGetPQMode_Sharpness(srcInputParam, pq_mode);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetPQMode_Sharpness(srcInputParam, pq_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryResetColorTemp(void)
 {
-    return pCPQControl->FactoryResetColorTemp();
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryResetColorTemp();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetOverscan(int inputSrc, int sigFmt, int transFmt, int he_value, int hs_value,
@@ -1009,7 +1304,11 @@ int SystemControlService::factorySetOverscan(int inputSrc, int sigFmt, int trans
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt= (tvin_trans_fmt_t)transFmt;
 
-    return pCPQControl->FactorySetOverscanParam(source_input_param, cutwin_t);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetOverscanParam(source_input_param, cutwin_t);
+    } else {
+        return -1;
+    }
 }
 
 tvin_cutwin_t SystemControlService::factoryGetOverscan(int inputSrc, int sigFmt, int transFmt)
@@ -1018,9 +1317,18 @@ tvin_cutwin_t SystemControlService::factoryGetOverscan(int inputSrc, int sigFmt,
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    tvin_cutwin_t cutwin_t = pCPQControl->FactoryGetOverscanParam(source_input_param);
+    tvin_cutwin_t cutwin_t;
 
-    return cutwin_t;
+    if (pCPQControl != NULL) {
+        tvin_cutwin_t cutwin_t = pCPQControl->FactoryGetOverscanParam(source_input_param);
+        return cutwin_t;
+    } else {
+        cutwin_t.he = 0;
+        cutwin_t.hs = 0;
+        cutwin_t.ve = 0;
+        cutwin_t.vs = 0;
+        return cutwin_t;
+    }
 }
 
 int SystemControlService::factorySetNolineParams(int inputSrc, int sigFmt, int transFmt, int type, int osd0_value,
@@ -1038,7 +1346,11 @@ int osd25_value,
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetNolineParams(source_input_param, type, noline_params);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetNolineParams(source_input_param, type, noline_params);
+    } else {
+        return -1;
+    }
 }
 
 noline_params_t SystemControlService::factoryGetNolineParams(int inputSrc, int sigFmt, int transFmt, int type)
@@ -1047,60 +1359,111 @@ noline_params_t SystemControlService::factoryGetNolineParams(int inputSrc, int s
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt= (tvin_trans_fmt_t)transFmt;
-    noline_params_t param = pCPQControl->FactoryGetNolineParams(source_input_param, type);
-    return param;
+    noline_params_t param;
+
+    if (pCPQControl != NULL) {
+        pCPQControl->FactoryGetNolineParams(source_input_param, type);
+        return param;
+    } else {
+        param.osd0 = 0;
+        param.osd25 = 0;
+        param.osd50 = 0;
+        param.osd75 = 0;
+        param.osd100 = 0;
+        return param;
+    }
 }
 
 int SystemControlService::factoryGetColorTemperatureParams(int colorTemp_mode)
 {
     tcon_rgb_ogo_t params;
     memset(&params, 0, sizeof(tcon_rgb_ogo_t));
-    return pCPQControl->GetColorTemperatureParams((vpp_color_temperature_mode_t)colorTemp_mode, &params);
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetColorTemperatureParams((vpp_color_temperature_mode_t)colorTemp_mode, &params);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetParamsDefault()
 {
-    return pCPQControl->FactorySetParamsDefault();
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetParamsDefault();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySSMRestore(void)
 {
-    return pCPQControl->FcatorySSMRestore();
+    if (pCPQControl != NULL) {
+        return pCPQControl->FcatorySSMRestore();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryResetNonlinear(void)
 {
-    return pCPQControl->FactoryResetNonlinear();
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryResetNonlinear();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetGamma(int gamma_r, int gamma_g, int gamma_b)
 {
-    return pCPQControl->FactorySetGamma(gamma_r, gamma_g, gamma_b);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetGamma(gamma_r, gamma_g, gamma_b);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetHdrMode(int mode)
 {
-    return pCPQControl->SetHDRMode(mode);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetHDRMode(mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetHdrMode(void)
 {
-    return pCPQControl->GetHDRMode();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetHDRMode();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::SSMRecovery(void)
 {
-    return pCPQControl->Cpq_SSMRecovery();
+    if (pCPQControl != NULL) {
+        return pCPQControl->Cpq_SSMRecovery();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setPLLValues(source_input_param_t source_input_param)
 {
-    return pCPQControl->SetPLLValues(source_input_param);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetPLLValues(source_input_param);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setCVD2Values(void)
 {
-    return pCPQControl->SetCVD2Values();
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetCVD2Values();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setCurrentSourceInfo(int sourceInput, int sigFmt, int transFmt)
@@ -1109,26 +1472,47 @@ int SystemControlService::setCurrentSourceInfo(int sourceInput, int sigFmt, int 
     source_input_param.source_input = (tv_source_input_t)sourceInput;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->SetCurrentSourceInputInfo(source_input_param);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetCurrentSourceInputInfo(source_input_param);
+    } else {
+        return -1;
+    }
 }
 
 source_input_param_t SystemControlService::getCurrentSourceInfo(void)
 {
-    return pCPQControl->GetCurrentSourceInputInfo();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetCurrentSourceInputInfo();
+    } else {
+        source_input_param_t source_input_param;
+        source_input_param.sig_fmt = TVIN_SIG_FMT_HDMI_1920X1080P_60HZ;
+        source_input_param.source_input = SOURCE_MPEG;
+        source_input_param.trans_fmt = TVIN_TFMT_2D;
+        return source_input_param;
+    }
+}
+
+int SystemControlService::setCurrentHdrInfo(int hdrInfo)
+{
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetCurrentHdrInfo(hdrInfo);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setDtvKitSourceEnable(int isEnable)
 {
-	int ret = -1;
-	if (pCPQControl != NULL) {
-		if (isEnable) {
-			ret = pCPQControl->SetDtvKitSourceEnable(true);
-		} else {
-			ret = pCPQControl->SetDtvKitSourceEnable(false);
-		}
-	}
+    int ret = -1;
+    if (pCPQControl != NULL) {
+        if (isEnable) {
+            ret = pCPQControl->SetDtvKitSourceEnable(true);
+        } else {
+            ret = pCPQControl->SetDtvKitSourceEnable(false);
+        }
+    }
 
-	return ret;
+    return ret;
 }
 
 int SystemControlService::setwhiteBalanceGainRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value)
@@ -1138,6 +1522,10 @@ int SystemControlService::setwhiteBalanceGainRed(int inputSrc, int sigFmt, int t
         value = 0;
     } else if (value > 2047) {
         value = 2047;
+    }
+
+    if (pCPQControl == NULL) {
+        return -1;
     }
 
     ret = pCPQControl->FactorySetColorTemp_Rgain(inputSrc, colortemp_mode, value);
@@ -1156,6 +1544,11 @@ int SystemControlService::setwhiteBalanceGainGreen(int inputSrc, int sigFmt, int
     } else if (value > 2047) {
         value = 2047;
     }
+
+    if (pCPQControl == NULL) {
+        return -1;
+    }
+
     // not use fbc store the white balance params
     ret = pCPQControl->FactorySetColorTemp_Ggain(inputSrc, colortemp_mode, value);
     if (ret != -1) {
@@ -1172,6 +1565,10 @@ int SystemControlService::setwhiteBalanceGainBlue(int inputSrc, int sigFmt, int 
         value = 0;
     } else if (value > 2047) {
         value = 2047;
+    }
+
+    if (pCPQControl == NULL) {
+        return -1;
     }
     // not use fbc store the white balance params
     ret = pCPQControl->FactorySetColorTemp_Bgain(inputSrc, colortemp_mode, value);
@@ -1190,6 +1587,10 @@ int SystemControlService::setwhiteBalanceOffsetRed(int inputSrc, int sigFmt, int
     } else if (value > 1023) {
         value = 1023;
     }
+
+    if (pCPQControl == NULL) {
+        return -1;
+    }
     // not use fbc store the white balance params
     ret = pCPQControl->FactorySetColorTemp_Roffset(inputSrc, colortemp_mode, value);
     if (ret != -1) {
@@ -1206,6 +1607,10 @@ int SystemControlService::setwhiteBalanceOffsetGreen(int inputSrc, int sigFmt, i
         value = -1024;
     } else if (value > 1023) {
         value = 1023;
+    }
+
+    if (pCPQControl == NULL) {
+        return -1;
     }
     // not use fbc store the white balance params
     ret = pCPQControl->FactorySetColorTemp_Goffset(inputSrc, colortemp_mode, value);
@@ -1225,6 +1630,10 @@ int SystemControlService::setwhiteBalanceOffsetBlue(int inputSrc, int sigFmt, in
     } else if (value > 1023) {
         value = 1023;
     }
+
+    if (pCPQControl == NULL) {
+        return -1;
+    }
     // not use fbc store the white balance params
     ret = pCPQControl->FactorySetColorTemp_Boffset(inputSrc, colortemp_mode, value);
     if (ret != -1) {
@@ -1236,32 +1645,66 @@ int SystemControlService::setwhiteBalanceOffsetBlue(int inputSrc, int sigFmt, in
 }
 
 int SystemControlService::getwhiteBalanceGainRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemp_Rgain(inputSrc, colortemp_mode);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetColorTemp_Rgain(inputSrc, colortemp_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getwhiteBalanceGainGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemp_Ggain(inputSrc, colortemp_mode);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetColorTemp_Ggain(inputSrc, colortemp_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getwhiteBalanceGainBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemp_Bgain(inputSrc, colortemp_mode);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetColorTemp_Bgain(inputSrc, colortemp_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getwhiteBalanceOffsetRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemp_Roffset(inputSrc, colortemp_mode);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetColorTemp_Roffset(inputSrc, colortemp_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getwhiteBalanceOffsetGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemp_Goffset(inputSrc, colortemp_mode);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetColorTemp_Goffset(inputSrc, colortemp_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getwhiteBalanceOffsetBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode) {
-    return pCPQControl->FactoryGetColorTemp_Boffset(inputSrc, colortemp_mode);
+
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetColorTemp_Boffset(inputSrc, colortemp_mode);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::saveWhiteBalancePara(int inputSrc, int sigFmt, int transFmt, int colorTemp_mode, int r_gain
 , int g_gain, int b_gain, int r_offset, int g_offset, int b_offset) {
     int ret = 0;
+
+    if (pCPQControl == NULL) {
+        return -1;
+    }
     ret |= pCPQControl->SaveColorTemperature(colorTemp_mode);
     ret |= pCPQControl->FactorySaveColorTemp_Rgain(inputSrc, colorTemp_mode, r_gain);
     ret |= pCPQControl->FactorySaveColorTemp_Ggain(inputSrc, colorTemp_mode, g_gain);
@@ -1274,30 +1717,58 @@ int SystemControlService::saveWhiteBalancePara(int inputSrc, int sigFmt, int tra
 }
 
 int SystemControlService::getRGBPattern() {
-    return pCPQControl->GetRGBPattern();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetRGBPattern();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setRGBPattern(int r, int g, int b) {
-    return pCPQControl->SetRGBPattern(r, g, b);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetRGBPattern(r, g, b);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetDDRSSC(int step) {
-    return pCPQControl->FactorySetDDRSSC(step);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetDDRSSC(step);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetDDRSSC() {
-    return pCPQControl->FactoryGetDDRSSC();
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetDDRSSC();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setLVDSSSC(int step) {
-    return pCPQControl->SetLVDSSSC(step);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetLVDSSSC(step);
+    } else {
+        return -1;
+    }
 }
 int SystemControlService::factorySetLVDSSSC(int step) {
-    return pCPQControl->FactorySetLVDSSSC(step);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetLVDSSSC(step);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetLVDSSSC() {
-    return pCPQControl->FactoryGetLVDSSSC();
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetLVDSSSC();
+    } else {
+        return -1;
+    }
 }
 
 
@@ -1310,11 +1781,19 @@ int SystemControlService::whiteBalanceGrayPatternOpen() {
 }
 
 int SystemControlService::whiteBalanceGrayPatternSet(int value) {
-    return pCPQControl->SetGrayPattern(value);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetGrayPattern(value);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::whiteBalanceGrayPatternGet() {
-    return pCPQControl->GetGrayPattern();
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetGrayPattern();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::setDnlpParams(int inputSrc, int sigFmt, int transFmt, int level)
@@ -1323,7 +1802,11 @@ int SystemControlService::setDnlpParams(int inputSrc, int sigFmt, int transFmt, 
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->SetDnlpMode(source_input_param, level);
+    if (pCPQControl != NULL) {
+        return pCPQControl->SetDnlpMode(level);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::getDnlpParams(int inputSrc, int sigFmt, int transFmt) {
@@ -1332,8 +1815,11 @@ int SystemControlService::getDnlpParams(int inputSrc, int sigFmt, int transFmt) 
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
     int level = 0;
-    pCPQControl->GetDnlpMode(source_input_param, &level);
-    return level;
+    if (pCPQControl != NULL) {
+        return pCPQControl->GetDnlpMode();
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level, int final_gain) {
@@ -1341,7 +1827,11 @@ int SystemControlService::factorySetDnlpParams(int inputSrc, int sigFmt, int tra
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetDNLPCurveParams(source_input_param, level, final_gain);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetDNLPCurveParams(source_input_param, level, final_gain);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level) {
@@ -1349,7 +1839,11 @@ int SystemControlService::factoryGetDnlpParams(int inputSrc, int sigFmt, int tra
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactoryGetDNLPCurveParams(source_input_param, level);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetDNLPCurveParams(source_input_param, level);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetBlackExtRegParams(int inputSrc, int sigFmt, int transFmt, int val) {
@@ -1357,7 +1851,11 @@ int SystemControlService::factorySetBlackExtRegParams(int inputSrc, int sigFmt, 
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetBlackExtRegParams(source_input_param, val);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetBlackExtRegParams(source_input_param, val);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetBlackExtRegParams(int inputSrc, int sigFmt, int transFmt) {
@@ -1365,7 +1863,11 @@ int SystemControlService::factoryGetBlackExtRegParams(int inputSrc, int sigFmt, 
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactoryGetBlackExtRegParams(source_input_param);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetBlackExtRegParams(source_input_param);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetColorParams(int inputSrc, int sigFmt, int transFmt, int color_type, int color_param, int val)
@@ -1374,7 +1876,11 @@ int SystemControlService::factorySetColorParams(int inputSrc, int sigFmt, int tr
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactorySetRGBCMYFcolorParams(source_input_param, color_type, color_param, val);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetRGBCMYFcolorParams(source_input_param, color_type, color_param, val);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetColorParams(int inputSrc, int sigFmt, int transFmt, int color_type, int color_param)
@@ -1383,7 +1889,11 @@ int SystemControlService::factoryGetColorParams(int inputSrc, int sigFmt, int tr
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sigFmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)transFmt;
-    return pCPQControl->FactoryGetRGBCMYFcolorParams(source_input_param, color_type, color_param);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetRGBCMYFcolorParams(source_input_param, color_type, color_param);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type, int val)
@@ -1392,8 +1902,11 @@ int SystemControlService::factorySetNoiseReductionParams(int inputSrc, int sig_f
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
-    return pCPQControl->FactorySetNoiseReductionParams(source_input_param, (vpp_noise_reduction_mode_t)nr_mode,
-                        param_type, val);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetNoiseReductionParams(source_input_param, (vpp_noise_reduction_mode_t)nr_mode,param_type, val);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type)
@@ -1402,8 +1915,11 @@ int SystemControlService::factoryGetNoiseReductionParams(int inputSrc, int sig_f
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
-    return pCPQControl->FactoryGetNoiseReductionParams(source_input_param, (vpp_noise_reduction_mode_t)nr_mode,
-param_type);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetNoiseReductionParams(source_input_param, (vpp_noise_reduction_mode_t)nr_mode,param_type);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val) {
@@ -1411,7 +1927,11 @@ int SystemControlService::factorySetCTIParams(int inputSrc, int sig_fmt, int tra
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
-    return pCPQControl->FactorySetCTIParams(source_input_param, param_type, val);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetCTIParams(source_input_param, param_type, val);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type)
@@ -1420,7 +1940,11 @@ int SystemControlService::factoryGetCTIParams(int inputSrc, int sig_fmt, int tra
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
-    return pCPQControl->FactoryGetCTIParams(source_input_param, param_type);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetCTIParams(source_input_param, param_type);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val)
@@ -1429,7 +1953,11 @@ int SystemControlService::factorySetDecodeLumaParams(int inputSrc, int sig_fmt, 
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
-    return pCPQControl->FactorySetDecodeLumaParams(source_input_param, param_type, val);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetDecodeLumaParams(source_input_param, param_type, val);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factoryGetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type)
@@ -1438,7 +1966,11 @@ int SystemControlService::factoryGetDecodeLumaParams(int inputSrc, int sig_fmt, 
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
-    return pCPQControl->FactoryGetDecodeLumaParams(source_input_param, param_type);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetDecodeLumaParams(source_input_param, param_type);
+    } else {
+        return -1;
+    }
 }
 
 int SystemControlService::factorySetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type
@@ -1447,7 +1979,11 @@ int SystemControlService::factorySetSharpnessParams(int inputSrc, int sig_fmt, i
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
-    return pCPQControl->FactorySetSharpnessParams(source_input_param, (Sharpness_timing_e)isHD, param_type, val);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactorySetSharpnessParams(source_input_param, (Sharpness_timing_e)isHD, param_type, val);
+    } else {
+        return -1;
+    }
 }
 int SystemControlService::factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type)
 {
@@ -1455,10 +1991,44 @@ int SystemControlService::factoryGetSharpnessParams(int inputSrc, int sig_fmt, i
     source_input_param.source_input = (tv_source_input_t)inputSrc;
     source_input_param.sig_fmt = (tvin_sig_fmt_t)sig_fmt;
     source_input_param.trans_fmt = (tvin_trans_fmt_t)trans_fmt;
-    return pCPQControl->FactoryGetSharpnessParams(source_input_param, (Sharpness_timing_e)isHD, param_type);
+    if (pCPQControl != NULL) {
+        return pCPQControl->FactoryGetSharpnessParams(source_input_param, (Sharpness_timing_e)isHD, param_type);
+    } else {
+        return -1;
+    }
 }
+
+tvpq_databaseinfo_t SystemControlService::getPQDatabaseInfo(int dataBaseName) {
+    tvpq_databaseinfo_t pq_databaseinfo;
+    if (pCPQControl != NULL) {
+        pq_databaseinfo = pCPQControl->GetDBVersionInfo((db_name_t)dataBaseName);
+    }
+    return pq_databaseinfo;
+}
+
 //PQ end
 
+//FBC start
+void SystemControlService::setFBCUpgradeListener(const sp<SystemControlNotify>& listener)
+{
+    mNotifyListener = listener;
+}
+
+int SystemControlService::StartUpgradeFBC(const std::string&file_name, int mode, int upgrade_blk_size)
+{
+    char buf[256] = {0};
+    strcpy(buf, file_name.c_str());
+    return CFbcCommunication::GetSingletonFBC()->fbcStartUpgrade(buf,  mode, upgrade_blk_size);
+}
+
+int SystemControlService::UpdateFBCUpgradeStatus(int status, int param)
+{
+    ALOGI("%s: state = %d, param = %d\n", __FUNCTION__, status, param);
+    mNotifyListener->onFBCUpgradeEvent(status, param);
+    return 0;
+}
+
+//FBC end
 void SystemControlService::traceValue(const std::string& type, const std::string& key, const std::string& value) {
     if (mLogLevel > LOG_LEVEL_1) {
         /*

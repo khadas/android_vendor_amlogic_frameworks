@@ -256,6 +256,18 @@ Return<void> DroidHdmiCec::setCallback(const sp<IDroidHdmiCecCallback>& callback
     return Void();
 }
 
+Return<int32_t> DroidHdmiCec::getCecWakePort() {
+    int port = -1;
+    if (NULL != mHdmiCecControl) {
+        port = mHdmiCecControl->getCecWakePort();
+    }
+
+    if (mDebug)
+        ALOGI("getCecWakePort: %d", port);
+
+    return port;
+}
+
 void DroidHdmiCec::onEventUpdate(const hdmi_cec_event_t* event)
 {
     //change native data structure to hwbinder data structure

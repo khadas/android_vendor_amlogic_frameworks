@@ -119,7 +119,7 @@ int COverScandb::PQ_GetOverscanParams(source_input_param_t source_input_param, v
         case VPP_DISPLAY_MODE_ZOOM :
             strcpy(table_name, "OVERSCAN_ZOOM");
             break;
-        dafault :
+        default :
             strcpy(table_name, "OVERSCAN_NORMAL");
             break;
     }

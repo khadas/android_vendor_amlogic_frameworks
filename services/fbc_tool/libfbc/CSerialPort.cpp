@@ -287,7 +287,7 @@ int CSerialPort::set_opt(int speed, int db, int sb, char pb, int overtime, bool 
     return 0;
 }
 
-int CSerialPort::writeFile(const unsigned char *pData, unsigned int uLen)
+int CSerialPort::writeFile(const unsigned char *pData, int uLen)
 {
     unsigned int len;
     len = write(mFd, pData, uLen);
@@ -300,10 +300,10 @@ int CSerialPort::writeFile(const unsigned char *pData, unsigned int uLen)
     }
 }
 
-int CSerialPort::readFile(unsigned char *pBuf, unsigned int uLen)
+int CSerialPort::readFile(void *pBuf, int uLen)
 {
     //using non-block mode
-    return com_read_data(mFd, pBuf, uLen);
+    return com_read_data(mFd, (unsigned char *)pBuf, uLen);
 }
 
 int CSerialPort::setdatabits(struct termios *s, int db)

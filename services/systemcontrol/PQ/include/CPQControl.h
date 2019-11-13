@@ -46,6 +46,7 @@
 #define TEST_SCREEN               "/sys/class/video/test_screen"
 #define PQ_SET_RW_INTERFACE       "/sys/class/amvecm/pq_reg_rw"
 #define SYS_DISPLAY_MODE_PATH     "/sys/class/display/mode"
+#define HDMI_OUTPUT_CHECK_PATH    "/sys/class/amhdmitx"    //if this dir exist,is hdmi output
 
 #define FINAL_GAIN_REG_NUM        46
 
@@ -374,7 +375,7 @@ private:
     void pqTransformStringToInt(const char *buf, int *val);
     unsigned int GetSharpnessRegVal(int addr);
     int Cpq_SetLocalContrastMode(local_contrast_mode_t mode);
-    output_type_t GetTxOutPutMode(void);
+    output_type_t CheckOutPutMode(void);
     bool isCVBSParamValid(void);
 
     bool mInitialized;
@@ -422,5 +423,6 @@ private:
     unsigned int mHdmiHdrInfo = 0;
     bool mbDtvKitEnable;
     mutable Mutex mLock;
+    output_type_t mCurentOutputType;
 };
 #endif

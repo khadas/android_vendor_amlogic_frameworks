@@ -36,18 +36,34 @@ typedef enum initial_type_e {
 } initial_type_t;
 
 typedef enum output_type_e {
-    OUTPUT_TYPE_HDMI = -1,
+    OUTPUT_TYPE_LVDS = -1,
     OUTPUT_TYPE_PAL,
     OUTPUT_TYPE_NTSC,
+    OUTPUT_TYPE_HDMI_4K = 10,
+    OUTPUT_TYPE_HDMI_HD_UPSCALE,
+    OUTPUT_TYPE_HDMI_SD_UPSCALE,
+    OUTPUT_TYPE_HDMI_NOSCALE,
+    OUTPUT_TYPE_HDMI_SD_4096,
+    OUTPUT_TYPE_HDMI_HD_4096,
     OUTPUT_TYPE_MAX,
 } output_type_t;
+
+typedef enum code_db_match_type_e {
+    MATCH_TYPE_NO_DBVERSION,
+    MATCH_TYPE_NEWCODE_OLDDB,
+    MATCH_TYPE_MATCH,
+    MATCH_TYPE_OLDCODE_NEWDB,
+    MATCH_TYPE_MAX,
+} code_db_match_type_t;
 
 #ifdef PROP_DEBUG_PQ
 #undef PROP_DEBUG_PQ
 #endif
-
 #define PROP_DEBUG_PQ "systemcontrol.debug.pq.enable"
 
+#ifdef getSqlParams
+#undef getSqlParams
+#endif
 #define getSqlParams(func, buffer, args...) \
     do{\
         sprintf(buffer, ##args);\
@@ -61,6 +77,8 @@ typedef enum output_type_e {
             }\
         }\
     }while(0)
+
+#define PQ_DB_CODE_MATCH_MASK        20191113
 
 class CPQdb: public CSqlite {
 public:
@@ -181,6 +199,7 @@ private:
     int sha1_nodes;
 public:
     bool mHdrStatus = false;
-    output_type_t mOutPutType = OUTPUT_TYPE_HDMI;
+    output_type_t mOutPutType = OUTPUT_TYPE_LVDS;
+    code_db_match_type_t mDbMatchType = MATCH_TYPE_MATCH;
 };
 #endif

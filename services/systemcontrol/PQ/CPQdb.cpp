@@ -55,6 +55,20 @@ int CPQdb::openPqDB(const char *db_path)
         String8 PQ_ToolVersion, PQ_DBVersion, PQ_DBGenerateTime, val;
         if (PQ_GetPqVersion(PQ_ToolVersion, PQ_DBVersion, PQ_DBGenerateTime)) {
             val = PQ_ToolVersion + " " + PQ_DBVersion + " " + PQ_DBGenerateTime;
+            SYS_LOGD("db-code match mask is %d\n", PQ_DB_CODE_MATCH_MASK);
+            if (PQ_DBVersion.isEmpty()) {
+                mDbMatchType = MATCH_TYPE_NO_DBVERSION;
+            } else {
+                unsigned int DbVersionSelectValue = atoi(PQ_DBVersion.c_str());
+                if (DbVersionSelectValue == PQ_DB_CODE_MATCH_MASK) {
+                    mDbMatchType = MATCH_TYPE_MATCH;
+                } else if (DbVersionSelectValue > PQ_DB_CODE_MATCH_MASK) {
+                    mDbMatchType = MATCH_TYPE_OLDCODE_NEWDB;
+                } else{
+                    mDbMatchType = MATCH_TYPE_NEWCODE_OLDDB;
+                }
+            }
+            SYS_LOGD("db-code match type is %d.\n", mDbMatchType);
         } else {
             val = "Get PQ_DB Verion failure!!!";
         }
@@ -601,7 +615,7 @@ int CPQdb::PQ_GetDNLPParams(source_input_param_t source_input_param, Dynamic_con
     char *buffer = NULL;
     char *aa = NULL;
     char *aa_save[100];
-    int index = 0;
+    unsigned int index = 0;
     int rval = -1;
 
     memset(newParams, 0, sizeof(ve_dnlp_curve_param_s));
@@ -909,7 +923,7 @@ int CPQdb::PQ_GetLocalContrastNodeParams(source_input_param_t source_input_param
     char *buffer = NULL;
     char *aa = NULL;
     char *aa_save[100];
-    int index = 0;
+    unsigned int index = 0;
     int rval = -1;
 
     if (CheckHdrStatus("GeneralLocalContrastNodeTable"))
@@ -1728,66 +1742,55 @@ int CPQdb::PQ_SetSharpnessCTIParams(source_input_param_t source_input_param, int
 
 const char *CPQdb::getSharpnessTableName(source_input_param_t source_input_param, int isHd)
 {
-  char table_name[256] = {0};
-  switch (source_input_param.source_input) {
-      case SOURCE_TV: {
+    switch (source_input_param.source_input) {
+        case SOURCE_TV: {
           if (!isHd) {
-              strcpy(table_name, "Sharpness_0_ATV_Fixed");
-          } else {
-              strcpy(table_name, "Sharpness_1_ATV_Fixed");
+              return "Sharpness_0_ATV_Fixed";
           }
-          break;
-      }
-      case SOURCE_AV1:
-      case SOURCE_AV2:{
+          return "Sharpness_1_ATV_Fixed";
+        }
+        case SOURCE_AV1:
+        case SOURCE_AV2:{
           if (source_input_param.sig_fmt == 0x601 || source_input_param.sig_fmt == 0x602) {
               if (!isHd) {
-                  strcpy(table_name, "Sharpness_0_AV_NTSC_Fixed");
-              } else {
-                  strcpy(table_name, "Sharpness_1_AV_NTSC_Fixed");
+                  return "Sharpness_0_AV_NTSC_Fixed";
               }
+              return "Sharpness_1_AV_NTSC_Fixed";
           } else {
               if (!isHd) {
-                  strcpy(table_name, "Sharpness_0_AV_PAL_Fixed");
-              } else {
-                  strcpy(table_name, "Sharpness_1_AV_PAL_Fixed");
+                  return "Sharpness_0_AV_PAL_Fixed";
               }
+              return "Sharpness_1_AV_PAL_Fixed";
           }
-          break;
-      }
-      case SOURCE_HDMI1:
-      case SOURCE_HDMI2:
-      case SOURCE_HDMI3:
-      case SOURCE_HDMI4: {
+        }
+        case SOURCE_HDMI1:
+        case SOURCE_HDMI2:
+        case SOURCE_HDMI3:
+        case SOURCE_HDMI4: {
           if (!isHd) {
-              strcpy(table_name, "Sharpness_0_HDMI_SD_Fixed");
-          } else {
-              strcpy(table_name, "Sharpness_1_HDMI_HD_Fixed");
+              return "Sharpness_0_HDMI_SD_Fixed";
           }
-          break;
-      }
-      case SOURCE_MPEG: {
+          return "Sharpness_1_HDMI_HD_Fixed";
+        }
+        case SOURCE_MPEG: {
           if (!isHd) {
-              strcpy(table_name, "Sharpness_0_MPEG_SD_Fixed");
-          } else {
-              strcpy(table_name, "Sharpness_1_MPEG_HD_Fixed");
+              return "Sharpness_0_MPEG_SD_Fixed";
           }
-          break;
-      }
-      case SOURCE_DTV: {
+          return "Sharpness_1_MPEG_HD_Fixed";
+        }
+        case SOURCE_DTV: {
           if (!isHd) {
-              strcpy(table_name, "Sharpness_0_DTV_SD_Fixed");
-          } else {
-              strcpy(table_name, "Sharpness_1_DTV_HD_Fixed");
+              return "Sharpness_0_DTV_SD_Fixed";
           }
+          return "Sharpness_1_DTV_HD_Fixed";
+        }
+        default: {
           break;
-      }
-      default: {
-          break;
-      }
-  }
-  return table_name;
+        }
+    }
+    return NULL;
 }
+
 
 int CPQdb::PQ_GetSharpnessAdvancedParams(source_input_param_t source_input_param, int reg_addr, int isHd)
 {
@@ -1849,7 +1852,7 @@ int CPQdb::getSharpnessRegValues(const char *table_name, source_input_param_t so
                 int index_val = 3;
                 do {
                     if ((strcmp(c_tablelist.getString(0).string(), getSharpnessTableName(source_input_param, isHd)) == 0)
-                        && reg_addr == c_reg_list.getUInt(index_addr)) {
+                        && (unsigned long int)reg_addr == c_reg_list.getUInt(index_addr)) {
                         regs->am_reg[index_am_reg].type = c_reg_list.getUInt(index_type);
                         regs->am_reg[index_am_reg].addr = c_reg_list.getUInt(index_addr);
                         regs->am_reg[index_am_reg].mask = c_reg_list.getUInt(index_mask);
@@ -1916,7 +1919,7 @@ int CPQdb::PQ_SetSharpnessAdvancedParams(source_input_param_t source_input_param
               int index_val = 3;
               do {
                   if ((strcmp(c_tablelist.getString(0).string(), getSharpnessTableName(source_input_param, isHd)) == 0)
-                      && reg_addr == c_reg_list.getUInt(index_addr)) {
+                      && (unsigned long int)reg_addr == c_reg_list.getUInt(index_addr)) {
 
                       SYS_LOGD("PQ_SetSharpnessAdvancedParams, addr is 0x%x, [%d]last reg value is %u, try to set %u\n",
                                  reg_addr, index_am_reg, c_reg_list.getUInt(index_val), value);
@@ -1988,7 +1991,7 @@ int CPQdb::PQ_GetOverscanParams(source_input_param_t source_input_param, vpp_dis
         case VPP_DISPLAY_MODE_ZOOM :
             strcpy(table_name, "OVERSCAN_ZOOM");
             break;
-        dafault :
+        default :
             strcpy(table_name, "OVERSCAN_NORMAL");
             break;
     }
@@ -2361,34 +2364,81 @@ String8 CPQdb::GetTableName(const char *GeneralTableName, source_input_param_t s
     CSqlite::Cursor c;
     char sqlmaster[256];
     int ret = -1;
-
-    if (CheckIdExistInDb(CVBS_NAME_ID, "GeneralNR2Table")) {
-        getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
-                     "TVIN_PORT = %d and "
-                     "TVIN_SIG_FMT = %d and "
-                     "TVIN_TRANS_FMT = %d and "
-                     "TVOUT_CVBS = %d ;", GeneralTableName, source_input_param.source_input,
-                     source_input_param.sig_fmt, source_input_param.trans_fmt, mOutPutType);
-    } else {
-        getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
-                     "TVIN_PORT = %d and "
-                     "TVIN_SIG_FMT = %d and "
-                     "TVIN_TRANS_FMT = %d ;", GeneralTableName, source_input_param.source_input,
-                     source_input_param.sig_fmt, source_input_param.trans_fmt);
+    switch (mDbMatchType) {
+    case MATCH_TYPE_NO_DBVERSION:
+        if (CheckIdExistInDb(CVBS_NAME_ID, "GeneralSharpness0FixedTable")) {
+            if ((mOutPutType >= OUTPUT_TYPE_HDMI_4K) && (mOutPutType <= OUTPUT_TYPE_MAX)) {
+                getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
+                             "TVIN_PORT = %d and "
+                             "TVIN_SIG_FMT = %d and "
+                             "TVIN_TRANS_FMT = %d and "
+                             "TVOUT_CVBS = %d ;", GeneralTableName, source_input_param.source_input,
+                             source_input_param.sig_fmt, source_input_param.trans_fmt, OUTPUT_TYPE_LVDS);
+            } else {
+                getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
+                             "TVIN_PORT = %d and "
+                             "TVIN_SIG_FMT = %d and "
+                             "TVIN_TRANS_FMT = %d and "
+                             "TVOUT_CVBS = %d ;", GeneralTableName, source_input_param.source_input,
+                             source_input_param.sig_fmt, source_input_param.trans_fmt, mOutPutType);
+            }
+        } else {
+            getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
+                         "TVIN_PORT = %d and "
+                         "TVIN_SIG_FMT = %d and "
+                         "TVIN_TRANS_FMT = %d ;", GeneralTableName, source_input_param.source_input,
+                         source_input_param.sig_fmt, source_input_param.trans_fmt);
+        }
+        ret = 0;
+        break;
+    case MATCH_TYPE_NEWCODE_OLDDB:
+        SYS_LOGE("%s: new systemcontrol don't match old pq.db!\n", __FUNCTION__);
+        break;
+    case MATCH_TYPE_OLDCODE_NEWDB:
+        SYS_LOGE("%s: old pq.db don't match new systemcontrol!\n", __FUNCTION__);
+        break;
+    case MATCH_TYPE_MATCH:
+    default:
+        if ((strcmp(GeneralTableName, "GeneralSharpness0FixedTable") == 0)
+            || (strcmp(GeneralTableName, "GeneralSharpness0VariableTable") == 0)) {
+            if (mOutPutType == OUTPUT_TYPE_LVDS) {//TV
+                getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
+                             "TVIN_PORT = %d and "
+                             "TVIN_SIG_FMT = %d and "
+                             "TVIN_TRANS_FMT = %d ;", GeneralTableName, source_input_param.source_input,
+                             source_input_param.sig_fmt, source_input_param.trans_fmt);
+            } else {//HDMI OUTPUT
+                getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
+                             "TVOUT_CVBS = %d ;", GeneralTableName, mOutPutType);
+            }
+        } else {
+            getSqlParams(__FUNCTION__, sqlmaster, "select TableName from %s where "
+                         "TVIN_PORT = %d and "
+                         "TVIN_SIG_FMT = %d and "
+                         "TVIN_TRANS_FMT = %d and "
+                         "TVOUT_CVBS = %d ;", GeneralTableName, source_input_param.source_input,
+                         source_input_param.sig_fmt, source_input_param.trans_fmt, OUTPUT_TYPE_LVDS);
+        }
+        ret = 0;
+        break;
     }
 
-    ret = this->select(sqlmaster, c);
-    if (ret == 0) {
-        if (c.moveToFirst()) {
-            SYS_LOGD("table name is %s!\n", c.getString(0).string());
-            return c.getString(0);
+    if (ret < 0) {
+        return String8("");
+    } else {
+        ret = this->select(sqlmaster, c);
+        if (ret == 0) {
+            if (c.moveToFirst()) {
+                SYS_LOGD("table name is %s!\n", c.getString(0).string());
+                return c.getString(0);
+            } else {
+                SYS_LOGE("%s don't have this table!\n", GeneralTableName);
+                return String8("");
+            }
         } else {
-            SYS_LOGE("%s don't have this table!\n", GeneralTableName);
+            SYS_LOGE("%s: select action error!\n", __FUNCTION__);
             return String8("");
         }
-    } else {
-        SYS_LOGE("%s error!\n", __FUNCTION__);
-        return String8("");
     }
 }
 
@@ -2468,7 +2518,7 @@ am_regs_t CPQdb::CaculateLevelRegsParam(tvpq_sharpness_regs_t *pq_regs, int leve
 am_regs_t CPQdb::MergeSameAddrVal(am_regs_t regs)
 {
     am_regs_t tmp_reg;
-    int i = 0, k = 0;
+    unsigned int i = 0, k = 0;
     for (i=0;i<regs.length;i++) {
         if (regs.am_reg[i].addr == regs.am_reg[i+1].addr) {
             regs.am_reg[i+1].mask |=  regs.am_reg[i].mask;

@@ -120,6 +120,8 @@ void CPQControl::CPQControlInit()
     } else {
         Cpq_SetDNLPStatus(VE_DNLP_STATE_OFF);
     }
+    //check output mode
+    mCurentOutputType = CheckOutPutMode(); // must do before load pq param
     //Load PQ
     if (LoadPQSettings() < 0) {
         SYS_LOGE("Load PQ failed!\n");
@@ -337,14 +339,7 @@ void CPQControl::onHDRStatusChange()
 void CPQControl::onTXStatusChange()
 {
     SYS_LOGD("%s!\n", __FUNCTION__);
-
-    output_type_t mode = GetTxOutPutMode();
-    mPQdb->mOutPutType = mode;
-    if ((mode == OUTPUT_TYPE_MAX) || !(isCVBSParamValid())) {
-        SYS_LOGD("%s: no need load TX pq param!\n", __FUNCTION__);
-    } else {
-        LoadPQSettings();
-    }
+    SetCurrentSourceInputInfo(mCurentSourceInputInfo);
 }
 
 int CPQControl::LoadPQSettings()
@@ -5097,14 +5092,18 @@ int CPQControl::SetCurrentSourceInputInfo(source_input_param_t source_input_para
     }
     SYS_LOGD("%s: hdr status is %d!\n", __FUNCTION__, mPQdb->mHdrStatus);
 
+    CheckOutPutMode();
+
     if ((mCurentSourceInputInfo.source_input != source_input_param.source_input) ||
          (mCurentSourceInputInfo.sig_fmt != source_input_param.sig_fmt) ||
          (mCurentSourceInputInfo.trans_fmt != source_input_param.trans_fmt) ||
-         (mCurrentHdrStatus != mPQdb->mHdrStatus)) {
+         (mCurrentHdrStatus != mPQdb->mHdrStatus) ||
+         (mCurentOutputType != mPQdb->mOutPutType)) {
         mCurentSourceInputInfo.source_input = source_input_param.source_input;
         mCurentSourceInputInfo.sig_fmt = source_input_param.sig_fmt;
         mCurentSourceInputInfo.trans_fmt = source_input_param.trans_fmt;
         mCurrentHdrStatus = mPQdb->mHdrStatus;
+        mCurentOutputType = mPQdb->mOutPutType;
 
         if (mbCpqCfg_pq_param_check_source_enable) {
             mSourceInputForSaveParam = mCurentSourceInputInfo.source_input;
@@ -5560,28 +5559,79 @@ bool CPQControl::CheckHdmiOutFbcExist()
     return ret;
 }
 
-output_type_t CPQControl::GetTxOutPutMode(void)
+output_type_t CPQControl::CheckOutPutMode(void)
 {
-    char buf[32] = {0};
-    output_type_t OutPutType = OUTPUT_TYPE_MAX;
-    if ((pqReadSys(SYS_DISPLAY_MODE_PATH, buf, sizeof(buf)) < 0) || (strlen(buf) == 0)) {
-        SYS_LOGD("Read /sys/class/display/mode failed!\n");
-        OutPutType = OUTPUT_TYPE_MAX;
-    } else {
-        SYS_LOGD( "%s: current output mode is %s!\n", __FUNCTION__, buf);
-        if (strstr(buf, "null")) {
-            OutPutType = OUTPUT_TYPE_MAX;
-        } else if (strstr(buf, "480cvbs")) {
-            OutPutType = OUTPUT_TYPE_NTSC;
-        } else if(strstr(buf, "576cvbs")) {
-            OutPutType = OUTPUT_TYPE_PAL;
+    output_type_t OutPutType = OUTPUT_TYPE_LVDS;
+    if (!isFileExist(HDMI_OUTPUT_CHECK_PATH)) {//lvds output
+        OutPutType = OUTPUT_TYPE_LVDS;
+    } else {//hdmi output
+        char outputModeBuf[32] = {0};
+        if ((pqReadSys(SYS_DISPLAY_MODE_PATH, outputModeBuf, sizeof(outputModeBuf)) < 0) || (strlen(outputModeBuf) == 0)) {
+            SYS_LOGD("Read %s failed!\n", SYS_DISPLAY_MODE_PATH);
         } else {
-            OutPutType = OUTPUT_TYPE_HDMI;
-        }
+            SYS_LOGD( "%s: current output mode is %s!\n", __FUNCTION__, outputModeBuf);
+            if (strstr(outputModeBuf, "480cvbs")) {
+                OutPutType = OUTPUT_TYPE_NTSC;
+            } else if(strstr(outputModeBuf, "576cvbs")) {
+                OutPutType = OUTPUT_TYPE_PAL;
+            } else {
+                char inputModeBuf[32] = {0}, tempBuf[8] = {0};
+                int inputFrameHeight = 1080, outputFrameHeight = 1080;
+                if ((pqReadSys(SYS_VIDEO_FRAME_HEIGHT, inputModeBuf, sizeof(inputModeBuf)) < 0) || (strlen(inputModeBuf) == 0)) {
+                    SYS_LOGD("Read %s failed!\n", SYS_VIDEO_FRAME_HEIGHT);
+                } else {
+                    inputFrameHeight = atoi(inputModeBuf);
+                }
 
-        SYS_LOGD("%s: output mode is %d!\n", __FUNCTION__, OutPutType);
+                if (inputFrameHeight <= 0) {
+                    inputFrameHeight = 1080;
+                }
+
+                int outputModeStrSize = strlen(outputModeBuf);
+                strncpy(tempBuf, outputModeBuf, (outputModeStrSize-4));//delete "xxhz"
+                SYS_LOGD( "%s: size is %d, str is : %s!\n", __FUNCTION__, outputModeStrSize, tempBuf);
+                if (strstr(tempBuf, "smpte")) {
+                    outputFrameHeight = 4096;
+                } else {
+                    memset(tempBuf,0, sizeof(tempBuf));
+                    strncpy(tempBuf, outputModeBuf, (outputModeStrSize - 5));//delete "pxxhz"
+                    outputFrameHeight = atoi(tempBuf);
+                }
+                SYS_LOGD("%s: inputFrameHeight: %d, outputFrameHeight: %d!\n", __FUNCTION__, inputFrameHeight, outputFrameHeight);
+                //check outputmode
+                if (inputFrameHeight > 1088) {//inputsource is 4k
+                    OutPutType = OUTPUT_TYPE_HDMI_4K;
+                } else if (inputFrameHeight > 720 && inputFrameHeight <= 1088) {//inputsource is 1080
+                    OutPutType = OUTPUT_TYPE_HDMI_NOSCALE;
+                } else {//input source 720 or 480
+                    if (inputFrameHeight >= outputFrameHeight) {//input height >= output height
+                        OutPutType = OUTPUT_TYPE_HDMI_NOSCALE;
+                    } else {//input height < output height
+                        if (inputFrameHeight > 576 && inputFrameHeight < 1088) {//inputsource is 720
+                            if (outputFrameHeight == 4096) {
+                                OutPutType = OUTPUT_TYPE_HDMI_HD_4096;
+                            } else if (outputFrameHeight >= inputFrameHeight * 2) {
+                                OutPutType = OUTPUT_TYPE_HDMI_HD_UPSCALE;
+                            } else {
+                                OutPutType = OUTPUT_TYPE_HDMI_NOSCALE;
+                            }
+                        } else {//inputsource is 480
+                            if (outputFrameHeight == 4096) {
+                                OutPutType = OUTPUT_TYPE_HDMI_SD_4096;
+                            } else if (outputFrameHeight >= inputFrameHeight * 2) {
+                                OutPutType = OUTPUT_TYPE_HDMI_SD_UPSCALE;
+                            } else {
+                                OutPutType = OUTPUT_TYPE_HDMI_NOSCALE;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
+    SYS_LOGD("%s: output mode is %d!\n", __FUNCTION__, OutPutType);
+    mPQdb->mOutPutType = OutPutType;
     return OutPutType;
 }
 

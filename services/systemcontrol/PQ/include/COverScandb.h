@@ -25,8 +25,11 @@
 #ifdef PROP_DEBUG_PQ
 #undef PROP_DEBUG_PQ
 #endif
-
 #define PROP_DEBUG_PQ "tv.debug.pq.enable"
+
+#ifdef getSqlParams
+#undef getSqlParams
+#endif
 #define getSqlParams(func, buffer, args...) \
     do{\
         sprintf(buffer, ##args);\

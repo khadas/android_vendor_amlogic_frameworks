@@ -40,8 +40,8 @@ public:
     int OpenDevice(int serial_dev_id);
     int CloseDevice();
 
-    int writeFile(const unsigned char *pData, unsigned int uLen);
-    int readFile(unsigned char *pBuf, unsigned int uLen);
+    int writeFile(const unsigned char *pData, int uLen);
+    int readFile(void*pBuf, int uLen);
     int set_opt(int speed, int db, int sb, char pb, int overtime, bool raw_mode);
     int setup_serial(unsigned int baud_rate);
     int getDevId()

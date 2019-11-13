@@ -7,100 +7,41 @@
  *
  */
 
-#ifndef _SHA1_H
-#define _SHA1_H
+#ifndef SHA1_H
+#define SHA1_H
 
-//extern "C"
-//{
+#include "stdint.h"
 
-#define SHA1_SUM_POS    -0x20
-#define SHA1_SUM_LEN    20
-
-/**
- * \brief SHA-1 context structure
- */
 typedef struct
 {
-    unsigned long total[2];/*!< number of bytes processed*/
-    unsigned long state[5];/*!< intermediate digest state*/
-    unsigned char buffer[64];/*!< data block being processed*/
-}
-sha1_context;
+    uint32_t state[5];
+    uint32_t count[2];
+    unsigned char buffer[64];
+} SHA1_CTX;
 
-/**
- * \brief    SHA-1 context setup
- *
- * \param ctx    SHA-1 context to be initialized
- */
-void sha1_starts( sha1_context *ctx );
+void SHA1Transform(
+    uint32_t state[5],
+    const unsigned char buffer[64]
+    );
 
-/**
- * \brief SHA-1 process buffer
- *
- * \param ctx SHA-1 context
- * \param input buffer holding the  data
- * \param ilen length of the input data
- */
-void sha1_update( sha1_context *ctx, unsigned char *input, int ilen );
+void SHA1Init(
+    SHA1_CTX * context
+    );
 
-/**
- * \brief SHA-1 final digest
- *
- * \param ctx SHA-1 context
- * \param output SHA-1 checksum result
- */
-void sha1_finish( sha1_context *ctx, unsigned char output[20] );
+void SHA1Update(
+    SHA1_CTX * context,
+    const unsigned char *data,
+    uint32_t len
+    );
 
-/**
- * \brief Output = SHA-1( input buffer )
- *
- * \param input    buffer holding the  data
- * \param ilen    length of the input data
- * \param output   SHA-1 checksum result
- */
-void sha1_csum( unsigned char *input, int ilen,
-  unsigned char output[20] );
+void SHA1Final(
+    unsigned char digest[20],
+    SHA1_CTX * context
+    );
 
-/**
- * \brief    Output = SHA-1( input buffer ), with watchdog triggering
- *
- * \param input    buffer holding the  data
- * \param ilen    length of the input data
- * \param output   SHA-1 checksum result
- * \param chunk_sz watchdog triggering period (in bytes of input processed)
- */
-void sha1_csum_wd (unsigned char *input, int ilen,
-  unsigned char output[20], unsigned int chunk_sz);
+void SHA1(
+    unsigned char *hash_out,
+    unsigned char *str,
+    int len);
 
-/**
- * \brief    Output = SHA-1( file contents )
- *
- * \param path    input file name
- * \param output   SHA-1 checksum result
- * \return    0 if successful, or 1 if fopen failed
- */
-int sha1_file( char *path, unsigned char output[20] );
-
-/**
- * \brief    Output = HMAC-SHA-1( input buffer, hmac key )
- *
- * \param key    HMAC secret key
- * \param keylen   length of the HMAC key
- * \param input    buffer holding the  data
- * \param ilen    length of the input data
- * \param output   HMAC-SHA-1 result
- */
-void sha1_hmac( unsigned char *key, int keylen,
-  unsigned char *input, int ilen,
-  unsigned char output[20] );
-
-/**
- * \brief    Checkup routine
- *
- * \return    0 if successful, or 1 if the test failed
- */
-int sha1_self_test( void );
-
-int gen_sha1sum_verify(const char* srFile, char* verifyData);
-//}
-#endif /* sha1.h */
+#endif /* SHA1_H */

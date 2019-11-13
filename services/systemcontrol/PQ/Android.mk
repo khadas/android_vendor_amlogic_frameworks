@@ -13,7 +13,6 @@ endif
 
 PQ_INCLUDE_PATH := $(wildcard $(BOARD_AML_VENDOR_PATH)frameworks/services/systemcontrol/PQ/include)
 LIB_SQLITE_PATH := $(wildcard external/sqlite/dist)
-LIB_TV_BINDER_PATH := $(wildcard $(BOARD_AML_VENDOR_PATH)tv/frameworks/libtvbinder)
 
 LOCAL_SRC_FILES:= \
   CPQdb.cpp \
@@ -37,13 +36,21 @@ LOCAL_SHARED_LIBRARIES := \
   libutils  \
   liblog \
   libcutils \
-  libtvbinder \
-  libbinder
+  libbinder \
+  libfbc
 
 LOCAL_C_INCLUDES := \
-  $(LIB_TV_BINDER_PATH)/include \
   $(PQ_INCLUDE_PATH) \
-  $(LIB_SQLITE_PATH)
+  $(LIB_SQLITE_PATH) \
+  $(BOARD_AML_VENDOR_PATH)/frameworks/services/fbc_tool/libfbc/include
+
+LOCAL_CFLAGS += -Wno-unused-variable -Wno-unused-parameter -Wno-implicit-fallthrough
+
+ifeq ($(TARGET_BUILD_LIVETV), true)
+  LOCAL_CFLAGS += -DSUPPORT_TVSERVICE
+  LOCAL_SHARED_LIBRARIES += libtvbinder
+  LOCAL_C_INCLUDES += $(wildcard $(BOARD_AML_VENDOR_PATH)tv/frameworks/libtvbinder/include)
+endif
 
 LOCAL_MODULE:= libpqcontrol
 

@@ -204,18 +204,19 @@ int SSMAction::RestoreDeviceMarkValues()
     return 0;
 }
 
-int SSMAction::WriteBytes(int offset, int size, unsigned char *buf)
+int SSMAction::WriteBytes(int offset, int size, int *buf)
 {
     lseek(m_dev_fd, offset, SEEK_SET);
     write(m_dev_fd, buf, size);
 
     return 0;
 }
-int SSMAction::ReadBytes(int offset, int size, unsigned char *buf)
+int SSMAction::ReadBytes(int offset, int size, int *buf)
 {
 
     lseek(m_dev_fd, offset, SEEK_SET);
     read(m_dev_fd, buf, size);
+
     return 0;
 }
 int SSMAction::EraseAllData()
@@ -243,6 +244,7 @@ int SSMAction::GetSSMStatus(void)
 
 int SSMAction::SSMWriteNTypes(int id, int data_len, int *data_buf, int offset)
 {
+    //SYS_LOGD("%s: id = %d, len = %d, offset = %d\n", __FUNCTION__, id, data_len, offset);
     pthread_mutex_lock(&ssm_r_w_op_mutex);
     if (data_buf == NULL) {
         SYS_LOGE("data_buf is NULL.\n");
@@ -256,7 +258,8 @@ int SSMAction::SSMWriteNTypes(int id, int data_len, int *data_buf, int offset)
     }
 
     unsigned int actualAddr = mSSMHandler->SSMGetActualAddr(id) + offset;
-    if (WriteBytes(actualAddr, data_len, (unsigned char *) data_buf) < 0) {
+    //SYS_LOGD("%s: actualAddr = %u, data = %d.\n", __FUNCTION__, actualAddr, *data_buf);
+    if (WriteBytes(actualAddr, data_len, data_buf) < 0) {
         SYS_LOGE("device WriteNBytes error.\n");
         pthread_mutex_unlock(&ssm_r_w_op_mutex);
         return -1;
@@ -267,8 +270,8 @@ int SSMAction::SSMWriteNTypes(int id, int data_len, int *data_buf, int offset)
 
 int SSMAction::SSMReadNTypes(int id, int data_len, int *data_buf, int offset)
 {
+    //SYS_LOGD("%s: id = %d, len = %d, offset = %d\n", __FUNCTION__, id, data_len, offset);
     pthread_mutex_lock(&ssm_r_w_op_mutex);
-
     if (data_buf == NULL) {
         SYS_LOGE("data_buf is NULL.\n");
         pthread_mutex_unlock(&ssm_r_w_op_mutex);
@@ -281,13 +284,14 @@ int SSMAction::SSMReadNTypes(int id, int data_len, int *data_buf, int offset)
     }
 
     unsigned int actualAddr = mSSMHandler->SSMGetActualAddr(id) + offset;
-
-    if (ReadBytes(actualAddr, data_len, (unsigned char *) data_buf) < 0) {
+    if (ReadBytes(actualAddr, data_len, data_buf) < 0) {
         SYS_LOGE("device ReadNBytes error.\n");
         pthread_mutex_unlock(&ssm_r_w_op_mutex);
         return -1;
     }
     pthread_mutex_unlock(&ssm_r_w_op_mutex);
+
+    //SYS_LOGD("%s: actualAddr = %u, data = %d.\n", __FUNCTION__, actualAddr, *data_buf);
     return 0;
 }
 
@@ -298,7 +302,7 @@ bool SSMAction::SSMRecovery()
 
     ret = mSSMHandler->SSMSaveCurrentHeader(&header_cur);
 
-    unsigned char* SSMBuff = (unsigned char*) malloc(header_cur.size);
+    int *SSMBuff = (int*) malloc(header_cur.size);
 
     if (!SSMBuff)
         ret = false;
@@ -513,7 +517,7 @@ int SSMAction::SSMReadColorBaseMode(unsigned char *rw_val)
 int SSMAction::SSMSaveRGBGainRStart(int offset, unsigned int rw_val)
 {
     int tmp_val = rw_val;
-    return SSMWriteNTypes(VPP_DATA_POS_RGB_GAIN_R_START, 1, &tmp_val, offset);
+    return SSMWriteNTypes(VPP_DATA_POS_RGB_GAIN_R_START, 4, &tmp_val, offset);
 }
 
 int SSMAction::SSMReadRGBGainRStart(int offset, unsigned int *rw_val)
@@ -521,7 +525,7 @@ int SSMAction::SSMReadRGBGainRStart(int offset, unsigned int *rw_val)
     int tmp_val = 0;
     int ret = 0;
 
-    ret = SSMReadNTypes(VPP_DATA_POS_RGB_GAIN_R_START, 1, &tmp_val, offset);
+    ret = SSMReadNTypes(VPP_DATA_POS_RGB_GAIN_R_START, 4, &tmp_val, offset);
     *rw_val = tmp_val;
 
     return ret;
@@ -530,14 +534,14 @@ int SSMAction::SSMReadRGBGainRStart(int offset, unsigned int *rw_val)
 int SSMAction::SSMSaveRGBGainGStart(int offset, unsigned int rw_val)
 {
     int tmp_val = rw_val;
-    return SSMWriteNTypes(VPP_DATA_POS_RGB_GAIN_G_START, 1, &tmp_val, offset);
+    return SSMWriteNTypes(VPP_DATA_POS_RGB_GAIN_G_START, 4, &tmp_val, offset);
 }
 
 int SSMAction::SSMReadRGBGainGStart(int offset, unsigned int *rw_val)
 {
     int tmp_val = 0;
     int ret = 0;
-    ret = SSMReadNTypes(VPP_DATA_POS_RGB_GAIN_G_START, 1, &tmp_val, offset);
+    ret = SSMReadNTypes(VPP_DATA_POS_RGB_GAIN_G_START, 4, &tmp_val, offset);
     *rw_val = tmp_val;
 
     return ret;
@@ -546,14 +550,14 @@ int SSMAction::SSMReadRGBGainGStart(int offset, unsigned int *rw_val)
 int SSMAction::SSMSaveRGBGainBStart(int offset, unsigned int rw_val)
 {
     int tmp_val = rw_val;
-    return SSMWriteNTypes(VPP_DATA_POS_RGB_GAIN_B_START, 1, &tmp_val, offset);
+    return SSMWriteNTypes(VPP_DATA_POS_RGB_GAIN_B_START, 4, &tmp_val, offset);
 }
 
 int SSMAction::SSMReadRGBGainBStart(int offset, unsigned int *rw_val)
 {
     int tmp_val = 0;
     int ret = 0;
-    ret = SSMReadNTypes(VPP_DATA_POS_RGB_GAIN_B_START, 1, &tmp_val, offset);
+    ret = SSMReadNTypes(VPP_DATA_POS_RGB_GAIN_B_START, 4, &tmp_val, offset);
     *rw_val = tmp_val;
 
     return ret;
@@ -791,7 +795,9 @@ int SSMAction::SSMSaveHue(int offset, int rw_val)
 int SSMAction::SSMReadHue(int offset, int *rw_val)
 {
     int ret = 0;
-    ret = SSMReadNTypes(VPP_DATA_POS_HUE_START, 1, rw_val, offset);
+    int tmp_val = 0;
+    ret = SSMReadNTypes(VPP_DATA_POS_HUE_START, 1, &tmp_val, offset);
+    *rw_val = tmp_val;
 
     return ret;
 }
@@ -913,25 +919,25 @@ int SSMAction::SSMReadDynamicBacklightMode(int *rw_val)
 
 int SSMAction::SSMSaveDnlpMode(int offset, int rw_val)
 {
-    return SSMWriteNTypes(VPP_DATA_DNLP_MODE_START, 1, &rw_val);
+    return SSMWriteNTypes(VPP_DATA_DNLP_MODE_START, 1, &rw_val, offset);
 }
 
 int SSMAction::SSMReadDnlpMode(int offset, int *rw_val)
 {
     int ret = 0;
     int tmp_val = 0;
-    ret = SSMReadNTypes(VPP_DATA_DNLP_MODE_START, 1, &tmp_val);
+    ret = SSMReadNTypes(VPP_DATA_DNLP_MODE_START, 1, &tmp_val, offset);
     *rw_val = tmp_val;
 
     return ret;
 }
 
-int SSMAction::SSMSaveDnlpGainValue(int offset, int rw_val)
+int SSMAction::SSMSaveDnlpGainValue(int offset __unused, int rw_val)
 {
     return SSMWriteNTypes(VPP_DATA_DNLP_GAIN_START, 1, &rw_val);
 }
 
-int SSMAction::SSMReadDnlpGainValue(int offset, int *rw_val)
+int SSMAction::SSMReadDnlpGainValue(int offset __unused, int *rw_val)
 
 {
     int ret = 0;
@@ -1065,4 +1071,17 @@ int SSMAction::SSMHdcpSwitcherRestoreDefault(int rw_val) {
 
 int SSMAction::SSMSColorRangeModeRestoreDefault(int rw_val) {
     return SSMWriteNTypes(CUSTOMER_DATA_POS_HDMI_COLOR_RANGE_START, 1, &rw_val);
+}
+
+int SSMAction::SSMSaveLocalContrastMode(int offset, int rw_val) {
+    return SSMWriteNTypes(VPP_DATA_POS_LOCAL_CONTRAST_MODE_START, 1, &rw_val, offset);
+}
+
+int SSMAction::SSMReadLocalContrastMode(int offset, int *rw_val) {
+    int tmp_val = 0;
+    int ret = 0;
+    ret = SSMReadNTypes(VPP_DATA_POS_LOCAL_CONTRAST_MODE_START, 1, &tmp_val, offset);
+    *rw_val = tmp_val;
+
+    return ret;
 }

@@ -36,7 +36,8 @@ using ::vendor::amlogic::hardware::systemcontrol::V1_0::DroidDisplayInfo;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::SourceInputParam;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::NolineParam;
 using ::vendor::amlogic::hardware::systemcontrol::V1_0::OverScanParam;
-using ::vendor::amlogic::hardware::systemcontrol::V1_0::TconRgbOgo;
+using ::vendor::amlogic::hardware::systemcontrol::V1_0::WhiteBalanceParam;
+using ::vendor::amlogic::hardware::systemcontrol::V1_0::PQDatabaseInfo;
 using ::android::hardware::hidl_vec;
 using ::android::hardware::hidl_string;
 using ::android::hardware::hidl_array;
@@ -130,7 +131,7 @@ public:
     bool setActiveDispMode(std::string& activeDispMode);
 
     void isHDCPTxAuthSuccess(int &status);
-
+    bool getModeSupportDeepColorAttr(const std::string& mode, const std::string& color);
     //PQ
     int loadPQSettings(source_input_param_t srcInputParam);
     int setPQmode(int mode, int isSave, int is_autoswitch);
@@ -139,6 +140,8 @@ public:
     int setColorTemperature(int mode, int isSave);
     int getColorTemperature(void);
     int saveColorTemperature(int mode);
+    int setColorTemperatureUserParam(int mode, int isSave, int param_type, int value);
+    tcon_rgb_ogo_t getColorTemperatureUserParam(void);
     int setBrightness(int value, int isSave);
     int getBrightness(void);
     int saveBrightness(int value);
@@ -169,6 +172,10 @@ public:
     int saveBacklight(int value);
     int setDynamicBacklight(int mode, int isSave);
     int getDynamicBacklight(void);
+    int setLocalContrastMode(int mode, int isSave);
+    int getLocalContrastMode();
+    int setColorBaseMode(int mode, int isSave);
+    int getColorBaseMode();
     bool checkLdimExist(void);
     int factoryResetPQMode(void);
     int factorySetPQMode_Brightness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value);
@@ -200,6 +207,7 @@ public:
     int setPLLValues(source_input_param_t srcInputParam);
     int setCVD2Values(void);
     int getSSMStatus(void);
+    int setCurrentHdrInfo(int32_t hdrInfo);
     int setCurrentSourceInfo(int32_t sourceInput, int32_t sigFmt, int32_t transFmt);
     void getCurrentSourceInfo(int32_t &sourceInput, int32_t &sigFmt, int32_t &transFmt);
     int setwhiteBalanceGainRed(int32_t inputSrc, int sig_fmt, int trans_fmt, int32_t colortemp_mode, int32_t value);
@@ -243,8 +251,13 @@ public:
     int factoryGetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type);
     int factorySetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type, int val);
     int factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type);
+    PQDatabaseInfo getPQDatabaseInfo(int32_t dataBaseName);
     int setDtvKitSourceEnable(int isEnable);
-	//PQ end
+    //PQ end
+
+    //FBC
+    int StartUpgradeFBC(const std::string&file_name, int mode, int upgrade_blk_size);
+    int UpdateFBCUpgradeStatus(int state, int param);
 
     void setListener(const sp<SysCtrlListener> &listener);
 
@@ -253,16 +266,23 @@ public:
      public:
          SystemControlHidlCallback(SystemControlClient *client): SysCtrlClient(client) {};
          Return<void> notifyCallback(const int event) override;
-         Return<void> notifyFBCUpgradeCallback(int state, int param) ;
+         Return<void> notifyFBCUpgradeCallback(int state, int param) override;
      private:
          SystemControlClient *SysCtrlClient;
      };
 
-    struct SystemControlDeathRecipient : public android::hardware::hidl_death_recipient  {
+    class SystemControlDeathRecipient : public android::hardware::hidl_death_recipient  {
+    public:
+        SystemControlDeathRecipient(SystemControlClient* client): mClient(client) {};
         // hidl_death_recipient interface
         virtual void serviceDied(uint64_t cookie,
             const ::android::wp<::android::hidl::base::V1_0::IBase>& who) override;
+    private:
+        SystemControlClient* mClient;
     };
+
+    void connect();
+
     sp<SystemControlDeathRecipient> mDeathRecipient = nullptr;
     static SystemControlClient *mInstance;
 

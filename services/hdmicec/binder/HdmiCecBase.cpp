@@ -7,14 +7,24 @@
  * Description: C++ file
  */
 
-#define LOG_NDEBUG 0
-#define LOG_CEE_TAG "HdmiCecBase"
+#define LOG_TAG "hdmicecd"
 
 #include "HdmiCecBase.h"
 
-int mLogLevel = LOG_LEVEL_1;
-
 namespace android {
+static const char* HDMI = "HDMI";
+
+HdmiCecBase::HdmiCecBase() {
+    int isLoggable = __android_log_is_loggable(ANDROID_LOG_DEBUG, HDMI, ANDROID_LOG_INFO);
+    if (isLoggable) {
+        ALOGD("open hdmicec debug log");
+        mLogLevel = LOG_LEVEL_2;
+    } else {
+        mLogLevel = LOG_LEVEL_1;
+    }
+}
+
+
 
 void HdmiCecBase::printCecMsgBuf(const char *msg_buf, int len)
 {

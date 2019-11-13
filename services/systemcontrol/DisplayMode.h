@@ -65,6 +65,8 @@ using namespace android;
 
 //#if ANDROID_PLATFORM_SDK_VERSION >= 26 //8.0
 #define DISPLAY_CFG_FILE                "/vendor/etc/mesondisplay.cfg"
+#define FILTER_EDID_CFG_FILE            "/vendor/etc/filteredid.cfg"
+
 //#else
 //#define DISPLAY_CFG_FILE                "/system/etc/mesondisplay.cfg"
 //#endif
@@ -149,6 +151,9 @@ using namespace android;
 #define DOLBY_VISION_LL_POLICY_OLD          "/sys/module/am_vecm/parameters/dolby_vision_ll_policy"
 #define DOLBY_VISION_GRAPHICS_PRIORITY  "/sys/module/amdolby_vision/parameters/dolby_vision_graphics_priority"
 #define DOLBY_VISION_LL_POLICY          "/sys/module/amdolby_vision/parameters/dolby_vision_ll_policy"
+#define DOLBY_VISION_STATUS          "/sys/module/amdolby_vision/parameters/dolby_vision_status"
+
+#define DOLBY_VISION_KO_DIR          "/vendor/lib/modules/dovi.ko"
 
 #define DOLBY_VISION_SET_ENABLE_LL_RGB  3
 #define DOLBY_VISION_SET_ENABLE_LL_YUV  2
@@ -165,6 +170,11 @@ using namespace android;
 
 #define DV_MODE_BYPASS                  "0x0"
 #define DV_MODE_IPT_TUNNEL              "0x2"
+
+#define BYPASS_PROCESS                  "0"
+#define SDR_PROCESS                     "1"
+#define HDR_PROCESS                     "2"
+#define DV_PROCESS                      "3"
 
 #define HDMI_UEVENT_HDMI                "hdmi"
 #define HDMI_UEVENT_HDMI_POWER          "hdmi_power"
@@ -219,12 +229,14 @@ using namespace android;
 #define PROP_DOLBY_VISION_TYPE          "persist.vendor.sys.dolbyvision.type"
 #define PROP_DOLBY_VISION_TV_ENABLE     "persist.vendor.sys.tv.dolbyvision.enable"
 #define PROP_DOLBY_VISION_TV_TYPE       "persist.vendor.sys.tv.dolbyvision.type"
+#define PROP_DOLBY_VISION_CERTIFICATION "persist.vendor.sys.dolbyvision.certification"
 #define PROP_DOLBY_VISION_PRIORITY      "persist.vendor.sys.graphics.priority"
 #define PROP_HDR_MODE_STATE             "persist.vendor.sys.hdr.state"
 #define PROP_SDR_MODE_STATE             "persist.vendor.sys.sdr.state"
 #define PROP_DISPLAY_SIZE_CHECK         "vendor.display-size.check"
 #define PROP_DISPLAY_SIZE               "vendor.display-size"
 #define PROP_ENABLE_SDR2HDR             "ro.vendor.sdr2hdr.enable"
+#define PROP_DISABLE_SDR2HDR            "ro.vendor.sdr2hdr.disable"
 
 #define HDR_MODE_OFF                    "0"
 #define HDR_MODE_ON                     "1"
@@ -249,11 +261,16 @@ using namespace android;
 #define UBOOTENV_OUTPUTMODE             "ubootenv.var.outputmode"
 #define UBOOTENV_ISBESTMODE             "ubootenv.var.is.bestmode"
 #define UBOOTENV_BESTDOLBYVISION        "ubootenv.var.bestdolbyvision"
-#define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.edid.crcvalue"
+#define UBOOTENV_EDIDCRCVALUE           "ubootenv.var.hdmichecksum"
+#define UBOOTENV_HDMICOLORSPACE         "ubootenv.var.hdmi_colorspace"
+#define UBOOTENV_HDMICOLORDEPTH         "ubootenv.var.hdmi_colordepth"
+#define UBOOTENV_DOLBYSTATUS            "ubootenv.var.dolby_status"
 
 #define UBOOTENV_REBOOT_MODE           "ubootenv.var.reboot_mode_android"
 
 #define UBOOTENV_SDR2HDR               "ubootenv.var.sdr2hdr"
+#define PROP_DEEPCOLOR_CTL              "persist.sys.open.deepcolor" // 8, 10, 12
+#define PROP_PIXFMT                     "persist.sys.open.pixfmt" // rgb, ycbcr
 
 #define FULL_WIDTH_480                  720
 #define FULL_HEIGHT_480                 480
@@ -417,6 +434,7 @@ public:
     void setTvModelName();
     void setLogLevel(int level);
     int dump(char *result);
+    void setTvRecoveryDisplay();
     void setSourceOutputMode(const char* outputmode);
     void setSinkOutputMode(const char* outputmode);
     void setDigitalMode(const char* mode);
@@ -462,6 +480,7 @@ public:
 
     void setBootanimStatus(int status);
     void getBootanimStatus(int *status);
+    bool getModeSupportDeepColorAttr(const char* outputmode,const char * color);
     bool getPrefHdmiDispMode(char* mode);
 
 private:
@@ -470,6 +489,7 @@ private:
     void setBootEnv(const char* key, char* value);
 
     int parseConfigFile();
+    int parseFilterEdidConfigFile();
     void getBestHdmiMode(char * mode, hdmi_data_t* data);
     void getHighestHdmiMode(char* mode, hdmi_data_t* data);
     void getHighestPriorityMode(char* mode, hdmi_data_t* data);
@@ -492,11 +512,14 @@ private:
     void startHdmiPlugDetectThread();
     void startBootanimDetectThread();
     void startBootvideoDetectThread();
+    bool getCurDolbyVisionState(int state, output_mode_state mode_state);
     static void* HdmiUenventThreadLoop(void* data);
     void setSinkDisplay(bool initState);
     int getBootenvInt(const char* key, int defaultVal);
     void dumpCap(const char * path, const char * hint, char *result);
     void dumpCaps(char *result=NULL);
+    void saveHdmiParamToEnv();
+    bool checkDolbyVisionStatusChanged(int state);
 
 
     const char* pConfigPath;
@@ -520,13 +543,17 @@ private:
 
     HDCPTxAuth *pTxAuth = NULL;
     HDCPRxAuth *pRxAuth = NULL;
-
+    std::string mFilterEdid;
+    std::map<int, std::string> mFilterEdidList;
+    FormatColorDepth *pmDeepColor = NULL;
     // bootAnimation flag
     int mBootanimStatus;
     bool setDolbyVisionState = true;
+    char mEdid[1025] = {0};
 #ifndef RECOVERY_MODE
     sp<SystemControlNotify> mNotifyListener;
 #endif
+    int mDvStatus;
 };
 
 #endif // ANDROID_DISPLAY_MODE_H

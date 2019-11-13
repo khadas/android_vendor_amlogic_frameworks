@@ -17,6 +17,7 @@
 #define CFG_SECTION_PQ                          "PQ"
 #define CFG_BIG_SMALL_DB_ENABLE                 "pq.BigSmallDb.en"
 #define CFG_ALL_PQ_MOUDLE_ENABLE                "pq.AllPQMoudle.en"
+#define CFG_PQ_PARAM_CHECK_SOURCE_ENABLE        "pq.ParamCheckSource.en"
 #define CFG_BRIGHTNESS_ENABLE                   "pq.brightness.contrast.en"
 #define CFG_SATUATION_ENABLE                    "pq.satuation.hue.en"
 #define CFG_BLACKEXTENSION_ENABLE               "pq.BlackExtension.en"
@@ -36,6 +37,8 @@
 #define CFG_BRIGHTNESS_WITHOSD_ENABLE           "pq.BrightnessWithOSD.en"
 #define CFG_CONTRAST_WITHOSD_ENABLE             "pq.ContrastWithOSD.en"
 #define CFG_HUE_WITHOSD_ENABLE                  "pq.HueWithOSD.en"
+#define CFG_TVHAL_ENABLE                        "pq.tvhal.en"
+#define CFG_LOCAL_CONTRAST_ENABLE               "pq.LocalContrast.en"
 
 //pq param default value
 #define CFG_PICTUREMODE_DEF                     "pq.PictureMode.def"
@@ -58,6 +61,7 @@
 #define CFG_EYEPROJECTMODE_DEF                  "pq.EyeProtectionMode.def"
 #define CFG_DDRSSC_DEF                          "pq.DDRSSC.def"
 #define CFG_LVDSSSC_DEF                         "pq.LVDSSSC.def"
+#define CFG_LOCALCONTRASTMODE_DEF               "pq.LocalContrastMode.def"
 
 //for backlight
 #define CFG_SECTION_BACKLIGHT                   "BACKLIGHT"
@@ -71,6 +75,7 @@
 #define CFG_EDID_VERSION_DEF                    "hdmi.edid.version.def"
 #define CFG_HDCP_SWITCHER_DEF                   "hdmi.hdcp.switcher.def"
 #define CFG_COLOR_RANGE_MODE_DEF                "hdmi.color.range.mode.def"
+#define CFG_HDMI_OUT_WITH_FBC_ENABLE            "hdmi.out.with.fbc.en"
 
 static const int MAX_CONFIG_FILE_LINE_LEN = 512;
 

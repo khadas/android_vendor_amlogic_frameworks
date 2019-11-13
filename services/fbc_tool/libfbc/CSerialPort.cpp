@@ -1,20 +1,14 @@
 /*
-** Copyright 2008, The Android Open Source Project
-**
-** Licensed under the Apache License, Version 2.0 (the "License");
-** you may not use this file except in compliance with the License.
-** You may obtain a copy of the License at
-**
-**     http://www.apache.org/licenses/LICENSE-2.0
-**
-** Unless required by applicable law or agreed to in writing, software
-** distributed under the License is distributed on an "AS IS" BASIS,
-** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-** See the License for the specific language governing permissions and
-** limitations under the License.
-*/
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
+ * Description: c++ file
+ */
 
-#define LOG_TAG "CSerialPort"
+#define LOG_TAG "FBC"
+#define LOG_FBC_TAG "CSerialPort"
 
 #include "CSerialPort.h"
 #include <pthread.h>
@@ -27,16 +21,12 @@
 #include <string.h>
 #include <termios.h>
 #include <errno.h>
-#include <utils/Log.h>
-
 
 static int com_read_data(int hComm, unsigned char *pData, unsigned int uLen)
 {
     char inbuff[uLen];
     char buff[uLen];
     char tempbuff[uLen];
-    int i = 0, j = 0;
-
     memset(inbuff, '\0', uLen);
     memset(buff, '\0', uLen);
     memset(tempbuff, '\0', uLen);
@@ -52,7 +42,7 @@ static int com_read_data(int hComm, unsigned char *pData, unsigned int uLen)
     int MaxFd = 0;
 
     unsigned int c = 0;
-    int z, k;
+    int z;
 
     do {
         FD_ZERO(&readset);
@@ -144,7 +134,7 @@ int CSerialPort::CloseDevice()
     return 0;
 }
 
-void CSerialPort::set_speed(int fd, int speed)
+void CSerialPort::set_speed (int fd, int speed)
 {
     int i;
     int status;
@@ -160,12 +150,12 @@ void CSerialPort::set_speed(int fd, int speed)
                 perror ("tcsetattr fd1");
                 return;
             }
-            tcflush(fd, TCIOFLUSH);
+            tcflush (fd, TCIOFLUSH);
         }
     }
 }
 
-int CSerialPort::set_Parity(int fd, int databits, int stopbits, int parity)
+int CSerialPort::set_Parity (int fd, int databits, int stopbits, int parity)
 {
     struct termios options;
     if (tcgetattr (fd, &options) != 0) {
@@ -207,7 +197,7 @@ int CSerialPort::set_Parity(int fd, int databits, int stopbits, int parity)
         options.c_cflag &= ~CSTOPB;
         break;
     default:
-        fprintf(stderr, "Unsupported parity\n");
+        fprintf (stderr, "Unsupported parity\n");
         return (0);
     }
 
@@ -219,7 +209,7 @@ int CSerialPort::set_Parity(int fd, int databits, int stopbits, int parity)
         options.c_cflag |= CSTOPB;
         break;
     default:
-        fprintf(stderr, "Unsupported stop bits\n");
+        fprintf (stderr, "Unsupported stop bits\n");
         return (0);
     }
     /* Set input parity option */
@@ -237,15 +227,15 @@ int CSerialPort::set_Parity(int fd, int databits, int stopbits, int parity)
     options.c_cflag |= CS8;
 
     if (tcsetattr (fd, TCSANOW, &options) != 0) {
-        perror("SetupSerial 3");
+        perror ("SetupSerial 3");
         return (0);
     }
     return (1);
 }
 
-int CSerialPort::setup_serial()
+int CSerialPort::setup_serial(unsigned int baud_rate)
 {
-    set_speed(mFd, 115200);
+    set_speed(mFd, baud_rate);
     set_Parity(mFd, 8, 1, 'N');
     return 0;
 }
@@ -278,7 +268,7 @@ int CSerialPort::set_opt(int speed, int db, int sb, char pb, int overtime, bool 
     setparity(&new_cfg, pb);
 
     if (overtime >= 0) {
-        new_cfg.c_cc[VTIME] = overtime / 100; /* set timeout: seconds */
+        new_cfg.c_cc[VTIME] = overtime / 100;
         new_cfg.c_cc[VMIN] = 0; /* Update the options and do it NOW */
     }
 
@@ -305,7 +295,7 @@ int CSerialPort::writeFile(const unsigned char *pData, unsigned int uLen)
         return len;
     } else {
         tcflush(mFd, TCOFLUSH);
-        ALOGE("write data failed and tcflush hComm\n");
+        //LOGE("write data failed and tcflush hComm\n");
         return -1;
     }
 }
@@ -366,20 +356,3 @@ int CSerialPort::setparity(struct termios *s, char pb)
     return 0;
 }
 
-unsigned int CSerialPort::Calcrc32(unsigned int crc, const unsigned char *ptr, unsigned int buf_len)
-{
-    static const unsigned int s_crc32[16] = {0, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4,
-                                                0x4db26158, 0x5005713c, 0xedb88320, 0xf00f9344, 0xd6d6a3e8,
-                                                0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c};
-    unsigned int crcu32 = crc;
-    //if (buf_len < 0)
-    //    return 0;
-    if (!ptr) return 0;
-    crcu32 = ~crcu32;
-    while (buf_len--) {
-        unsigned char b = *ptr++;
-        crcu32 = (crcu32 >> 4) ^ s_crc32[(crcu32 & 0xF) ^ (b & 0xF)];
-        crcu32 = (crcu32 >> 4) ^ s_crc32[(crcu32 & 0xF) ^ (b >> 4)];
-    }
-    return ~crcu32;
-}

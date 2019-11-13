@@ -22,6 +22,8 @@ LOCAL_SHARED_LIBRARIES += \
 LOCAL_C_INCLUDES += \
   $(BOARD_AML_VENDOR_PATH)/frameworks/services/systemcontrol/PQ/include
 
+LOCAL_CFLAGS += -Wno-unused-variable -Wno-unused-parameter
+
 LOCAL_MODULE:= libsystemcontrolservice
 
 LOCAL_MODULE_TAGS := optional
@@ -55,6 +57,8 @@ LIB_SQLITE_PATH := $(wildcard external/sqlite/dist)
 LOCAL_CFLAGS += -DHDCP_AUTHENTICATION
 LOCAL_CPPFLAGS += -std=c++14
 LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
+LOCAL_CFLAGS += -Wno-unused-variable -Wno-unused-parameter
+
 ifeq ($(HWC_DYNAMIC_SWITCH_VIU), true)
 LOCAL_CFLAGS += -DHWC_DYNAMIC_SWITCH_VIU
 endif
@@ -71,7 +75,6 @@ LOCAL_SRC_FILES:= \
   Dimension.cpp \
   SysTokenizer.cpp \
   UEventObserver.cpp \
-  HDCP/aes.cpp \
   HDCP/HdcpKeyDecrypt.cpp \
   HDCP/HDCPRxKey.cpp \
   HDCP/HDCPRxAuth.cpp \
@@ -88,6 +91,8 @@ LOCAL_SRC_FILES:= \
   VtsHalHidlTargetTestBase.cpp \
   VtsHalHidlTargetTestEnvBase.cpp
 
+  #HDCP/aes.cpp
+
 LOCAL_SHARED_LIBRARIES := \
   libsystemcontrolservice \
   libcutils \
@@ -97,7 +102,8 @@ LOCAL_SHARED_LIBRARIES := \
   libm \
   libpqcontrol \
   libsqlite \
-  libhwbinder
+  libhwbinder \
+  libfbc
 
 LOCAL_SHARED_LIBRARIES += \
   vendor.amlogic.hardware.droidvold@1.0 \
@@ -115,7 +121,8 @@ LOCAL_C_INCLUDES := \
   external/googletest/googletest/include \
   hardware/libhardware/include \
   $(PQ_INCLUDE_PATH) \
-  $(LIB_SQLITE_PATH)
+  $(LIB_SQLITE_PATH) \
+  $(BOARD_AML_VENDOR_PATH)/frameworks/services/fbc_tool/libfbc/include
 
 LOCAL_MODULE:= systemcontrol
 
@@ -154,6 +161,7 @@ endif
 LOCAL_CFLAGS += -DRECOVERY_MODE
 LOCAL_CPPFLAGS += -std=c++14
 LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
+LOCAL_CFLAGS += -Wno-unused-variable -Wno-unused-parameter
 
 LOCAL_SRC_FILES:= \
   main_recovery.cpp \
@@ -162,7 +170,6 @@ LOCAL_SRC_FILES:= \
   DisplayMode.cpp \
   SysTokenizer.cpp \
   UEventObserver.cpp \
-  HDCP/aes.cpp \
   HDCP/HdcpKeyDecrypt.cpp \
   HDCP/HDCPRxKey.cpp \
   HDCP/HDCPRxAuth.cpp \

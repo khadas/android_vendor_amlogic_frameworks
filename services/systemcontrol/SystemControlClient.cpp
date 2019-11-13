@@ -36,15 +36,23 @@ Mutex SystemControlClient::mLock;
 SystemControlClient::SystemControlClient() {
     //mSysCtrl = ISystemControl::getService();
     Mutex::Autolock _l(mLock);
-    sp<ISystemControl> ctrl = ISystemControl::tryGetService();
-    while (ctrl == nullptr) {
-         usleep(200*1000);//sleep 200ms
-         ctrl = ISystemControl::tryGetService();
-         ALOGE("tryGet system control daemon Service");
-    };
+    connect();
+}
 
-    mDeathRecipient = new SystemControlDeathRecipient();
-    Return<bool> linked = ctrl->linkToDeath(mDeathRecipient, /*cookie*/ 0);
+void SystemControlClient::connect() {
+    mSysCtrl = ISystemControl::tryGetService();
+    while (mSysCtrl == nullptr) {
+         usleep(200 * 1000);//sleep 200ms
+         mSysCtrl = ISystemControl::tryGetService();
+    };
+    if (mSysCtrl == nullptr) {
+        ALOGE("tryGet system control daemon Service");
+        return;
+    }
+    if (mDeathRecipient == nullptr) {
+        mDeathRecipient = new SystemControlDeathRecipient(this);
+    }
+    Return<bool> linked = mSysCtrl->linkToDeath(mDeathRecipient, /*cookie*/ 0);
     if (!linked.isOk()) {
         LOG(ERROR) << "Transaction error in linking to system service death: " << linked.description().c_str();
     } else if (!linked) {
@@ -53,10 +61,12 @@ SystemControlClient::SystemControlClient() {
         LOG(INFO) << "Link to system service death notification successful";
     }
 
-    mSystemControlHidlCallback = new SystemControlHidlCallback(this);
-    ctrl->setCallback(mSystemControlHidlCallback);
-    mSysCtrl =ctrl ;
+    if (mSystemControlHidlCallback == nullptr) {
+        mSystemControlHidlCallback = new SystemControlHidlCallback(this);
+    }
+    mSysCtrl->setCallback(mSystemControlHidlCallback);
 }
+
 
 SystemControlClient::~SystemControlClient() {
 
@@ -350,6 +360,15 @@ bool SystemControlClient::getBootEnv(const std::string& key, std::string& value)
 
 void SystemControlClient::setBootEnv(const std::string& key, const std::string& value) {
     mSysCtrl->setBootEnv(key, value);
+}
+
+bool SystemControlClient::getModeSupportDeepColorAttr(const std::string& mode, const std::string& color) {
+    Result rtn;
+    rtn = mSysCtrl->getModeSupportDeepColorAttr(mode,color);
+    if (rtn == Result::OK) {
+        return true;
+    }
+    return false;
 }
 
 void SystemControlClient::getDroidDisplayInfo(int &type __unused, std::string& socType __unused, std::string& defaultUI __unused,
@@ -658,6 +677,25 @@ int SystemControlClient::saveColorTemperature(int mode) {
     return mSysCtrl->saveColorTemperature(mode);
 }
 
+int SystemControlClient::setColorTemperatureUserParam(int mode, int isSave, int param_type, int value) {
+    return mSysCtrl->setColorTemperatureUserParam(mode, isSave, param_type, value);
+}
+
+tcon_rgb_ogo_t SystemControlClient::getColorTemperatureUserParam(void) {
+    tcon_rgb_ogo_t ColorTemperatureParam;
+    memset(&ColorTemperatureParam, 0, sizeof(tcon_rgb_ogo_t));
+    mSysCtrl->getColorTemperatureUserParam([&](const WhiteBalanceParam& param) {
+        ColorTemperatureParam.r_gain = param.r_gain;
+        ColorTemperatureParam.g_gain = param.g_gain;
+        ColorTemperatureParam.b_gain = param.b_gain;
+        ColorTemperatureParam.r_post_offset = param.r_post_offset;
+        ColorTemperatureParam.g_post_offset = param.g_post_offset;
+        ColorTemperatureParam.b_post_offset = param.b_post_offset;
+    });
+
+    return ColorTemperatureParam;
+}
+
 int SystemControlClient::setBrightness(int value, int isSave) {
     return mSysCtrl->setBrightness(value, isSave);
 }
@@ -793,6 +831,25 @@ bool SystemControlClient::checkLdimExist(void)
     } else {
         return true;
     }
+}
+int SystemControlClient::setLocalContrastMode(int mode, int isSave)
+{
+    return mSysCtrl->setLocalContrastMode(mode, isSave);
+}
+
+int SystemControlClient::getLocalContrastMode()
+{
+    return mSysCtrl->getLocalContrastMode();
+}
+
+int SystemControlClient::setColorBaseMode(int mode, int isSave)
+{
+    return mSysCtrl->setColorBaseMode(mode, isSave);
+}
+
+int SystemControlClient::getColorBaseMode()
+{
+    return mSysCtrl->getColorBaseMode();
 }
 
 int SystemControlClient::factoryResetPQMode(void) {
@@ -930,6 +987,10 @@ int SystemControlClient::setCVD2Values(void) {
 
 int SystemControlClient::getSSMStatus(void) {
     return mSysCtrl->getSSMStatus();
+}
+
+int SystemControlClient::setCurrentHdrInfo(int32_t hdrInfo) {
+    return mSysCtrl->setCurrentHdrInfo(hdrInfo);
 }
 
 int SystemControlClient::setCurrentSourceInfo(int32_t sourceInput, int32_t sigFmt, int32_t transFmt) {
@@ -1110,10 +1171,33 @@ int SystemControlClient::factoryGetSharpnessParams(int inputSrc, int sig_fmt, in
     return mSysCtrl->factoryGetSharpnessParams(inputSrc, sig_fmt, trans_fmt, isHD, param_type);
 }
 
-int SystemControlClient::setDtvKitSourceEnable(int isEnable) {
-	return mSysCtrl->setDtvKitSourceEnable(isEnable);
+PQDatabaseInfo SystemControlClient::getPQDatabaseInfo(int32_t dataBaseName) {
+    PQDatabaseInfo pqdatabaseinfo;
+    mSysCtrl->getPQDatabaseInfo(dataBaseName, [&](const Result &ret, const PQDatabaseInfo& Info) {
+        if (Result::OK == ret) {
+            pqdatabaseinfo.ToolVersion = Info.ToolVersion;
+            pqdatabaseinfo.ProjectVersion = Info.ProjectVersion;
+            pqdatabaseinfo.GenerateTime = Info.GenerateTime;
+        }
+   });
+   return pqdatabaseinfo;
 }
+
+int SystemControlClient::setDtvKitSourceEnable(int isEnable) {
+    return mSysCtrl->setDtvKitSourceEnable(isEnable);
+}
+
 //PQ end
+
+//FBC
+int SystemControlClient::StartUpgradeFBC(const std::string&file_name, int mode, int upgrade_blk_size) {
+    return mSysCtrl->StartUpgradeFBC(file_name, mode, upgrade_blk_size);
+}
+
+int SystemControlClient::UpdateFBCUpgradeStatus(int state, int param)
+{
+    return mSysCtrl->UpdateFBCUpgradeStatus(state, param);
+}
 
 
 void SystemControlClient::setListener(const sp<SysCtrlListener> &listener)
@@ -1159,6 +1243,9 @@ void SystemControlClient::SystemControlDeathRecipient::serviceDied(uint64_t cook
         const ::android::wp<::android::hidl::base::V1_0::IBase>& who) {
     LOG(ERROR) << "system control service died. need release some resources";
     Mutex::Autolock _l(mLock);
+    if (mClient != nullptr) {
+        mClient->connect();
+    }
 }
 
 }; // namespace android

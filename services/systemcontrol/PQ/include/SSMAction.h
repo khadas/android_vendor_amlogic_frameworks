@@ -42,8 +42,8 @@ public:
     int RestoreDeviceMarkValues();
     static SSMAction *getInstance();
     bool isFileExist(const char *file_name);
-    int WriteBytes(int offset, int size, unsigned char *buf);
-    int ReadBytes(int offset, int size, unsigned char *buf);
+    int WriteBytes(int offset, int size, int *buf);
+    int ReadBytes(int offset, int size, int *buf);
     int EraseAllData(void);
     int GetSSMActualAddr(int id);
     int GetSSMActualSize(int id);
@@ -140,6 +140,8 @@ public:
     int SSMEdidRestoreDefault(int rw_val);
     int SSMHdcpSwitcherRestoreDefault(int rw_val);
     int SSMSColorRangeModeRestoreDefault(int rw_val);
+    int SSMSaveLocalContrastMode(int offset, int rw_val);
+    int SSMReadLocalContrastMode(int offset, int *rw_val);
 
     int m_dev_fd;
     static SSMAction *mInstance;

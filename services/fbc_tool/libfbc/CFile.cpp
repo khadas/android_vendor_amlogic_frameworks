@@ -15,9 +15,9 @@
 */
 
 #include "CFile.h"
-
+#include <unistd.h>
 #include <stdlib.h>
-#include <utils/Log.h>
+#include <CFbcLog.h>
 
 
 CFile::CFile()
@@ -39,19 +39,19 @@ CFile::CFile(const char *path)
 
 int CFile::openFile(const char *path)
 {
-    ALOGV("openFile = %s", path);
+    LOGD("openFile = %s", path);
     if (mFd < 0) {
         const char *openPath = mPath;
         if (path != NULL)
             strcpy(mPath, path);
 
         if (strlen(openPath) <= 0) {
-            ALOGW("openFile openPath is NULL, path:%s", path);
+            LOGD("openFile openPath is NULL, path:%s", path);
             return -1;
         }
         mFd = open(openPath, O_RDWR);
         if (mFd < 0) {
-            ALOGW("open file(%s) fail", openPath);
+            LOGD("open file(%s) fail", openPath);
             return -1;
         }
     }
@@ -93,13 +93,13 @@ int CFile::copyTo(const char *dstPath)
     int dstFd;
     if (mFd == -1) {
         if ((mFd = open(mPath, O_RDONLY)) == -1) {
-            ALOGE("Open %s Error:%s/n", mPath, strerror(errno));
+            LOGD("Open %s Error:%s/n", mPath, strerror(errno));
             return -1;
         }
     }
 
     if ((dstFd = open(dstPath, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) == -1) {
-        ALOGE("Open %s Error:%s/n", dstPath, strerror(errno));
+        LOGD("Open %s Error:%s/n", dstPath, strerror(errno));
     }
 
     int bytes_read, bytes_write;
@@ -147,7 +147,7 @@ int CFile::delFile(const char *path)
 {
     if (strlen(path) <= 0) return -1;
     if (unlink(path) != 0) {
-        ALOGD("delete file(%s) err=%s", path, strerror(errno));
+        LOGD("delete file(%s) err=%s", path, strerror(errno));
         return -1;
     }
     return 0;
@@ -157,7 +157,7 @@ int CFile::delFile()
 {
     if (strlen(mPath) <= 0) return -1;
     if (unlink(mPath) != 0) {
-        ALOGD("delete file(%s) err=%s", mPath, strerror(errno));
+        LOGD("delete file(%s) err=%s", mPath, strerror(errno));
         return -1;
     }
     return 0;
@@ -170,7 +170,7 @@ int  CFile::getFileAttrValue(const char *path)
 
     int fd = open(path, O_RDONLY);
     if (fd <= 0) {
-        ALOGE("open (%s)ERROR!! error = -%s- \n", path, strerror(errno));
+        LOGD("open (%s)ERROR!! error = -%s- \n", path, strerror(errno));
     }
     char s[8];
     read(fd, s, sizeof(s));
@@ -184,7 +184,7 @@ int  CFile::setFileAttrValue(const char *path, int value)
     FILE *fp = fopen(path, "w");
 
     if (fp == NULL) {
-        ALOGW("Open %s error(%s)!\n", path, strerror(errno));
+        LOGD("Open %s error(%s)!\n", path, strerror(errno));
         return -1;
     }
     fprintf(fp, "%d", value);
@@ -202,7 +202,7 @@ int CFile::setFileAttrStr(const char *path, const char *str)
     FILE *fp = fopen(path, "w");
 
     if (fp == NULL) {
-        ALOGW("Open %s error(%s)!\n", path, strerror(errno));
+        LOGD("Open %s error(%s)!\n", path, strerror(errno));
         return -1;
     }
     fprintf(fp, "%s", str);

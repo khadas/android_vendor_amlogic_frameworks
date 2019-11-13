@@ -208,6 +208,26 @@ typedef struct ve_pq_load_s {
     long long reserved;
 } ve_pq_load_t;
 
+/*pq_timing:
+ *SD/HD/FHD/UHD for DTV/MEPG,
+ *NTST_M/NTST_443/PAL_I/PAL_M/PAL_60/PAL_CN/SECAM/NTST_50 for AV/ATV
+ */
+typedef enum ve_pq_timing_type_e {
+    SIG_TIMING_TYPE_SD = 0,
+    SIG_TIMING_TYPE_HD,
+    SIG_TIMING_TYPE_FHD,
+    SIG_TIMING_TYPE_UHD,
+    SIG_TIMING_TYPE_NTSC_M,
+    SIG_TIMING_TYPE_NTSC_443,
+    SIG_TIMING_TYPE_PAL_I,
+    SIG_TIMING_TYPE_PAL_M,
+    SIG_TIMING_TYPE_PAL_60,
+    SIG_TIMING_TYPE_PAL_CN,
+    SIG_TIMING_TYPE_SECAM,
+    SIG_TIMING_TYPE_NTSC_50,
+    SIG_TIMING_TYPE_MAX,
+} ve_pq_timing_type_t;
+
 /*
  *src_timing: load status: bit31 ->1: load/save all crop; 0: load one according to timing
               screen mode: bit24~bit30 ->dispiay mode

@@ -14,23 +14,23 @@
 ** limitations under the License.
 */
 
-#include "CSerialPort.h"
 #include "FBCCMD.h"
+#include "CFbcLog.h"
+#include "CFbcProtocol.h"
 
-#include <utils/Log.h>
-
-#define LOG_TAG "FBCTool"
+#define LOG_TAG "FBC"
+#define LOG_FBC_TAG "fbc_tool"
 
 
 int main(int argc, char **argv)
 {
     if (argc < 2) {
-        ALOGI("Usage:");
-        ALOGI("   fbc reboot");
-        ALOGI("   fbc suspend");
-        ALOGI("   .");
-        ALOGI("   .");
-        ALOGI("   .");
+        LOGI("Usage:");
+        LOGI("   fbc reboot");
+        LOGI("   fbc suspend");
+        LOGI("   .");
+        LOGI("   .");
+        LOGI("   .");
         return -1;
     }
 
@@ -60,38 +60,38 @@ int main(int argc, char **argv)
             write_buf[9] = (value >> 24) & 0xFF;
             break;
         case suspend:
-            ALOGE("Unsurport command!!!");
+            LOGE("Unsurport command!!!");
             return -1;
             break;
         default:
-            ALOGE("Unsurport command!!!");
+            LOGE("Unsurport command!!!");
             return -1;
             break;
     }
 
     //crc32 little Endian
-    crc32value = serialPort.Calcrc32(0, write_buf, 10);
+    crc32value = GetFbcProtocolInstance()->Calcrc32(0, write_buf, 10);
     write_buf[10] = (crc32value >> 0) & 0xFF;
     write_buf[11] = (crc32value >> 8) & 0xFF;
     write_buf[12] = (crc32value >> 16) & 0xFF;
     write_buf[13] = (crc32value >> 24) & 0xFF;
 
     if (serialPort.OpenDevice(SERIAL_C) < 0) {
-        ALOGE("open serialport failed!!!\n");
+        LOGE("open serialport failed!!!\n");
         return -1;
     } else {
-        serialPort.setup_serial();
+        serialPort.setup_serial(115200);
     }
 
-    ALOGD("send cmd to fbc ..........\n");
+    LOGD("send cmd to fbc ..........\n");
     serialPort.writeFile(write_buf, 14);
 
 /*
-    ALOGD("read status from fbc ........\n");
+    LOGD("read status from fbc ........\n");
     serialPort.readFile(read_buf, 14);
 
     for (idx = 0; idx < 14; idx++) {
-        ALOGD("the data is:0x%x\n", read_buf[idx]);
+        LOGD("the data is:0x%x\n", read_buf[idx]);
     }
 */
     serialPort.CloseDevice();

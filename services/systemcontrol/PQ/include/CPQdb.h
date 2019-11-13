@@ -42,6 +42,10 @@ typedef enum output_type_e {
     OUTPUT_TYPE_MAX,
 } output_type_t;
 
+#ifdef PROP_DEBUG_PQ
+#undef PROP_DEBUG_PQ
+#endif
+
 #define PROP_DEBUG_PQ "systemcontrol.debug.pq.enable"
 
 #define getSqlParams(func, buffer, args...) \
@@ -116,6 +120,8 @@ public:
     int PQ_GetDNLPParams(source_input_param_t source_input_param, Dynamic_contrst_status_t mode, ve_dnlp_curve_param_t *newParams);
     int PQ_SetDNLPGains(source_input_param_t source_input_param, Dynamic_contrst_status_t level, int final_gain);
     int PQ_GetDNLPGains(source_input_param_t source_input_param, Dynamic_contrst_status_t level);
+    int PQ_GetLocalContrastNodeParams(source_input_param_t source_input_param, local_contrast_mode_t mode, ve_lc_curve_parm_t *Params);
+    int PQ_GetLocalContrastRegParams(source_input_param_t source_input_param, local_contrast_mode_t mode, am_regs_t *regs);
     int PQ_GetBEParams(source_input_param_t source_input_param, int addr, am_regs_t *regs);
     int PQ_SetBEParams(source_input_param_t source_input_param, int addr, unsigned int reg_val);
     int PQ_SetRGBCMYFcolor(source_input_param_t source_input_param, int data_Rank ,int val);
@@ -123,7 +129,7 @@ public:
     int PQ_GetOverscanParams(source_input_param_t source_input_param, vpp_display_mode_t dmode, tvin_cutwin_t *cutwin_t);
     int PQ_SetOverscanParams(source_input_param_t source_input_param, tvin_cutwin_t cutwin_t);
     int PQ_ResetAllOverscanParams(void);
-    bool PQ_GetPqVersion(String8& ProjectVersion, String8& GenerateTime);
+    bool PQ_GetPqVersion(String8& ToolVersion, String8& ProjectVersion, String8& GenerateTime);
     int PQ_GetPQModeParams(tv_source_input_t source_input, vpp_picture_mode_t pq_mode, vpp_pq_para_t *params);
     int PQ_SetPQModeParams(tv_source_input_t source_input, vpp_picture_mode_t pq_mode, vpp_pq_para_t *params);
     int PQ_ResetAllPQModeParams(void);
@@ -159,6 +165,7 @@ private:
     int SetNonlinearMappingByName(const char *name, tvpq_data_type_t data_type, tv_source_input_t source_input, int osd0, int osd25, int osd50, int osd75, int osd100);
     int PQ_SetPQModeParamsByName(const char *name, tv_source_input_t source_input, vpp_picture_mode_t pq_mode, vpp_pq_para_t *params);
     const char *getSharpnessTableName(source_input_param_t source_input_param, int isHd);
+    am_regs_t MergeSameAddrVal(am_regs_t regs);
 
     tvpq_data_t pq_bri_data[15];
     tvpq_data_t pq_con_data[15];

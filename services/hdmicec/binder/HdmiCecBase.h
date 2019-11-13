@@ -10,7 +10,7 @@
 #ifndef DROIDLOGIC_HDMICECBASE_H_
 #define DROIDLOGIC_HDMICECBASE_H_
 
-#include <cutils/log.h>
+#include <log/log.h>
 #include <hardware/hdmi_cec.h>
 #include <utils/RefBase.h>
 #include <LogControl.h>
@@ -61,7 +61,7 @@ public:
 
 class HdmiCecBase {
 public:
-    HdmiCecBase() {}
+    HdmiCecBase();
     virtual ~HdmiCecBase() {}
 
     virtual int openCecDevice() = 0;
@@ -98,6 +98,8 @@ public:
 
 private:
     const char *getResult(int result);
+
+    int mLogLevel;
 };
 
 

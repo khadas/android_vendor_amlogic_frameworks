@@ -37,6 +37,7 @@
 
 #include "CPQControl.h"
 #include "ubootenv/Ubootenv.h"
+#include "CFbcCommunication.h"
 
 #include <vendor/amlogic/hardware/droidvold/1.0/IDroidVold.h>
 using ::vendor::amlogic::hardware::droidvold::V1_0::IDroidVold;
@@ -81,6 +82,7 @@ public:
     int32_t readAttestationKey(const std::string& node, const std::string& name, char *value, int size);
     bool writeAttestationKey(const std::string& node, const std::string& name, const char *buff, const int size);
     bool checkAttestationKey();
+    bool getModeSupportDeepColorAttr(const std::string& mode,const std::string& color);
     //set or get uboot env
     bool getBootEnv(const std::string& key, std::string& value);
     void setBootEnv(const std::string& key, const std::string& value);
@@ -133,6 +135,8 @@ public:
     int setColorTemperature(int mode, int isSave);
     int getColorTemperature(void);
     int saveColorTemperature(int mode);
+    int setColorTemperatureUserParam(int mode, int isSave, int param_type, int value);
+    tcon_rgb_ogo_t getColorTemperatureUserParam(void);
     int setBrightness(int value, int isSave);
     int getBrightness(void);
     int saveBrightness(int value);
@@ -163,6 +167,10 @@ public:
     int saveBacklight(int value);
     int setDynamicBacklight(int mode, int isSave);
     int getDynamicBacklight(void);
+    int setLocalContrastMode(int mode, int isSave);
+    int getLocalContrastMode();
+    int setColorBaseMode(int mode, int isSave);
+    int getColorBaseMode();
     bool checkLdimExist(void);
     int factorySetPQMode_Brightness(int inputSrc, int sigFmt, int transFmt, int pq_mode, int value);
     int factoryGetPQMode_Brightness(int inputSrc, int sigFmt, int transFmt, int pq_mode);
@@ -197,6 +205,7 @@ public:
     int getSSMStatus(void);
     int setCurrentSourceInfo(int sourceInput, int sigFmt, int transFmt);
     source_input_param_t getCurrentSourceInfo(void);
+    int setCurrentHdrInfo(int hdrInfo);
     int setwhiteBalanceGainRed(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
     int setwhiteBalanceGainGreen(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
     int setwhiteBalanceGainBlue(int inputSrc, int sigFmt, int transFmt, int colortemp_mode, int value);
@@ -237,10 +246,16 @@ public:
     int factoryGetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type);
     int factorySetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type, int val);
     int factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type);
+    tvpq_databaseinfo_t getPQDatabaseInfo(int dataBaseName);
     int setDtvKitSourceEnable(int isEnable);
-	//PQ end
-    static SystemControlService* instantiate(const char *cfgpath);
+    //PQ end
 
+    //FBC
+    void setFBCUpgradeListener(const sp<SystemControlNotify>& listener);
+    int StartUpgradeFBC(const std::string&file_name, int mode, int upgrade_blk_size);
+    int UpdateFBCUpgradeStatus(int status, int param);
+
+    static SystemControlService* instantiate(const char *cfgpath);
     virtual status_t dump(int fd, const Vector<String16>& args);
 
     int getLogLevel();
@@ -261,6 +276,7 @@ private:
     CPQControl *pCPQControl;
     Dimension *pDimension;
     Ubootenv *pUbootenv;
+    CConfigFile *mTvhalConfigFile;
 
     struct DroidVoldDeathRecipient : public android::hardware::hidl_death_recipient  {
         // hidl_death_recipient interface
@@ -270,6 +286,7 @@ private:
     sp<DroidVoldDeathRecipient> mDeathRecipient = nullptr;
 
     sp<IDroidVold> mDroidVold;
+    sp<SystemControlNotify> mNotifyListener;
 };
 
 // ----------------------------------------------------------------------------

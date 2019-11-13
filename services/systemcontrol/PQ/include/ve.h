@@ -139,10 +139,10 @@ typedef struct ve_hist_s {
 } ve_hist_t;
 
 typedef struct vpp_hist_param_s {
-	unsigned int vpp_hist_pow;
-	unsigned int vpp_luma_sum;
-	unsigned int vpp_pixel_sum;
-	unsigned short vpp_histgram[64];
+    unsigned int vpp_hist_pow;
+    unsigned int vpp_luma_sum;
+    unsigned int vpp_pixel_sum;
+    unsigned short vpp_histgram[64];
 }vpp_hist_param_t;
 
 /*typedef struct ve_dnlp_table_s {
@@ -156,30 +156,30 @@ typedef struct vpp_hist_param_s {
     unsigned int hghalpha;
 } ve_dnlp_table_t;*/
 /*typedef struct ve_dnlp_table_s {
-	unsigned int en;
-	unsigned int method;
-	unsigned int cliprate;
-	unsigned int lowrange;
-	unsigned int hghrange;
-	unsigned int lowalpha;
-	unsigned int midalpha;
-	unsigned int hghalpha;
-	unsigned int adj_level;
-	unsigned int new_adj_level;
-	unsigned int new_mvreflsh;
-	unsigned int new_gmma_rate;
-	unsigned int new_lowalpha;
-	unsigned int new_hghalpha;
-	unsigned int new_sbgnbnd;
-	unsigned int new_sendbnd;
-	unsigned int new_clashBgn;
-	unsigned int new_clashEnd;
-	unsigned int new_cliprate;
-	unsigned int new_mtdbld_rate;
-	unsigned int new_blkgma_rate;
+    unsigned int en;
+    unsigned int method;
+    unsigned int cliprate;
+    unsigned int lowrange;
+    unsigned int hghrange;
+    unsigned int lowalpha;
+    unsigned int midalpha;
+    unsigned int hghalpha;
+    unsigned int adj_level;
+    unsigned int new_adj_level;
+    unsigned int new_mvreflsh;
+    unsigned int new_gmma_rate;
+    unsigned int new_lowalpha;
+    unsigned int new_hghalpha;
+    unsigned int new_sbgnbnd;
+    unsigned int new_sendbnd;
+    unsigned int new_clashBgn;
+    unsigned int new_clashEnd;
+    unsigned int new_cliprate;
+    unsigned int new_mtdbld_rate;
+    unsigned int new_blkgma_rate;
 } ve_dnlp_table_t;*/
 typedef struct ve_dnlp_table_s {
-	unsigned int en;
+    unsigned int en;
     unsigned int method;
     unsigned int cliprate;
     unsigned int lowrange;
@@ -200,80 +200,80 @@ typedef struct ve_dnlp_table_s {
     unsigned int new_cliprate;
     unsigned int new_mtdbld_rate;
     unsigned int new_dnlp_pst_gmarat;
-	unsigned int dnlp_sel;
-	unsigned int dnlp_blk_cctr;/*blk signal add brightness*/
-	unsigned int dnlp_brgt_ctrl;
-	unsigned int dnlp_brgt_range;
-	unsigned int dnlp_brght_add;
-	unsigned int dnlp_brght_max;
-	unsigned int dnlp_almst_wht;
-	unsigned int dnlp_hghbin;/*1*/
-	unsigned int dnlp_hghnum;
-	unsigned int dnlp_lowbin;
-	unsigned int dnlp_lownum;
-	unsigned int dnlp_bkgend;
-	unsigned int dnlp_bkgert;
-	unsigned int dnlp_blkext;
-	unsigned int dnlp_whtext;
-	unsigned int dnlp_bextmx;
-	unsigned int dnlp_wextmx;
-	unsigned int dnlp_smhist_ck;
-	unsigned int dnlp_glb_crate;/*12*/
+    unsigned int dnlp_sel;
+    unsigned int dnlp_blk_cctr;/*blk signal add brightness*/
+    unsigned int dnlp_brgt_ctrl;
+    unsigned int dnlp_brgt_range;
+    unsigned int dnlp_brght_add;
+    unsigned int dnlp_brght_max;
+    unsigned int dnlp_almst_wht;
+    unsigned int dnlp_hghbin;/*1*/
+    unsigned int dnlp_hghnum;
+    unsigned int dnlp_lowbin;
+    unsigned int dnlp_lownum;
+    unsigned int dnlp_bkgend;
+    unsigned int dnlp_bkgert;
+    unsigned int dnlp_blkext;
+    unsigned int dnlp_whtext;
+    unsigned int dnlp_bextmx;
+    unsigned int dnlp_wextmx;
+    unsigned int dnlp_smhist_ck;
+    unsigned int dnlp_glb_crate;/*12*/
 
     unsigned int dnlp_pstgma_brghtrate;
-	unsigned int dnlp_pstgma_brghtrat1;
-	unsigned int dnlp_wext_autorat;
-	unsigned int dnlp_cliprate_min;
-	unsigned int dnlp_adpcrat_lbnd;
-	unsigned int dnlp_adpcrat_hbnd;
-	unsigned int dnlp_adpmtd_lbnd;
-	unsigned int dnlp_adpmtd_hbnd;
-	unsigned int dnlp_set_bext;
-	unsigned int dnlp_set_wext;
-	unsigned int dnlp_satur_rat;
-	unsigned int dnlp_satur_max;
-	unsigned int blk_prct_rng;
-	unsigned int blk_prct_max;
-	unsigned int dnlp_lowrange;
-	unsigned int dnlp_hghrange;
-	unsigned int dnlp_auto_rng;
-	unsigned int dnlp_bin0_absmax;
-	unsigned int dnlp_bin0_sbtmax;
-	unsigned int dnlp_adpalpha_lrate;
-	unsigned int dnlp_adpalpha_hrate;
+    unsigned int dnlp_pstgma_brghtrat1;
+    unsigned int dnlp_wext_autorat;
+    unsigned int dnlp_cliprate_min;
+    unsigned int dnlp_adpcrat_lbnd;
+    unsigned int dnlp_adpcrat_hbnd;
+    unsigned int dnlp_adpmtd_lbnd;
+    unsigned int dnlp_adpmtd_hbnd;
+    unsigned int dnlp_set_bext;
+    unsigned int dnlp_set_wext;
+    unsigned int dnlp_satur_rat;
+    unsigned int dnlp_satur_max;
+    unsigned int blk_prct_rng;
+    unsigned int blk_prct_max;
+    unsigned int dnlp_lowrange;
+    unsigned int dnlp_hghrange;
+    unsigned int dnlp_auto_rng;
+    unsigned int dnlp_bin0_absmax;
+    unsigned int dnlp_bin0_sbtmax;
+    unsigned int dnlp_adpalpha_lrate;
+    unsigned int dnlp_adpalpha_hrate;
 
-	unsigned int dnlp_lrate00;/*0-64bin curve slope*/
-	unsigned int dnlp_lrate02;
-	unsigned int dnlp_lrate04;
-	unsigned int dnlp_lrate06;
-	unsigned int dnlp_lrate08;
-	unsigned int dnlp_lrate10;
-	unsigned int dnlp_lrate12;
-	unsigned int dnlp_lrate14;
-	unsigned int dnlp_lrate16;
-	unsigned int dnlp_lrate18;
-	unsigned int dnlp_lrate20;
-	unsigned int dnlp_lrate22;
-	unsigned int dnlp_lrate24;
-	unsigned int dnlp_lrate26;
-	unsigned int dnlp_lrate28;
-	unsigned int dnlp_lrate30;
-	unsigned int dnlp_lrate32;
-	unsigned int dnlp_lrate34;
-	unsigned int dnlp_lrate36;
-	unsigned int dnlp_lrate38;
-	unsigned int dnlp_lrate40;
-	unsigned int dnlp_lrate42;
-	unsigned int dnlp_lrate44;
-	unsigned int dnlp_lrate46;
-	unsigned int dnlp_lrate48;
-	unsigned int dnlp_lrate50;
-	unsigned int dnlp_lrate52;
-	unsigned int dnlp_lrate54;
-	unsigned int dnlp_lrate56;
-	unsigned int dnlp_lrate58;
-	unsigned int dnlp_lrate60;
-	unsigned int dnlp_lrate62;
+    unsigned int dnlp_lrate00;/*0-64bin curve slope*/
+    unsigned int dnlp_lrate02;
+    unsigned int dnlp_lrate04;
+    unsigned int dnlp_lrate06;
+    unsigned int dnlp_lrate08;
+    unsigned int dnlp_lrate10;
+    unsigned int dnlp_lrate12;
+    unsigned int dnlp_lrate14;
+    unsigned int dnlp_lrate16;
+    unsigned int dnlp_lrate18;
+    unsigned int dnlp_lrate20;
+    unsigned int dnlp_lrate22;
+    unsigned int dnlp_lrate24;
+    unsigned int dnlp_lrate26;
+    unsigned int dnlp_lrate28;
+    unsigned int dnlp_lrate30;
+    unsigned int dnlp_lrate32;
+    unsigned int dnlp_lrate34;
+    unsigned int dnlp_lrate36;
+    unsigned int dnlp_lrate38;
+    unsigned int dnlp_lrate40;
+    unsigned int dnlp_lrate42;
+    unsigned int dnlp_lrate44;
+    unsigned int dnlp_lrate46;
+    unsigned int dnlp_lrate48;
+    unsigned int dnlp_lrate50;
+    unsigned int dnlp_lrate52;
+    unsigned int dnlp_lrate54;
+    unsigned int dnlp_lrate56;
+    unsigned int dnlp_lrate58;
+    unsigned int dnlp_lrate60;
+    unsigned int dnlp_lrate62;
 } ve_dnlp_table_t;
 typedef struct ve_hsvs_s {
     unsigned char en;
@@ -394,6 +394,11 @@ typedef struct ve_dnlp_curve_param_s {
     unsigned int ve_dnlp_scurv_hgh2[65];
     unsigned int ve_gain_var_lut49[49];
     unsigned int ve_wext_gain[48];
+    unsigned int ve_adp_thrd[33];
+    unsigned int ve_reg_blk_boost_12[13];
+    unsigned int ve_reg_adp_ofset_20[20];
+    unsigned int ve_reg_mono_protect[6];
+    unsigned int ve_reg_trend_wht_expand_lut8[9];
     unsigned int param[100];
 }ve_dnlp_curve_param_t;
 
@@ -405,7 +410,29 @@ typedef enum dnlp_curve_e {
     scurv_hgh2,
     curv_var_lut49,
     curv_wext_gain,
+    adp_thrd = 1013,
+    reg_blk_boost_12,
+    reg_adp_ofset_20,
+    reg_mono_protect,
+    reg_trend_wht_expand_lut8,
 } dnlp_curve_t;
+
+//local contrast
+typedef struct ve_lc_curve_parm_s {
+    unsigned int ve_lc_saturation[63];
+    unsigned int ve_lc_yminval_lmt[12];
+    unsigned int ve_lc_ypkbv_ymaxval_lmt[12];
+    unsigned int ve_lc_ypkbv_ratio[4];
+    unsigned int param[100];
+} ve_lc_curve_parm_t;
+
+typedef enum lc_curve_parm_num_e {
+    LC_SATURATION_NUM = 1,
+    LC_YMINVAL_LMT_NUM = 2,
+    LC_YPKBV_YMAXVAL_LMT_NUM = 4,
+    LC_YPKBV_RATIO_NUM = 8,
+} lc_curve_parm_num_t;
+
 
 // ***************************************************************************
 // *** MACRO definitions **********

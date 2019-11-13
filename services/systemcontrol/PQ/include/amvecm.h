@@ -22,7 +22,7 @@
 #define FLAG_RSV30              (1 << 30)
 #define FLAG_VE_DNLP            (1 << 29)
 #define FLAG_VE_NEW_DNLP        (1 << 28)
-#define FLAG_RSV27              (1 << 27)
+#define FLAG_VE_LC_CURV         (1 << 27)
 #define FLAG_RSV26              (1 << 26)
 #define FLAG_RSV25              (1 << 25)
 #define FLAG_RSV24              (1 << 24)
@@ -54,31 +54,32 @@
 
 #define AMVECM_IOC_MAGIC  'C'
 
-#define AMVECM_IOC_VE_DNLP       _IOW(AMVECM_IOC_MAGIC, 0x21, struct ve_dnlp_s  )
-#define AMVECM_IOC_G_HIST_AVG    _IOW(AMVECM_IOC_MAGIC, 0x22, struct ve_hist_s  )
-#define AMVECM_IOC_VE_DNLP_EN     _IO(AMVECM_IOC_MAGIC, 0x23)
-#define AMVECM_IOC_VE_DNLP_DIS    _IO(AMVECM_IOC_MAGIC, 0x24)
-#define AMVECM_IOC_VE_NEW_DNLP   _IOW(AMVECM_IOC_MAGIC, 0x25, struct ve_dnlp_curve_param_s)
-
+#define AMVECM_IOC_VE_DNLP         _IOW(AMVECM_IOC_MAGIC, 0x21, struct ve_dnlp_s  )
+#define AMVECM_IOC_G_HIST_AVG      _IOW(AMVECM_IOC_MAGIC, 0x22, struct ve_hist_s  )
+#define AMVECM_IOC_VE_DNLP_EN      _IO(AMVECM_IOC_MAGIC, 0x23)
+#define AMVECM_IOC_VE_DNLP_DIS     _IO(AMVECM_IOC_MAGIC, 0x24)
+#define AMVECM_IOC_VE_NEW_DNLP     _IOW(AMVECM_IOC_MAGIC, 0x25, struct ve_dnlp_curve_param_s)
+#define AMVECM_IOC_G_HIST_BIN      _IOW(AMVECM_IOC_MAGIC, 0x26, struct vpp_hist_param_s)
 
 // VPP.CM IOCTL command list
-#define AMVECM_IOC_LOAD_REG     _IOW(AMVECM_IOC_MAGIC, 0x30, struct am_regs_s)
-
+#define AMVECM_IOC_LOAD_REG        _IOW(AMVECM_IOC_MAGIC, 0x30, struct am_regs_s)
+/*vpp get color primary*/
+#define AMVECM_IOC_G_COLOR_PRI     _IOR(AMVECM_IOC_MAGIC, 0x28, enum color_primary_e)
 
 // VPP.GAMMA IOCTL command list
 #define AMVECM_IOC_GAMMA_TABLE_EN  _IO(AMVECM_IOC_MAGIC, 0x40)
 #define AMVECM_IOC_GAMMA_TABLE_DIS _IO(AMVECM_IOC_MAGIC, 0x41)
-#define AMVECM_IOC_GAMMA_TABLE_R  _IOW(AMVECM_IOC_MAGIC, 0x42, struct tcon_gamma_table_s)
-#define AMVECM_IOC_GAMMA_TABLE_G  _IOW(AMVECM_IOC_MAGIC, 0x43, struct tcon_gamma_table_s)
-#define AMVECM_IOC_GAMMA_TABLE_B  _IOW(AMVECM_IOC_MAGIC, 0x44, struct tcon_gamma_table_s)
-#define AMVECM_IOC_S_RGB_OGO      _IOW(AMVECM_IOC_MAGIC, 0x45, struct tcon_rgb_ogo_s)
-#define AMVECM_IOC_G_RGB_OGO      _IOR(AMVECM_IOC_MAGIC, 0x46, struct tcon_rgb_ogo_s)
+#define AMVECM_IOC_GAMMA_TABLE_R   _IOW(AMVECM_IOC_MAGIC, 0x42, struct tcon_gamma_table_s)
+#define AMVECM_IOC_GAMMA_TABLE_G   _IOW(AMVECM_IOC_MAGIC, 0x43, struct tcon_gamma_table_s)
+#define AMVECM_IOC_GAMMA_TABLE_B   _IOW(AMVECM_IOC_MAGIC, 0x44, struct tcon_gamma_table_s)
+#define AMVECM_IOC_S_RGB_OGO       _IOW(AMVECM_IOC_MAGIC, 0x45, struct tcon_rgb_ogo_s)
+#define AMVECM_IOC_G_RGB_OGO       _IOR(AMVECM_IOC_MAGIC, 0x46, struct tcon_rgb_ogo_s)
 
 // VPP.Local dimming command list
-#define LDIM_IOC_PARA        _IOW(AMVECM_IOC_MAGIC, 0x50, struct vpu_ldim_param_s)
+#define LDIM_IOC_PARA              _IOW(AMVECM_IOC_MAGIC, 0x50, struct vpu_ldim_param_s)
 
 // VPP.display mode command list
-#define AMVECM_IOC_SET_OVERSCAN  _IOW(AMVECM_IOC_MAGIC, 0x52, struct ve_pq_load_s)
+#define AMVECM_IOC_SET_OVERSCAN    _IOW(AMVECM_IOC_MAGIC, 0x52, struct ve_pq_load_s)
 //DNLP IOCTL command list
 #define AMVECM_IOC_G_DNLP_STATE    _IOR(AMVECM_IOC_MAGIC, 0x53, enum ve_dnlp_state_e)
 #define AMVECM_IOC_S_DNLP_STATE    _IOW(AMVECM_IOC_MAGIC, 0x54, enum ve_dnlp_state_e)
@@ -97,7 +98,10 @@
 
 // VPP.DI IOCTL command list
 #define _DI_    'D'
-#define AMDI_IOC_SET_PQ_PARM     _IOW(_DI_, 0x51, struct am_pq_param_s)
+#define AMDI_IOC_SET_PQ_PARM       _IOW(_DI_, 0x51, struct am_pq_param_s)
+
+/*Local contrast command list*/
+#define AMVECM_IOC_S_LC_CURVE      _IOW(AMVECM_IOC_MAGIC, 0x62, struct ve_lc_curve_parm_s)
 
 #endif /* __AMVECM_H */
 

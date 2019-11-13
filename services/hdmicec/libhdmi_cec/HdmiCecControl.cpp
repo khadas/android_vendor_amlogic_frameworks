@@ -25,15 +25,17 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
-#include <cutils/log.h>
+#include <android/log.h>
 #include <cutils/properties.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+
 #include "HdmiCecControl.h"
+#include "HdmiCecCompat.h"
 
 namespace android {
 
-HdmiCecControl::HdmiCecControl() : mFirstEnableCec(true), mMsgHandler(this)
+HdmiCecControl::HdmiCecControl() : mMsgHandler(this)
 {
     ALOGD("[hcc] HdmiCecControl");
     init();
@@ -57,62 +59,88 @@ HdmiCecControl::TvEventListner::~TvEventListner(){}
 
 void HdmiCecControl::MsgHandler::handleMessage (CMessage &msg)
 {
-    AutoMutex _l(mControl->mLock);
     cec_message_t message;
-    //ALOGD ("HdmiCecControl::MsgHandler::handleMessage type = %d", msg.mType);
+    ALOGV("HdmiCecControl::MsgHandler::handleMessage type = %d", msg.mType);
     switch (msg.mType) {
         case HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT:
+            mControl->mLock.lock();
             mControl->mCecDevice.mFilterOtpEnabled = false;
             ALOGD ("reset mFilterOtpEnabled to false.");
+            mControl->mLock.unlock();
+            break;
+        case HdmiCecControl::MsgHandler::MSG_WAIT_EDIDUPDATE_FINISHED_TIMEOUT:
+            mControl->mLock.lock();
+            mControl->mCecDevice.mWaitEdidUpdatedFinished = true;
+            ALOGD ("reset mWaitEdidUpdatedFinished to true.");
+            mControl->mLock.unlock();
+            break;
+        case HdmiCecControl::MsgHandler::MSG_GIVE_PHYSICAL_ADDRESS:
+            if (mControl->mCecDevice.isTvDeviceType) {
+                message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
+                message.destination = (cec_logical_address_t)(msg.mpPara[0]);
+                message.body[0] = CEC_MESSAGE_GIVE_PHYSICAL_ADDRESS;
+                message.length = 1;
+                mControl->send(&message);
+            }
+            break;
+        case HdmiCecControl::MsgHandler::MSG_TURN_ON_DEVICE:
+            mControl->turnOnDevice(msg.mpPara[0]);
+            break;
+        case HdmiCecControl::MsgHandler::MSG_SET_STREAM_PATH:
+            if (mControl->mCecDevice.isTvDeviceType) {
+                 message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
+                 message.destination = (cec_logical_address_t)ADDR_BROADCAST;
+                 message.body[0] = CEC_MESSAGE_SET_STREAM_PATH;
+                 message.body[1] = (msg.mpPara[0]) & 0xff;
+                 message.body[2] = (msg.mpPara[1]) & 0xff;
+                 message.length = 3;
+                 mControl->send(&message);
+            }
+            break;
+        case HdmiCecControl::MsgHandler::MSG_USER_CONTROL_PRESSED:
+            if (mControl->mCecDevice.isTvDeviceType) {
+                 message.initiator = (cec_logical_address_t)((msg.mpPara[0]) & 0xff);
+                 message.destination = (cec_logical_address_t)((msg.mpPara[1]) & 0xff);
+                 message.body[0] = CEC_MESSAGE_USER_CONTROL_PRESSED;
+                 message.body[1] = (msg.mpPara[2]) & 0xff;
+                 message.length = 2;
+                 mControl->send(&message);
+            }
             break;
         case HdmiCecControl::MsgHandler::GET_MENU_LANGUAGE:
+            mControl->sendMessage(mControl->mCecDevice.mLogicalAddress, DEV_TYPE_TV, 1, CEC_MESSAGE_GET_MENU_LANGUAGE);
+            break;
         case HdmiCecControl::MsgHandler::GIVE_OSD_NAEM:
-            if (mControl->mCecDevice.isPlaybackDeviceType) {
-                if (((mControl->mCecDevice.mAddrBitmap >> CEC_ADDR_PLAYBACK_1) & 0x1) != 0) {
-                    message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_1;
-                } else if (((mControl->mCecDevice.mAddrBitmap >> CEC_ADDR_PLAYBACK_2) & 0x1) != 0) {
-                    message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_2;
-                } else {
-                    message.initiator = (cec_logical_address_t)CEC_ADDR_PLAYBACK_3;
-                }
-                message.destination = (cec_logical_address_t)DEV_TYPE_TV;
-                message.length = 1;
-                if (msg.mType == HdmiCecControl::MsgHandler::GIVE_OSD_NAEM) {
-                    message.body[0] = CEC_MESSAGE_GIVE_OSD_NAME;
-                } else if (msg.mType == HdmiCecControl::MsgHandler::GET_MENU_LANGUAGE) {
-                    message.body[0] = CEC_MESSAGE_GET_MENU_LANGUAGE;
-                }
-                mControl->sendMessage(&message, true);
-                ALOGD ("handle message for playback.");
-            }
+            mControl->sendMessage(mControl->mCecDevice.mLogicalAddress, DEV_TYPE_TV, 1, CEC_MESSAGE_GIVE_OSD_NAME);
+            break;
+        case HdmiCecControl::MsgHandler::MSG_GIVE_DEVICE_VENDOR_ID:
+            mControl->sendMessage(mControl->mCecDevice.mLogicalAddress, DEV_TYPE_TV, 1, CEC_MESSAGE_GIVE_DEVICE_VENDOR_ID);
             break;
     }
 }
 
 void HdmiCecControl::TvEventListner::notify (const tv_parcel_t &parcel)
 {
-    AutoMutex _l(mControl->mLock);
     //ALOGD ("HdmiCecControl::TvEventListner::notify type = %d", parcel.msgType);
-    int portId = 0, offSet = 4;
+    int deviceId = -1;
     switch (parcel.msgType) {
         case HdmiCecControl::TvEventListner::TV_EVENT_SOURCE_SWITCH:
-            portId = parcel.bodyInt[0] - offSet; //hdmi: 1-4; non hdmi/home: 0
-            ALOGD ("TvEventListner notify port switch from: %d to: %d", mControl->mCecDevice.mSelectedPortId, portId > 0 ? portId : 0);
-            if (portId >= 1 && portId <= 4) {
-                if (mControl->mCecDevice.mSelectedPortId != portId) {
-                    mControl->mCecDevice.mFilterOtpEnabled = true;
-                    CMessage msg;
-                    msg.mType = HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT;
-                    msg.mDelayMs = DELAY_TIMEOUT_MS;
-                    mControl->mMsgHandler.removeMsg (msg);
-                    mControl->mMsgHandler.sendMsg (msg);
-                    mControl->mCecDevice.mSelectedPortId = portId;
-                    ALOGD ("Set mFilterOtpEnabled to true.");
-                }
-                mControl->mCecDevice.mSelectedPortId = portId;
+            mControl->mLock.lock();
+            deviceId = parcel.bodyInt[0]; //hdmi: 5-8; home: -1; non hdmi: other than home and hdmi;
+            ALOGD ("TvEventListner notify input deviceId from: %d to: %d", mControl->mCecDevice.mSelectedDeviceId, deviceId);
+            CMessage msg;
+            msg.mType = HdmiCecControl::MsgHandler::MSG_FILTER_OTP_TIMEOUT;
+            msg.mDelayMs = DELAY_TIMEOUT_MS;
+            mControl->mMsgHandler.removeMsg(msg);
+            mControl->mCecDevice.mSelectedDeviceId = deviceId;
+            if (deviceId >= 5 && deviceId <= 8) {
+                mControl->mCecDevice.mFilterOtpEnabled = true;
+                mControl->mMsgHandler.sendMsg(msg);
             } else {
-                mControl->mCecDevice.mSelectedPortId = 0;
+                mControl->mCecDevice.mFilterOtpEnabled = false;
             }
+            ALOGD ("Set mFilterOtpEnabled to %s", mControl->mCecDevice.mFilterOtpEnabled ? "true" : "false");
+            mControl->mLock.unlock();
             break;
     }
 }
@@ -199,10 +227,12 @@ int HdmiCecControl::openCecDevice()
     mCecDevice.mConnectStatus = 0;
     mCecDevice.mpPortData = NULL;
     mCecDevice.mAddrBitmap = (1 << CEC_ADDR_BROADCAST);
+    mCecDevice.mLogicalAddress = CEC_ADDR_BROADCAST;
     mCecDevice.isCecEnabled = true;
     mCecDevice.isCecControlled = false;
     mCecDevice.mFilterOtpEnabled = false;
-    mCecDevice.mSelectedPortId = -1;
+    mCecDevice.mWaitEdidUpdatedFinished = true;
+    mCecDevice.mSelectedDeviceId = -1;
     mCecDevice.mFd = open(CEC_FILE, O_RDWR);
     if (mCecDevice.mFd < 0) {
         ALOGE("[hcc] can't open device. fd < 0");
@@ -218,6 +248,8 @@ int HdmiCecControl::openCecDevice()
     for (index = 0; index < ADDR_BROADCAST; index++) {
         mCecDevice.mAddedPhyAddrs[index] = 0;
     }
+    pMonitor = new EARCSupportMonitor();
+
     pthread_create(&mCecDevice.mThreadId, NULL, __threadLoop, this);
     pthread_setname_np(mCecDevice.mThreadId, "hdmi_cec_loop");
     mMsgHandler.startMsgQueue();
@@ -227,6 +259,7 @@ int HdmiCecControl::openCecDevice()
         mTvSession->setListener(mTvEventListner);
     } else if (mCecDevice.isPlaybackDeviceType) {
         mCecDevice.mTvOsdName = 0;
+        mCecDevice.mTvDeviceVendorId = 0;
         getDeviceExtraInfo(1);
     }
     return mCecDevice.mFd;
@@ -328,6 +361,7 @@ void HdmiCecControl::threadLoop()
         }
         messageValidateAndHandle(&event);
         handleOTPMsg(&event);
+        supportForEARC(&event, NULL, false);
         if (mEventListener != NULL && event.eventType != 0) {
             mEventListener->onEventUpdate(&event);
         }
@@ -412,18 +446,21 @@ bool HdmiCecControl::isWakeUpMsg(char *msgBuf, int len)
 void HdmiCecControl::messageValidateAndHandle(hdmi_cec_event_t* event)
 {
     cec_message_t message;
+    CMessage msg;
     int initiator = (int)(event->cec.initiator);
+    int destination = (int)(event->cec.destination);
     int devPhyAddr = 0;
+    int opcode = event->cec.body[0];
     if (mCecDevice.isTvDeviceType) {
         switch (event->cec.body[0]) {
             case CEC_MESSAGE_REPORT_PHYSICAL_ADDRESS:
                 devPhyAddr = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
                 if (event->cec.body[1] == 0) {
-                    message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
-                    message.destination = (cec_logical_address_t)initiator;
-                    message.body[0] = CEC_MESSAGE_GIVE_PHYSICAL_ADDRESS;
-                    message.length = 1;
-                    sendMessage(&message, false);
+                    msg.mType = HdmiCecControl::MsgHandler::MSG_GIVE_PHYSICAL_ADDRESS;
+                    msg.mDelayMs = DELAY_TIMEOUT_MS/14;
+                    msg.mpPara[0] = initiator;
+                    mMsgHandler.removeMsg (msg);
+                    mMsgHandler.sendMsg (msg);
                     event->eventType &= ~HDMI_EVENT_CEC_MESSAGE;
                     ALOGD("[hcc] receviced message: %02x validate fail and drop", event->cec.body[0]);
                 } else {
@@ -434,19 +471,23 @@ void HdmiCecControl::messageValidateAndHandle(hdmi_cec_event_t* event)
                 if (initiator == mCecDevice.mActiveLogicalAddr
                     && (event->cec.body[0] == POWER_STATUS_STANDBY
                     || event->cec.body[0] == POWER_STATUS_TRANSIENT_TO_STANDBY)) {
-                    turnOnDevice(initiator);
+                    msg.mType = HdmiCecControl::MsgHandler::MSG_TURN_ON_DEVICE;
+                    msg.mDelayMs = DELAY_TIMEOUT_MS/7;
+                    msg.mpPara[0] = initiator;
+                    mMsgHandler.sendMsg (msg);
                 }
                 break;
             case CEC_MESSAGE_ROUTING_INFORMATION:
-                if (((event->cec.body[1]) & 0x0f) != 0) {
-                    message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
-                    message.destination = (cec_logical_address_t)ADDR_BROADCAST;
-                    message.body[0] = CEC_MESSAGE_SET_STREAM_PATH;
-                    message.body[1] = event->cec.body[1] & 0xff;
-                    message.body[2] = event->cec.body[2] & 0xff;
-                    message.length = 3;
+                if (destination != ADDR_BROADCAST) {
+                    LOGD("[hcc] receviced message: %02x validate fail and drop", event->cec.body[0]);
+                } else if (((event->cec.body[1]) & 0x0f) != 0) {
+                    msg.mType = HdmiCecControl::MsgHandler::MSG_SET_STREAM_PATH;
+                    msg.mDelayMs = 10;
+                    msg.mpPara[0] = (event->cec.body[1] & 0xff);
+                    msg.mpPara[1] = (event->cec.body[2] & 0xff);
+                    mMsgHandler.removeMsg (msg);
+                    mMsgHandler.sendMsg (msg);
                     ALOGD ("send <Set Stream Path> to get <Active Source> in order to correct mActiveSource then to control sub device.");
-                    sendMessage(&message, false);
                 }
                 break;
             default:
@@ -457,13 +498,11 @@ void HdmiCecControl::messageValidateAndHandle(hdmi_cec_event_t* event)
             case CEC_MESSAGE_SET_OSD_NAME:
                 mCecDevice.mTvOsdName = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
                 break;
+            case CEC_MESSAGE_DEVICE_VENDOR_ID:
+                mCecDevice.mTvDeviceVendorId = ((event->cec.body[1] & 0xff) << 16) +  ((event->cec.body[2] & 0xff) << 8) +  (event->cec.body[3] & 0xff);
+                break;
             case CEC_MESSAGE_SET_MENU_LANGUAGE:
-                if (mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.set_menu_language", true)) {
-                    handleSetMenuLanguage(event);
-                }else {
-                    event->eventType &= ~HDMI_EVENT_CEC_MESSAGE;
-                    ALOGD ("Auto Language Change disable");
-                }
+                handleSetMenuLanguage(event);
                 break;
         }
     }
@@ -476,16 +515,18 @@ void HdmiCecControl::handleOTPMsg(hdmi_cec_event_t* event)
     int devPhyAddr = 0;
     int mask = 0xf000;
     int i, portId = 0;
+    int offset = 4;
     if (mCecDevice.isTvDeviceType && (event->cec.body[0] == CEC_MESSAGE_ACTIVE_SOURCE)) {
         devPhyAddr = ((event->cec.body[1] & 0xff) << 8) +  (event->cec.body[2] & 0xff);
         for (i = 0; i < mCecDevice.mTotalPort && mCecDevice.mpPortData != NULL; i++) {
             if (mCecDevice.mpPortData[i].physical_address == (devPhyAddr & mask))
                 portId = mCecDevice.mpPortData[i].port_id;
         }
-        ALOGD ("#receive <Active Source> from: %d, phyAddress: %02x, mFilterOtpEnabled: %x, mSelectedPortId: %d, portId: %d",
-            initiator, devPhyAddr, mCecDevice.mFilterOtpEnabled, mCecDevice.mSelectedPortId, portId);
         mLock.lock();
-        if (mCecDevice.mFilterOtpEnabled && mCecDevice.mSelectedPortId > 0 && mCecDevice.mSelectedPortId != portId) {
+        ALOGD ("#receive <Active Source> from: %d, phyAddress: %02x, mFilterOtpEnabled: %x, mSelectedDeviceId: %d, portId: %d",
+            initiator, devPhyAddr, mCecDevice.mFilterOtpEnabled, mCecDevice.mSelectedDeviceId, portId);
+        if (mCecDevice.mFilterOtpEnabled
+            && mCecDevice.mSelectedDeviceId != (portId + offset)) {
             event->eventType &= ~HDMI_EVENT_CEC_MESSAGE;
             ALOGD("[hcc] handleOTPMsg filtered, continue.");
         } else {
@@ -496,32 +537,66 @@ void HdmiCecControl::handleOTPMsg(hdmi_cec_event_t* event)
     }
 }
 
-bool HdmiCecControl::handleSetMenuLanguage(hdmi_cec_event_t* event)
+void HdmiCecControl::handleSetMenuLanguage(hdmi_cec_event_t* event)
 {
-    bool ret = true;
-    static const int samsungTvOsdName = (0x54 << 8) + 0x56;
-    static const int zhoLanguage = (0x7a << 16) + (0x68 << 8) + 0x6f;  //Simplified Chinese
-    static const int chiLanguage = (0x63 << 16) + (0x68 << 8) + 0x69;  //Traditional Chinese
-    int para = ((event->cec.body[1] & 0xff) << 16) + ((event->cec.body[2] & 0xff) << 8) +  (event->cec.body[3] & 0xff);
-    if (mCecDevice.mTvOsdName == 0) {
-        getDeviceExtraInfo(0);
-        mCecDevice.mTvOsdName = -1;
+    // Todo the language control logic should be comprized in system_server
+    if (!mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.set_menu_language", true)) {
+        event->eventType &= ~HDMI_EVENT_CEC_MESSAGE;
+        ALOGE("Auto Language Change disable");
+        return;
     }
-    if (mCecDevice.mTvOsdName == samsungTvOsdName) {
-        if (para == chiLanguage) {
-            event->cec.body[1] = 0x7a;
-            event->cec.body[2] = 0x68;
-            event->cec.body[3] = 0x6f;
-            ALOGD ("compatible for samsungtv language setting.");
-        }
-    }
-    return ret;
+
+    int language = ((event->cec.body[1] & 0xff) << 16) + ((event->cec.body[2] & 0xff) << 8) +  (event->cec.body[3] & 0xff);
+    ALOGD("handleSetMenuLanguage tv vendorId %x lang %x", mCecDevice.mTvDeviceVendorId, language);
+    // Compat for the vendors which use different code for "zho"
+    compatLangIfneeded(mCecDevice.mTvDeviceVendorId, language, event);
 }
+
 
 void HdmiCecControl::handleHotplug(int port, bool connected)
 {
+    //ALOGD ("handleHotplug port %d connected %d", port, connected);
     if (mCecDevice.isPlaybackDeviceType && (connected != 0)) {
         getDeviceExtraInfo(1);
+    } else if (mCecDevice.isTvDeviceType && (connected != 0)) {
+        mLock.lock();
+        mCecDevice.mWaitEdidUpdatedFinished = false;
+        mLock.unlock();
+        CMessage msg;
+        msg.mType = HdmiCecControl::MsgHandler::MSG_WAIT_EDIDUPDATE_FINISHED_TIMEOUT;
+        msg.mDelayMs = DELAY_TIMEOUT_MS*2/7;
+        mMsgHandler.removeMsg (msg);
+        mMsgHandler.sendMsg (msg);
+    }
+}
+
+void HdmiCecControl::supportForEARC(hdmi_cec_event_t* event, cec_message_t* message, bool send)
+{
+    bool supportEARC = false;
+    int opcode = 0;
+    if (send && message != NULL) {
+        opcode = message->body[0] & 0xff;
+    } else if (!send && event != NULL) {
+        opcode = event->cec.body[0] & 0xff;
+    }
+    switch (event->cec.body[0]) {
+        case CEC_MESSAGE_INITIATE_ARC:
+        case CEC_MESSAGE_REPORT_ARC_INITIATED:
+        case CEC_MESSAGE_REPORT_ARC_TERMINATED:
+        case CEC_MESSAGE_REQUEST_ARC_INITIATION:
+        case CEC_MESSAGE_REQUEST_ARC_TERMINATION:
+        case CEC_MESSAGE_TERMINATE_ARC:
+            if (pMonitor != NULL) {
+                supportEARC = pMonitor->getEARCSupport();
+            }
+            if (supportEARC) {
+                if (send) {
+                    message->body[0] = CEC_MESSAGE_FEATURE_ABORT;
+                } else {
+                    event->eventType &= ~HDMI_EVENT_CEC_MESSAGE;
+                }
+            }
+            break;
     }
 }
 
@@ -532,11 +607,16 @@ void HdmiCecControl::getDeviceExtraInfo(int flag)
     msg.mDelayMs = DELAY_TIMEOUT_MS*flag;
     mMsgHandler.removeMsg (msg);
     mMsgHandler.sendMsg (msg);
+    msg.mType = HdmiCecControl::MsgHandler::MSG_GIVE_DEVICE_VENDOR_ID;
+    msg.mDelayMs = DELAY_TIMEOUT_MS*flag;
+    mMsgHandler.removeMsg (msg);
+    mMsgHandler.sendMsg (msg);
     msg.mType = HdmiCecControl::MsgHandler::GET_MENU_LANGUAGE;
     msg.mDelayMs = DELAY_TIMEOUT_MS*flag*2;
     mMsgHandler.removeMsg (msg);
     mMsgHandler.sendMsg (msg);
 }
+
 void HdmiCecControl::checkConnectStatus()
 {
     unsigned int index, prevStatus, bit;
@@ -566,15 +646,6 @@ void HdmiCecControl::checkConnectStatus()
                 event.hotplug.port_id = mCecDevice.mpPortData[i].port_id;
                 mEventListener->onEventUpdate(&event);
                 handleHotplug(mCecDevice.mpPortData[i].port_id, connect);
-            }
-            if (connect == 0) {
-                for (index = 0; index < ADDR_BROADCAST; index++) {
-                    if (mCecDevice.mAddedPhyAddrs[index] == mCecDevice.mpPortData[i].physical_address) {
-                        mCecDevice.mAddedPhyAddrs[index] = 0;
-                        ALOGD("[hcc] mCecDevice.mAddedPhyAddrs[%d]: set zero.", index);
-                        break;
-                    }
-                }
             }
             prevStatus &= ~(bit);
             prevStatus |= ((connect ? 1 : 0) << port);
@@ -641,29 +712,31 @@ int HdmiCecControl::addLogicalAddress(cec_logical_address_t address)
     if (assertHdmiCecDevice())
         return -EINVAL;
 
-    if (address < CEC_ADDR_BROADCAST)
+    if (address < CEC_ADDR_BROADCAST) {
+        mCecDevice.mLogicalAddress = address;
         mCecDevice.mAddrBitmap |= (1 << address);
-
-    if (!mCecDevice.isTvDeviceType && mCecDevice.mExtendControl) {
-        mCecDevice.mExtendControl |= (0x02);
-        if (mEventListener != NULL) {
-            hdmi_cec_event_t event;
-            event.eventType = HDMI_EVENT_ADD_LOGICAL_ADDRESS;
-            event.logicalAddress = address;
-            mEventListener->onEventUpdate(&event);
-        }
     }
-    ALOGD("[hcc] addr:%x, bitmap:%x\n", address, mCecDevice.mAddrBitmap);
+
+    if (mCecDevice.isPlaybackDeviceType) {
+        /*try to turn on TV when playback wakeup*/
+        CMessage msg;
+        msg.mType = HdmiCecControl::MsgHandler::MSG_TURN_ON_DEVICE;
+        msg.mDelayMs = DELAY_TIMEOUT_MS/7;
+        msg.mpPara[0] = DEV_TYPE_TV;
+        mMsgHandler.sendMsg (msg);
+    }
+    ALOGD("[hcc] addr:%x, bitmap:%x\n", mCecDevice.mLogicalAddress, mCecDevice.mAddrBitmap);
     return ioctl(mCecDevice.mFd, CEC_IOC_ADD_LOGICAL_ADDR, address);
 }
 
 void HdmiCecControl::clearLogicaladdress()
 {
+    ALOGD("clearLogicaladdress");
     if (assertHdmiCecDevice())
         return;
 
     mCecDevice.mAddrBitmap = (1 << CEC_ADDR_BROADCAST);
-    ALOGD("bitmap:%x", mCecDevice.mAddrBitmap);
+    mCecDevice.mLogicalAddress = CEC_ADDR_BROADCAST;
     if (mCecDevice.mExtendControl) {
         mCecDevice.mExtendControl &= ~(0x02);
     }
@@ -677,36 +750,45 @@ void HdmiCecControl::setOption(int flag, int value)
         return;
 
     int ret = -1;
+    int wakeReason = 0;
     switch (flag) {
         case HDMI_OPTION_ENABLE_CEC:
             //ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_ENALBE_CEC, value);
             mCecDevice.isCecEnabled = (value == 1) ? true : false;
             if (!mCecDevice.isCecEnabled) {
-                mSystemControl->writeSysfs(HDMIRX_SYSFS, CEC_STATE_UNABLED);
+                ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_WAKEUP, value);
+                ioctl(mCecDevice.mFd, CEC_IOC_SET_AUTO_DEVICE_OFF, value);
+            } else {
+                optionInit();
             }
+            handleHdmiHpdStatus(HDMI_OPTION_ENABLE_CEC);
             break;
 
         case HDMI_OPTION_WAKEUP:
             ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_WAKEUP, value);
+            mSystemControl->setProperty("persist.vendor.sys.cec.autowakeup", (value == 1) ? "true" : "false");
+            handleHdmiHpdStatus(HDMI_OPTION_WAKEUP);
             break;
 
         case HDMI_OPTION_SYSTEM_CEC_CONTROL:
             ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_SYS_CTRL, value);
             mCecDevice.isCecEnabled = (value == 1 && !mCecDevice.isCecEnabled) ? true : mCecDevice.isCecEnabled;
             mCecDevice.isCecControlled = (value == 1) ? true : false;
-            if (mFirstEnableCec && mCecDevice.isCecControlled)  {
-                mSystemControl->writeSysfs(HDMIRX_SYSFS, CEC_STATE_BOOT_ENABLED);
-            } else if (mCecDevice.isCecEnabled) {
-                mSystemControl->writeSysfs(HDMIRX_SYSFS, CEC_STATE_ENABLED);
+            if (mCecDevice.isCecControlled) {
+                optionInit();
             } else {
-                mSystemControl->writeSysfs(HDMIRX_SYSFS, CEC_STATE_UNABLED);
+                if (!mCecDevice.isCecEnabled) {
+                    ioctl(mCecDevice.mFd, CEC_IOC_SET_OPTION_WAKEUP, value);
+                    ioctl(mCecDevice.mFd, CEC_IOC_SET_AUTO_DEVICE_OFF, value);
+                }
             }
-            mFirstEnableCec = false;
+            handleHdmiHpdStatus(HDMI_OPTION_SYSTEM_CEC_CONTROL);
             break;
 
         /* set device auto-power off by uboot */
         case HDMI_OPTION_CEC_AUTO_DEVICE_OFF:
             ret = ioctl(mCecDevice.mFd, CEC_IOC_SET_AUTO_DEVICE_OFF, value);
+            mSystemControl->setProperty("persist.vendor.sys.cec.deviceautopoweroff", (value == 1) ? "true" : "false");
             break;
 
         case HDMI_OPTION_SET_LANG:
@@ -767,7 +849,11 @@ int HdmiCecControl::getPhysicalAddress(uint16_t* addr)
 {
     if (assertHdmiCecDevice())
         return -EINVAL;
-
+    if (mCecDevice.isTvDeviceType) {
+        *addr= 0x0;
+        //ALOGD("[hcc] return for tv physical addr ");
+        return 0;
+    }
     if (mCecDevice.isPlaybackDeviceType) {
         if ((mCecDevice.mConnectStatus & (1)) == 0) {
             *addr= 0x0;
@@ -780,11 +866,47 @@ int HdmiCecControl::getPhysicalAddress(uint16_t* addr)
     return ret;
 }
 
+/*
+ * checkWakedByCec
+ * When system wakes up, it will enable the cec control and it's the timing that we could check
+ * If the system is waked up by cec devices. In consideration of the situation where one more devices
+ * Connected to tv and it is waked up by the playback which is not the current channel, tv should
+ * Not do the route control started by PortSelectRequestBuffer to set stream path to the previous channel.
+*/
+int HdmiCecControl::getCecWakePort() {
+    int wakeReason = 0;
+    int wakePort = -1;
+    ioctl(mCecDevice.mFd, CEC_IOC_GET_BOOT_REASON, &wakeReason);
+    wakeReason = wakeReason & 0xff;
+    if (wakeReason != CEC_WAKEUP) {
+        return -1;
+    }
+    // wakeup address is 0xb1000.
+    ioctl(mCecDevice.mFd, CEC_IOC_GET_BOOT_ADDR, &wakePort);
+    wakePort = (wakePort >> 12) & 0xf;
+    ALOGD("getCecWakePort reason %x port %x", wakeReason, wakePort);
+    // there should be only 4 ports for tv now.
+    if (wakePort > 0 && wakePort < 5) {
+        return wakePort;
+    }
+    return -1;
+}
+
 int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
 {
-    if (assertHdmiCecDevice())
+    int initiator = message->initiator;
+    int dest = message->destination;
+    int opcode = message->body[0] & 0xff;
+    //ALOGD("sendMessage initiator %d dest %d opcode %d", initiator, dest, opcode);
+
+    int ret;
+    if (assertHdmiCecDevice()) {
+        ALOGE("sendMessage not valid cec device!");
         return -EINVAL;
+    }
+
     if (!mCecDevice.isCecEnabled) {
+        ALOGE("sendMessage cec not enabled!");
         return -EINVAL;
     }
     if (isExtend) {
@@ -795,17 +917,30 @@ int HdmiCecControl::sendMessage(const cec_message_t* message, bool isExtend)
     if (mCecDevice.mExtendControl == 0x03 && hasHandledByExtend(message)) {
         return HDMI_RESULT_SUCCESS;
     }
-    if (preHandleBeforeSend(message) < 0) {
+    if (preHandleOfSend(message) < 0) {
         return HDMI_RESULT_SUCCESS;
     }
-    return send(message);
+    ret = send(message);
+    postHandleOfSend(message, ret);
+    return ret;
 }
 
-int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
+int HdmiCecControl::sendMessage(int initiator, int destination, int length, cec_message_type type)
+{
+    cec_message_t message;
+    message.initiator = (cec_logical_address_t)initiator;
+    message.destination = (cec_logical_address_t)destination;
+    message.length = length;
+    message.body[0] = type;
+    return send(&message);
+}
+
+int HdmiCecControl::preHandleOfSend(const cec_message_t* message)
 {
     int ret = 0;
     int initiator, dest, opcode, para, value, avrAddr, index;
     hdmi_cec_event_t event;
+    CMessage msg;
     dest = message->destination;
     opcode = message->body[0] & 0xff;
     switch (opcode) {
@@ -836,13 +971,16 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
                 }
             }
             if (opcode == CEC_MESSAGE_ROUTING_CHANGE) {
-                //wake up device when change to the current input.
-                value = 0;
+                //wake up all the current port device when change to.
                 for (index = 0; index < ADDR_BROADCAST; index++) {
                     value = mCecDevice.mAddedPhyAddrs[index];
-                    if (para == value && value != 0) {
+                    if ((para != 0) && ((value & 0xf000) == (para & 0xf000)) && (value - para >= 0)) {
                         dest = index;
-                        turnOnDevice(dest);
+                        msg.mType = HdmiCecControl::MsgHandler::MSG_TURN_ON_DEVICE;
+                        msg.mDelayMs = DELAY_TIMEOUT_MS*2/7;
+                        msg.mpPara[0] = dest;
+                        //mMsgHandler.removeMsg (msg);
+                        mMsgHandler.sendMsg (msg);
                         break;
                     }
                 }
@@ -852,18 +990,40 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
             para = (message->body[1] & 0xff);
             if (dest != mCecDevice.mActiveLogicalAddr && (para >= CEC_KEYCODE_UP && para <= CEC_KEYCODE_RIGHT)) {
                 //send user control press to sub device of avr
-                cec_message_t msg;
-                msg.initiator = (cec_logical_address_t)message->initiator;
-                msg.destination = (cec_logical_address_t)mCecDevice.mActiveLogicalAddr;
-                msg.body[0] = message->body[0] & 0xff;
-                msg.body[1] = message->body[1] & 0xff;
-                msg.length = 2;
-                sendMessage(&msg, false);
+                msg.mType = HdmiCecControl::MsgHandler::MSG_USER_CONTROL_PRESSED;
+                msg.mDelayMs = DELAY_TIMEOUT_MS/14;
+                msg.mpPara[0] = message->initiator;
+                msg.mpPara[1] = mCecDevice.mActiveLogicalAddr;
+                msg.mpPara[2] = message->body[1] & 0xff;
+                mMsgHandler.sendMsg (msg);
+            }
+            break;
+        case CEC_MESSAGE_GIVE_PHYSICAL_ADDRESS:
+            if (dest == DEV_TYPE_AUDIO_SYSTEM) {
+                /*there are two case:
+                1. avr report physical address maybe wrong when edid updated not finished after hotplug
+                2. time between right and wrong physical address too short may lead arc connect not succes*/
+                mLock.lock();
+                if (!mCecDevice.mWaitEdidUpdatedFinished) {
+                    msg.mType = HdmiCecControl::MsgHandler::MSG_GIVE_PHYSICAL_ADDRESS;
+                    msg.mDelayMs = DELAY_TIMEOUT_MS*2/7;
+                    msg.mpPara[0] = dest;
+                    mMsgHandler.removeMsg (msg);
+                    mMsgHandler.sendMsg (msg);
+                    ret = -1;
+                }
+                mLock.unlock();
             }
             break;
         case CEC_MESSAGE_STANDBY:
-            if (mCecDevice.isPlaybackDeviceType && !mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.onekeypoweroff", false)) {
+            if (!mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.deviceautopoweroff", true)) {
                 ALOGD("[hcc] filter <Standby>.");
+                ret = -1;
+            }
+            break;
+        case CEC_MESSAGE_SET_MENU_LANGUAGE:
+            if (!mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.set_menu_language", true)) {
+                ALOGD("[hcc] filter <Set Menu Language>.");
                 ret = -1;
             }
             break;
@@ -873,10 +1033,29 @@ int HdmiCecControl::preHandleBeforeSend(const cec_message_t* message)
     return ret;
 }
 
+int HdmiCecControl::postHandleOfSend(const cec_message_t* message, int result)
+{
+    int ret = 0;
+    int initiator, dest, opcode, len;
+    len = message->length;
+    dest = message->destination;
+    if (len == 0 && result != SUCCESS && mCecDevice.mAddedPhyAddrs[dest] != 0) {
+        mCecDevice.mAddedPhyAddrs[dest] = 0;
+        ALOGE("[hcc] Polling %d fail, reset mCecDevice.mAddedPhyAddrs[%d].", dest, dest);
+    }
+    return ret;
+}
+
 void HdmiCecControl::turnOnDevice(int logicalAddress)
 {
     cec_message_t message;
-    message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
+    if (mCecDevice.isTvDeviceType) {
+        message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
+    } else if (mCecDevice.isPlaybackDeviceType) {
+       message.initiator = (cec_logical_address_t)DEV_TYPE_PLAYBACK;
+    } else {
+        message.initiator = (cec_logical_address_t)(0xe);
+    }
     message.destination = (cec_logical_address_t)logicalAddress;
     message.body[0] = CEC_MESSAGE_USER_CONTROL_PRESSED;
     /*
@@ -889,11 +1068,63 @@ void HdmiCecControl::turnOnDevice(int logicalAddress)
     */
     message.body[1] = (CEC_KEYCODE_POWER_ON_FUNCTION & 0xff);
     message.length = 2;
-    sendMessage(&message, false);
+    send(&message);
     message.body[0] = CEC_MESSAGE_USER_CONTROL_RELEASED;
     message.length = 1;
-    sendMessage(&message, false);
+    send(&message);
+    if (mCecDevice.isPlaybackDeviceType) {
+        message.body[0] = CEC_MESSAGE_TEXT_VIEW_ON;
+        message.length = 1;
+        send(&message);
+    }
     ALOGD("[hcc] send wakeUp message.");
+}
+
+void HdmiCecControl::optionInit()
+{
+    /*
+    some option must be inited when started, these value maybe stored in java setting,
+    I just do like this , it is better to do by reading propety which sync with java setting
+   */
+    setOption(HDMI_CONTROL_AUTO_WAKEUP_ENABLED, mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.autowakeup", true));
+    setOption(HDMI_CONTROL_AUTO_DEVICE_OFF_ENABLED, mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.deviceautopoweroff", true));
+}
+
+void HdmiCecControl::handleHdmiHpdStatus(int flag)
+{
+    if (mCecDevice.isTvDeviceType) {
+        int autowakeupEnabled = 0;
+        char value[4] = {0};
+        autowakeupEnabled = mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.autowakeup", false);
+        if ((flag == HDMI_OPTION_ENABLE_CEC)
+            || (flag == HDMI_OPTION_WAKEUP)) {
+            if (mCecDevice.isCecEnabled) {
+                if (autowakeupEnabled) {
+                    strcpy(value, AUTO_WAKEUP_ON_CEC_ON);
+                } else {
+                    strcpy(value, AUTO_WAKEUP_OFF_CEC_ON);
+                }
+            } else {
+                if (autowakeupEnabled) {
+                    strcpy(value, AUTO_WAKEUP_ON_CEC_OFF);
+                } else {
+                    strcpy(value, AUTO_WAKEUP_OFF_CEC_OFF);
+                }
+            }
+        }
+        if ((flag == HDMI_OPTION_SYSTEM_CEC_CONTROL)
+            && (mCecDevice.isCecControlled)) {
+            if (mCecDevice.isCecEnabled) {
+                if (autowakeupEnabled) {
+                    strcpy(value, AUTO_WAKEUP_ON_CEC_ON_BOOT);
+                } else {
+                    strcpy(value, AUTO_WAKEUP_OFF_CEC_ON_BOOT);
+                }
+            }
+        }
+        mSystemControl->writeSysfs(HDMIRX_SYSFS, value);
+        ALOGD("[hcc] handleHdmiHpdStatus %s", value);
+    }
 }
 
 bool HdmiCecControl::hasHandledByExtend(const cec_message_t* message)
@@ -938,9 +1169,9 @@ int HdmiCecControl::sendExtMessage(const cec_message_t* message)
 
 int HdmiCecControl::send(const cec_message_t* message)
 {
+    AutoMutex _l(mSendLock);
     unsigned char msgBuf[CEC_MESSAGE_BODY_MAX_LENGTH];
     int ret = -1;
-
     memset(msgBuf, 0, sizeof(msgBuf));
     msgBuf[0] = ((message->initiator & 0xf) << 4) | (message->destination & 0xf);
     memcpy(msgBuf + 1, message->body, message->length);

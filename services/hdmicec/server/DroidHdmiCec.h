@@ -68,6 +68,7 @@ public:
     Return<bool> isConnected(int32_t portId) override;
 
     Return<void> setCallback(const sp<IDroidHdmiCecCallback>& callback, ConnectType type) override;
+    Return<int32_t> getCecWakePort() override;
 
     virtual void onEventUpdate(const hdmi_cec_event_t* event);
 

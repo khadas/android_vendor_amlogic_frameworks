@@ -125,6 +125,7 @@ public:
     static SystemControl* instantiate(const char *cfgpath);
 
     virtual status_t dump(int fd, const Vector<String16>& args);
+    virtual bool getModeSupportDeepColorAttr(const std::string& mode,const std::string& color);
 
     int getLogLevel();
     virtual void getBootanimStatus(int &status);
@@ -143,7 +144,6 @@ private:
     SysWrite *pSysWrite;
     DisplayMode *pDisplayMode;
     Dimension *pDimension;
-    CPQControl *pCPQControl;
     Ubootenv *pUbootenv;
 };
 

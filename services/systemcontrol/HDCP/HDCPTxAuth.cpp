@@ -375,11 +375,11 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
         }
         else if (!strcmp(ueventData.matchName, HDMI_TX_HDCP_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDCP)) {
             //0: hdcp failure -> mute a/v
-            if (!strcmp(ueventData.switchState, "0"))
-                pThiz->mute(true);
+            //if (!strcmp(ueventData.switchState, "0"))
+                //pThiz->mute(true);
             //1:  hdcp success -> unmute a/v
-            else
-                pThiz->mute(false);
+            //else
+                //pThiz->mute(false);
         }
         else if (!strcmp(ueventData.matchName, HDMI_TX_HDCP14_LOG_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDCP_LOG)) {
             //char logBuf[MAX_STR_LEN+1] = {0};

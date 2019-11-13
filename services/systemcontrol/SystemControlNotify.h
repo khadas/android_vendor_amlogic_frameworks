@@ -32,6 +32,7 @@ public:
     SystemControlNotify() {}
     virtual ~SystemControlNotify(){}
     virtual void onEvent(int event) = 0;
+    virtual void onFBCUpgradeEvent(int32_t state, int32_t param) = 0;
 };
 
 }; // namespace android

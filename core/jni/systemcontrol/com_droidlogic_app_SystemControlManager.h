@@ -29,6 +29,7 @@ public:
 
     void notify (const int event);
     void notifyFBCUpgrade(int state, int param);
+    void onSetDisplayMode(int mode);
 };
 
 #endif

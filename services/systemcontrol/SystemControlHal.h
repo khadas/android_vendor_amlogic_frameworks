@@ -254,6 +254,7 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<void> setHdrStrategy(const hidl_string &value) override;
     virtual void onEvent(int event);
     virtual void onFBCUpgradeEvent(int32_t state, int32_t param);
+    virtual void onSetDisplayMode(int mode);
 
   private:
     void handleServiceDeath(uint32_t cookie);

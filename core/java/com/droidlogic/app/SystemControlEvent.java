@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 
 //this event from native system control service
-public class SystemControlEvent implements SystemControlManager.HdmiHotPlugListener{
+public class SystemControlEvent implements SystemControlManager.HdmiHotPlugListener {
     private static final String TAG                             = "SystemControlEvent";
 
     public static final String ACTION_SYSTEM_CONTROL_EVENT      = "droidlogic.intent.action.SYSTEM_CONTROL_EVENT";

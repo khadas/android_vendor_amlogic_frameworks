@@ -1034,9 +1034,22 @@ int SystemControlService::getGammaValue()
     }
 }
 
+void SystemControlService::setDisplayModeListener(const sp<SystemControlNotify>& listener)
+{
+    mDisplayListener = listener;
+}
+
+void SystemControlService::SendDisplayMode(int mode) {
+    if (mDisplayListener != NULL) {
+        ALOGI("set displaymode callback\n");
+        mDisplayListener->onSetDisplayMode(mode);
+    }
+}
+
 int SystemControlService::setDisplayMode(int source_input, int mode, int isSave)
 {
     if (pCPQControl != NULL) {
+        SendDisplayMode(mode);
         return pCPQControl->SetDisplayMode((vpp_display_mode_t)mode, isSave);
     } else {
         return -1;

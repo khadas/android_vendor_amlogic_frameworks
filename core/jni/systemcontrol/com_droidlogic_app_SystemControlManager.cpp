@@ -20,6 +20,7 @@ sp<EventCallback> spEventCB;
 static jobject SysCtrlObject;
 static jmethodID notifyCallback;
 static jmethodID FBCUpgradeCallback;
+static jmethodID notifyDisplayModeCallback;
 static JavaVM   *g_JavaVM = NULL;
 
 const sp<SystemControlClient>& getSystemControlClient()
@@ -79,6 +80,19 @@ void EventCallback::notifyFBCUpgrade(int state, int param) {
     }
 }
 
+void EventCallback::onSetDisplayMode(int mode) {
+    bool needDetach = false;
+    JNIEnv *env = getJniEnv(&needDetach);
+    if (env != NULL && SysCtrlObject != NULL) {
+        env->CallVoidMethod(SysCtrlObject, notifyDisplayModeCallback, mode);
+    } else {
+        ALOGE("g_env or SysCtrlObject is NULL");
+    }
+    if (needDetach) {
+        DetachJniEnv();
+    }
+}
+
 static void ConnectSystemControl(JNIEnv *env, jclass clazz __unused, jobject obj)
 {
     ALOGI("Connect System Control");
@@ -87,6 +101,7 @@ static void ConnectSystemControl(JNIEnv *env, jclass clazz __unused, jobject obj
     if (scc != NULL) {
         spEventCB = new EventCallback();
         scc->setListener(spEventCB);
+        scc->setDisplayModeListener(spEventCB);
         SysCtrlObject = env->NewGlobalRef(obj);
     }
 }
@@ -1991,6 +2006,7 @@ int register_com_droidlogic_app_SystemControlManager(JNIEnv *env)
 
     GET_METHOD_ID(notifyCallback, clazz, "notifyCallback", "(I)V");
     GET_METHOD_ID(FBCUpgradeCallback, clazz, "FBCUpgradeCallback", "(II)V");
+    GET_METHOD_ID(notifyDisplayModeCallback, clazz, "notifyDisplayModeCallback", "(I)V");
     return rc;
 }
 

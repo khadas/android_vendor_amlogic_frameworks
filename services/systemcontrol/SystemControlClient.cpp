@@ -1242,6 +1242,26 @@ Return<void> SystemControlClient::SystemControlHidlCallback::notifyFBCUpgradeCal
     return Void();
 }
 
+void SystemControlClient::setDisplayModeListener(const sp<SysCtrlListener> &listener)
+{
+    mDisplayListener = listener;
+}
+
+Return<void> SystemControlClient::SystemControlHidlCallback::notifySetDisplayModeCallback(int mode) {
+    ALOGI("notifySetDisplayModeCallback mode:%d", mode);
+    sp<SysCtrlListener> listener;
+    {
+        Mutex::Autolock _l(mLock);
+        listener = SysCtrlClient->mDisplayListener;
+    }
+
+
+    if (listener != NULL) {
+        listener->onSetDisplayMode(mode);
+    }
+
+    return Void();
+}
 
 void SystemControlClient::SystemControlDeathRecipient::serviceDied(uint64_t cookie,
         const ::android::wp<::android::hidl::base::V1_0::IBase>& who) {

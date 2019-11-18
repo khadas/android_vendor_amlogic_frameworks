@@ -50,6 +50,7 @@ SystemControlHal::SystemControlHal(SystemControlService * control)
 
     control->setListener(this);
     control->setFBCUpgradeListener(this);
+    control->setDisplayModeListener(this);
 }
 
 SystemControlHal::~SystemControlHal() {
@@ -99,6 +100,23 @@ void SystemControlHal::onFBCUpgradeEvent(int32_t state, int32_t param) {
         }
     }
 
+}
+
+void SystemControlHal::onSetDisplayMode(int mode) {
+    AutoMutex _l(mLock);
+    ALOGI("onSetDisplaymode mode:%d", mode);
+    for (auto it = mClients.begin(); it != mClients.end();) {
+        if (it->second == nullptr) {
+            it = mClients.erase(it);
+            continue;
+        }
+        auto ret = (it->second)->notifySetDisplayModeCallback(mode);
+        if (!ret.isOk() && ret.isDeadObject()) {
+            it = mClients.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 Return<void> SystemControlHal::getSupportDispModeList(getSupportDispModeList_cb _hidl_cb) {

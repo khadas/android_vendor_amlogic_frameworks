@@ -35,7 +35,7 @@ public class SystemControlManager {
 
     private HdmiHotPlugListener mhdmiHotPlugListener;
     private FBCUpgradeListener  mFBCUpgradeListener;
-
+    private DisplayModeListener mDisplayModeListener;
     static {
         System.loadLibrary("systemcontrol_jni");
     }
@@ -3333,6 +3333,20 @@ public class SystemControlManager {
     public void FBCUpgradeCallback(int state, int param) {
         if (mhdmiHotPlugListener != null)
             mFBCUpgradeListener.FBCUpgradeEvent(state, param);
+    }
+
+    public interface DisplayModeListener {
+        void onSetDisplayMode(int mode);
+    }
+
+    public void setDisplayModeListener(DisplayModeListener l) {
+        mDisplayModeListener = l;
+    }
+
+    public void notifyDisplayModeCallback(int mode) {
+        Log.d(TAG, "notifyDisplayModeCallback");
+        if (mDisplayModeListener != null)
+            mDisplayModeListener.onSetDisplayMode(mode);
     }
 
 }

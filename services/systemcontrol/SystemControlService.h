@@ -256,6 +256,9 @@ public:
     int StartUpgradeFBC(const std::string&file_name, int mode, int upgrade_blk_size);
     int UpdateFBCUpgradeStatus(int status, int param);
 
+    void setDisplayModeListener(const sp<SystemControlNotify>& listener);
+    void SendDisplayMode(int mode);
+
     static SystemControlService* instantiate(const char *cfgpath);
     virtual status_t dump(int fd, const Vector<String16>& args);
 
@@ -288,6 +291,7 @@ private:
 
     sp<IDroidVold> mDroidVold;
     sp<SystemControlNotify> mNotifyListener;
+    sp<SystemControlNotify> mDisplayListener;
 };
 
 // ----------------------------------------------------------------------------

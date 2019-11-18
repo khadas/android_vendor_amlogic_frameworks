@@ -51,6 +51,7 @@ class SysCtrlListener : virtual public RefBase {
 public:
     virtual void notify(int event) = 0;
     virtual void notifyFBCUpgrade(int state, int param) = 0;
+    virtual void onSetDisplayMode(int mode) = 0;
 };
 
 class SystemControlClient  : virtual public RefBase {
@@ -261,6 +262,7 @@ public:
     int UpdateFBCUpgradeStatus(int state, int param);
 
     void setListener(const sp<SysCtrlListener> &listener);
+    void setDisplayModeListener(const sp<SysCtrlListener> &listener);
 
  private:
      class SystemControlHidlCallback : public ISystemControlCallback {
@@ -268,6 +270,7 @@ public:
          SystemControlHidlCallback(SystemControlClient *client): SysCtrlClient(client) {};
          Return<void> notifyCallback(const int event) override;
          Return<void> notifyFBCUpgradeCallback(int state, int param) override;
+         Return<void> notifySetDisplayModeCallback(int mode) override;
      private:
          SystemControlClient *SysCtrlClient;
      };
@@ -290,6 +293,7 @@ public:
     sp<ISystemControl> mSysCtrl;
     static Mutex mLock;
     sp<SysCtrlListener> mListener;
+    sp<SysCtrlListener> mDisplayListener;
     sp<SystemControlHidlCallback> mSystemControlHidlCallback = nullptr;
 
 };

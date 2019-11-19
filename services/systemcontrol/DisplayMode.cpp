@@ -626,9 +626,11 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     SYS_LOGI("set display-size:%s\n", defaultResolution);
 
     // no need to update
-    //update free_scale_axis and window_axis
-    //updateFreeScaleAxis();
-    //updateWindowAxis(outputmode);
+    // update free_scale_axis and window_axis in recovery mode
+#ifdef RECOVERY_MODE
+    updateFreeScaleAxis();
+    updateWindowAxis(outputmode);
+#endif
 
     if (!cvbsMode && (pSysWrite->getPropertyBoolean(PROP_SUPPORT_DOLBY_VISION, false) == false)) {
         if (pSysWrite->getPropertyBoolean(PROP_DOLBY_VISION_FEATURE, false)) {

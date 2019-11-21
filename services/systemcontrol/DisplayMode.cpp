@@ -1803,16 +1803,16 @@ void DisplayMode::initDolbyVision(output_mode_state state) {
     char dv_mode[MAX_STR_LEN];
     char bestDolbyVision[MODE_LEN] = {0};
     if (isTvSupportDolbyVision(dv_mode) && (!getBootEnv(UBOOTENV_BESTDOLBYVISION, bestDolbyVision) || strstr(bestDolbyVision, "true") != NULL)) {
-        if (strstr(dv_mode, "DV_RGB_444_8BIT") != NULL) {
-            if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE,  state)) {
-                return;
-            }
-            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE,  state);
-        } else if (strstr(dv_mode, "LL_YCbCr_422_12BIT") != NULL) {
+        if (strstr(dv_mode, "LL_YCbCr_422_12BIT") != NULL) {
             if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE_LL_YUV,  state)) {
                 return;
             }
             setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE_LL_YUV,  state);
+        } else if (strstr(dv_mode, "DV_RGB_444_8BIT") != NULL) {
+            if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE,  state)) {
+                return;
+            }
+            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE,  state);
         } else if ((strstr(dv_mode, "LL_RGB_444_12BIT") != NULL) || (strstr(dv_mode, "LL_RGB_444_10BIT") != NULL)) {
             if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE_LL_RGB,  state)) {
                 return;

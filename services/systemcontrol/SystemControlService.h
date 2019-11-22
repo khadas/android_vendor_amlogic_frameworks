@@ -248,6 +248,7 @@ public:
     int factoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD,int param_type);
     tvpq_databaseinfo_t getPQDatabaseInfo(int dataBaseName);
     int setDtvKitSourceEnable(int isEnable);
+    void setHdrStrategy(const std::string& value);
     //PQ end
 
     //FBC

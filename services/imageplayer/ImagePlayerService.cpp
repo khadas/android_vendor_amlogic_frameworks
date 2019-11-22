@@ -84,6 +84,8 @@
 
 #define SURFACE_4K_WIDTH            3840
 #define SURFACE_4K_HEIGHT           2160
+#define SMALL_WIDTH               1920
+#define SMALL_HEIGHT              1080
 
 #define PICDEC_SYSFS                "/dev/picdec"
 #define PICDEC_IOC_MAGIC            'P'
@@ -104,6 +106,7 @@ using ::vendor::amlogic::hardware::systemcontrol::V1_0::Result;
 using ::android::hardware::hidl_string;
 
 namespace android {
+    static bool P2pDisplay = false;
     class DeathNotifier: public IBinder::DeathRecipient {
       public:
         DeathNotifier(sp<ImagePlayerService> imageplayerservice) {
@@ -462,7 +465,15 @@ namespace {
         srcBitmap->setIsVolatile(false);
 
         if (!ret) {
-            delete dstBitmap;
+            if (dstBitmap != NULL) {
+                if (!dstBitmap->isNull()) {
+                    dstBitmap->reset();
+                    delete dstBitmap;
+                    dstBitmap = NULL;
+                }else {
+                    dstBitmap=NULL;
+                }
+            }
             return NULL;
         }
 
@@ -974,9 +985,9 @@ namespace android {
             close(mDisplayFd);
         }
 
-        if (!checkVideoInUse(CHECK_VIDEO_INUSE_RETRY_COUNT)) {
+        /*if (!checkVideoInUse(CHECK_VIDEO_INUSE_RETRY_COUNT)) {
             return RET_ERR_BAD_VALUE;
-        }
+        }*/
 
         mDisplayFd = open(PICDEC_SYSFS, O_RDWR);
 
@@ -985,6 +996,16 @@ namespace android {
                   strerror(errno), errno);
             return RET_ERR_OPEN_SYSFS;
         }
+        char value[32];
+        mSysWrite->setProperty("persist.sys.is.image.player", "1");
+        mSysWrite->getProperty("persist.sys.is.image.player",value);
+        ALOGI("init, persist.sys.is.image.player:%s",value);
+        mSysWrite->writeSysfs("/sys/class/amvecm/pc_mode", "0");
+        mSysWrite->writeSysfs("sys/module/di/parameters/nr2_en", "0");
+        mSysWrite->writeSysfs("/sys/class/amvecm/lc", "lc disable");
+        mSysWrite->writeSysfs("/sys/class/amvecm/pq_user_set", "blk_ext_di");
+        P2pDisplay = mSysWrite->writeSysfs("/sys/module/picdec/parameters/p2p_mode","1");
+        ALOGD("write p2p_mode %d",P2pDisplay);
 
 #if 0   //workround: need post a frame to video layer
         FrameInfo_t info;
@@ -1044,7 +1065,7 @@ namespace android {
         ALOGI("setDataSource uri:%s", uri);
 
         if (mBitmap != NULL) {
-            delete mBitmap;
+            clearBmp(mBitmap);
             mBitmap = NULL;
         }
 
@@ -1057,19 +1078,12 @@ namespace android {
             ALOGE("setDataSource error uri:%s", uri);
             return RET_ERR_INVALID_OPERATION;
         }
-
-        if (!isSupportFromat(uri, &mBitmap) && !isTiffByExtenName(uri)) {
-            ALOGE("setDataSource codec can not support it");
-            return RET_ERR_INVALID_OPERATION;
+        MovieThreadStop();
+        if (isMovieByExtenName(mImageUrl)) {
+            mMovieImage = true;
+        }else {
+            mMovieImage = false;
         }
-
-        if (mBitmap != NULL) {
-            mWidth = mBitmap->width();
-            mHeight = mBitmap->height();
-            delete mBitmap;
-            mBitmap = NULL;
-        }
-
         ALOGI("setDataSource end uri:%s", uri);
         return RET_OK;
     }
@@ -1081,7 +1095,7 @@ namespace android {
               (int)length);
 
         if (mBitmap != NULL) {
-            delete mBitmap;
+            clearBmp(mBitmap);
             mBitmap = NULL;
         }
 
@@ -1099,7 +1113,7 @@ namespace android {
         if (mBitmap != NULL) {
             mWidth = mBitmap->width();
             mHeight = mBitmap->height();
-            delete mBitmap;
+            clearBmp(mBitmap);
             mBitmap = NULL;
         }
 
@@ -1145,16 +1159,23 @@ namespace android {
             mNeedResetHWScale = true;
             return RET_OK;
         }
-
+        if (degrees == 0) {
+             if (mRotateBitmap != NULL) {
+                mRotateBitmap->reset();
+                mRotateBitmap = NULL;
+            }
+            renderAndShow(mBitmap);
+            return RET_OK;
+        }
         SkBitmap *dstBitmap = NULL;
         dstBitmap = rotate(mBitmap, degrees);
 
         if (dstBitmap != NULL) {
-            if (isAutoCrop) {
+            if (isAutoCrop && needFillSurface(dstBitmap, 1, 1)) {
                 SkBitmap *fillBitmap = fillSurface(dstBitmap);
 
                 if (fillBitmap != NULL) {
-                    delete dstBitmap;
+                    clearBmp(dstBitmap);
                     dstBitmap = fillBitmap;
                 }
             }
@@ -1164,17 +1185,21 @@ namespace android {
 
             if ((dstBitmap->width() > surfaceWidth)
                     || (dstBitmap->height() > surfaceHeight)) {
+                ALOGD("cropAndFillBitmap");
                 SkBitmap *dstCrop = cropAndFillBitmap(dstBitmap, surfaceWidth, surfaceHeight);
 
                 if (NULL != dstCrop) {
-                    delete dstBitmap;
+                    clearBmp(dstBitmap);
                     dstBitmap = dstCrop;
                 }
             }
+            if (mRotateBitmap != NULL) {
+                clearBmp(mRotateBitmap);
+            }
+           // mRotateBitmap = dstBitmap;
 
-            mRotateBitmap = dstBitmap;
             renderAndShow(dstBitmap);
-            //delete dstBitmap;
+            clearBmp(dstBitmap);
             return RET_OK;
         }
 
@@ -1182,9 +1207,11 @@ namespace android {
     }
 
     int ImagePlayerService::setScale(float sx, float sy, int autoCrop) {
+
         Mutex::Autolock autoLock(mLock);
 
         resetTranslate();
+        resetRotateScale();
 
         bool isAutoCrop = autoCrop != 0;
         ALOGD("setScale sx:%f, sy:%f, isAutoCrop:%d", sx, sy, isAutoCrop);
@@ -1195,22 +1222,34 @@ namespace android {
         }
 
         if (mMovieImage) {
-            mMovieScale *= sx;
+            mMovieScale = sx;
+            ALOGE("///////////////%f",mMovieScale);
             return RET_OK;
         }
-
+        SkBitmap *dstBitmap = NULL;
         if (sx != sy) {
             ALOGW("scale x and y not the same");
 
-            SkBitmap *dstBitmap = NULL;
-            dstBitmap = scale(mBitmap, sx, sy);
+            SkBitmap *devbmp = NULL;
+            if (needFillSurface(mBitmap, 1, 1)) {
+                devbmp = fillSurface(mBitmap);
+                if (devbmp != NULL) {
+                    dstBitmap = scale(devbmp, sx, sy);
+                    if (dstBitmap != NULL) {
+                        clearBmp(devbmp);
+                        devbmp = NULL;
+                    }
+                }
+            }
+            if (dstBitmap == NULL )
+                dstBitmap = scale(mBitmap, sx, sy);
 
             if (dstBitmap != NULL) {
-                if (isAutoCrop) {
+                if (isAutoCrop && needFillSurface(dstBitmap,sx, sy)) {
                     SkBitmap *fillBitmap = fillSurface(dstBitmap);
 
                     if (fillBitmap != NULL) {
-                        delete dstBitmap;
+                        clearBmp(dstBitmap);
                         dstBitmap = fillBitmap;
                     }
                 }
@@ -1218,84 +1257,48 @@ namespace android {
                 ALOGD("After scale, Width: %d, Height: %d", dstBitmap->width(),
                       dstBitmap->height());
                 renderAndShow(dstBitmap);
-                delete dstBitmap;
+                clearBmp(dstBitmap);
+                dstBitmap = NULL;
             } else {
                 return RET_ERR_DECORDER;
             }
         } else {
-            ALOGD("setScale, current direction:%d [0:normal, 1:up, 2:down], current step: %f",
-                  mScalingDirect, mScalingStep);
+           // ALOGD("setScale, cucale, current direction:%d [0:normal, 1:up, 2:down], current step: %f",
+           //       mScalingDirect, mScalingStep);
+            clearBmp(mScalingBitmap);
+            mScalingBitmap = NULL;
 
-            float realScale = 1.0f;
-
-            if (SCALE_NORMAL == mScalingDirect) {
-                if (mScalingBitmap != NULL)
-                    delete mScalingBitmap;
-
-                mScalingBitmap = scaleAndCrop((mRotateBitmap != NULL) ? mRotateBitmap : mBitmap,
-                                              sx, sy);
-                realScale = mScalingStep * sx;
-
-                if (realScale > mScalingStep)
-                    mScalingDirect = SCALE_UP;
-                else if (realScale < mScalingStep)
-                    mScalingDirect = SCALE_DOWN;
-            } else if (SCALE_UP == mScalingDirect) {
-                realScale = mScalingStep * sx;
-
-                if (realScale > mScalingStep) {
-                    //still scale up, can use the scaling bitmap
-                    SkBitmap *retBitmap = scaleAndCrop(mScalingBitmap, sx, sy);
-
-                    if (retBitmap != NULL) {
-                        if (mScalingBitmap != NULL)
-                            delete mScalingBitmap;
-
-                        mScalingBitmap = retBitmap;
+            if (needFillSurface(mBitmap, 1, 1)) {
+                dstBitmap = fillSurface(mBitmap);
+                if (dstBitmap != NULL) {
+                     ALOGD("fillSurface destBitmap != null)");
+                     if (sx == 1.0 && sy == 1.0f ) {
+                        renderAndShow(dstBitmap);
+                        clearBmp(dstBitmap);
+                        dstBitmap = NULL;
+                        return RET_OK;
+                    }else {
+                        SkBitmap* bmpsScaling = scaleAndCrop(dstBitmap, sx, sy);
+                        clearBmp(dstBitmap);
+                        dstBitmap = bmpsScaling;
                     }
-                } else if (realScale < mScalingStep) {
-                    //now is scale down, can not use the scaling bitmap, must use the origin bitmap to scale
-                    if (mScalingBitmap != NULL)
-                        delete mScalingBitmap;
-
-                    mScalingBitmap = scaleStep((mRotateBitmap != NULL) ? mRotateBitmap : mBitmap,
-                                               realScale, realScale);
-                }
-
-                if (realScale < 1.0f)
-                    mScalingDirect = SCALE_DOWN;
-                else if (realScale == 1.0f)
-                    mScalingDirect = SCALE_NORMAL;
-            } else if (SCALE_DOWN == mScalingDirect) {
-                realScale = mScalingStep * sx;
-
-                if (realScale > mScalingStep) {
-                    //now is scale up, can not use the scaling bitmap, must use the origin bitmap to scale
-                    if (mScalingBitmap != NULL)
-                        delete mScalingBitmap;
-
-                    mScalingBitmap = scaleStep((mRotateBitmap != NULL) ? mRotateBitmap : mBitmap,
-                                               realScale, realScale);
-                } else if (realScale < mScalingStep) {
-                    //still scale down, can use the scaling bitmap
-                    SkBitmap *retBitmap = scaleAndCrop(mScalingBitmap, sx, sy);
-
-                    if (retBitmap != NULL) {
-                        if (mScalingBitmap != NULL)
-                            delete mScalingBitmap;
-
-                        mScalingBitmap = retBitmap;
+                }else {
+                    if (sx == 1.0 && sy == 1.0f ) {
+                        renderAndShow(mBitmap);
+                        return RET_OK;
                     }
+                    dstBitmap = scaleAndCrop(mBitmap, sx, sy);
                 }
-
-                if (realScale > 1.0f)
-                    mScalingDirect = SCALE_UP;
-                else if (realScale == 1.0f)
-                    mScalingDirect = SCALE_NORMAL;
+            }else {
+                if (sx == 1.0 && sy == 1.0f ) {
+                    renderAndShow(mBitmap);
+                    return RET_OK;
+                }
+                dstBitmap = scaleAndCrop(mBitmap, sx, sy);
             }
-
-            mScalingStep = realScale;
-            renderAndShow(mScalingBitmap);
+            renderAndShow(dstBitmap);
+            clearBmp(dstBitmap);
+            dstBitmap = NULL;
         }
 
         return RET_OK;
@@ -1342,7 +1345,20 @@ namespace android {
 
         return RET_OK;
     }
-
+    bool ImagePlayerService::needFillSurface(SkBitmap *bitmap, float sx,float sy) {
+        if (P2pDisplay == 0) return true;
+        if (bitmap == NULL) return false;
+        int srcWidth = bitmap->width();
+        int srcHeight = bitmap->height();
+        //ALOGD("needFillSurface src Bitmap size scale to:%d x %d->%f x %f",
+        //            srcWidth, srcHeight, srcWidth*sx, srcHeight*sy);
+        if ( srcWidth >= SMALL_WIDTH || srcHeight >= SMALL_HEIGHT) {
+            return true;
+        } else if (srcWidth*sx > surfaceWidth ||srcHeight*sy > surfaceHeight) {
+            return true;
+        }
+        return false;
+    }
     int ImagePlayerService::setTranslate(float tx, float ty) {
         Mutex::Autolock autoLock(mLock);
 
@@ -1463,19 +1479,23 @@ namespace android {
 
         float realScale = 1.0f;
         realScale = mScalingStep * 1.0f;
-
-        if (mScalingBitmap != NULL)
-            delete mScalingBitmap;
+        clearBmp(mScalingBitmap);
 
         mScalingBitmap = scaleStep((mRotateBitmap != NULL) ? mRotateBitmap : mBitmap,
                                    realScale, realScale);
         mScalingStep = realScale;
         renderAndShow(mScalingBitmap);
+        clearBmp(mScalingBitmap);
+        mScalingBitmap = NULL;
         return RET_OK;
     }
 
     int ImagePlayerService::setRotateScale(float degrees, float sx, float sy,
                                            int autoCrop) {
+        if (degrees == 0.0f && sx == 1.0 && sy == 1.0) {
+            renderAndShow(mBitmap);
+            return RET_OK;
+        }
         Mutex::Autolock autoLock(mLock);
 
         bool isAutoCrop = autoCrop != 0;
@@ -1500,63 +1520,12 @@ namespace android {
         }
 
         SkBitmap *dstBitmap = NULL;
-        dstBitmap = rotateAndScale(mBitmap, degrees, sx, sy);
+        dstBitmap = rotateAndScale(mBitmap, degrees, sx, sy, isAutoCrop);
 
         if (dstBitmap != NULL) {
-            if (isAutoCrop) {
-                SkBitmap *fillBitmap = fillSurface(dstBitmap);
-
-                if (fillBitmap != NULL) {
-                    delete dstBitmap;
-                    dstBitmap = fillBitmap;
-                }
-            }
-
-            ALOGD("After rotate and scale, Width: %d, Height: %d", dstBitmap->width(),
-                  dstBitmap->height());
-
-            //save the origin rotate bitmap
-            SkBitmap *rotBitmap = rotate(mBitmap, degrees);
-
-            if ((rotBitmap->width() > surfaceWidth)
-                    || (rotBitmap->height() > surfaceHeight)) {
-                SkBitmap *dstCrop = cropAndFillBitmap(rotBitmap, surfaceWidth, surfaceHeight);
-
-                if (NULL != dstCrop) {
-                    delete rotBitmap;
-                    rotBitmap = dstCrop;
-                }
-            }
-
-            if (mRotateBitmap != NULL)
-                delete mRotateBitmap;
-
-            mRotateBitmap = rotBitmap;
-
-            if ((dstBitmap->width() > surfaceWidth)
-                    || (dstBitmap->height() > surfaceHeight)) {
-                SkBitmap *dstCrop = cropAndFillBitmap(dstBitmap, surfaceWidth, surfaceHeight);
-
-                if (NULL != dstCrop) {
-                    delete dstBitmap;
-                    dstBitmap = dstCrop;
-                }
-            }
-
-            if (mScalingBitmap != NULL)
-                delete mScalingBitmap;
-
-            mScalingBitmap = dstBitmap;
-
-            float realScale = mScalingStep * sx;
-
-            if (realScale > mScalingStep)
-                mScalingDirect = SCALE_UP;
-            else if (realScale < mScalingStep)
-                mScalingDirect = SCALE_DOWN;
-
-            mScalingStep = realScale;
             renderAndShow(dstBitmap);
+            clearBmp(dstBitmap);
+            dstBitmap = NULL;
             return RET_OK;
         }
 
@@ -1582,16 +1551,7 @@ namespace android {
                 && ((cropY + cropHeight) <= mBitmap->height())) {
 
             showBitmapRect(mBitmap, cropX, cropY, cropWidth, cropHeight);
-            /*
-            SkBitmap *dstBitmap = NULL;
-            dstBitmap = cropBitmapRect(mBitmap, cropX, cropY, cropWidth, cropHeight);
-            if (dstBitmap != NULL) {
-                show(dstBitmap);
-                delete dstBitmap;
-            } else {
-                ALOGD("error: cropBitmapRect fail!");
-                return BAD_VALUE;
-            }*/
+
         } else {
             ALOGD("Warning: parameters is not valid");
             return RET_ERR_PARAMETER;
@@ -1611,16 +1571,11 @@ namespace android {
     int ImagePlayerService::release() {
         ALOGI("release");
 
-        if (mBitmap != NULL) {
-            delete mBitmap;
-            mBitmap = NULL;
-        }
 
-        if (mBufBitmap != NULL) {
-            delete mBufBitmap;
-            mBufBitmap = NULL;
-        }
-
+        clearBmp(mBitmap);
+        mBitmap = NULL;
+        clearBmp(mBufBitmap);
+        mBufBitmap = NULL;
         delete mParameter;
         mParameter = NULL;
 
@@ -1649,11 +1604,18 @@ namespace android {
         }
 
         mSysWrite->writeSysfs(VIDEO_INUSE, "0");
+        mSysWrite->writeSysfs("/sys/module/picdec/parameters/p2p_mode","2");
+        mSysWrite->setProperty("persist.sys.is.image.player", "0");
+        mSysWrite->writeSysfs("/sys/class/amvecm/pc_mode", "1");
+        mSysWrite->writeSysfs("sys/module/di/parameters/nr2_en", "1");
+        mSysWrite->writeSysfs("/sys/class/amvecm/lc", "lc enable");
+        mSysWrite->writeSysfs("/sys/class/amvecm/pq_user_set", "blk_ext_en");
         resetRotateScale();
         resetTranslate();
         resetHWScale();
         return RET_OK;
     }
+
 
     SkBitmap* ImagePlayerService::decode(SkStreamAsset *stream,
                                          InitParameter *mParameter) {
@@ -1670,64 +1632,47 @@ namespace android {
         SkImageInfo imageInfo = codec->getInfo();
         auto alphaType = imageInfo.isOpaque() ? kOpaque_SkAlphaType :
                          kPremul_SkAlphaType;
-        auto info = SkImageInfo::Make(imageInfo.width(), imageInfo.height(),
-                                      kN32_SkColorType, alphaType);
-        ALOGI("codec bmpinfo %d %d %d\n", imageInfo.width(), imageInfo.height(),
+        int originWidth = imageInfo.width();
+        int originHeight = imageInfo.height();
+
+        ALOGI("original bmpinfo %d %d %d\n", imageInfo.width(), imageInfo.height(),
               SkCodec::kIncompleteInput);
-        SkBitmap decodingBitmap;
-        decodingBitmap.setInfo(info);
-        decodingBitmap.tryAllocPixels(info);
-        SkCodec::Result result = codec->getAndroidPixels(info, decodingBitmap.getPixels(),
-                                 decodingBitmap.rowBytes());
+        int samplesize = 1;
+
+        if (imageInfo.width() > SURFACE_4K_WIDTH || imageInfo.height() > SURFACE_4K_HEIGHT) {
+            samplesize = imageInfo.width()/SURFACE_4K_WIDTH > imageInfo.height()/SURFACE_4K_HEIGHT ?
+                                imageInfo.width()/SURFACE_4K_WIDTH : imageInfo.height()/SURFACE_4K_HEIGHT;
+        }
+        SkISize scaledDims = codec->getSampledDimensions(samplesize);
+        ALOGI("scale down origin picture %d %d %d\n",samplesize,scaledDims.width(), scaledDims.height());
+
+        SkImageInfo scaledInfo = imageInfo.makeWH(scaledDims.width(), scaledDims.height())
+                .makeColorType(kN32_SkColorType);
+        SkAndroidCodec::AndroidOptions options;
+        options.fSampleSize = samplesize;
+        SkBitmap *bmp = new SkBitmap();
+        bmp->setInfo(scaledInfo);
+        bmp->tryAllocPixels(scaledInfo);//tryAllocPixels use HeapAllocator already
+        SkCodec::Result result = codec->getAndroidPixels(scaledInfo, bmp->getPixels(),
+                                 bmp->rowBytes(),&options);
 
         if ((SkCodec::kSuccess != result) && (SkCodec::kIncompleteInput != result)) {
             ALOGE("codec getPixels fail result:%d\n", result);
+            if (bmp != NULL && !bmp->isNull()) {
+                bmp->reset();
+            }
             return NULL;
         }
 
-        if ((int)decodingBitmap.height()*decodingBitmap.rowBytes() < 4 *
-                decodingBitmap.width()* decodingBitmap.height()) {
-            ALOGW("decode: bitmap size:%d, request size:%d\n",
-                  (int)decodingBitmap.height()*decodingBitmap.rowBytes(),
-                  4 * decodingBitmap.width()*decodingBitmap.height());
-        }
-
-        SkBitmap::HeapAllocator allocator;
-        SkBitmap *bitmap = new SkBitmap();
-        copyTo(bitmap, kN32_SkColorType, decodingBitmap, &allocator);
-
-        if ((bitmap != NULL) && (mParameter != NULL)
-                && ((mParameter->degrees != 0.0f) || (mParameter->scaleX != 1.0f)
-                    || (mParameter->scaleY != 1.0f))
-                && (mParameter->scaleX > 0.0f) && (mParameter->scaleY > 0.0f)) {
-            SkBitmap *dstBitmap = NULL;
-            dstBitmap = rotateAndScale(bitmap, mParameter->degrees, mParameter->scaleX,
-                                       mParameter->scaleY);
-
-            if (dstBitmap != NULL) {
-                delete bitmap;
-                bitmap = dstBitmap;
-            }
-        }
-
-        if ((bitmap != NULL) && (mParameter != NULL)) {
-            SkBitmap *dstBitmap = NULL;
-            dstBitmap = cropBitmapRect(bitmap, mParameter->cropX, mParameter->cropY,
-                                       mParameter->cropWidth, mParameter->cropHeight);
-
-            if (dstBitmap != NULL) {
-                delete bitmap;
-                bitmap = dstBitmap;
-            }
-        }
-
-        if (bitmap != NULL ) {
-            mWidth = bitmap->width();
-            mHeight = bitmap->height();
+        if (bmp != NULL ) {
+            mWidth = bmp->width();
+            mHeight = bmp->height();
+            SkCanvas *canvas = new SkCanvas(*bmp);
+            canvas->drawBitmap(*bmp, 0, 0);
+            delete canvas;
             ALOGD("Image raw size, width:%d, height:%d", mWidth, mHeight);
         }
-
-        return bitmap;
+        return bmp;
     }
 
     SkBitmap* ImagePlayerService::decodeTiff(const char *filePath) {
@@ -1759,14 +1704,65 @@ namespace android {
             if ((bitmap->width() > 0) && (bitmap->height() > 0)) {
                 return bitmap;
             } else {
-                delete bitmap;
+                clearBmp(bitmap);
+                bitmap = NULL;
             }
         }
 
         return NULL;
     }
-
+    /*not delete source bmp*/
     SkBitmap* ImagePlayerService::scale(SkBitmap *srcBitmap, float sx, float sy) {
+
+        int sourceWidth = srcBitmap->width();
+        int sourceHeight = srcBitmap->height();
+
+        int dstWidth = sourceWidth*sx;
+        int dstHeight = sourceHeight*sy;
+        ALOGE("scale to[%d %d]->[%d,%d]",sourceWidth,sourceHeight,dstWidth,dstHeight);
+        if (dstWidth < surfaceWidth && dstHeight < surfaceHeight && P2pDisplay) {
+            return simplescale(srcBitmap, sx, sy);
+        }
+
+        SkBitmap *devBitmap = new SkBitmap();
+        SkRect srcRect;
+        SkRect destRect;
+        SkCanvas *canvas = NULL;
+
+        SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
+        SkImageInfo info;
+        if (sx >= 1.0) {
+            //scale 2 fullscreen
+            int destPicWidth = (sourceWidth*sx) > surfaceWidth ? surfaceWidth : (sourceWidth*sx);
+            int destPicHeight = (sourceHeight*sy) > surfaceHeight? surfaceHeight : (sourceHeight*sy);
+            destRect = SkRect::MakeLTRB((sourceWidth-destPicWidth/sx)/2,(sourceHeight-destPicHeight/sx)/2,
+                            (sourceWidth+destPicWidth/sx)/2, (sourceHeight+destPicHeight/sx)/2);
+            srcRect = SkRect::MakeLTRB(0,0,destPicWidth, destPicHeight);
+            ALOGE("scale to [%d %d]",destPicWidth, destPicHeight);
+
+            info = SkImageInfo::Make(destPicWidth, destPicHeight,
+                                                 colorType, srcBitmap->alphaType());
+        }else{
+            destRect = SkRect::MakeLTRB(0,0, sourceWidth,sourceHeight);
+            srcRect = SkRect::MakeLTRB((sourceWidth-dstWidth)/2,(sourceHeight-dstHeight)/2,(sourceWidth+dstWidth)/2,(sourceHeight+dstHeight)/2);
+
+            info = SkImageInfo::Make(sourceWidth, sourceHeight,
+                                         colorType, srcBitmap->alphaType());
+        }
+        devBitmap->setInfo(info);
+        devBitmap->tryAllocPixels(info);
+
+        canvas = new SkCanvas(*devBitmap);
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        paint.setDither(true);
+        canvas->save();
+        canvas->drawBitmapRect(*srcBitmap, destRect, srcRect, &paint,SkCanvas::kFast_SrcRectConstraint);
+        canvas->restore();
+        delete canvas;
+        return devBitmap;
+    }
+    SkBitmap* ImagePlayerService::simplescale(SkBitmap *srcBitmap, float sx, float sy) {
         if (srcBitmap == NULL)
             return NULL;
 
@@ -1796,13 +1792,10 @@ namespace android {
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setDither(true);
-        //paint.setFilterBitmap(true);
-        //canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
-
-        //SkAutoCanvasRestore acr(canvas, true);
+        canvas->save();
         canvas->concat(*matrix);
         canvas->drawBitmap(*srcBitmap, 0, 0, &paint);
-
+        canvas->restore();
         delete canvas;
         delete matrix;
 
@@ -1827,10 +1820,10 @@ namespace android {
                             radian));
 
         SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
-        devBitmap->setInfo(SkImageInfo::Make(dstWidth, dstHeight,
-                                             colorType, srcBitmap->alphaType()));
-
-        devBitmap->allocPixels();
+        SkImageInfo info = SkImageInfo::Make(dstWidth, dstHeight,
+                                             colorType, srcBitmap->alphaType());
+        devBitmap->setInfo(info);
+        devBitmap->tryAllocPixels(info);
 
         canvas = new SkCanvas(*devBitmap);
 
@@ -1841,12 +1834,10 @@ namespace android {
         SkPaint paint;
         paint.setAntiAlias(true);
         paint.setDither(true);
-        //canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
-
-        //SkAutoCanvasRestore acr(canvas, true);
+        canvas->save();
         canvas->concat(*matrix);
         canvas->drawBitmap(*srcBitmap, 0, 0, &paint);
-
+        canvas->restore();
         delete canvas;
         delete matrix;
 
@@ -1854,61 +1845,70 @@ namespace android {
     }
 
     SkBitmap* ImagePlayerService::rotateAndScale(SkBitmap *srcBitmap, float degrees,
-            float sx, float sy) {
+            float sx, float sy, bool isAutoCrop) {
         if (srcBitmap == NULL)
             return NULL;
+        ALOGE("rotateAndScale %d %d rotate %f scale to %f",srcBitmap->height(),srcBitmap->width(),degrees,sx);
+        SkBitmap *dstBitmap = NULL;
+        if (degrees == 0 /*&& (sx != 1.0 || sy != 1.0)*/) {
 
-        int sourceWidth = srcBitmap->width();
-        int sourceHeight = srcBitmap->height();
-        double radian = SkDegreesToRadians(degrees);
+            SkBitmap *devbmp = NULL;
+            if (needFillSurface(mBitmap, 1, 1)) {
+                devbmp = fillSurface(mBitmap);
+                if (devbmp != NULL) {
+                    ALOGE("only scale and fillSurface %d %d",devbmp->width(),devbmp->height());
+                    dstBitmap = scale(devbmp, sx, sy);
+                    if (dstBitmap != NULL) {
+                        clearBmp(devbmp);
+                        devbmp = NULL;
+                    }
+                }
+            }
+            if (dstBitmap == NULL)
+                dstBitmap = scale(srcBitmap, sx, sy);
+        }else if (degrees != 0) {
+            dstBitmap = rotate(srcBitmap, degrees);
+            //ALOGE("rotate %d %d-",srcBitmap->height(),srcBitmap->width());
+            if (dstBitmap != NULL) {
+                if (sx != 1.0 || sy != 1.0) {
+                    if (needFillSurface(dstBitmap,1, 1)) {
+                        SkBitmap * fullBmp = fillSurface(dstBitmap);
+                        if (fullBmp != NULL) {
+                            clearBmp(dstBitmap);
+                            dstBitmap = fullBmp;
+                        }
+                    }
+                    SkBitmap *scalBitmap = scale(dstBitmap, sx, sy);
+                    if (scalBitmap != NULL) {
+                        clearBmp(dstBitmap);
+                        dstBitmap = scalBitmap;
+                    }
+                }
+            }
+        }
+        if (dstBitmap != NULL ) {
+            if (needFillSurface(dstBitmap, 1, 1)) {
+                SkBitmap *fillBitmap = fillSurface(dstBitmap);
 
-        int dstWidthAfterRotate = sourceWidth * fabs(cos(radian)) + sourceHeight * fabs(
-                                      sin(radian));
-        int dstHeightAfterRotate = sourceHeight * fabs(cos(radian)) + sourceWidth *
-                                   fabs(sin(radian));
-
-        int dstWidthAfterScale = dstWidthAfterRotate * sx;
-        int dstHeightAfterScale = dstHeightAfterRotate * sy;
-
-        if ((dstWidthAfterScale <= 0) || (dstHeightAfterScale <= 0)) {
-            return NULL;
+                if (fillBitmap != NULL) {
+                    clearBmp(dstBitmap);
+                    dstBitmap = fillBitmap;
+                }
+            }
+            ALOGD("After rotate and scale, Width: %d, Height: %d", dstBitmap->width(),
+              dstBitmap->height());
         }
 
-        SkBitmap *devBitmap = new SkBitmap();
-        SkMatrix *matrix = new SkMatrix();
-        SkCanvas *canvas = NULL;
-
-        SkColorType colorType = colorTypeForScaledOutput(srcBitmap->colorType());
-        devBitmap->setInfo(SkImageInfo::Make(dstWidthAfterScale, dstHeightAfterScale,
-                                             colorType, srcBitmap->alphaType()));
-
-        devBitmap->allocPixels();
-
-        canvas = new SkCanvas(*devBitmap);
-
-        matrix->postRotate(degrees, sourceWidth / 2, sourceHeight / 2);
-        matrix->postTranslate((dstWidthAfterRotate - sourceWidth) / 2,
-                              (dstHeightAfterRotate - sourceHeight) / 2);
-        matrix->postScale(sx, sy);
-
-        SkPaint paint;
-        paint.setAntiAlias(true);
-        paint.setDither(true);
-        //canvas->drawBitmapMatrix(*srcBitmap, *matrix, &paint);
-
-        //SkAutoCanvasRestore acr(canvas, true);
-        canvas->concat(*matrix);
-        canvas->drawBitmap(*srcBitmap, 0, 0, &paint);
-
-        delete canvas;
-        delete matrix;
-
-        return devBitmap;
+        return dstBitmap;
     }
 
     SkStreamAsset* ImagePlayerService::getSkStream() {
         SkStreamAsset *stream;
 
+        if (mMovieImage && !isMovieByExtenName(mImageUrl)) {
+            mMovieImage = false;
+            return NULL;
+        }
         if (mFileDescription >= 0) {
             sk_sp<SkData> data(SkData::MakeFromFD(mFileDescription));
 
@@ -1922,7 +1922,7 @@ namespace android {
             ALOGI("SkHttpStream:%s", mImageUrl);
             stream = getStreamForHttps(mImageUrl);
         } else {
-            ALOGI("SkFILEStream:%s", mImageUrl);
+            //ALOGI("SkFILEStream:%s", mImageUrl);
             stream = new SkFILEStream(mImageUrl);
         }
 
@@ -1952,24 +1952,10 @@ namespace android {
             return RET_ERR_BAD_VALUE;
         }
 
-        if (mWidth > MAX_PIC_SIZE || mHeight > MAX_PIC_SIZE) {
-            ALOGE("prepare image size is too large, we only support w < %d and h < %d, now image size w:%d, h:%d",
-                  MAX_PIC_SIZE, MAX_PIC_SIZE, mWidth, mHeight);
-            return RET_ERR_NO_MEMORY;
-        }
-
-        SkStreamAsset *stream;
-        stream = getSkStream();
-
-        if (stream == NULL) {
-            return RET_ERR_BAD_VALUE;
-        }
-
-        if (mBitmap != NULL) {
-            delete mBitmap;
-            mBitmap = NULL;
-        }
-
+        clearBmp(mRotateBitmap);
+        clearBmp(mBitmap);
+        mBitmap = NULL;
+        mRotateBitmap = NULL;
         mMovieImage = false;
         mFrameIndex = 0;
 
@@ -1978,22 +1964,24 @@ namespace android {
 
             mMovieImage = true;
 
-            if (MovieInit(stream)) {
-                delete stream;
+            if (MovieInit(mImageUrl)) {
                 return RET_OK;
             } else {
-                stream->rewind();
+                ALOGI("decode gif failed use jpeg decode");
                 mMovieImage = false;
                 mFrameIndex = 0;
-                mBitmap = decode(stream, NULL);
             }
-        } else if (isTiffByExtenName(mImageUrl)) {
+        }
+        if (isTiffByExtenName(mImageUrl)) {
             mBitmap = decodeTiff(mImageUrl);
         } else {
+            SkStreamAsset *stream = getSkStream();
+            if (stream == NULL) {
+                return RET_ERR_BAD_VALUE;
+            }
             mBitmap = decode(stream, NULL);
+            delete stream;
         }
-
-        delete stream;
 
         if (mBitmap == NULL) {
             ALOGE("prepare decode result bitmap is NULL");
@@ -2005,165 +1993,29 @@ namespace android {
             return RET_ERR_BAD_VALUE;
         }
 
-        if (mWidth > MAX_PIC_SIZE || mHeight > MAX_PIC_SIZE) {
-            ALOGE("prepare image size is too large, we only support w < %d and h < %d, now image size w:%d, h:%d",
-                  MAX_PIC_SIZE, MAX_PIC_SIZE, mWidth, mHeight);
-            return RET_ERR_NO_MEMORY;
-        }
-
         if (mDisplayFd < 0) {
             ALOGE("render, but displayFd can not ready");
             return RET_ERR_BAD_VALUE;
         }
+        if (needFillSurface(mBitmap, 1, 1)) {
+            SkBitmap *dstBitmap = fillSurface(mBitmap);
 
-        SkBitmap *dstBitmap = fillSurface(mBitmap);
+            if (dstBitmap != NULL) {
+                resetRotateScale();
+                resetTranslate();
+                render(VIDEO_LAYER_FORMAT_RGBA, dstBitmap);
+                clearBmp(dstBitmap);
+                dstBitmap = NULL;
+                return RET_OK;
+            }
 
-        if (dstBitmap != NULL) {
-            delete mBitmap;
-            mBitmap = dstBitmap;
+
         }
 
         resetRotateScale();
         resetTranslate();
         render(VIDEO_LAYER_FORMAT_RGBA, mBitmap);
         ALOGI("prepare render is OK");
-        return RET_OK;
-    }
-
-    int ImagePlayerService::prepareBuf(const char *uri) {
-        Mutex::Autolock autoLock(mLock);
-        ALOGI("prepare buffer image path:%s", uri);
-
-        if (mBufBitmap != NULL) {
-            delete mBufBitmap;
-            mBufBitmap = NULL;
-        }
-
-        if (mMovieImage) {
-            mMovieImage = false;
-            MovieThreadStop();
-            mFrameIndex = 0;
-        }
-
-        SkStreamAsset *stream;
-        if (!strncasecmp("file://", uri, 7)) {
-            strncpy(mImageUrl, uri + 7, MAX_FILE_PATH_LEN - 1);
-            stream = new SkFILEStream(mImageUrl);
-        } else if (!strncasecmp("http://", uri, 7)
-                   || !strncasecmp("https://", uri, 8)) {
-            strncpy(mImageUrl, uri, MAX_FILE_PATH_LEN - 1);
-            stream = getStreamForHttps(mImageUrl);
-        } else {
-            return RET_ERR_INVALID_OPERATION;
-        }
-
-        if (isMovieByExtenName(uri)) {
-            ALOGI("it's a movie image, show it with thread");
-
-            mMovieImage = true;
-
-            if (MovieInit(stream)) {
-                delete stream;
-                return RET_OK;
-            } else {
-                stream->rewind();
-                mMovieImage = false;
-                mFrameIndex = 0;
-                mBufBitmap = decode(stream, NULL);
-            }
-        } else if (isTiffByExtenName(uri)) {
-            mBufBitmap = decodeTiff(mImageUrl);
-        } else {
-            bool canDecode = true;
-            SkBitmap *bitmap = NULL;
-            ALOGD("prepare buffer codec to get bitmap");
-
-            if (!isSupportFromat(uri, &bitmap)) {
-                ALOGE("prepare buffer codec can not support it");
-                delete stream;
-                return RET_ERR_INVALID_OPERATION;
-            }
-
-            if (bitmap != NULL) {
-                if ((bitmap->width() > MAX_PIC_SIZE) || (bitmap->height() > MAX_PIC_SIZE)) {
-                    canDecode = false;//too large, can not decode because no enough memory
-                    ALOGE("prepare buffer image size is too large, we only support w < %d and h < %d, now image size w:%d, h:%d",
-                          MAX_PIC_SIZE, MAX_PIC_SIZE, bitmap->width(), bitmap->height());
-                }
-
-                delete bitmap;
-                bitmap = NULL;
-            }
-
-            if (canDecode)
-                mBufBitmap = decode(stream, NULL);
-        }
-
-        delete stream;
-
-        if (mBufBitmap == NULL) {
-            ALOGI("prepare buffer decode result bitmap is NULL");
-            return RET_ERR_BAD_VALUE;
-        }
-
-        ALOGI("prepare buffer image w:%d, w:%d", mBufBitmap->width(),
-              mBufBitmap->height());
-
-        if (mBufBitmap->width() <= 0 || mBufBitmap->height() <= 0) {
-            ALOGI("prepare buffer decode result bitmap size error");
-            return RET_ERR_BAD_VALUE;
-        }
-
-        SkBitmap *dstBitmap = fillSurface(mBufBitmap);
-
-        if (dstBitmap != NULL) {
-
-            delete mBufBitmap;
-            mBufBitmap = dstBitmap;
-        }
-        return RET_OK;
-    }
-
-    //post buffer to display device
-    int ImagePlayerService::showBuf() {
-        if (mDisplayFd < 0) {
-            ALOGE("show buffer, but displayFd has not ready");
-            return RET_ERR_BAD_VALUE;
-        }
-
-        if (mMovieImage)
-            return MovieThreadStart();
-
-        MovieThreadStop();
-        if (NULL == mBufBitmap) {
-            ALOGE("show buffer, but bitmap buffer is NULL");
-            return RET_ERR_BAD_VALUE;
-        }
-        if (NULL != mBitmap)
-            delete mBitmap;
-        else
-            ALOGW("mBitmap is NULL, need first new a object");
-
-        SkBitmap::HeapAllocator allocator;
-        mBitmap = new SkBitmap();
-
-        //copy bitmap data to showing bitmap
-        bool ret = copyTo(mBitmap, kN32_SkColorType, *mBufBitmap, &allocator);
-
-        if (!ret) {
-            ALOGE("show buffer, copy buffer to show bitmap error");
-            return RET_ERR_BAD_VALUE;
-        }
-
-        resetRotateScale();
-        resetTranslate();
-
-        render(VIDEO_LAYER_FORMAT_RGBA, mBufBitmap);
-        post();
-
-        //delete buffer bitmap to save memory
-        // delete mBufBitmap;
-        // mBufBitmap = NULL;
         return RET_OK;
     }
 
@@ -2256,12 +2108,24 @@ namespace android {
 
         ALOGI("show, is movie image:%d", mMovieImage);
 
+       // MovieThreadStop();
         if (mMovieImage)
             return MovieThreadStart();
+        int ret =  post();
+        return ret;
+    }
 
-        MovieThreadStop();
-
-        return post();
+    int ImagePlayerService::showImage(const char* uri) {
+        int res = setDataSource(uri);
+        if (res!= RET_OK) {
+            return res;
+        }
+        res = prepare();
+        if (res!= RET_OK) {
+            return res;
+        }
+        res = show();
+        return res;
     }
 
     bool ImagePlayerService::copyTo(SkBitmap* dst, SkColorType dstCT,
@@ -2386,16 +2250,12 @@ namespace android {
     void ImagePlayerService::resetRotateScale() {
         mScalingDirect = SCALE_NORMAL;
         mScalingStep = 1.0f;
+        mMovieScale = 1.0f;
+        clearBmp(mScalingBitmap);
+        clearBmp(mRotateBitmap);
+        mScalingBitmap = NULL;
+        mRotateBitmap = NULL;
 
-        if (NULL != mScalingBitmap) {
-            delete mScalingBitmap;
-            mScalingBitmap = NULL;
-        }
-
-        if (NULL != mRotateBitmap) {
-            delete mRotateBitmap;
-            mRotateBitmap = NULL;
-        }
     }
 
     void ImagePlayerService::resetHWScale() {
@@ -2518,10 +2378,12 @@ namespace android {
             SkBitmap *retBitmap = scaleAndCrop(srcBitmap, scalex, scaley);
 
             while (true) {
+                clearBmp(scalingBitmap);
                 scalingBitmap = retBitmap;
+                clearBmp(retBitmap);
                 retBitmap = scaleAndCrop(scalingBitmap, scalex, scaley);
-                delete scalingBitmap;
-
+                clearBmp(scalingBitmap);
+                scalingBitmap = NULL;
                 step++;
 
                 if (step >= stepCount) {
@@ -2536,7 +2398,7 @@ namespace android {
 
     SkBitmap* ImagePlayerService::scaleAndCrop(SkBitmap *srcBitmap, float sx,
             float sy) {
-        if (srcBitmap == NULL)
+        if (srcBitmap == NULL || (sx == 1.0 && sy == 1.0))
             return NULL;
 
         SkBitmap *retBitmap = scale(srcBitmap, sx, sy);
@@ -2555,7 +2417,7 @@ namespace android {
                 isTranslateToEdge(retBitmap, surfaceWidth, surfaceHeight, mTx, mTy);
 
                 if (NULL != dstCrop) {
-                    delete retBitmap;
+                    clearBmp(retBitmap);
                     retBitmap = dstCrop;
                 }
 
@@ -2566,7 +2428,7 @@ namespace android {
             SkBitmap *dstCrop = cropAndFillBitmap(retBitmap, surfaceWidth, surfaceHeight);
 
             if (NULL != dstCrop) {
-                delete retBitmap;
+                clearBmp(retBitmap);
                 retBitmap = dstCrop;
             }
         }
@@ -2585,21 +2447,11 @@ namespace android {
         int bitmapW = bitmap->width();
         int bitmapH = bitmap->height();
 
-        if (bitmapW > surfaceWidth) {
-            scaleX = (float)surfaceWidth / bitmapW;
-        }
-
-        if (bitmapH > surfaceHeight) {
-            scaleY = (float)surfaceHeight / bitmapH;
-        }
-
-        if (scaleX < scaleY) scaleY = scaleX;
-        else if (scaleX > scaleY) scaleX = scaleY;
-
-        if ((scaleX != 1.0f) || (scaleY != 1.0f)) {
-            ALOGD("fillSurface scale sx:%f, sy:%f", scaleX, scaleY);
-
-            SkBitmap *dstBitmap = scale(bitmap, scaleX, scaleY);
+        float originalZoomPersent = ( surfaceWidth*1.0/bitmapW) > (surfaceHeight*1.0/bitmapH)?
+                                           (surfaceHeight*1.0/bitmapH):( surfaceWidth*1.0/bitmapW);
+        ALOGD("fillSurface %f",originalZoomPersent);
+        if (originalZoomPersent != 1.0f) {
+            SkBitmap *dstBitmap = simplescale(bitmap, originalZoomPersent, originalZoomPersent);
             return dstBitmap;
         }
 
@@ -2746,41 +2598,45 @@ namespace android {
         return RET_OK;
     }
 
-    bool ImagePlayerService::MovieInit(SkStreamRewindable *stream) {
+    bool ImagePlayerService::MovieInit(const char *file) {
         mMovieDegree = 0;
         mMovieScale = 1.0f;
-        std::unique_ptr<SkStream> s(stream->duplicate());
-        std::unique_ptr<SkCodec> codec(SkCodec::MakeFromStream(std::move(s)));
-
-        if (!codec) {
+        auto data = SkData::MakeFromFileName(file);
+        ALOGD("MovieInit %s",file);
+        ALOGD("MovieInit %s",file);
+        if (!data) {
+            ALOGE("Could not get %s", file);
             return false;
         }
-
+        auto codec = SkCodec::MakeFromData(data);
+        if (!codec) {
+            ALOGE("Could not create codec for %s", file);
+            return false;
+        }
         std::vector<SkCodec::FrameInfo> frameInfos = codec->getFrameInfo();
         int frameCount = frameInfos.size() == 0 ? 1 : frameInfos.size();
         mFrameIndex = 0;
+        ALOGD("gif picture frame size is %d",frameCount);
         return (frameCount > 1);
     }
 
     bool ImagePlayerService::MovieShow() {
-        if (!mMovieImage) {
+        if (!mMovieImage || mMovieThread->check()) {
             ALOGE("MovieShow not movie!");
             return false;
         }
-        SkStreamRewindable *stream;
-        stream = getSkStream();
+        Mutex::Autolock autoLock(mLock);
 
-        if (stream == NULL) {
+        auto data = SkData::MakeFromFileName(mImageUrl);
+        if (!data) {
+            ALOGE("Could not get %s", mImageUrl);
             return false;
         }
-
-        std::unique_ptr<SkStream> s(stream->duplicate());
-        std::unique_ptr<SkCodec> codec(SkCodec::MakeFromStream(std::move(s)));
-
+        auto codec = SkCodec::MakeFromData(data);
         if (!codec) {
+            ALOGE("Could not create codec for %s", mImageUrl);
             return false;
         }
-
         std::vector<SkCodec::FrameInfo> frameInfos = codec->getFrameInfo();
         int frameCount = frameInfos.size() == 0 ? 1 : frameInfos.size();
         std::vector<SkBitmap> cachedFrames(frameCount);
@@ -2788,15 +2644,16 @@ namespace android {
         if (mFrameIndex >= frameCount) {
             mFrameIndex = 0;
         }
+        SkBitmap *bitmap = &cachedFrames[mFrameIndex];
 
-        SkBitmap bm = cachedFrames[mFrameIndex];
-
-        if (!bm.getPixels()) {
+        if (!bitmap->getPixels()) {
             const SkImageInfo info = codec->getInfo().makeColorType(kN32_SkColorType);
-            bm.allocPixels(info);
+            //bitmap->setInfo(info);
+            bitmap->allocPixels(info);
 
             SkCodec::Options opts;
             opts.fFrameIndex = mFrameIndex;
+
             //opts.fHasPriorFrame = false;
             if (&frameInfos[mFrameIndex] == nullptr) {
                 ALOGE("MovieShow Could not get frame %d", mFrameIndex);
@@ -2806,71 +2663,49 @@ namespace android {
 
             if (requiredFrame != SkCodec::kNone) {
                 SkBitmap::HeapAllocator allocator;
-
                 // For simplicity, do not try to cache old frames
-                if (copyTo(&bm, kN32_SkColorType, cachedFrames[requiredFrame], &allocator)) {
+                if (copyTo(bitmap, kN32_SkColorType, cachedFrames[requiredFrame], &allocator)) {
                     //opts.fHasPriorFrame = true;
+                    ALOGE("Failed to copy %s frame %i", mImageUrl, requiredFrame);
                 }
             }
 
-            if (SkCodec::kSuccess != codec->getPixels(info, bm.getPixels(),
-                    bm.rowBytes(), &opts)) {
+            if (SkCodec::kSuccess != codec->getPixels(info, bitmap->getPixels(),
+                    bitmap->rowBytes(), &opts)) {
                 ALOGD("Could not getPixels for frame %d", mFrameIndex);
                 return false;
             }
         }
-
         SkBitmap *scaleBitmap = NULL;
         SkBitmap *rotateBitmap = NULL;
-        SkBitmap bitmap;
-        SkBitmap::HeapAllocator allocator;
-        copyTo(&bitmap, kN32_SkColorType, bm, &allocator);
 
-        if ((bitmap.width() > surfaceWidth) || (bitmap.height() > surfaceHeight)) {
+        if (needFillSurface(bitmap,1,1)) {
             ALOGW("MovieShow, origin width:%d or height:%d > surface w:%d or h:%d",
-                  bitmap.width(), bitmap.height(), surfaceWidth, surfaceHeight);
-            SkBitmap *dstCrop = fillSurface(&bitmap);
+                  bitmap->width(), bitmap->height(), surfaceWidth, surfaceHeight);
+            SkBitmap *dstCrop = fillSurface(bitmap);
 
             if (NULL != dstCrop) {
-                SkBitmap::HeapAllocator allocator;
-                copyTo(&bitmap, kN32_SkColorType, *dstCrop, &allocator);
-                delete dstCrop;
+                if (bitmap != NULL && !bitmap->isNull()) {
+                    bitmap->reset();
+                }
+                bitmap = dstCrop;
+            }
+        }
+        if (0 != mMovieDegree || 1.0f != mMovieScale) {
+            SkBitmap *fill = rotateAndScale(bitmap, mMovieDegree, mMovieScale, mMovieScale, true);
+            if (NULL != fill) {
+                if (bitmap != NULL && !bitmap->isNull()) {
+                    bitmap->reset();
+                }
+                bitmap = fill;
             }
         }
 
-        if (1.0f != mMovieScale) {
-            int scaledW = bitmap.width() * mMovieScale;
-            int scaledH = bitmap.height() * mMovieScale;
-
-            if ((scaledW > surfaceWidth) || (scaledH > surfaceHeight)) {
-                ALOGW("MovieShow, scaled width:%d or height:%d > surface w:%d or h:%d scale delta:%f",
-                      scaledW, scaledH, surfaceWidth, surfaceHeight, mMovieScale);
-
-                scaleBitmap = scaleStep(&bitmap, mMovieScale, mMovieScale);
-            } else {
-                scaleBitmap = scale(&bitmap, mMovieScale, mMovieScale);
-            }
+        MovieRenderPost(bitmap);
+        if (bitmap != NULL && !bitmap->isNull()) {
+            bitmap->reset();
+            bitmap = NULL;
         }
-
-        if (0 != mMovieDegree) {
-            if (NULL != scaleBitmap) {
-                rotateBitmap = rotate(scaleBitmap, mMovieDegree);
-                delete scaleBitmap;
-                scaleBitmap = NULL;
-            } else
-                rotateBitmap = rotate(&bitmap, mMovieDegree);
-        }
-
-        if (NULL != rotateBitmap) {
-            MovieRenderPost(rotateBitmap);
-            delete rotateBitmap;
-        } else if (NULL != scaleBitmap) {
-            MovieRenderPost(scaleBitmap);
-            delete scaleBitmap;
-        } else {
-            MovieRenderPost(&bitmap);
-        }
-
         mFrameIndex++;
         return true;
     }
@@ -2924,7 +2759,6 @@ namespace android {
             ALOGE("MovieShow, but displayFd can not ready");
             return;
         }
-
         //render to buffer
         //bitmap->lockPixels();
         info.pBuff = (char*)bitmap->getPixels();
@@ -2937,7 +2771,7 @@ namespace android {
                         info.format);
 
         ioctl(mDisplayFd, PICDEC_IOC_FRAME_RENDER, &info);
-
+        ALOGE("Movie show w=%d x h=%d", bitmap->width(),bitmap->height());
         //bitmap->unlockPixels();
         if (mNeedResetHWScale) {
             resetHWScale();
@@ -2974,7 +2808,15 @@ namespace android {
 
         return RET_OK;
     }
+    void ImagePlayerService::clearBmp(SkBitmap* bmp) {
+        if (bmp != NULL) {
+            if (!bmp->isNull()) {
+                bmp->reset();
+                delete bmp;
+            }
+        }
 
+    }
     status_t ImagePlayerService::dump(int fd, const Vector<String16>& args) {
         const size_t SIZE = 256;
         char buffer[SIZE];
@@ -3159,7 +3001,9 @@ namespace android {
     MovieThread::~MovieThread() {
         ALOGI("~MovieThread");
     }
-
+    bool MovieThread::check() {
+       return exitPending();
+    }
     // Good place to do one-time initializations
     status_t MovieThread::readyToRun() {
         return NO_ERROR;
@@ -3170,7 +3014,7 @@ namespace android {
         2) once: if returns false, the thread will exit.
     */
     bool MovieThread::threadLoop() {
-        usleep(100 * 1000); //delay 100ms
+        usleep(40 * 1000); //delay 40ms
         return mPlayer->MovieShow();
     }
 }

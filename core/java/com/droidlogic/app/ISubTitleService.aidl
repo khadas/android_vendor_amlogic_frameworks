@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
- *
- * This source code is subject to the terms and conditions defined in the
- * file 'LICENSE' which is part of this source code package.
- *
- * Description:
- *     AMLOGIC ISubTitleServcie
- */
-
+* Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+*
+* This source code is subject to the terms and conditions defined in the
+* file 'LICENSE' which is part of this source code package.
+*
+* Description: ISubTitleService
+*/
 package com.droidlogic.app;
+
+import com.droidlogic.app.ISubTitleServiceCallback;
 
 interface ISubTitleService
 {
@@ -44,4 +44,15 @@ interface ISubTitleService
     void setSurfaceViewParam(int x, int y, int w, int h);
     void setIOType(int type);
     String getPcrscr();
+    String getInSubLanAll();
+    String getInBmpTxtType();
+    String getExtBmpTxtType();
+    String getExtSubTypeAll();
+    void setSubPid(int pid);
+    int getSubHeight();
+    int getSubWidth();
+    void setSubType(int type);
+    void registerCallback(ISubTitleServiceCallback cb);
+    void unregisterCallback();
+    void destory();
 }

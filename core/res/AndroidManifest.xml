@@ -52,6 +52,7 @@
                  android:directBootAware="true">
 
         <uses-library android:name="droidlogic.software.core" />
+        <uses-library android:name="droidlogic.tv.software.core" />
         <receiver android:name="com.droidlogic.UsbCameraReceiver">
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
@@ -65,9 +66,24 @@
         <service android:name="com.droidlogic.DialogBluetoothService" />
         <service android:name="com.droidlogic.EsmService" />
         <service android:name="com.droidlogic.DDRBandwidthService" />
-        <service android:name="com.droidlogic.WifiSuspendService" />
+        <service android:name="com.droidlogic.DroidLogicEarcService" />
         <service android:name="com.droidlogic.OneTouchPlayService" />
         <service android:name="com.droidlogic.NetworkSwitchService" />
+        <service android:name="com.droidlogic.DroidLogicPowerService" />
+        <service android:name="com.droidlogic.PrebuiltChannelsService"
+             android:enabled="true"
+             android:exported="true">
+             <intent-filter>
+                 <action android:name="com.droidlogic.PrebuiltChannelsService" />
+             </intent-filter>
+        </service>
+        <service android:name="com.droidlogic.DolbyAudioEffectService"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.droidlogic.DolbyAudioEffectService" />
+            </intent-filter>
+        </service>
         <receiver android:name="com.droidlogic.BootComplete">
             <intent-filter android:priority="1000">
                 <action android:name="android.intent.action.PRE_BOOT_COMPLETED" />

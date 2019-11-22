@@ -432,6 +432,27 @@ static void SetBootEnv(JNIEnv* env, jclass clazz __unused, jstring jkey, jstring
     }
 }
 
+static void setHdrStrategy(JNIEnv* env, jclass clazz __unused, jstring jval) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    if (scc != NULL) {
+        const char *val = env->GetStringUTFChars(jval, nullptr);
+        scc->setHdrStrategy(val);
+        env->ReleaseStringUTFChars(jval, val);
+    }
+}
+static jboolean GetModeSupportDeepColorAttr(JNIEnv* env, jclass clazz __unused, jstring jmode, jstring jcolor) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    if (scc != NULL) {
+        const char *mode = env->GetStringUTFChars(jmode, nullptr);
+        const char *color = env->GetStringUTFChars(jcolor, nullptr);
+        unsigned char result = scc->getModeSupportDeepColorAttr(mode, color);
+        env->ReleaseStringUTFChars(jmode, mode);
+        env->ReleaseStringUTFChars(jcolor, color);
+        return result;
+    } else
+        return false;
+}
+
 static void LoopMountUnmount(JNIEnv* env, jclass clazz __unused, jboolean isMount, jstring jpath)  {
     const sp<SystemControlClient>& scc = getSystemControlClient();
     if (scc != NULL) {
@@ -768,6 +789,41 @@ static jint SaveColorTemperature(JNIEnv* env __unused, jclass clazz __unused, ji
     return result;
 }
 
+static jint SetColorTemperatureUserParam(JNIEnv* env __unused, jclass clazz __unused, jint mode,
+                jint isSave, jint type, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    jint result = -1;
+    if (scc != NULL)
+        result = scc->setColorTemperatureUserParam(mode, isSave, type, value);
+    return result;
+}
+
+static jobject GetColorTemperatureUserParam(JNIEnv *env, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    jobject whiteBalanceParam = NULL;
+    if (scc != NULL) {
+        tcon_rgb_ogo_t param = scc->getColorTemperatureUserParam();
+        jclass objectClass = (env)->FindClass("com/droidlogic/app/SystemControlManager$WhiteBalanceParams");
+        jmethodID consID = (env)->GetMethodID(objectClass, "<init>", "()V");
+
+        jfieldID jgainR = (env)->GetFieldID(objectClass, "r_gain", "I");
+        jfieldID jgainG = (env)->GetFieldID(objectClass, "g_gain", "I");
+        jfieldID jgainB = (env)->GetFieldID(objectClass, "b_gain", "I");
+        jfieldID joffsetR = (env)->GetFieldID(objectClass, "r_offset", "I");
+        jfieldID joffsetG = (env)->GetFieldID(objectClass, "g_offset", "I");
+        jfieldID joffsetB = (env)->GetFieldID(objectClass, "b_offset", "I");
+        whiteBalanceParam = (env)->NewObject(objectClass, consID);
+        (env)->SetIntField(whiteBalanceParam, jgainR, param.r_gain);
+        (env)->SetIntField(whiteBalanceParam, jgainG, param.g_gain);
+        (env)->SetIntField(whiteBalanceParam, jgainB, param.b_gain);
+        (env)->SetIntField(whiteBalanceParam, joffsetR, param.r_post_offset);
+        (env)->SetIntField(whiteBalanceParam, joffsetG, param.g_post_offset);
+        (env)->SetIntField(whiteBalanceParam, joffsetB, param.b_post_offset);
+    }
+    return whiteBalanceParam;
+
+}
+
 static jint SetBrightness(JNIEnv* env __unused, jclass clazz __unused, jint value, jint isSave) {
     const sp<SystemControlClient>& scc = getSystemControlClient();
     jint result = -1;
@@ -1028,8 +1084,8 @@ static jint SetLocalContrastMode(JNIEnv* env __unused, jclass clazz __unused, ji
 {
     const sp<SystemControlClient>& scc = getSystemControlClient();
     jint result = -1;
-   // if (scc != NULL)
-   //     result = scc->setLocalContrastMode(mode, isSave);
+    if (scc != NULL)
+        result = scc->setLocalContrastMode(mode, isSave);
     return result;
 }
 
@@ -1037,8 +1093,8 @@ static jint GetLocalContrastMode(JNIEnv* env __unused, jclass clazz __unused)
 {
     const sp<SystemControlClient>& scc = getSystemControlClient();
     jint result = -1;
- //   if (scc != NULL)
- //       result = scc->getLocalContrastMode();
+    if (scc != NULL)
+        result = scc->getLocalContrastMode();
     return result;
 }
 
@@ -1046,8 +1102,8 @@ static jint SetColorBaseMode(JNIEnv* env __unused, jclass clazz __unused, jint m
 {
     const sp<SystemControlClient>& scc = getSystemControlClient();
     jint result = -1;
-   // if (scc != NULL)
-   //     result = scc->setColorBaseMode(mode, isSave);
+    if (scc != NULL)
+        result = scc->setColorBaseMode(mode, isSave);
     return result;
 }
 
@@ -1055,8 +1111,8 @@ static jint GetColorBaseMode(JNIEnv* env __unused, jclass clazz __unused)
 {
     const sp<SystemControlClient>& scc = getSystemControlClient();
     jint result = -1;
-   // if (scc != NULL)
-    //    result = scc->getColorBaseMode();
+    if (scc != NULL)
+        result = scc->getColorBaseMode();
     return result;
 }
 
@@ -1124,28 +1180,54 @@ static jint SetCurrentSourceInfo(JNIEnv* env __unused, jclass clazz __unused, ji
     return result;
 }
 
-static void GetCurrentSourceInfo(JNIEnv* env __unused, jclass clazz __unused, jint sourceInput, jint sigFmt, jint transFmt)
+static jintArray GetCurrentSourceInfo(JNIEnv* env, jclass clazz __unused)
 {
-    const sp<SystemControlClient>& scc = getSystemControlClient();
-    if (scc != NULL)
-       scc->getCurrentSourceInfo(sourceInput, sigFmt, transFmt);
-}
+    jintArray result;
+    result = env->NewIntArray(3);
+    jint curSourceInfo[3] = { 10, 1034, 0 };//default MPEG 1920*1080p source
+    env->SetIntArrayRegion(result, 0, 3, curSourceInfo);
 
-static void GetPQDatabaseInfo(JNIEnv* env, jclass clazz __unused, jint dataBaseName, jstring jToolVersion, jstring
-jProjectVersion, jstring jGenerateTime) {
     const sp<SystemControlClient>& scc = getSystemControlClient();
     if (scc != NULL) {
-        const char *ToolVersion = env->GetStringUTFChars(jToolVersion, nullptr);
-        const char *ProjectVersion = env->GetStringUTFChars(jProjectVersion, nullptr);
-        const char *GenerateTime = env->GetStringUTFChars(jGenerateTime, nullptr);
-        std::string tmpTv = const_cast<char *>(ToolVersion);
-        std::string tmpPv = const_cast<char *>(ProjectVersion);
-        std::string tmpGt = const_cast<char *>(GenerateTime);
-       // spSysctrl->getPQDatabaseInfo(dataBaseName, tmpTv, tmpPv, tmpGt);
-        env->ReleaseStringUTFChars(jToolVersion, ToolVersion);
-        env->ReleaseStringUTFChars(jProjectVersion, ProjectVersion);
-        env->ReleaseStringUTFChars(jGenerateTime, GenerateTime);
+        int sourceInput = 0;
+        int sigFmt = 0;
+        int transFmt = 0;
+        scc->getCurrentSourceInfo(sourceInput, sigFmt, transFmt);
+        curSourceInfo[0] = sourceInput;
+        curSourceInfo[1] = sigFmt;
+        curSourceInfo[2] = transFmt;
+        env->SetIntArrayRegion(result, 0, 3, curSourceInfo);
     }
+
+    return result;
+}
+
+static jobject GetPQDatabaseInfo(JNIEnv* env, jclass clazz __unused, jint dataBaseName) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    jobject jpqdatabaseinfo = NULL;
+    if (scc != NULL) {
+        PQDatabaseInfo databaseinfo = scc->getPQDatabaseInfo(dataBaseName);
+        jclass objectClass = env->FindClass("com/droidlogic/app/SystemControlManager$PQDatabaseInfo");
+        jmethodID consID = (env)->GetMethodID(objectClass, "<init>", "()V");
+        jfieldID jToolVersion = (env)->GetFieldID(objectClass, "ToolVersion", "Ljava/lang/String;");
+        jfieldID jProjectVersion = (env)->GetFieldID(objectClass, "ProjectVersion", "Ljava/lang/String;");
+        jfieldID jGenerateTime = (env)->GetFieldID(objectClass, "GenerateTime", "Ljava/lang/String;");
+
+        jpqdatabaseinfo = (env)->NewObject(objectClass, consID);
+        (env)->SetObjectField(jpqdatabaseinfo, jToolVersion, (env)->NewStringUTF(databaseinfo .ToolVersion.c_str()));
+        (env)->SetObjectField(jpqdatabaseinfo, jProjectVersion, (env)->NewStringUTF(databaseinfo .ProjectVersion.c_str()));
+        (env)->SetObjectField(jpqdatabaseinfo, jGenerateTime, (env)->NewStringUTF(databaseinfo .GenerateTime.c_str()));
+    }
+    return jpqdatabaseinfo;
+}
+
+static jint SetDtvKitSourceEnable(JNIEnv* env __unused, jclass clazz __unused, jint isEnable)
+{
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    jint result = -1;
+    if (scc != NULL)
+       result = scc->setDtvKitSourceEnable(isEnable);
+    return result;
 }
 
 //FBC
@@ -1154,20 +1236,555 @@ static jint StartUpgradeFBC(JNIEnv* env, jclass clazz __unused, jstring jfile_na
     int result = -1;
     if (scc != NULL) {
         const char *file_name = env->GetStringUTFChars(jfile_name, nullptr);
-       // result = spSysctrl->StartUpgradeFBC(file_name, mode, upgrade_blk_size);
+        result = spSysctrl->StartUpgradeFBC(file_name, mode, upgrade_blk_size);
         env->ReleaseStringUTFChars(jfile_name, file_name);
     }
     return result;
 }
 
-static jint SetDtvKitSourceEnable(JNIEnv* env __unused, jclass clazz __unused, jint isEnable)
-{
-	const sp<SystemControlClient>& scc = getSystemControlClient();
-	jint result = -1;
-	if (scc != NULL)
-	    result = scc->setDtvKitSourceEnable(isEnable);
-	return result;
+static jint FactorySetPQMode_Brightness(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetPQMode_Brightness(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+    return result;
 }
+
+static jint FactoryGetPQMode_Brightness(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetPQMode_Brightness(inputSrc, sig_fmt, trans_fmt, pq_mode);
+    return result;
+}
+
+static jint FactorySetPQMode_Contrast(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetPQMode_Contrast(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+    return result;
+}
+
+static jint FactoryGetPQMode_Contrast(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetPQMode_Contrast(inputSrc, sig_fmt, trans_fmt, pq_mode);
+    return result;
+}
+
+static jint FactorySetPQMode_Saturation(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetPQMode_Saturation(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+    return result;
+}
+
+static jint FactoryGetPQMode_Saturation(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetPQMode_Saturation(inputSrc, sig_fmt, trans_fmt, pq_mode);
+    return result;
+}
+
+static jint FactorySetPQMode_Hue(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetPQMode_Hue(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+    return result;
+}
+
+static jint FactoryGetPQMode_Hue(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetPQMode_Hue(inputSrc, sig_fmt, trans_fmt, pq_mode);
+    return result;
+}
+
+static jint FactorySetPQMode_Sharpness(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetPQMode_Sharpness(inputSrc, sig_fmt, trans_fmt, pq_mode, value);
+    return result;
+}
+
+static jint FactoryGetPQMode_Sharpness(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt,
+jint pq_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetPQMode_Sharpness(inputSrc, sig_fmt, trans_fmt, pq_mode);
+    return result;
+}
+
+static jint FactoryResetPQMode(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryResetPQMode();
+    return result;
+}
+
+static jint FactoryResetColorTemp(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryResetColorTemp();
+    return result;
+}
+
+static jint FactorySetParamsDefault(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetParamsDefault();
+    return result;
+}
+
+static jint FactorySetNolineParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt,
+jint type, jint osd0_value, jint osd25_value,  jint osd50_value, jint osd75_value, jint osd100_value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetNolineParams(inputSrc, sigFmt, transFmt, type, osd0_value, osd25_value,
+                                            osd50_value, osd75_value, osd100_value);
+    return result;
+}
+
+static jobject FactoryGetNolineParams(JNIEnv* env, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt, jint type) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    jobject jnolineParam = NULL;
+    if (scc != NULL) {
+        noline_params_t nolineParam = scc->factoryGetNolineParams(inputSrc, sigFmt, transFmt, type);
+        jclass objectClass = env->FindClass("com/droidlogic/app/SystemControlManager$noline_params_t");
+        jmethodID consID = env->GetMethodID(objectClass, "<init>", "()V");
+        jfieldID josd0   = env->GetFieldID(objectClass, "osd0", "I");
+        jfieldID josd25  = env->GetFieldID(objectClass, "osd25", "I");
+        jfieldID josd50  = env->GetFieldID(objectClass, "osd50", "I");
+        jfieldID josd75  = env->GetFieldID(objectClass, "osd75", "I");
+        jfieldID josd100 = env->GetFieldID(objectClass, "osd100", "I");
+
+        jnolineParam = env->NewObject(objectClass, consID);
+        env->SetIntField(jnolineParam, josd0, nolineParam.osd0);
+        env->SetIntField(jnolineParam, josd25, nolineParam.osd25);
+        env->SetIntField(jnolineParam, josd50, nolineParam.osd50);
+        env->SetIntField(jnolineParam, josd75, nolineParam.osd75);
+        env->SetIntField(jnolineParam, josd100, nolineParam.osd100);
+    }
+    return jnolineParam;
+}
+
+static jint FactorySetOverscan(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt, jint he_value, jint hs_value, jint ve_value, jint vs_value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetOverscan(inputSrc, sigFmt, transFmt, he_value, hs_value, ve_value, vs_value);
+    return result;
+}
+
+static jobject FactoryGetOverscan(JNIEnv* env, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    jobject joverscanParam = NULL;
+    if (scc != NULL) {
+        tvin_cutwin_t overscanParam = scc->factoryGetOverscan(inputSrc, sigFmt, transFmt);
+        jclass objectClass = env->FindClass("com/droidlogic/app/SystemControlManager$tvin_cutwin_t");
+        jmethodID consID = env->GetMethodID(objectClass, "<init>", "()V");
+        jfieldID jhs   = env->GetFieldID(objectClass, "hs", "I");
+        jfieldID jhe   = env->GetFieldID(objectClass, "he", "I");
+        jfieldID jvs   = env->GetFieldID(objectClass, "vs", "I");
+        jfieldID jve   = env->GetFieldID(objectClass, "ve", "I");
+
+        joverscanParam = env->NewObject(objectClass, consID);
+        env->SetIntField(joverscanParam, jhs, overscanParam.hs);
+        env->SetIntField(joverscanParam, jhe, overscanParam.he);
+        env->SetIntField(joverscanParam, jvs, overscanParam.vs);
+        env->SetIntField(joverscanParam, jve, overscanParam.ve);
+    }
+
+    return joverscanParam;
+}
+
+static jint SetwhiteBalanceGainRed(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->setwhiteBalanceGainRed(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
+    return result;
+}
+
+static jint SetwhiteBalanceGainGreen(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->setwhiteBalanceGainGreen(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
+    return result;
+}
+
+static jint SetwhiteBalanceGainBlue(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->setwhiteBalanceGainBlue(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
+    return result;
+}
+
+static jint GetwhiteBalanceGainRed(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->getwhiteBalanceGainRed(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
+    return result;
+}
+
+static jint GetwhiteBalanceGainGreen(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->getwhiteBalanceGainGreen(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
+    return result;
+}
+
+static jint GetwhiteBalanceGainBlue(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->getwhiteBalanceGainBlue(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
+    return result;
+}
+
+
+static jint SetwhiteBalanceOffsetRed(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->setwhiteBalanceOffsetRed(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
+    return result;
+}
+
+static jint SetwhiteBalanceOffsetGreen(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->setwhiteBalanceOffsetGreen(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
+    return result;
+}
+
+static jint SetwhiteBalanceOffsetBlue(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colortemp_mode, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->setwhiteBalanceOffsetBlue(inputSrc, sig_fmt, trans_fmt, colortemp_mode, value);
+    return result;
+}
+
+static jint GetwhiteBalanceOffsetRed(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint
+trans_fmt, jint colortemp_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->getwhiteBalanceOffsetRed(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
+    return result;
+}
+
+static jint GetwhiteBalanceOffsetGreen(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint
+trans_fmt, jint colortemp_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->getwhiteBalanceOffsetGreen(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
+    return result;
+}
+
+static jint GetwhiteBalanceOffsetBlue(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint
+trans_fmt, jint colortemp_mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->getwhiteBalanceOffsetBlue(inputSrc, sig_fmt, trans_fmt, colortemp_mode);
+    return result;
+}
+
+static jint SaveWhiteBalancePara(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint colorTemp_mode,
+jint r_gain, jint g_gain, jint b_gain, jint r_offset, jint g_offset, jint b_offset) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->saveWhiteBalancePara(inputSrc, sig_fmt, trans_fmt, colorTemp_mode, r_gain, g_gain, b_gain, r_offset, g_offset, b_offset);
+    return result;
+}
+
+static jint FactoryfactoryGetColorTemperatureParams(JNIEnv* env __unused, jclass clazz __unused, jint colorTemp_mode){
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryfactoryGetColorTemperatureParams(colorTemp_mode);
+    return result;
+}
+
+static jint FactorySSMRestore(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySSMRestore();
+    return result;
+}
+
+static jint FactoryResetNonlinear(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryResetNonlinear();
+    return result;
+}
+
+static jint FactorySetGamma(JNIEnv* env __unused, jclass clazz __unused, jint gamma_r, jint gamma_g, jint gamma_b) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetGamma(gamma_r, gamma_g, gamma_b);
+    return result;
+}
+
+static jint GetRGBPattern(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->getRGBPattern();
+    return result;
+}
+
+static jint SetRGBPattern(JNIEnv* env __unused, jclass clazz __unused, jint r, jint g, jint b) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->setRGBPattern(r, g, b);
+    return result;
+}
+
+static jint FactorySetDDRSSC(JNIEnv* env __unused, jclass clazz __unused, jint step) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetDDRSSC(step);
+    return result;
+}
+
+static jint FactoryGetDDRSSC(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetDDRSSC();
+    return result;
+}
+
+static jint FactorySetLVDSSSC(JNIEnv* env __unused, jclass clazz __unused, jint step) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetLVDSSSC(step);
+    return result;
+}
+
+static jint FactoryGetLVDSSSC(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetLVDSSSC();
+    return result;
+}
+
+static jint whiteBalanceGrayPatternOpen(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->whiteBalanceGrayPatternOpen();
+    return result;
+}
+
+static jint WhiteBalanceGrayPatternClose(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->whiteBalanceGrayPatternClose();
+    return result;
+}
+
+static jint WhiteBalanceGrayPatternSet(JNIEnv* env __unused, jclass clazz __unused, jint value) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->whiteBalanceGrayPatternSet(value);
+    return result;
+}
+
+static jint WhiteBalanceGrayPatternGet(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->whiteBalanceGrayPatternGet();
+    return result;
+}
+
+static jint FactorySetHdrMode(JNIEnv* env __unused, jclass clazz __unused, jint mode) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetHdrMode(mode);
+    return result;
+}
+
+static jint FactoryGetHdrMode(JNIEnv* env __unused, jclass clazz __unused) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetHdrMode();
+    return result;
+}
+
+static jint SetDnlpParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt, jint level) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->setDnlpParams(inputSrc, sigFmt, transFmt, level);
+    return result;
+}
+
+static jint GetDnlpParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->getDnlpParams(inputSrc, sigFmt, transFmt);
+    return result;
+}
+
+static jint FactorySetDnlpParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt, jint level, jint final_gain) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetDnlpParams(inputSrc, sigFmt, transFmt, level, final_gain);
+    return result;
+}
+
+static jint FactoryGetDnlpParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt, jint level) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetDnlpParams(inputSrc, sigFmt, transFmt, level);
+    return result;
+}
+
+static jint FactorySetBlackExtRegParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt, jint val) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetBlackExtRegParams(inputSrc, sigFmt, transFmt, val);
+    return result;
+}
+
+static jint FactoryGetBlackExtRegParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetBlackExtRegParams(inputSrc, sigFmt, transFmt);
+    return result;
+}
+
+static jint FactorySetColorParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt, jint color_type, jint color_param, jint val) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetColorParams(inputSrc, sigFmt, transFmt, color_type, color_param, val);
+    return result;
+}
+
+static jint FactoryGetColorParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sigFmt, jint transFmt, jint color_type, jint color_param) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetColorParams(inputSrc, sigFmt, transFmt, color_type, color_param);
+    return result;
+}
+
+static jint FactorySetNoiseReductionParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint nr_mode, jint param_type, jint val) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetNoiseReductionParams(inputSrc, sig_fmt, trans_fmt, nr_mode, param_type, val);
+    return result;
+}
+
+static jint FactoryGetNoiseReductionParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint nr_mode, jint param_type) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetNoiseReductionParams(inputSrc, sig_fmt, trans_fmt, nr_mode, param_type);
+    return result;
+}
+
+static jint FactorySetCTIParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint param_type, jint val) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetCTIParams(inputSrc, sig_fmt, trans_fmt, param_type, val);
+    return result;
+}
+
+static jint FactoryGetCTIParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint param_type) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetCTIParams(inputSrc, sig_fmt, trans_fmt, param_type);
+    return result;
+}
+
+
+static jint FactorySetDecodeLumaParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint param_type, jint val) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetDecodeLumaParams(inputSrc, sig_fmt, trans_fmt, param_type, val);
+    return result;
+}
+
+static jint FactoryGetDecodeLumaParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint param_type) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetDecodeLumaParams(inputSrc, sig_fmt, trans_fmt, param_type);
+    return result;
+}
+
+static jint FactorySetSharpnessParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint isHD, jint param_type, jint val) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factorySetSharpnessParams(inputSrc, sig_fmt, trans_fmt, isHD, param_type, val);
+    return result;
+}
+
+static jint FactoryGetSharpnessParams(JNIEnv* env __unused, jclass clazz __unused, jint inputSrc, jint sig_fmt, jint trans_fmt, jint isHD, jint param_type) {
+    const sp<SystemControlClient>& scc = getSystemControlClient();
+    int result = -1;
+    if (scc != NULL)
+        result = scc->factoryGetSharpnessParams(inputSrc, sig_fmt, trans_fmt, isHD, param_type);
+    return result;
+}
+
 
 static JNINativeMethod SystemControl_Methods[] = {
 {"native_ConnectSystemControl", "(Lcom/droidlogic/app/SystemControlManager;)V", (void *) ConnectSystemControl },
@@ -1230,6 +1847,8 @@ static JNINativeMethod SystemControl_Methods[] = {
 {"native_SetColorTemperature", "(II)I", (void *) SetColorTemperature },
 {"native_GetColorTemperature", "()I", (void *) GetColorTemperature },
 {"native_SaveColorTemperature", "(I)I", (void *) SaveColorTemperature },
+{"native_SetColorTemperatureUserParam", "(IIII)I", (void *) SetColorTemperatureUserParam},
+{"native_GetColorTemperatureUserParam", "()Lcom/droidlogic/app/SystemControlManager$WhiteBalanceParams;", (void *) GetColorTemperatureUserParam},
 {"native_SetBrightness", "(II)I", (void *) SetBrightness },
 {"native_GetBrightness", "()I", (void *) GetBrightness },
 {"native_SaveBrightness", "(I)I", (void *) SaveBrightness },
@@ -1273,12 +1892,74 @@ static JNINativeMethod SystemControl_Methods[] = {
 {"native_SetCVD2Values", "()I", (void *) SetCVD2Values },
 {"native_GetSSMStatus", "()I", (void *) GetSSMStatus },
 {"native_SetCurrentSourceInfo", "(III)I", (void *) SetCurrentSourceInfo },
-{"native_GetCurrentSourceInfo", "(III)V", (void *) GetCurrentSourceInfo },
-{"native_GetPQDatabaseInfo", "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", (void *) GetPQDatabaseInfo },
+{"native_GetCurrentSourceInfo", "()[I", (void *) GetCurrentSourceInfo },
+{"native_GetPQDatabaseInfo", "(I)Lcom/droidlogic/app/SystemControlManager$PQDatabaseInfo;", (void *) GetPQDatabaseInfo },
 {"native_StartUpgradeFBC", "(Ljava/lang/String;II)I", (void *) StartUpgradeFBC },
+{"native_FactorySetPQMode_Brightness", "(IIIII)I", (void *) FactorySetPQMode_Brightness },
+{"native_FactoryGetPQMode_Brightness", "(IIII)I", (void *) FactoryGetPQMode_Brightness },
+{"native_FactorySetPQMode_Contrast", "(IIIII)I", (void *) FactorySetPQMode_Contrast },
+{"native_FactoryGetPQMode_Contrast", "(IIII)I", (void *) FactoryGetPQMode_Contrast },
+{"native_FactorySetPQMode_Saturation", "(IIIII)I", (void *) FactorySetPQMode_Saturation },
+{"native_FactoryGetPQMode_Saturation", "(IIII)I", (void *) FactoryGetPQMode_Saturation },
+{"native_FactorySetPQMode_Hue", "(IIIII)I", (void *) FactorySetPQMode_Hue },
+{"native_FactoryGetPQMode_Hue", "(IIII)I", (void *) FactoryGetPQMode_Hue },
+{"native_FactorySetPQMode_Sharpness", "(IIIII)I", (void *) FactorySetPQMode_Sharpness },
+{"native_FactoryGetPQMode_Sharpness", "(IIII)I", (void *) FactoryGetPQMode_Sharpness },
+{"native_FactoryResetPQMode", "()I", (void *) FactoryResetPQMode },
+{"native_FactoryResetColorTemp", "()I", (void *) FactoryResetColorTemp },
+{"native_FactorySetParamsDefault", "()I", (void *) FactorySetParamsDefault },
+{"native_FactorySetNolineParams", "(IIIIIIIII)I", (void *) FactorySetNolineParams },
+{"native_FactoryGetNolineParams", "(IIII)Lcom/droidlogic/app/SystemControlManager$noline_params_t;", (void *) FactoryGetNolineParams },
+{"native_FactorySetOverscan", "(IIIIIII)I", (void *) FactorySetOverscan },
+{"native_FactoryGetOverscan", "(III)Lcom/droidlogic/app/SystemControlManager$tvin_cutwin_t;", (void *) FactoryGetOverscan },
+{"native_SetwhiteBalanceGainRed", "(IIIII)I", (void *) SetwhiteBalanceGainRed },
+{"native_SetwhiteBalanceGainGreen", "(IIIII)I", (void *) SetwhiteBalanceGainGreen },
+{"native_SetwhiteBalanceGainBlue", "(IIIII)I", (void *) SetwhiteBalanceGainBlue },
+{"native_GetwhiteBalanceGainRed", "(IIII)I", (void *) GetwhiteBalanceGainRed },
+{"native_GetwhiteBalanceGainGreen", "(IIII)I", (void *) GetwhiteBalanceGainGreen },
+{"native_GetwhiteBalanceGainBlue", "(IIII)I", (void *) GetwhiteBalanceGainBlue },
+{"native_SetwhiteBalanceOffsetRed", "(IIIII)I", (void *) SetwhiteBalanceOffsetRed },
+{"native_SetwhiteBalanceOffsetGreen", "(IIIII)I", (void *) SetwhiteBalanceOffsetGreen },
+{"native_SetwhiteBalanceOffsetBlue", "(IIIII)I", (void *) SetwhiteBalanceOffsetBlue },
+{"native_GetwhiteBalanceOffsetRed", "(IIII)I", (void *) GetwhiteBalanceOffsetRed },
+{"native_GetwhiteBalanceOffsetGreen", "(IIII)I", (void *) GetwhiteBalanceOffsetGreen },
+{"native_GetwhiteBalanceOffsetBlue", "(IIII)I", (void *) GetwhiteBalanceOffsetBlue },
+{"native_SaveWhiteBalancePara", "(IIIIIIIIII)I", (void *) SaveWhiteBalancePara },
+{"native_FactoryfactoryGetColorTemperatureParams", "(I)I", (void *) FactoryfactoryGetColorTemperatureParams },
+{"native_FactorySSMRestore", "()I", (void *) FactorySSMRestore },
+{"native_FactoryResetNonlinear", "()I", (void *) FactoryResetNonlinear },
+{"native_FactorySetGamma", "(III)I", (void *) FactorySetGamma },
+{"native_GetRGBPattern", "()I", (void *) GetRGBPattern },
+{"native_SetRGBPattern", "(III)I", (void *) SetRGBPattern },
+{"native_FactorySetDDRSSC", "(I)I", (void *) FactorySetDDRSSC },
+{"native_FactoryGetDDRSSC", "()I", (void *) FactoryGetDDRSSC },
+{"native_FactorySetLVDSSSC", "(I)I", (void *) FactorySetLVDSSSC },
+{"native_FactoryGetLVDSSSC", "()I", (void *) FactoryGetLVDSSSC },
+{"native_whiteBalanceGrayPatternOpen", "()I", (void *) whiteBalanceGrayPatternOpen },
+{"native_WhiteBalanceGrayPatternClose", "()I", (void *) WhiteBalanceGrayPatternClose },
+{"native_WhiteBalanceGrayPatternSet", "(I)I", (void *) WhiteBalanceGrayPatternSet },
+{"native_WhiteBalanceGrayPatternGet", "()I", (void *) WhiteBalanceGrayPatternGet },
+{"native_FactorySetHdrMode", "(I)I", (void *) FactorySetHdrMode },
+{"native_FactoryGetHdrMode", "()I", (void *) FactoryGetHdrMode },
+{"native_SetDnlpParams", "(IIII)I", (void *) SetDnlpParams },
+{"native_GetDnlpParams", "(III)I", (void *) GetDnlpParams },
+{"native_FactorySetDnlpParams", "(IIIII)I", (void *) FactorySetDnlpParams },
+{"native_FactoryGetDnlpParams", "(IIII)I", (void *) FactoryGetDnlpParams },
+{"native_FactorySetBlackExtRegParams", "(IIII)I", (void *) FactorySetBlackExtRegParams },
+{"native_FactoryGetBlackExtRegParams", "(III)I", (void *) FactoryGetBlackExtRegParams },
+{"native_FactorySetColorParams", "(IIIIII)I", (void *) FactorySetColorParams },
+{"native_FactoryGetColorParams", "(IIIII)I", (void *) FactoryGetColorParams },
+{"native_FactorySetNoiseReductionParams", "(IIIIII)I", (void *) FactorySetNoiseReductionParams },
+{"native_FactoryGetNoiseReductionParams", "(IIIII)I", (void *) FactoryGetNoiseReductionParams },
+{"native_FactorySetCTIParams", "(IIIII)I", (void *) FactorySetCTIParams },
+{"native_FactoryGetCTIParams", "(IIII)I", (void *) FactoryGetCTIParams },
+{"native_FactorySetDecodeLumaParams", "(IIIII)I", (void *) FactorySetDecodeLumaParams },
+{"native_FactoryGetDecodeLumaParams", "(IIII)I", (void *) FactoryGetDecodeLumaParams },
+{"native_FactorySetSharpnessParams", "(IIIIII)I", (void *) FactorySetSharpnessParams },
+{"native_FactoryGetSharpnessParams", "(IIIII)I", (void *) FactoryGetSharpnessParams },
 {"native_SetDtvKitSourceEnable", "(I)I", (void *)SetDtvKitSourceEnable },
-
-
+{"native_GetModeSupportDeepColorAttr", "(Ljava/lang/String;Ljava/lang/String;)Z", (void *) GetModeSupportDeepColorAttr },
+{"native_setHdrStrategy", "(Ljava/lang/String;)V", (void *) setHdrStrategy },
 };
 
 #define FIND_CLASS(var, className) \

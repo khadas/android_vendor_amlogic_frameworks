@@ -145,13 +145,11 @@ bool SysWrite::readSysfsOriginal(const char *path, char *value) {
 }
 
 bool SysWrite::writeSysfs(const char *path, const char *value) {
-    writeSys(path, value);
-    return true;
+    return writeSys(path, value);
 }
 
 bool SysWrite::writeSysfs(const char *path, const char *value, const int size) {
-    writeSys(path, value, size);
-    return true;
+    return writeSys(path, value, size);
 }
 
 
@@ -159,14 +157,15 @@ void SysWrite::setLogLevel(int level) {
     mLogLevel = level;
 }
 
-void SysWrite::writeSys(const char *path, const char *val) {
+bool SysWrite::writeSys(const char *path, const char *val) {
     int fd;
 
     SYS_LOGE("writeSysFs, path = %s =%s \n", path, val);
 
     if ((fd = open(path, O_RDWR)) < 0) {
         SYS_LOGE("writeSysFs, open %s fail.", path);
-        goto exit;
+
+        return false;
     }
 
     //if(mLogLevel > LOG_LEVEL_1)
@@ -174,10 +173,10 @@ void SysWrite::writeSys(const char *path, const char *val) {
 
     write(fd, val, strlen(val));
 
-exit:
     SYS_LOGI("write %s, val:%s end\n", path, val);
 
     close(fd);
+    return true;
 }
 
 int SysWrite::writeSys(const char *path, const char *val, const int size) {

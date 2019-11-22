@@ -132,6 +132,7 @@ public:
 
     void isHDCPTxAuthSuccess(int &status);
     bool getModeSupportDeepColorAttr(const std::string& mode, const std::string& color);
+    void setHdrStrategy(const std::string& value);
     //PQ
     int loadPQSettings(source_input_param_t srcInputParam);
     int setPQmode(int mode, int isSave, int is_autoswitch);

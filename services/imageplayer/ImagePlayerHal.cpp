@@ -40,19 +40,18 @@ namespace vendor {
                             ALOGE("ImagePlayerHal init");
 
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->init();
-                                return Result::OK;
+                                return (mImagePlayer->init() == 0 ? Result::OK : Result::FAIL) ;
                             }
 
                             return Result::FAIL;
                         }
                         Return<Result>  ImagePlayerHal::setDataSource(const hidl_string& uri) {
-                            ALOGE("ImagePlayerHal setDataSource");
+                            ALOGD("ImagePlayerHal setDataSource");
 
                             if ( NULL != mImagePlayer) {
                                 std::string uristr = uri;
-                                mImagePlayer->setDataSource(uristr.c_str());
-                                return Result::OK;
+                                return (mImagePlayer->setDataSource(uristr.c_str()) == 0 ?
+                                                                           Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
@@ -60,31 +59,31 @@ namespace vendor {
                         Return<Result>  ImagePlayerHal::setSampleSurfaceSize(int32_t sampleSize,
                                 int32_t surfaceW, int32_t surfaceH) {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->setSampleSurfaceSize(sampleSize, surfaceW, surfaceH);
+                                return (mImagePlayer->setSampleSurfaceSize(sampleSize, surfaceW, surfaceH) == 0 ?
+                                                                         Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
                         }
                         Return<Result>  ImagePlayerHal::setRotate(float degrees, int32_t autoCrop) {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->setRotate(degrees, autoCrop);
-                                return Result::OK;
+                                return (mImagePlayer->setRotate(degrees, autoCrop) == 0 ?
+                                                                         Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
                         }
                         Return<Result>  ImagePlayerHal::setScale(float sx, float sy, int32_t autoCrop) {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->setScale(sx, sy, autoCrop);
-                                return Result::OK;
+                                return (mImagePlayer->setScale(sx, sy, autoCrop) == 0 ?
+                                                                         Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
                         }
                         Return<Result> ImagePlayerHal::setHWScale(float sc) {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->setHWScale(sc);
-                                return Result::OK;
+                                return (mImagePlayer->setHWScale(sc) == 0 ? Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
@@ -92,16 +91,16 @@ namespace vendor {
                         Return<Result> ImagePlayerHal::setRotateScale(float degrees, float sx, float sy,
                                 int32_t autoCrop) {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->setRotateScale(degrees, sx, sy, autoCrop);
-                                return Result::OK;
+                                return (mImagePlayer->setRotateScale(degrees, sx, sy, autoCrop) == 0 ?
+                                                                         Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
                         }
                         Return<Result> ImagePlayerHal::setTranslate(float tx, float ty) {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->setTranslate(tx, ty);
-                                return Result::OK;
+                                return (mImagePlayer->setTranslate(tx, ty) == 0 ?
+                                                                          Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
@@ -109,27 +108,8 @@ namespace vendor {
                         Return<Result> ImagePlayerHal::setCropRect(int32_t cropX, int32_t cropY,
                                 int32_t cropWidth, int32_t cropHeight) {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->setCropRect(cropX, cropY, cropWidth, cropHeight);
-                                return Result::OK;
-                            }
-
-                            return Result::FAIL;
-                        }
-
-                        Return<Result> ImagePlayerHal::prepareBuf(const hidl_string& uri) {
-                            if ( NULL != mImagePlayer) {
-                                std::string uristr = uri;
-                                mImagePlayer->prepareBuf(uristr.c_str());
-                                return Result::OK;
-                            }
-
-                            return Result::FAIL;
-                        }
-
-                        Return<Result> ImagePlayerHal::showBuf() {
-                            if ( NULL != mImagePlayer) {
-                                mImagePlayer->showBuf();
-                                return Result::OK;
+                                return (mImagePlayer->setCropRect(cropX, cropY, cropWidth, cropHeight) == 0 ?
+                                                                           Result::OK:Result::FAIL);
                             }
 
                             return Result::FAIL;
@@ -137,8 +117,7 @@ namespace vendor {
 
                         Return<Result> ImagePlayerHal::start() {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->start();
-                                return Result::OK;
+                                return (mImagePlayer->start() == 0 ? Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
@@ -146,8 +125,7 @@ namespace vendor {
 
                         Return<Result> ImagePlayerHal::prepare() {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->prepare();
-                                return Result::OK;
+                                return (mImagePlayer->prepare() == 0 ? Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
@@ -155,8 +133,18 @@ namespace vendor {
 
                         Return<Result> ImagePlayerHal::show() {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->show();
-                                return Result::OK;
+                                return (mImagePlayer->show() == 0 ? Result::OK : Result::FAIL);
+                            }
+
+                            return Result::FAIL;
+                        }
+
+                        Return<Result>  ImagePlayerHal::showImage(const hidl_string& uri) {
+
+                            if ( NULL != mImagePlayer) {
+                                std::string uristr = uri;
+                                return (mImagePlayer->showImage(uristr.c_str()) == 0 ?
+                                                                         Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;
@@ -164,8 +152,7 @@ namespace vendor {
 
                         Return<Result> ImagePlayerHal::release() {
                             if ( NULL != mImagePlayer) {
-                                mImagePlayer->release();
-                                return Result::OK;
+                                return (mImagePlayer->release() == 0 ? Result::OK : Result::FAIL);
                             }
 
                             return Result::FAIL;

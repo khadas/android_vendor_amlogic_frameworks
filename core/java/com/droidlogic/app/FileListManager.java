@@ -496,7 +496,7 @@ public class FileListManager {
                 }
                 if (strs == ".apk") {
                     mListDir.add(map);
-                } else if (strs == "video" && (isBDFile(tempF) || (tempF.isFile() && !isISOFile(tempF)))) {
+                } else if (strs == "video" && (tempF.isFile() && !isISOFile(tempF))) {
                     mListDir.add(map);
                 } else if (strs == "video") {
                     mListDir.add(map);

@@ -11,7 +11,9 @@
 package com.droidlogic.app;
 
 import android.content.Context;
+import android.content.ContentResolver;
 import android.content.res.Configuration;
+import android.provider.Settings;
 import android.util.Log;
 
 import java.io.File;
@@ -23,8 +25,13 @@ public class HdmiCecManager {
     private static final boolean DEBUG = true;
     private static final String TAG = "HdmiCecManager";
     //switch box cec control
-    public static final String HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED = "hdmi_control_one_touch_play_enabled";
-    public static final String HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED = "hdmi_control_auto_change_language_enabled";
+    public static final String HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED          = "hdmi_control_one_touch_play_enabled";
+    public static final String HDMI_CONTROL_AUTO_CHANGE_LANGUAGE_ENABLED    = "hdmi_control_auto_change_language_enabled";
+
+    // same with frameworks/base/core/java/android/provider/Settings.java file
+    public static final String HDMI_SYSTEM_AUDIO_CONTROL_ENABLED            = "hdmi_system_audio_control_enabled";
+    // same with frameworks/base/core/java/android/content/pm/PackageManager.java file
+    public static final String FEATURE_HDMI_CEC                             = "android.hardware.hdmi.cec";
     //CEC device node
     public static final String CEC_DEVICE_FILE = "/sys/devices/virtual/switch/lang_config/state";
     public static final String CEC_SYS = "/sys/class/amhdmitx/amhdmitx0/cec_config";
@@ -44,6 +51,11 @@ public class HdmiCecManager {
     public static final int MASK_ONE_KEY_STANDBY = 0x04;           // bit 2
     public static final int MASK_AUTO_CHANGE_LANGUAGE = 0x20;      // bit 5
     public static final int MASK_ALL = 0x2f;                       // all mask
+
+    // Local device type
+    public static final int CEC_LOCAL_DEVICE_TYPE_TV    = 0;
+    public static final int CEC_LOCAL_DEVICE_TYPE_OTT   = 4;
+    public static final int CEC_LOCAL_DEVICE_TYPE_AUDIO = 5;
 
     public static final boolean FUN_OPEN = true;
     public static final boolean FUN_CLOSE = false;
@@ -209,6 +221,86 @@ public class HdmiCecManager {
         s = writeConfig.substring(3, writeConfig.length());
         mSystemControlManager.writeSysFs(CEC_SYS, s);
         Log.d(TAG, "==== cec set config : " + writeConfig);
+    }
+
+
+    private static final String SETTINGS_HDMI_CONTROL_ENABLED = "hdmi_control_enabled";
+    private static final String SETTINGS_ONE_TOUCH_PLAY = HdmiCecManager.HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED;
+    private static final String SETTINGS_AUTO_POWER_OFF = "hdmi_control_auto_device_off_enabled";
+    private static final String SETTINGS_AUTO_WAKE_UP = "hdmi_control_auto_wakeup_enabled";
+    private static final String SETTINGS_ARC_ENABLED = HdmiCecManager.HDMI_SYSTEM_AUDIO_CONTROL_ENABLED;
+    private static final String PERSIST_HDMI_CEC_SET_MENU_LANGUAGE= "persist.vendor.sys.cec.set_menu_language";
+    private static final String PERSIST_HDMI_CEC_DEVICE_AUTO_POWEROFF = "persist.vendor.sys.cec.deviceautopoweroff";
+    private static final int ON = 1;
+    private static final int OFF = 0;
+
+    public boolean isHdmiControlEnabled () {
+        return readValue(SETTINGS_HDMI_CONTROL_ENABLED);
+    }
+
+    public boolean isOneTouchPlayEnabled () {
+        return readValue(SETTINGS_ONE_TOUCH_PLAY);
+    }
+
+    public boolean isAutoPowerOffEnabled () {
+        return readValue(SETTINGS_AUTO_POWER_OFF);
+    }
+
+    public boolean isAutoWakeUpEnabled () {
+        return readValue(SETTINGS_AUTO_WAKE_UP);
+    }
+
+    public boolean isAutoChangeLanguageEnabled () {
+        return mSystemControlManager.getPropertyBoolean(PERSIST_HDMI_CEC_SET_MENU_LANGUAGE, true);
+    }
+
+    public boolean isArcEnabled () {
+       return readValue(SETTINGS_ARC_ENABLED);
+    }
+
+    public void enableHdmiControl (boolean value) {
+        writeValue(SETTINGS_HDMI_CONTROL_ENABLED, value);
+    }
+
+    public void enableOneTouchPlay (boolean value) {
+        writeValue(SETTINGS_ONE_TOUCH_PLAY, value);
+    }
+
+    public void enableAutoPowerOff (boolean value) {
+        writeValue(SETTINGS_AUTO_POWER_OFF, value);
+        mSystemControlManager.setProperty(PERSIST_HDMI_CEC_DEVICE_AUTO_POWEROFF, value ? "true" : "false");
+    }
+
+    public void enableAutoWakeUp (boolean value) {
+        writeValue(SETTINGS_AUTO_WAKE_UP, value);
+
+    }
+
+    public void enableAutoChangeLanguage (boolean value) {
+        mSystemControlManager.setProperty(PERSIST_HDMI_CEC_SET_MENU_LANGUAGE, value ? "true" : "false");
+
+    }
+
+    public void enableArc (boolean value) {
+        writeValue(SETTINGS_ARC_ENABLED, value);
+    }
+
+    private boolean readValue(String key) {
+        return Settings.Global.getInt(mContext.getContentResolver(), key, ON) == ON;
+    }
+
+    private void writeValue(String key, boolean value) {
+        Settings.Global.putInt(mContext.getContentResolver(), key, value ? ON : OFF);
+    }
+
+    public static void reset(ContentResolver contentResolver, SystemControlManager sytemControlManager) {
+        Settings.Global.putInt(contentResolver, SETTINGS_HDMI_CONTROL_ENABLED,  ON);
+        Settings.Global.putInt(contentResolver, SETTINGS_ONE_TOUCH_PLAY,  ON);
+        Settings.Global.putInt(contentResolver, SETTINGS_AUTO_POWER_OFF,  ON);
+        Settings.Global.putInt(contentResolver, SETTINGS_AUTO_WAKE_UP,  ON);
+        Settings.Global.putInt(contentResolver, SETTINGS_ARC_ENABLED,  ON);
+        sytemControlManager.setProperty(PERSIST_HDMI_CEC_SET_MENU_LANGUAGE, "true");
+        sytemControlManager.setProperty(PERSIST_HDMI_CEC_DEVICE_AUTO_POWEROFF, "true");
     }
 }
 

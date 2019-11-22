@@ -126,6 +126,7 @@ public class DialogBluetoothService extends Service {
     private BluetoothGattCharacteristic rep7Characteristic = null;
     private int prevInstance = 0; // for checking audio data notifications sequence
     private AudioManager mAudioManager = null;
+    private int amlrcstateflag  = 0;
     private int connectedState = 0;
 
     private boolean flagjni = false;
@@ -156,12 +157,12 @@ public class DialogBluetoothService extends Service {
                     Log.i(TAG, "pending.isEmpty()="+pending.isEmpty());
                     if (!pending.isEmpty()) {
                         mBluetoothGatt = null;
-                        mConnectionState = STATE_DISCONNECTED;
+                         mConnectionState = STATE_DISCONNECTED;
                     }
                     pending.add(device);
                     mHandler.removeCallbacks(mConnRunnable);
                     mHandler.postDelayed(mConnRunnable, CONNECTION_DELAY_MS);
-                    // waiting some time to not overload BLE device with requests
+                     // waiting some time to not overload BLE device with requests
                 }
             }
             else if (BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED.equals(action)) {
@@ -180,8 +181,22 @@ public class DialogBluetoothService extends Service {
                 int bondStatePrev = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.BOND_NONE);
 
                 Log.i(TAG, "BOND STATE CHANGED ["+device.getName()+"] - was " + bondStatePrev + ", now is " + bondStateNow);
-                if (isRemoteAudioCapable(device) && bondStatePrev == BluetoothDevice.BOND_BONDING && bondStateNow == BluetoothDevice.BOND_BONDED) {
-                    Log.i(TAG, "Bonding complete ["+device.getName()+"] - checking for supported devices after delay");
+                if ((bondStateNow == 10) && isRemoteAudioCapable(device)) {
+                    amlrcstateflag=0;
+                    Set<BluetoothDevice> bondedDevices = mBluetoothAdapter.getBondedDevices();
+                    for (Iterator<BluetoothDevice> re = bondedDevices.iterator(); re.hasNext();) {
+                        BluetoothDevice rev = (BluetoothDevice) re.next();
+                        if (isRemoteAudioCapable(rev))
+                        amlrcstateflag++;
+                    }
+                    if (amlrcstateflag == 0) {
+                        Log.i(TAG, "all amlogic rc remove");
+                        connectedState = amlrcstateflag;
+                        setWiredDeviceConnectionState(DEVICE_IN_WIRED_HEADSET, connectedState, device.getAddress(), device.getName());
+                    }
+                }
+                  if (isRemoteAudioCapable(device) && bondStatePrev == BluetoothDevice.BOND_BONDING && bondStateNow == BluetoothDevice.BOND_BONDED) {
+                     Log.i(TAG, "Bonding complete ["+device.getName()+"] - checking for supported devices after delay");
                     pending.add(device);
                     mHandler.removeCallbacks(mConnRunnable);
                     mHandler.postDelayed(mConnRunnable, CONNECTION_DELAY_MS);
@@ -259,7 +274,12 @@ public class DialogBluetoothService extends Service {
     public boolean isRemoteAudioCapable(BluetoothDevice device)
     {
         String name = (device == null ? null : device.getName());
+        String name1 = new String("Amlogic_RC_QW");
+        int length = (name == null ? 0 : name.length());
+        int length1 = name1.length();
         if (name == null)
+            return false;
+        else if ((length >= length1) && name.substring(0,length1).equals(name1))
             return false;
 
         for (String devName : SUPPORTED_DEVICES) {
@@ -640,22 +660,20 @@ public class DialogBluetoothService extends Service {
     }
 
     void onDeviceStateChanged(int status) {
-        Log.d(TAG, "onDeviceStateChanged: status=" + status);
-
+        Log.d(TAG, "onDeviceStateChanged: status=" + status + ",connectedState="+connectedState);
+        amlrcstateflag = 0;
         if (connectedState == status) return;
-
         //find the audio device
         Set<BluetoothDevice> bondedDevices = mBluetoothAdapter.getBondedDevices();
         for (Iterator<BluetoothDevice> it = bondedDevices.iterator(); it.hasNext();) {
             BluetoothDevice dev = (BluetoothDevice) it.next();
-            if (isRemoteAudioCapable(dev)) {
-
-            /* @hidden-api-issue-start*/
-                Log.i(TAG, "amlogic rc " + (status == 1 ? "input" : "remove"));
+            if (isRemoteAudioCapable(dev) && (status == 1)) {
+            // @hidden-api-issue-start
+                Log.i(TAG, "amlogic rc input");
                 connectedState = status;
                 //mAudioManager.setWiredDeviceConnectionState(AudioManager.DEVICE_IN_WIRED_HEADSET, connectedState, dev.getAddress(), dev.getName());
-                setWiredDeviceConnectionState(/*AudioManager.*/DEVICE_IN_WIRED_HEADSET, connectedState, dev.getAddress(), dev.getName());
-           /* @hidden-api-issue-end */
+                setWiredDeviceConnectionState(DEVICE_IN_WIRED_HEADSET, connectedState, dev.getAddress(), dev.getName());
+           // @hidden-api-issue-end
                 break;
             }
         }

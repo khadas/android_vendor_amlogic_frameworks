@@ -184,26 +184,18 @@ namespace android {
             return NO_ERROR;
         }
 
+        virtual int showImage(const char* uri) {
+            Parcel data, reply;
+            data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
+            data.writeCString(uri);
+            remote()->transact(BnImagePlayerService::IMAGE_SHOW_URI, data, &reply);
+            return NO_ERROR;
+        }
+
         virtual int release() {
             Parcel data, reply;
             data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
             remote()->transact(BnImagePlayerService::IMAGE_RELEASE, data, &reply);
-            return NO_ERROR;
-        }
-
-        virtual int prepareBuf(const char *uri) {
-            Parcel data, reply;
-            data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
-
-            data.writeCString(uri);
-            remote()->transact(BnImagePlayerService::IMAGE_PREPARE_BUF, data, &reply);
-            return NO_ERROR;
-        }
-
-        virtual int showBuf() {
-            Parcel data, reply;
-            data.writeInterfaceToken(IImagePlayerService::getInterfaceDescriptor());
-            remote()->transact(BnImagePlayerService::IMAGE_SHOW_BUF, data, &reply);
             return NO_ERROR;
         }
     };
@@ -303,24 +295,17 @@ namespace android {
                 return NO_ERROR;
             }
 
+            case IMAGE_SHOW_URI: {
+                CHECK_INTERFACE(IImagePlayerService, data, reply);
+                String8 path(data.readString16());
+                int result = showImage(path);
+                reply->writeInt32(result);
+                return NO_ERROR;
+            }
+
             case IMAGE_RELEASE: {
                 CHECK_INTERFACE(IImagePlayerService, data, reply);
                 int result = release();
-                reply->writeInt32(result);
-                return NO_ERROR;
-            }
-
-            case IMAGE_PREPARE_BUF: {
-                CHECK_INTERFACE(IImagePlayerService, data, reply);
-                String8 path(data.readString16());
-                int result = prepareBuf(path);
-                reply->writeInt32(result);
-                return NO_ERROR;
-            }
-
-            case IMAGE_SHOW_BUF: {
-                CHECK_INTERFACE(IImagePlayerService, data, reply);
-                int result = showBuf();
                 reply->writeInt32(result);
                 return NO_ERROR;
             }

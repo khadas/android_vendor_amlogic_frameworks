@@ -49,11 +49,10 @@ namespace android {
         virtual int setTranslate(float tx, float ty) = 0;
         virtual int setCropRect(int cropX, int cropY, int cropWidth,
                                 int cropHeight) = 0;
-        virtual int prepareBuf(const char *uri) = 0;
-        virtual int showBuf() = 0;
         virtual int start() = 0;
         virtual int prepare() = 0;
         virtual int show() = 0;
+        virtual int showImage(const char* uri) = 0;
         virtual int release() = 0;
         virtual int notifyProcessDied(const sp<IBinder> &binder) = 0;
     };
@@ -73,9 +72,8 @@ namespace android {
             IMAGE_START,
             IMAGE_PREPARE,
             IMAGE_SHOW,
+            IMAGE_SHOW_URI,
             IMAGE_RELEASE,
-            IMAGE_PREPARE_BUF,
-            IMAGE_SHOW_BUF,
             IMAGE_SET_DATA_SOURCE_URL,
             IMAGE_NOTIFY_PROCESSDIED,
             IMAGE_SET_TRANSLATE,

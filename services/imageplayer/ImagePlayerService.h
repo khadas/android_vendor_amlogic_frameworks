@@ -129,17 +129,16 @@ namespace android {
         virtual int setTranslate(float tx, float ty);
         virtual int setRotateScale(float degrees, float sx, float sy, int autoCrop);
         virtual int setCropRect(int cropX, int cropY, int cropWidth, int cropHeight);
-        virtual int prepareBuf(const char *uri);
-        virtual int showBuf();
         virtual int start();
         virtual int prepare();
         virtual int show();
+        virtual int showImage(const char* uri);
         virtual int release();
         static ImagePlayerService* instantiate();
         virtual int notifyProcessDied(const sp<IBinder> &binder);
 
         //use to show gif etc. images
-        bool MovieInit(SkStreamRewindable *stream);
+        bool MovieInit(const char *file);
         bool MovieShow();
         void MovieRenderPost(SkBitmap *bitmap);
         int MovieThreadStart();
@@ -163,9 +162,12 @@ namespace android {
         SkBitmap* decode(SkStreamAsset *stream, InitParameter *parameter);
         SkBitmap* decodeTiff(const char *filePath);
         SkBitmap* scale(SkBitmap *srcBitmap, float sx, float sy);
+        SkBitmap* simplescale(SkBitmap *srcBitmap, float sx, float sy);
         SkBitmap* rotate(SkBitmap *srcBitmap, float degrees);
         SkBitmap* rotateAndScale(SkBitmap *srcBitmap, float degrees, float sx,
-                                 float sy);
+                                 float sy, bool isCrop);
+        void clearBmp(SkBitmap* bmp);
+        bool needFillSurface(SkBitmap* bmp,float sx,float sy);
         bool renderAndShow(SkBitmap *bitmap);
         bool showBitmapRect(SkBitmap *bitmap, int cropX, int cropY, int cropWidth,
                             int cropHeight);
@@ -197,7 +199,6 @@ namespace android {
         int mFileDescription;
         //bool isAutoCrop;
         int surfaceWidth, surfaceHeight;
-
         //0:normal 1: scale up 2:scale down
         int mScalingDirect;
         float mScalingStep;
@@ -205,7 +206,7 @@ namespace android {
         SkBitmap *mRotateBitmap;
         bool mMovieImage;
         int mFrameIndex;
-        int mMovieDegree;
+        float mMovieDegree;
         bool mNeedResetHWScale;
         //0:normal 1: translate left 2:translate right 3: translate up 4:translate down
         int mTranslatingDirect;
@@ -232,6 +233,7 @@ namespace android {
         MovieThread(const sp<ImagePlayerService>& player);
         virtual ~MovieThread();
 
+        bool check();
       private:
         sp<ImagePlayerService> mPlayer;
 

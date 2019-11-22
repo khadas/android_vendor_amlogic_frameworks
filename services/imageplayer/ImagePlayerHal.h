@@ -56,15 +56,13 @@ namespace vendor {
                             Return<Result> setCropRect(int32_t cropX, int32_t cropY, int32_t cropWidth,
                                                        int32_t cropHeight) override;
 
-                            Return<Result> prepareBuf(const hidl_string& uri) override;
-
-                            Return<Result> showBuf() override;
-
                             Return<Result> start() override;
 
                             Return<Result> prepare() override;
 
                             Return<Result> show() override;
+
+                            Return<Result> showImage(const hidl_string& uri) override;
 
                             Return<Result> release() override;
 

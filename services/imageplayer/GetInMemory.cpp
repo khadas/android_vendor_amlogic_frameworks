@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2014 Amlogic, Inc. All rights reserved.
+ *
+ * This source code is subject to the terms and conditions defined in the
+ * file 'LICENSE' which is part of this source code package.
+ *
+ * Description: C++ file
+ */
 #define LOG_TAG "ImagePlayerService::GetInMemory"
 
 #include <curl/curl.h>
@@ -25,7 +33,12 @@ size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *user
     mem->memory[mem->size] = 0;
     return realsize;
 }
+size_t getcontentlengthfunc(void *ptr, size_t size, size_t nmemb, void *stream) {
+       ALOGE("ptr:%s",(char*)ptr);
+       return size * nmemb;
+}
 
+size_t receive_data(void *buff,size_t len,size_t nmemb,FILE *file);
 char* getFileByCurl(char* url) {
     CURL *curl_handle;
     CURLcode res;
@@ -48,15 +61,18 @@ char* getFileByCurl(char* url) {
     /* specify URL to get */
     curl_easy_setopt(curl_handle, CURLOPT_URL, url);
     /* send all data to this function  */
-    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, NULL);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, receive_data);
     /* we pass our 'chunk' struct to the callback function */
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, fp);
+    curl_easy_setopt(curl_handle, CURLOPT_HEADERFUNCTION, getcontentlengthfunc);
     /* some servers don't like requests that are made without a user-agent
        field, so we provide one */
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
     curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 10L);
     curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 10L);
+    curl_easy_setopt(curl_handle, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(curl_handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
     /* get it! */
     res = curl_easy_perform(curl_handle);
 
@@ -75,5 +91,10 @@ char* getFileByCurl(char* url) {
     ALOGD("getFileByCurl http data is got.");
     return path;
 
+}
+size_t receive_data(void *buff,size_t len,size_t nmemb,FILE *file) {
+    size_t r_size = fwrite(buff,len,nmemb,file);
+    //ALOGE("receive_data %d[%d %d]",r_size,len,nmemb);
+    return r_size;
 }
 }

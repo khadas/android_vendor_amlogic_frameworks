@@ -184,8 +184,11 @@ public class DisplayPositionManager {
         right = Math.min(right,mMaxRight);
         bottom = Math.min(bottom,mMaxBottom);
 
-        writeFile(OutputModeManager.FB0_WINDOW_AXIS, left + " " + top + " " + right + " " + bottom);
-
+        /*
+        ** no need to set "/sys/class/graphics/fb0/window_axis"
+        ** writeFile(OutputModeManager.FB0_WINDOW_AXIS, left + " " + top + " " + right + " " + bottom);
+        **
+        */
         mOutputModeManager.savePosition(left, top, width, height);
         mOutputModeManager.setOsdMouse(left, top, width, height);
     }

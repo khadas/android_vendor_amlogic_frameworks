@@ -426,6 +426,13 @@ Return<void> SystemControlHal::setBootEnv(const hidl_string &key, const hidl_str
     return Void();
 }
 
+Return<void> SystemControlHal::setHdrStrategy(const hidl_string &value) {
+    mSysControl->setHdrStrategy(value);
+    if (ENABLE_LOG_PRINT)
+        ALOGI("setBootEnv value:%s",value.c_str());
+    return Void();
+}
+
 Return<Result> SystemControlHal::getModeSupportDeepColorAttr(const hidl_string &mode, const hidl_string &color) {
     ALOGI("getModeSupportDeepColorAttr mode = %s color = %s", mode.c_str(), color.c_str());
     return mSysControl->getModeSupportDeepColorAttr(mode, color)?Result::OK:Result::FAIL;

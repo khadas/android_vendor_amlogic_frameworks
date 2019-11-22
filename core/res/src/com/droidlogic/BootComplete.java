@@ -19,6 +19,7 @@ import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.content.ContentResolver;
 import android.util.Log;
 import android.media.AudioManager;
@@ -38,19 +39,18 @@ import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
-import com.droidlogic.app.DolbyVisionSettingManager;
 import com.droidlogic.app.AudioSettingManager;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
     private static final String DECRYPT_STATE = "encrypted";
     private static final String DECRYPT_TYPE = "file";
+    private static final String SYS_NODE_EARC = "/sys/class/extcon/earctx/state";
     private static final String DROID_SETTINGS_PACKAGE = "com.droidlogic.tv.settings";
     private static final String DROID_SETTINGS_ENCRYPTKEEPERFBE = "com.droidlogic.tv.settings.CryptKeeperFBE";
 
     private SystemControlEvent mSystemControlEvent;
     private boolean mHasTvUiMode;
-    private boolean mSupportDolbyVision;
     private SystemControlManager mSystemControlManager;
     private AudioManager mAudioManager;
     private AudioSettingManager mAudioSettingManager;
@@ -67,10 +67,9 @@ public class BootComplete extends BroadcastReceiver {
         mSystemControlManager =  SystemControlManager.getInstance();
         mAudioSettingManager = new AudioSettingManager(context);
         mHasTvUiMode = mSystemControlManager.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
-        mSupportDolbyVision = mSystemControlManager.getPropertyBoolean("ro.vendor.platform.support.dolbyvision", false);
         final ContentResolver resolver = context.getContentResolver();
         //register system control callback
-        mSystemControlEvent = new SystemControlEvent(context);
+        mSystemControlEvent = SystemControlEvent.getInstance(context);
         mSystemControlManager.setHdmiHotPlugListener(mSystemControlEvent);
         final OutputModeManager outputModeManager = new OutputModeManager(context);
 
@@ -88,13 +87,9 @@ public class BootComplete extends BroadcastReceiver {
 
         /*setThisValue for dts scale*/
         outputModeManager.setDtsDrcScaleSysfs();
-
         //use to check whether disable camera or not
         new UsbCameraManager(context).bootReady();
 
-        if (mSupportDolbyVision) {
-            new DolbyVisionSettingManager(context).initSetDolbyVision();
-        }
 
         new PlayBackManager(context).initHdmiSelfadaption();
 
@@ -106,18 +101,24 @@ public class BootComplete extends BroadcastReceiver {
         }
 
         context.startService(new Intent(context,NtpService.class));
+        if (outputModeManager.isDapValid())
+            context.startService(new Intent(context, DolbyAudioEffectService.class));
 
-	if (mSystemControlManager.getPropertyBoolean("ro.vendor.platform.support.network_led", false) == true)
+        if (mHasTvUiMode)
+            context.startService(new Intent(context, DroidLogicPowerService.class));
+
+        if (mSystemControlManager.getPropertyBoolean("ro.vendor.platform.support.network_led", false) == true)
             context.startService(new Intent(context, NetworkSwitchService.class));
-
-        if (mSystemControlManager.getPropertyBoolean("ro.vendor.platform.wifi.suspend", false))
-            context.startService(new Intent(context, WifiSuspendService.class));
 
         if (mHasTvUiMode)
             context.startService(new Intent(context, EsmService.class));
 
         if (mSystemControlManager.getPropertyBoolean("vendor.sys.bandwidth.enable", false))
             context.startService(new Intent(context, DDRBandwidthService.class));
+
+        if (!TextUtils.isEmpty(mSystemControlManager.readSysFs(SYS_NODE_EARC))) {
+            context.startService(new Intent(context, DroidLogicEarcService.class));
+        }
 
         /*  AML default rotation config, cannot use with shipping_api_level=28
             String rotProp = mSystemControlManager.getPropertyString("persist.vendor.sys.app.rotation", "");

@@ -251,6 +251,7 @@ class SystemControlHal : public ISystemControl, public SystemControlNotify {
     Return<int32_t> UpdateFBCUpgradeStatus(int32_t state, int32_t param) override;
 
     Return<Result> getModeSupportDeepColorAttr(const hidl_string& mode, const hidl_string& color) override;
+    Return<void> setHdrStrategy(const hidl_string &value) override;
     virtual void onEvent(int event);
     virtual void onFBCUpgradeEvent(int32_t state, int32_t param);
 

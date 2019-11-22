@@ -362,6 +362,10 @@ void SystemControlClient::setBootEnv(const std::string& key, const std::string& 
     mSysCtrl->setBootEnv(key, value);
 }
 
+void SystemControlClient::setHdrStrategy(const std::string& value) {
+    mSysCtrl->setHdrStrategy(value);
+}
+
 bool SystemControlClient::getModeSupportDeepColorAttr(const std::string& mode, const std::string& color) {
     Result rtn;
     rtn = mSysCtrl->getModeSupportDeepColorAttr(mode,color);

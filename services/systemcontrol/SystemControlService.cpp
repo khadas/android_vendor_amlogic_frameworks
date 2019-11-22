@@ -399,6 +399,14 @@ void SystemControlService::setBootEnv(const std::string& key, const std::string&
     }
 }
 
+void SystemControlService::setHdrStrategy(const std::string& value) {
+    bool ret;
+    if (mLogLevel > LOG_LEVEL_1) {
+        ALOGI("setDolbyvisionType type :%s",value.c_str());
+    }
+    pDisplayMode->setHdrStrategy(value.c_str());
+}
+
 void SystemControlService::getDroidDisplayInfo(int &type __unused, std::string& socType __unused, std::string& defaultUI __unused,
         int &fb0w __unused, int &fb0h __unused, int &fb0bits __unused, int &fb0trip __unused,
         int &fb1w __unused, int &fb1h __unused, int &fb1bits __unused, int &fb1trip __unused) {

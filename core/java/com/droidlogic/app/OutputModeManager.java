@@ -24,6 +24,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
+import java.util.UUID;
 
 import android.content.Context;
 import android.content.Intent;
@@ -34,6 +36,8 @@ import android.provider.Settings;
 import android.util.Log;
 import android.media.AudioManager;
 import android.media.AudioFormat;
+import android.media.AudioTrack;
+import android.media.audiofx.AudioEffect;
 import android.content.ContentResolver;
 
 public class OutputModeManager {
@@ -85,6 +89,8 @@ public class OutputModeManager {
     public static final String FB0_WINDOW_AXIS              = "/sys/class/graphics/fb0/window_axis";
     public static final String FB0_BLANK                    = "/sys/class/graphics/fb0/blank";
 
+    public  static final String AUDIO_MS12LIB_PATH          = "/vendor/lib/libdolbyms12.so";
+
     public static final String ENV_CVBS_MODE                = "ubootenv.var.cvbsmode";
     public static final String ENV_HDMI_MODE                = "ubootenv.var.hdmimode";
     public static final String ENV_OUTPUT_MODE              = "ubootenv.var.outputmode";
@@ -92,6 +98,7 @@ public class OutputModeManager {
     public static final String ENV_IS_BEST_MODE             = "ubootenv.var.is.bestmode";
     public static final String ENV_IS_BEST_DOLBYVISION      = "ubootenv.var.bestdolbyvision";
     public static final String ENV_COLORATTRIBUTE           = "ubootenv.var.colorattribute";
+    public static final String ENV_HDR_POLICY               = "ubootenv.var.hdr_policy";
 
     public static final String PROP_BEST_OUTPUT_MODE        = "ro.vendor.platform.best_outputmode";
     public static final String PROP_HDMI_ONLY               = "ro.vendor.platform.hdmionly";
@@ -114,85 +121,151 @@ public class OutputModeManager {
     public static final String FULL_WIDTH_4K2KSMPTE         = "4096";
     public static final String FULL_HEIGHT_4K2KSMPTE        = "2160";
 
-    public static final String DIGITAL_AUDIO_FORMAT          = "digital_audio_format";
-    public static final String DIGITAL_AUDIO_SUBFORMAT       = "digital_audio_subformat";
-    public static final String PARA_PCM                      = "hdmi_format=0";
-    public static final String PARA_SPDIF                    = "hdmi_format=4";
-    public static final String PARA_AUTO                     = "hdmi_format=5";
-    public static final int DIGITAL_PCM                      = 0;
-    public static final int DIGITAL_SPDIF                    = 1;
-    public static final int DIGITAL_AUTO                     = 2;
-    public static final int DIGITAL_MANUAL                   = 3;
+    public static final String AUDIO_MIXING                 = "audio_mixing";
+    private static final String PARA_AUDIO_MIXING_ON        = "disable_pcm_mixing=0";
+    private static final String PARA_AUDIO_MIXING_OFF       = "disable_pcm_mixing=1";
+    public static final int AUDIO_MIXING_OFF                = 0;
+    public static final int AUDIO_MIXING_ON                 = 1;
+    public static final int AUDIO_MIXING_DEFAULT            = AUDIO_MIXING_ON;
+
+    private static final UUID EFFECT_TYPE_DAP               = UUID.fromString("3337b21d-c8e6-4bbd-8f24-698ade8491b9");
+    private static final UUID EFFECT_TYPE_NULL              = UUID.fromString("ec7178ec-e5e1-4432-a3f4-4657e6795210");
+    /**
+    * dap AudioEffect, must sync with DAPparams in libms12dap.so
+    */
+    public static final int CMD_DAP_ENABLE                  = 0;
+    public static final int CMD_DAP_EFFECT_MODE             = 1;
+    public static final int CMD_DAP_GEQ_GAINS               = 2;
+    public static final int CMD_DAP_GEQ_ENABLE              = 3;
+    public static final int CMD_DAP_POST_GAIN               = 4;
+    public static final int CMD_DAP_VL_ENABLE               = 5;
+    public static final int CMD_DAP_VL_AMOUNT               = 6;
+    public static final int CMD_DAP_DE_ENABLE               = 7;
+    public static final int CMD_DAP_DE_AMOUNT               = 8;
+    public static final int CMD_DAP_SURROUND_ENABLE         = 9;
+    public static final int CMD_DAP_SURROUND_BOOST          = 10;
+    public static final int CMD_DAP_VIRTUALIZER_ENABLE      = 11;
+    private static final int DAP_CPDP_OUTPUT_2_SPEAKER      = 7;
+    private static final int DAP_CPDP_OUTPUT_2_HEADPHONE    = 6;
+
+    public static final int SUBCMD_DAP_GEQ_BAND1            = 0x100;
+    public static final int SUBCMD_DAP_GEQ_BAND2            = 0x101;
+    public static final int SUBCMD_DAP_GEQ_BAND3            = 0x102;
+    public static final int SUBCMD_DAP_GEQ_BAND4            = 0x103;
+    public static final int SUBCMD_DAP_GEQ_BAND5            = 0x104;
+
+    public static final String PARAM_DAP_SAVED              = "dap_saved";
+    public static final String PARAM_DAP_MODE               = "dap_mode";
+    public static final String PARAM_DAP_GEQ_ENABLE         = "dap_geq";
+    public static final String PARAM_DAP_POST_GAIN          = "dap_post_gain";
+    public static final String PARAM_DAP_VL_ENABLE          = "dap_vl";
+    public static final String PARAM_DAP_VL_AMOUNT          = "dap_vl_amount";
+    public static final String PARAM_DAP_DE_ENABLE          = "dap_de";
+    public static final String PARAM_DAP_DE_AMOUNT          = "dap_de_amount";
+    public static final String PARAM_DAP_SURROUND_ENABLE    = "dap_surround";
+    public static final String PARAM_DAP_SURROUND_BOOST     = "dap_surround_boost";
+    public static final String PARAM_DAP_GEQ_BAND1          = "dap_geq_band1";
+    public static final String PARAM_DAP_GEQ_BAND2          = "dap_geq_band2";
+    public static final String PARAM_DAP_GEQ_BAND3          = "dap_geq_band3";
+    public static final String PARAM_DAP_GEQ_BAND4          = "dap_geq_band4";
+    public static final String PARAM_DAP_GEQ_BAND5          = "dap_geq_band5";
+
+    public static final int DAP_MODE_OFF                    = 0;
+    public static final int DAP_MODE_MOVIE                  = 1;
+    public static final int DAP_MODE_MUSIC                  = 2;
+    public static final int DAP_MODE_NIGHT                  = 3;
+    public static final int DAP_MODE_USER                   = 4;
+    public static final int DAP_MODE_DEFAULT                = DAP_MODE_MUSIC;
+    public static final int DAP_SURROUND_SPEAKER            = 0;
+    public static final int DAP_SURROUND_HEADPHONE          = 1;
+    public static final int DAP_GEQ_OFF                     = 0;
+    public static final int DAP_GEQ_INIT                    = 1;
+    public static final int DAP_GEQ_OPEN                    = 2;
+    public static final int DAP_GEQ_RICH                    = 3;
+    public static final int DAP_GEQ_FOCUSED                 = 4;
+    public static final int DAP_GEQ_USER                    = 5;
+    public static final int DAP_GEQ_DEFAULT                 = DAP_GEQ_INIT;
+    public static final int DAP_OFF                         = 0;
+    public static final int DAP_ON                          = 1;
+    public static final int DAP_VL_DEFAULT                  = DAP_ON;
+    public static final int DAP_VL_AMOUNT_DEFAULT           = 0;
+    public static final int DAP_DE_DEFAULT                  = DAP_OFF;
+    public static final int DAP_DE_AMOUNT_DEFAULT           = 0;
+    public static final int DAP_SURROUND_DEFAULT            = DAP_SURROUND_SPEAKER;
+    public static final int DAP_SURROUND_BOOST_DEFAULT      = 0;
+    public static final int DAP_POST_GAIN_DEFAULT           = 0;
+    public static final int DAP_GEQ_GAIN_DEFAULT            = 0;
+
+    public static final String DIGITAL_AUDIO_FORMAT         = "digital_audio_format";
+    public static final String DIGITAL_AUDIO_SUBFORMAT      = "digital_audio_subformat";
+    public static final String PARA_PCM                     = "hdmi_format=0";
+    public static final String PARA_SPDIF                   = "hdmi_format=4";
+    public static final String PARA_AUTO                    = "hdmi_format=5";
+    public static final int DIGITAL_PCM                     = 0;
+    public static final int DIGITAL_SPDIF                   = 1;
+    public static final int DIGITAL_AUTO                    = 2;
+    public static final int DIGITAL_MANUAL                  = 3;
     // DD/DD+/DTS
-    public static final String DIGITAL_AUDIO_SUBFORMAT_SPDIF  = "5,6,7";
+    public static final String DIGITAL_AUDIO_SUBFORMAT_SPDIF            = "5,6,7";
 
-    private static final String NRDP_EXTERNAL_SURROUND =
-                                       "nrdp_external_surround_sound_enabled";
-    private static final int NRDP_ENABLE            = 1;
-    private static final int NRDP_DISABLE           = 0;
+    private static final String NRDP_EXTERNAL_SURROUND                  = "nrdp_external_surround_sound_enabled";
+    private static final int NRDP_ENABLE                                = 1;
+    private static final int NRDP_DISABLE                               = 0;
 
-    public static final String BOX_LINE_OUT                          = "box_line_out";
-    public static final String PARA_BOX_LINE_OUT_OFF         = "enable_line_out=false";
-    public static final String PARA_BOX_LINE_OUT_ON           = "enable_line_out=true";
-    public static final int BOX_LINE_OUT_OFF                        = 0;
-    public static final int BOX_LINE_OUT_ON                         = 1;
+    public static final String BOX_LINE_OUT                             = "box_line_out";
+    public static final String PARA_BOX_LINE_OUT_OFF                    = "enable_line_out=false";
+    public static final String PARA_BOX_LINE_OUT_ON                     = "enable_line_out=true";
+    public static final int BOX_LINE_OUT_OFF                            = 0;
+    public static final int BOX_LINE_OUT_ON                             = 1;
 
-    public static final String BOX_HDMI                          = "box_hdmi";
-    public static final String PARA_BOX_HDMI_OFF         = "Audio hdmi-out mute=1";
-    public static final String PARA_BOX_HDMI_ON           = "Audio hdmi-out mute=0";
-    public static final int BOX_HDMI_OFF                               = 0;
+    public static final String BOX_HDMI                                 = "box_hdmi";
+    public static final String PARA_BOX_HDMI_OFF                        = "Audio hdmi-out mute=1";
+    public static final String PARA_BOX_HDMI_ON                         = "Audio hdmi-out mute=0";
+    public static final int BOX_HDMI_OFF                                = 0;
     public static final int BOX_HDMI_ON                                 = 1;
 
-    public static final String TV_SPEAKER                       = "tv_speaker";
-    public static final String PARA_TV_SPEAKER_OFF       = "speaker_mute=1";
-    public static final String PARA_TV_SPEAKER_ON         = "speaker_mute=0";
-    public static final int TV_SPEAKER_OFF                     = 0;
-    public static final int TV_SPEAKER_ON                       = 1;
+    public static final String TV_SPEAKER                               = "tv_speaker";
+    public static final String PARA_TV_SPEAKER_OFF                      = "speaker_mute=1";
+    public static final String PARA_TV_SPEAKER_ON                       = "speaker_mute=0";
+    public static final int TV_SPEAKER_OFF                              = 0;
+    public static final int TV_SPEAKER_ON                               = 1;
 
-    public static final String TV_ARC                      = "tv_arc";
-    public static final String PARA_TV_ARC_OFF       = "HDMI ARC Switch=0";
-    public static final String PARA_TV_ARC_ON         = "HDMI ARC Switch=1";
-    public static final int TV_ARC_OFF                     = 0;
-    public static final int TV_ARC_ON                       = 1;
+    public static final String TV_ARC                                   = "tv_arc";
+    public static final String PARA_TV_ARC_OFF                          = "HDMI ARC Switch=0";
+    public static final String PARA_TV_ARC_ON                           = "HDMI ARC Switch=1";
+    public static final int TV_ARC_OFF                                  = 0;
+    public static final int TV_ARC_ON                                   = 1;
+    public static final String TV_ARC_LATENCY                           = "tv_arc_latency";
+    public static final String PROPERTY_LOCAL_ARC_LATENCY               = "media.amnuplayer.audio.delayus";
+    public static final int TV_ARC_LATENCY_MIN                          = -200;
+    public static final int TV_ARC_LATENCY_MAX                          = 200;
+    public static final int TV_ARC_LATENCY_DEFAULT                      = -40;
 
-    public static final String VIRTUAL_SURROUND                      = "virtual_surround";
-    public static final String PARA_VIRTUAL_SURROUND_OFF       = "enable_virtual_surround=false";
-    public static final String PARA_VIRTUAL_SURROUND_ON       = "enable_virtual_surround=true";
-    public static final int VIRTUAL_SURROUND_OFF                     = 0;
-    public static final int VIRTUAL_SURROUND_ON                       = 1;
+    public static final String DB_FIELD_AUDIO_OUTPUT_LATENCY            = "audio_output_latency";
+    public static final String HAL_FIELD_AUDIO_OUTPUT_LATENCY           = "delay_time=";
+    public static final int AUDIO_OUTPUT_LATENCY_MIN                    = 0;
+    public static final int AUDIO_OUTPUT_LATENCY_MAX                    = 200;
+    public static final int AUDIO_OUTPUT_LATENCY_DEFAULT                = 0;
+
+    public static final String VIRTUAL_SURROUND                         = "virtual_surround";
+    public static final String PARA_VIRTUAL_SURROUND_OFF                = "enable_virtual_surround=false";
+    public static final String PARA_VIRTUAL_SURROUND_ON                 = "enable_virtual_surround=true";
+    public static final int VIRTUAL_SURROUND_OFF                        = 0;
+    public static final int VIRTUAL_SURROUND_ON                         = 1;
 
     //surround sound formats, must sync with Settings.Global
-    public static final String ENCODED_SURROUND_OUTPUT = "encoded_surround_output";
-    public static final String ENCODED_SURROUND_OUTPUT_ENABLED_FORMATS =
-                "encoded_surround_output_enabled_formats";
-    public static final int ENCODED_SURROUND_OUTPUT_AUTO = 0;
-    public static final int ENCODED_SURROUND_OUTPUT_NEVER = 1;
-    public static final int ENCODED_SURROUND_OUTPUT_ALWAYS = 2;
-    public static final int ENCODED_SURROUND_OUTPUT_MANUAL = 3;
+    public static final String ENCODED_SURROUND_OUTPUT                  = "encoded_surround_output";
+    public static final String ENCODED_SURROUND_OUTPUT_ENABLED_FORMATS  = "encoded_surround_output_enabled_formats";
+    public static final int ENCODED_SURROUND_OUTPUT_AUTO                = 0;
+    public static final int ENCODED_SURROUND_OUTPUT_NEVER               = 1;
+    public static final int ENCODED_SURROUND_OUTPUT_ALWAYS              = 2;
+    public static final int ENCODED_SURROUND_OUTPUT_MANUAL              = 3;
 
-    public static final String SOUND_OUTPUT_DEVICE                         = "sound_output_device";
-    public static final String PARA_SOUND_OUTPUT_DEVICE_SPEAKER  = "sound_output_device=speak";
-    public static final String PARA_SOUND_OUTPUT_DEVICE_ARC       = "sound_output_device=arc";
+    public static final String SOUND_OUTPUT_DEVICE                      = "sound_output_device";
+    public static final String PARA_SOUND_OUTPUT_DEVICE_SPEAKER         = "sound_output_device=speak";
+    public static final String PARA_SOUND_OUTPUT_DEVICE_ARC             = "sound_output_device=arc";
     public static final int SOUND_OUTPUT_DEVICE_SPEAKER                 = 0;
-    public static final int SOUND_OUTPUT_DEVICE_ARC                        = 1;
-
-    //sound effects save key in global settings
-    public static final String SOUND_EFFECT_BASS                         = "sound_effect_bass";
-    public static final String SOUND_EFFECT_TREBLE                      = "sound_effect_treble";
-    public static final String SOUND_EFFECT_BALANCE                   = "sound_effect_balance";
-    public static final String SOUND_EFFECT_DIALOG_CLARITY       = "sound_effect_dialog_clarity";
-    public static final String SOUND_EFFECT_SURROUND                 = "sound_effect_surround";
-    public static final String SOUND_EFFECT_BASS_BOOST             = "sound_effect_bass_boost";
-    public static final String SOUND_EFFECT_SOUND_MODE            = "sound_effect_sound_mode";
-    public static final String SOUND_EFFECT_BAND1       = "sound_effect_band1";
-    public static final String SOUND_EFFECT_BAND2       = "sound_effect_band2";
-    public static final String SOUND_EFFECT_BAND3       = "sound_effect_band3";
-    public static final String SOUND_EFFECT_BAND4       = "sound_effect_band4";
-    public static final String SOUND_EFFECT_BAND5       = "sound_effect_band5";
-    public static final String SOUND_EFFECT_AGC_ENABLE       = "sound_effect_agc_on";
-    public static final String SOUND_EFFECT_AGC_MAX_LEVEL       = "sound_effect_agc_level";
-    public static final String SOUND_EFFECT_AGC_ATTRACK_TIME       = "sound_effect_agc_attrack";
-    public static final String SOUND_EFFECT_AGC_RELEASE_TIME       = "sound_effect_agc_release";
+    public static final int SOUND_OUTPUT_DEVICE_ARC                     = 1;
 
     public static final String DIGITAL_SOUND                = "digital_sound";
     public static final String PCM                          = "PCM";
@@ -230,6 +303,9 @@ public class OutputModeManager {
     public static final String HDMI_4K2K                    = "2160p";
     public static final String HDMI_SMPTE                   = "smpte";
 
+    private static final String HDR_POLICY_SOURCE           = "1";
+    private static final String HDR_POLICY_SINK             = "0";
+
     private String DEFAULT_OUTPUT_MODE                      = "720p60hz";
     private String DEFAULT_COLOR_ATTRIBUTE                  = "444,8bit";
 
@@ -242,6 +318,7 @@ public class OutputModeManager {
 
     private SystemControlManager mSystenControl;
     private AudioManager mAudioManager;
+    private static AudioEffect mDapAudioEffect;
     /*only system/priv process can binder HDMI_CONTROL_SERVICE*/
    // private HdmiControlManager mHdmiControlManager;
 
@@ -285,6 +362,7 @@ public class OutputModeManager {
             }
         } else {
             mSystenControl.setBootenv(ENV_IS_BEST_MODE, "false");
+            mSystenControl.setBootenv(ENV_IS_BEST_DOLBYVISION, "false");
             setOutputModeNowLocked(mode);
         }
     }
@@ -318,10 +396,7 @@ public class OutputModeManager {
     }
 
     public boolean isModeSupportColor(final String curMode, final String curValue){
-         writeSysfs(DISPLAY_HDMI_VALID_MODE, curMode+curValue);
-         String isSupport = readSysfs(DISPLAY_HDMI_VALID_MODE).trim();
-         Log.d("SystemControl", "In OutputModeManager, " + curMode+curValue+" is "+ " supported or not:"+isSupport);
-         return isSupport.equals("1") ? true : false;
+         return mSystenControl.GetModeSupportDeepColorAttr(curMode,curValue);
     }
 
     private void setOutputModeNowLocked(final String newMode){
@@ -554,6 +629,15 @@ public class OutputModeManager {
         String isBestDolbyVsion = mSystenControl.getBootenv(ENV_IS_BEST_DOLBYVISION, "true");
         Log.e("TEST", "isBestDolbyVsion:" + isBestDolbyVsion);
         return Boolean.parseBoolean(isBestDolbyVsion.equals("") ? "true" : isBestDolbyVsion);
+    }
+    public void setHdrStrategy(final String HdrStrategy) {
+          mSystenControl.setBootenv(ENV_HDR_POLICY, HdrStrategy);
+          mSystenControl.setHdrStrategy(HdrStrategy);
+    }
+
+    public String getHdrStrategy(){
+        String dolbyvisionType = getBootenv(ENV_HDR_POLICY, HDR_POLICY_SOURCE);
+        return dolbyvisionType;
     }
     public boolean isDeepColor() {
         return getPropertyBoolean(PROP_DEEPCOLOR, false);
@@ -810,6 +894,7 @@ public class OutputModeManager {
 
     public void saveDigitalAudioFormatMode(int mode, String submode) {
         String tmp;
+        boolean isTv;
         // trigger AudioService retrieve support audio format value
         Settings.Global.putInt(mResolver,
                 ENCODED_SURROUND_OUTPUT/*Settings.Global.ENCODED_SURROUND_OUTPUT*/, -1);
@@ -836,7 +921,7 @@ public class OutputModeManager {
             case DIGITAL_MANUAL:
                 if (submode == null)
                     submode = "";
-                boolean isTv = mSystenControl.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
+                isTv = mSystenControl.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
                 Settings.Global.putInt(mResolver,
                         NRDP_EXTERNAL_SURROUND, NRDP_DISABLE);
                 if (isTv) {
@@ -859,7 +944,13 @@ public class OutputModeManager {
                             ENCODED_SURROUND_OUTPUT_ENABLED_FORMATS, submode);
                 break;
             case DIGITAL_AUTO:
-                Settings.Global.putInt(mResolver,
+                isTv = mSystenControl.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
+                boolean isDolbyMS12 = new File(AUDIO_MS12LIB_PATH).exists();
+                if (isTv && isDolbyMS12)
+                    Settings.Global.putInt(mResolver,
+                        NRDP_EXTERNAL_SURROUND, NRDP_ENABLE);
+                else
+                    Settings.Global.putInt(mResolver,
                         NRDP_EXTERNAL_SURROUND, NRDP_DISABLE);
                 Settings.Global.putInt(mResolver,
                         DIGITAL_AUDIO_FORMAT, DIGITAL_AUTO);
@@ -906,6 +997,316 @@ public class OutputModeManager {
         }
     }
 
+    public void setAudioMixingEnable(boolean value) {
+        if (value) {
+            mAudioManager.setParameters(PARA_AUDIO_MIXING_ON);
+        } else {
+            mAudioManager.setParameters(PARA_AUDIO_MIXING_OFF);
+        }
+    }
+
+    private boolean creatDapAudioEffect() {
+        try {
+            if (mDapAudioEffect == null) {
+                Class audioeffect = Class.forName("android.media.audiofx.AudioEffect");
+                Class[] param = new Class[]{ Class.forName("java.util.UUID"),
+                        Class.forName("java.util.UUID"), int.class, int.class };
+                Constructor ctor = audioeffect.getConstructor(param);
+                Object[] obj = new Object[] { EFFECT_TYPE_DAP, EFFECT_TYPE_NULL, 0, 0 };
+                mDapAudioEffect = (AudioEffect)ctor.newInstance(obj);
+                //mDapAudioEffect = new AudioEffect(EFFECT_TYPE_DAP, EFFECT_TYPE_NULL, 0, 0);
+                int result = mDapAudioEffect.setEnabled(true);
+                if (result == AudioEffect.SUCCESS) {
+                    Log.d(TAG, "creatDapAudioEffect enable dap");
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to create Dap audio effect", e);
+        }
+        return false;
+    }
+
+    public boolean isDapValid() {
+        File fl = new File("/vendor/lib/libms12dap.so");
+        return fl.exists();
+    }
+
+    public void initDapAudioEffect() {
+        Log.d(TAG, "initDapAudioEffect");
+        if (!creatDapAudioEffect()) {
+            Log.e(TAG, "initDapAudioEffect dap creat fail");
+            return;
+        }
+
+        int result = mDapAudioEffect.setEnabled(true);
+        if (result != AudioEffect.SUCCESS) {
+            Log.d(TAG, "initDapAudioEffect dap setEnabled error: "+result);
+            return;
+        }
+
+        int mode = getDapParam(CMD_DAP_EFFECT_MODE);
+        if (Settings.Global.getInt(mResolver, PARAM_DAP_SAVED, 0) == 0) {
+            int id = 0;
+            //the first time, use the param from so load from ini file
+            setDapParam(CMD_DAP_EFFECT_MODE, DAP_MODE_USER);
+            for (id = CMD_DAP_GEQ_ENABLE; id <= CMD_DAP_VIRTUALIZER_ENABLE; id++)
+                saveDapParam(id, getDapParamInternal(id));
+            for (id = SUBCMD_DAP_GEQ_BAND1; id <= SUBCMD_DAP_GEQ_BAND5; id++)
+                saveDapParam(id, getDapParamInternal(id));
+            Settings.Global.putInt(mResolver, PARAM_DAP_SAVED, 1);
+        } else {
+            saveDapParam(CMD_DAP_EFFECT_MODE, DAP_MODE_USER);
+            setDapParam(CMD_DAP_VL_ENABLE, getDapParam(CMD_DAP_VL_ENABLE));
+            setDapParam(CMD_DAP_VL_AMOUNT, getDapParam(CMD_DAP_VL_AMOUNT));
+            setDapParam(CMD_DAP_DE_ENABLE, getDapParam(CMD_DAP_DE_ENABLE));
+            setDapParam(CMD_DAP_DE_AMOUNT, getDapParam(CMD_DAP_DE_AMOUNT));
+            setDapParam(CMD_DAP_SURROUND_BOOST, getDapParam(CMD_DAP_SURROUND_BOOST));
+            setDapParam(CMD_DAP_GEQ_ENABLE, getDapParam(CMD_DAP_GEQ_ENABLE));
+            setDapParam(SUBCMD_DAP_GEQ_BAND1, getDapParam(SUBCMD_DAP_GEQ_BAND1));
+            saveDapParam(CMD_DAP_EFFECT_MODE, mode);
+        }
+        setDapParam(CMD_DAP_EFFECT_MODE, mode);
+        applyDapAudioEffectByPlayEmptyTrack();
+    }
+
+    private void setDapParamInternal(int id, int value) {
+        try {
+            Class audioEffect = Class.forName("android.media.audiofx.AudioEffect");
+            Method setParameter = audioEffect.getMethod("setParameter", int.class, int.class);
+            setParameter.invoke(mDapAudioEffect, id, value);
+        } catch(Exception e) {
+            Log.d(TAG, "setDapParamInternal: "+e);
+        }
+    }
+
+    private void setDapParamInternal(int id, byte[] value) {
+        try {
+            Class audioEffect = Class.forName("android.media.audiofx.AudioEffect");
+            Method setParameter = audioEffect.getMethod("setParameter", int.class, byte[].class);
+            Object[] param = new Object[2];
+            param[0] = id;
+            param[1] = value;
+            setParameter.invoke(mDapAudioEffect, param);
+        } catch(Exception e) {
+            Log.d(TAG, "setDapParamInternal: "+e);
+        }
+    }
+
+    private int getDapParamInternal (int id) {
+        try {
+            Class audioEffect = Class.forName("android.media.audiofx.AudioEffect");
+            switch (id) {
+                case SUBCMD_DAP_GEQ_BAND1:
+                case SUBCMD_DAP_GEQ_BAND2:
+                case SUBCMD_DAP_GEQ_BAND3:
+                case SUBCMD_DAP_GEQ_BAND4:
+                case SUBCMD_DAP_GEQ_BAND5:
+                {
+                    Method getParameter = audioEffect.getMethod("getParameter", int.class, byte[].class);
+                    byte[] value = new byte[5];
+                    Object[] param = new Object[2];
+                    param[0] = CMD_DAP_GEQ_GAINS;
+                    param[1] = value;
+                    getParameter.invoke(mDapAudioEffect, param);
+                    return value[id-SUBCMD_DAP_GEQ_BAND1];
+                }
+                default:
+                {
+                    Method getParameter = audioEffect.getMethod("getParameter", int.class, int[].class);
+                    int[] value = new int[1];
+                    Object[] param = new Object[2];
+                    param[0] = id;
+                    param[1] = value;
+                    getParameter.invoke(mDapAudioEffect, param);
+                    return value[0];
+                }
+            }
+        } catch(Exception e) {
+            Log.d(TAG, "getDapParamInternal: "+e);
+        }
+        return 0;
+    }
+
+    public void setDapParam (int id, int value) {
+        byte[] fiveband = new byte[5];
+        switch (id) {
+            case CMD_DAP_ENABLE:
+            case CMD_DAP_EFFECT_MODE:
+            case CMD_DAP_VL_ENABLE:
+            case CMD_DAP_VL_AMOUNT:
+            case CMD_DAP_DE_ENABLE:
+            case CMD_DAP_DE_AMOUNT:
+            case CMD_DAP_POST_GAIN:
+            case CMD_DAP_GEQ_ENABLE:
+            case CMD_DAP_SURROUND_ENABLE:
+            case CMD_DAP_SURROUND_BOOST:
+                setDapParamInternal(id, value);
+                break;
+            case CMD_DAP_VIRTUALIZER_ENABLE:
+                if (value == DAP_SURROUND_SPEAKER)
+                    setDapParamInternal(id, DAP_CPDP_OUTPUT_2_SPEAKER);
+                else if (value == DAP_SURROUND_HEADPHONE)
+                    setDapParamInternal(id, DAP_CPDP_OUTPUT_2_HEADPHONE);
+                break;
+            case SUBCMD_DAP_GEQ_BAND1:
+            case SUBCMD_DAP_GEQ_BAND2:
+            case SUBCMD_DAP_GEQ_BAND3:
+            case SUBCMD_DAP_GEQ_BAND4:
+            case SUBCMD_DAP_GEQ_BAND5:
+                fiveband[0] = (byte)getDapParam(SUBCMD_DAP_GEQ_BAND1);
+                fiveband[1] = (byte)getDapParam(SUBCMD_DAP_GEQ_BAND2);
+                fiveband[2] = (byte)getDapParam(SUBCMD_DAP_GEQ_BAND3);
+                fiveband[3] = (byte)getDapParam(SUBCMD_DAP_GEQ_BAND4);
+                fiveband[4] = (byte)getDapParam(SUBCMD_DAP_GEQ_BAND5);
+                fiveband[id-SUBCMD_DAP_GEQ_BAND1] = (byte)value;
+                setDapParamInternal(CMD_DAP_GEQ_GAINS, fiveband);
+                break;
+        }
+    }
+
+    public void saveDapParam (int id, int value) {
+        int param = 0;
+        if ((id != CMD_DAP_EFFECT_MODE) && (getDapParam(CMD_DAP_EFFECT_MODE) != DAP_MODE_USER))
+            return;
+
+        switch (id) {
+            case CMD_DAP_EFFECT_MODE:
+                Settings.Global.putInt(mResolver, PARAM_DAP_MODE, value);
+                break;
+            case CMD_DAP_VL_ENABLE:
+                Settings.Global.putInt(mResolver, PARAM_DAP_VL_ENABLE, value);
+                break;
+            case CMD_DAP_VL_AMOUNT:
+                Settings.Global.putInt(mResolver, PARAM_DAP_VL_AMOUNT, value);
+                break;
+            case CMD_DAP_DE_ENABLE:
+                Settings.Global.putInt(mResolver, PARAM_DAP_DE_ENABLE, value);
+                break;
+            case CMD_DAP_DE_AMOUNT:
+                Settings.Global.putInt(mResolver, PARAM_DAP_DE_AMOUNT, value);
+                break;
+            case CMD_DAP_SURROUND_ENABLE:
+                Settings.Global.putInt(mResolver, PARAM_DAP_SURROUND_ENABLE, value);
+                break;
+            case CMD_DAP_SURROUND_BOOST:
+                Settings.Global.putInt(mResolver, PARAM_DAP_SURROUND_BOOST, value);
+                break;
+            case CMD_DAP_POST_GAIN:
+                Settings.Global.putInt(mResolver, PARAM_DAP_POST_GAIN, value);
+                break;
+            case CMD_DAP_GEQ_ENABLE:
+                Settings.Global.putInt(mResolver, PARAM_DAP_GEQ_ENABLE, value);
+                break;
+            case SUBCMD_DAP_GEQ_BAND1:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    Settings.Global.putInt(mResolver, PARAM_DAP_GEQ_BAND1, value);
+                break;
+            case SUBCMD_DAP_GEQ_BAND2:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    Settings.Global.putInt(mResolver, PARAM_DAP_GEQ_BAND2, value);
+                break;
+            case SUBCMD_DAP_GEQ_BAND3:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    Settings.Global.putInt(mResolver, PARAM_DAP_GEQ_BAND3, value);
+                break;
+            case SUBCMD_DAP_GEQ_BAND4:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    Settings.Global.putInt(mResolver, PARAM_DAP_GEQ_BAND4, value);
+                break;
+            case SUBCMD_DAP_GEQ_BAND5:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    Settings.Global.putInt(mResolver, PARAM_DAP_GEQ_BAND5, value);
+                break;
+        }
+    }
+
+    public int getDapParam (int id) {
+        int value = -1, param = 0;
+
+        if (id == CMD_DAP_EFFECT_MODE) {
+            value = Settings.Global.getInt(mResolver, PARAM_DAP_MODE, -1);
+            if (value < 0) {
+                value = getDapParamInternal(id);
+                saveDapParam(id, value);
+            }
+            return value;
+        }
+        if (getDapParam(CMD_DAP_EFFECT_MODE) != DAP_MODE_USER)
+            return getDapParamInternal(id);
+
+        switch (id) {
+            case CMD_DAP_EFFECT_MODE:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_MODE, DAP_MODE_DEFAULT);
+                break;
+            case CMD_DAP_VL_ENABLE:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_VL_ENABLE, DAP_VL_DEFAULT);
+                break;
+            case CMD_DAP_VL_AMOUNT:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_VL_AMOUNT, DAP_VL_AMOUNT_DEFAULT);
+                break;
+            case CMD_DAP_DE_ENABLE:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_DE_ENABLE, DAP_DE_DEFAULT);
+                break;
+            case CMD_DAP_SURROUND_ENABLE:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_SURROUND_ENABLE, DAP_SURROUND_DEFAULT);
+                break;
+            case CMD_DAP_SURROUND_BOOST:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_SURROUND_BOOST, DAP_SURROUND_BOOST_DEFAULT);
+                break;
+            case CMD_DAP_DE_AMOUNT:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_DE_AMOUNT, DAP_DE_AMOUNT_DEFAULT);
+                break;
+            case CMD_DAP_POST_GAIN:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_POST_GAIN, DAP_POST_GAIN_DEFAULT);
+                break;
+            case CMD_DAP_GEQ_ENABLE:
+                value = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                break;
+            case SUBCMD_DAP_GEQ_BAND1:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    value = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_BAND1, DAP_GEQ_GAIN_DEFAULT);
+                else
+                    value = getDapParamInternal(id);
+                break;
+            case SUBCMD_DAP_GEQ_BAND2:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    value = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_BAND2, DAP_GEQ_GAIN_DEFAULT);
+                else
+                    value = getDapParamInternal(id);
+                break;
+            case SUBCMD_DAP_GEQ_BAND3:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    value = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_BAND3, DAP_GEQ_GAIN_DEFAULT);
+                else
+                    value = getDapParamInternal(id);
+                break;
+            case SUBCMD_DAP_GEQ_BAND4:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    value = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_BAND4, DAP_GEQ_GAIN_DEFAULT);
+                else
+                    value = getDapParamInternal(id);
+                break;
+            case SUBCMD_DAP_GEQ_BAND5:
+                param = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_ENABLE, DAP_GEQ_DEFAULT);
+                if (param == DAP_GEQ_USER)
+                    value = Settings.Global.getInt(mResolver, PARAM_DAP_GEQ_BAND5, DAP_GEQ_GAIN_DEFAULT);
+                else
+                    value = getDapParamInternal(id);
+                break;
+        }
+        return value;
+    }
+
     public void enableBoxLineOutAudio(boolean value) {
         if (value) {
             mAudioManager.setParameters(PARA_BOX_LINE_OUT_ON);
@@ -936,6 +1337,22 @@ public class OutputModeManager {
         } else {
             mAudioManager.setParameters(PARA_TV_ARC_OFF);
         }
+    }
+
+    public void setARCLatency(int value) {
+        if (value > TV_ARC_LATENCY_MAX)
+            value = TV_ARC_LATENCY_MAX;
+        else if (value < TV_ARC_LATENCY_MIN)
+            value = TV_ARC_LATENCY_MIN;
+        mSystenControl.setProperty(PROPERTY_LOCAL_ARC_LATENCY, ""+(value*1000));
+    }
+
+    public void setAudioOutputLatency(int value) {
+        if (value > AUDIO_OUTPUT_LATENCY_MAX)
+            value = AUDIO_OUTPUT_LATENCY_MAX;
+        else if (value < AUDIO_OUTPUT_LATENCY_MIN)
+            value = AUDIO_OUTPUT_LATENCY_MIN;
+        mAudioManager.setParameters(HAL_FIELD_AUDIO_OUTPUT_LATENCY + value);
     }
 
     public void setVirtualSurround (int value) {
@@ -989,5 +1406,17 @@ public class OutputModeManager {
             setSoundOutputStatus(SOUND_OUTPUT_DEVICE_SPEAKER);
         }
     }
+
+    private void applyDapAudioEffectByPlayEmptyTrack() {
+        int bufsize = AudioTrack.getMinBufferSize(8000, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+        byte data[] = new byte[bufsize];
+        AudioTrack trackplayer = new AudioTrack(AudioManager.STREAM_MUSIC, 8000, AudioFormat.CHANNEL_OUT_STEREO,
+                AudioFormat.ENCODING_PCM_16BIT, bufsize, AudioTrack.MODE_STREAM);
+        trackplayer.play();
+        trackplayer.write(data, 0, data.length);
+        trackplayer.stop();
+        trackplayer.release();
+    }
+
 }
 

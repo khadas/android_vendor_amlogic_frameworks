@@ -152,6 +152,7 @@ using namespace android;
 #define DOLBY_VISION_GRAPHICS_PRIORITY  "/sys/module/amdolby_vision/parameters/dolby_vision_graphics_priority"
 #define DOLBY_VISION_LL_POLICY          "/sys/module/amdolby_vision/parameters/dolby_vision_ll_policy"
 #define DOLBY_VISION_STATUS          "/sys/module/amdolby_vision/parameters/dolby_vision_status"
+#define HDR_POLICY                   "/sys/module/am_vecm/parameters/hdr_policy"
 
 #define DOLBY_VISION_KO_DIR          "/vendor/lib/modules/dovi.ko"
 
@@ -170,6 +171,9 @@ using namespace android;
 
 #define DV_MODE_BYPASS                  "0x0"
 #define DV_MODE_IPT_TUNNEL              "0x2"
+#define DV_MODE_FORCE_HDR10             "0x3"
+#define DV_MODE_FORCE_SDR10             "0x4"
+#define DV_MODE_FORCE_SDR8              "0x5"
 
 #define BYPASS_PROCESS                  "0"
 #define SDR_PROCESS                     "1"
@@ -225,6 +229,7 @@ using namespace android;
 #define PROP_DEEPCOLOR                  "vendor.sys.open.deepcolor" //default close this function, when reboot
 #define PROP_BOOTCOMPLETE               "service.bootanim.exit"
 #define PROP_DOLBY_VISION_FEATURE       "ro.vendor.platform.support.dolbyvision"
+#define PROP_SUPPORT_DOLBY_VISION       "vendor.system.support.dolbyvision"
 #define PROP_DOLBY_VISION_ENABLE        "persist.vendor.sys.dolbyvision.enable"
 #define PROP_DOLBY_VISION_TYPE          "persist.vendor.sys.dolbyvision.type"
 #define PROP_DOLBY_VISION_TV_ENABLE     "persist.vendor.sys.tv.dolbyvision.enable"
@@ -265,6 +270,7 @@ using namespace android;
 #define UBOOTENV_HDMICOLORSPACE         "ubootenv.var.hdmi_colorspace"
 #define UBOOTENV_HDMICOLORDEPTH         "ubootenv.var.hdmi_colordepth"
 #define UBOOTENV_DOLBYSTATUS            "ubootenv.var.dolby_status"
+#define UBOOTENV_HDR_POLICY             "ubootenv.var.hdr_policy"
 
 #define UBOOTENV_REBOOT_MODE           "ubootenv.var.reboot_mode_android"
 
@@ -344,6 +350,17 @@ enum {
 #define MODE_1080P_PREFIX               "1080p"
 #define MODE_4K2K_PREFIX                "2160p"
 #define MODE_4K2KSMPTE_PREFIX           "smpte"
+
+//DOLBY_VISION_HDR10_POLICY : /sys/module/amdolby_vision/parameters/dolby_vision_hdr10_policy
+#define DV_HDR_SINK_SOURCE_BYPASS       "0"
+#define DV_HDR_SINK_PROCESS             "1"
+#define DV_HDR_SOURCE_PROCESS           "2"
+#define DV_HDR_SINK_SOURCE_PROCESS      "3"
+
+//HDR_POLICY         : /sys/module/am_vecm/parameters/hdr_policy
+//DOLBY_VISION_POLICY: /sys/module/amdolby_vision/parameters/dolby_vision_policy
+#define HDR_POLICY_SINK                 "0"
+#define HDR_POLICY_SOURCE               "1"
 
 enum {
     DISPLAY_MODE_480I                   = 0,
@@ -482,6 +499,8 @@ public:
     void getBootanimStatus(int *status);
     bool getModeSupportDeepColorAttr(const char* outputmode,const char * color);
     bool getPrefHdmiDispMode(char* mode);
+    void getHdrStrategy(char* value);
+    void setHdrStrategy(const char* type);
 
 private:
 
@@ -554,6 +573,7 @@ private:
     sp<SystemControlNotify> mNotifyListener;
 #endif
     int mDvStatus;
+
 };
 
 #endif // ANDROID_DISPLAY_MODE_H

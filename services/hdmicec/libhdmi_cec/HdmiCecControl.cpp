@@ -415,6 +415,7 @@ bool HdmiCecControl::isWakeUpMsg(char *msgBuf, int len)
             switch (msgBuf[1]) {
                 case CEC_MESSAGE_IMAGE_VIEW_ON:
                 case CEC_MESSAGE_TEXT_VIEW_ON:
+                case CEC_MESSAGE_ACTIVE_SOURCE:
                     ret = true;
                     break;
                 default:

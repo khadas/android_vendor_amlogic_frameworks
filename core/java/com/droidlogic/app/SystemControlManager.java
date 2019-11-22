@@ -99,6 +99,8 @@ public class SystemControlManager {
     private native int native_SetColorTemperature(int mode, int is_save);
     private native int native_GetColorTemperature();
     private native int native_SaveColorTemperature(int value);
+    private native int native_SetColorTemperatureUserParam(int mode, int is_save, int type, int value);
+    private native WhiteBalanceParams native_GetColorTemperatureUserParam();
     private native int native_SetBrightness(int mode, int is_save);
     private native int native_GetBrightness();
     private native int native_SaveBrightness(int value);
@@ -142,10 +144,75 @@ public class SystemControlManager {
     private native int native_SetCVD2Values();
     private native int native_GetSSMStatus();
     private native int native_SetCurrentSourceInfo(int source, int sig_fmt, int trans_fmt);
-    private native void native_GetCurrentSourceInfo(int source, int sig_fmt, int trans_fmt);
-    private native void native_GetPQDatabaseInfo(int databasename, String ToolVersion, String ProjectVersion, String GenerateTime);
+    private native int[] native_GetCurrentSourceInfo();
+    private native PQDatabaseInfo native_GetPQDatabaseInfo(int databasename);
     private native int native_StartUpgradeFBC(String filename, int mode, int upgrade_blk_size);
+    private native int native_FactorySetPQMode_Brightness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value);
+    private native int native_FactoryGetPQMode_Brightness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode);
+    private native int native_FactorySetPQMode_Contrast(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value);
+    private native int native_FactoryGetPQMode_Contrast(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode);
+    private native int native_FactorySetPQMode_Saturation(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value);
+    private native int native_FactoryGetPQMode_Saturation(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode);
+    private native int native_FactorySetPQMode_Hue(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value);
+    private native int native_FactoryGetPQMode_Hue(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode);
+    private native int native_FactorySetPQMode_Sharpness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode, int value);
+    private native int native_FactoryGetPQMode_Sharpness(int inputSrc, int sig_fmt, int trans_fmt, int pq_mode);
+    private native int native_FactoryResetPQMode();
+    private native int native_FactoryResetColorTemp();
+    private native int native_FactorySetParamsDefault();
+    private native int native_FactorySetNolineParams(int inputSrc, int sigFmt, int transFmt, int type, int osd0_value, int osd25_value, int osd50_value, int osd75_value, int osd100_value);
+    private native noline_params_t native_FactoryGetNolineParams(int inputSrc, int sigFmt, int transFmt, int type);
+    private native int native_FactorySetOverscan(int inputSrc, int sigFmt, int transFmt, int he_value, int hs_value, int ve_value, int vs_value);
+    private native tvin_cutwin_t native_FactoryGetOverscan(int inputSrc, int sigFmt, int transFmt);
+    private native int native_SetwhiteBalanceGainRed(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode, int value);
+    private native int native_SetwhiteBalanceGainGreen(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode, int value);
+    private native int native_SetwhiteBalanceGainBlue(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode, int value);
+    private native int native_GetwhiteBalanceGainRed(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode);
+    private native int native_GetwhiteBalanceGainGreen(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode);
+    private native int native_GetwhiteBalanceGainBlue(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode);
+    private native int native_SetwhiteBalanceOffsetRed(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode, int value);
+    private native int native_SetwhiteBalanceOffsetGreen(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode, int value);
+    private native int native_SetwhiteBalanceOffsetBlue(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode, int value);
+    private native int native_GetwhiteBalanceOffsetRed(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode);
+    private native int native_GetwhiteBalanceOffsetGreen(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode);
+    private native int native_GetwhiteBalanceOffsetBlue(int inputSrc, int sig_fmt, int trans_fmt, int colortemp_mode);
+    private native int native_SaveWhiteBalancePara(int inputSrc, int sig_fmt, int trans_fmt, int colorTemp_mode,
+                                                       int r_gain, int g_gain, int b_gain, int r_offset, int g_offset, int b_offset);
+    private native int native_FactoryfactoryGetColorTemperatureParams(int colorTemp_mode);
+    private native int native_FactorySSMRestore();
+    private native int native_FactoryResetNonlinear();
+    private native int native_FactorySetGamma(int gamma_r, int gamma_g, int gamma_b);
+    private native int native_GetRGBPattern();
+    private native int native_SetRGBPattern(int r, int g, int b);
+    private native int native_FactorySetDDRSSC(int step);
+    private native int native_FactoryGetDDRSSC();
+    private native int native_FactorySetLVDSSSC(int step);
+    private native int native_FactoryGetLVDSSSC();
+    private native int native_WhiteBalanceGrayPatternClose();
+    private native int native_whiteBalanceGrayPatternOpen();
+    private native int native_WhiteBalanceGrayPatternSet(int value);
+    private native int native_WhiteBalanceGrayPatternGet();
+    private native int native_FactorySetHdrMode(int mode);
+    private native int native_FactoryGetHdrMode();
+    private native int native_SetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level);
+    private native int native_GetDnlpParams(int inputSrc, int sigFmt, int transFmt);
+    private native int native_FactorySetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level, int final_gain);
+    private native int native_FactoryGetDnlpParams(int inputSrc, int sigFmt, int transFmt, int level);
+    private native int native_FactorySetBlackExtRegParams(int inputSrc, int sigFmt, int transFmt, int val);
+    private native int native_FactoryGetBlackExtRegParams(int inputSrc, int sigFmt, int transFmt);
+    private native int native_FactorySetColorParams(int inputSrc, int sigFmt, int transFmt, int color_type, int color_param, int val);
+    private native int native_FactoryGetColorParams(int inputSrc, int sigFmt, int transFmt, int color_type, int color_param);
+    private native int native_FactorySetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type, int val);
+    private native int native_FactoryGetNoiseReductionParams(int inputSrc, int sig_fmt, int trans_fmt, int nr_mode, int param_type);
+    private native int native_FactorySetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val);
+    private native int native_FactoryGetCTIParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type);
+    private native int native_FactorySetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type, int val);
+    private native int native_FactoryGetDecodeLumaParams(int inputSrc, int sig_fmt, int trans_fmt, int param_type);
+    private native int native_FactorySetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type, int val);
+    private native int native_FactoryGetSharpnessParams(int inputSrc, int sig_fmt, int trans_fmt, int isHD, int param_type);
     private native int native_SetDtvKitSourceEnable(int isEnable);
+    private native boolean native_GetModeSupportDeepColorAttr(String mode, String color);
+    private native void native_setHdrStrategy(String value);
 
     private SystemControlManager() {
         native_ConnectSystemControl(this);
@@ -485,6 +552,26 @@ public class SystemControlManager {
                 Log.e(TAG, "setBootenv:" + e);
             }
         }
+    }
+    public boolean setHdrStrategy(String type) {
+        synchronized (mLock) {
+           try {
+               native_setHdrStrategy(type);
+           } catch (Exception e) {
+               Log.e(TAG, "native_setHdrStrategy:" + e);
+           }
+        }
+            return false;
+    }
+    public boolean GetModeSupportDeepColorAttr(String mode, String value) {
+        synchronized (mLock) {
+            try {
+                return native_GetModeSupportDeepColorAttr(mode, value);
+            } catch (Exception e) {
+                Log.e(TAG, "native_GetModeSupportDeepColorAttr:" + e);
+            }
+        }
+        return false;
     }
 
     public DisplayInfo getDisplayInfo() {
@@ -1021,7 +1108,8 @@ public class SystemControlManager {
         COLOR_TEMP_STANDARD(0),
         COLOR_TEMP_WARM(1),
         COLOR_TEMP_COLD(2),
-        COLOR_TEMP_MAX(3);
+        COLOR_TEMP_USER(3),
+        COLOR_TEMP_MAX(4);
         private int val;
         color_temperature(int val) {
             this.val = val;
@@ -1031,7 +1119,27 @@ public class SystemControlManager {
         }
     }
 
-        /**
+    public enum rgb_type{
+        TYPE_INVALID(-1),
+        R_GAIN(0),
+        G_GAIN(1),
+        B_GAIN(2),
+        R_POST_OFFSET(3),
+        G_POST_OFFSET(4),
+        B_POST_OFFSET(5),
+        RGB_TYPE_MAX(6);
+        private int val;
+
+        rgb_type(int val) {
+            this.val = val;
+        }
+
+        public int toInt() {
+            return this.val;
+        }
+    }
+
+    /**
      * @Function: SetColorTemperature
      * @Description: Set current source color temperature mode
      * @Param: value mode refer to enum color_temperature, source refer to enum SourceInput, is_save 1 to save
@@ -1081,6 +1189,43 @@ public class SystemControlManager {
             }
         }
         return -1;
+    }
+
+    /**
+     * @Function: SetColorTemperatureUserParam
+     * @Description: Set current source color temperature mode for user mode
+     * @Param: value mode refer to enum color_temperature, is_save 1 to save
+     * @param: type refer to enum rgb_type, value between -1024 to 2047
+     * @Return: 0 success, -1 fail
+     */
+    public int SetColorTemperatureUserParam(color_temperature mode, int is_save, rgb_type type, int value) {
+        synchronized (mLock) {
+            try {
+                return native_SetColorTemperatureUserParam(mode.toInt(), is_save, type.toInt(), value);
+            } catch (Exception e) {
+                 Log.e(TAG, "SetColorTemperatureUserParam:" + e);
+            }
+        }
+        return -1;
+
+    }
+
+    /**
+     * @Function: SetColorTemperatureUserParam
+     * @Description: Get the params of user color temperature mode
+     * @Return: color temperature params refer to class WhiteBalanceParams
+     */
+    public WhiteBalanceParams GetColorTemperatureUserParam() {
+        WhiteBalanceParams params = new WhiteBalanceParams();
+        synchronized (mLock) {
+            try {
+                params = native_GetColorTemperatureUserParam();
+             } catch (Exception e) {
+                  Log.e(TAG, "GetColorTemperatureUserParam:" + e);
+             }
+         }
+
+         return params;
     }
 
     /**
@@ -1741,7 +1886,13 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactorySetPQMode_Brightness(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int brightness) {
-         Log.d(TAG, "FactorySetPQMode_Brightness isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetPQMode_Brightness(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), brightness);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetPQMode_Brightness:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1752,7 +1903,13 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactoryGetPQMode_Brightness(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
-         Log.d(TAG, "FactoryGetPQMode_Brightness isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetPQMode_Brightness(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetPQMode_Brightness:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1763,7 +1920,13 @@ public class SystemControlManager {
       * @Return: contrast value
       */
      public int FactorySetPQMode_Contrast(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int contrast) {
-         Log.d(TAG, "FactorySetPQMode_Contrast isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetPQMode_Contrast(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), contrast);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetPQMode_Contrast:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1774,7 +1937,13 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactoryGetPQMode_Contrast(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
-         Log.d(TAG, "FactoryGetPQMode_Contrast isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetPQMode_Contrast(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetPQMode_Contrast:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1785,7 +1954,13 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactorySetPQMode_Saturation(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int saturation) {
-         Log.d(TAG, "FactorySetPQMode_Saturation isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetPQMode_Saturation(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), saturation);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetPQMode_Saturation:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1796,7 +1971,13 @@ public class SystemControlManager {
       * @Return: saturation value
       */
      public int FactoryGetPQMode_Saturation(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
-         Log.d(TAG, "FactoryGetPQMode_Saturation isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetPQMode_Saturation(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetPQMode_Saturation:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1807,7 +1988,13 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactorySetPQMode_Hue(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int hue) {
-         Log.d(TAG, "FactorySetPQMode_Hue isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetPQMode_Hue(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), hue);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetPQMode_Hue:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1818,7 +2005,13 @@ public class SystemControlManager {
       * @Return: hue value
       */
      public int FactoryGetPQMode_Hue(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
-         Log.d(TAG, "FactoryGetPQMode_Hue isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetPQMode_Hue(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetPQMode_Hue:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1829,7 +2022,13 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactorySetPQMode_Sharpness(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode, int sharpness) {
-         Log.d(TAG, "FactorySetPQMode_Sharpness isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetPQMode_Sharpness(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt(), sharpness);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetPQMode_Sharpness:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1840,7 +2039,13 @@ public class SystemControlManager {
       * @Return: sharpness value
       */
      public int FactoryGetPQMode_Sharpness(SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, PQMode pq_mode) {
-         Log.d(TAG, "FactoryGetPQMode_Sharpness isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetPQMode_Sharpness(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), pq_mode.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetPQMode_Sharpness:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1851,7 +2056,13 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactoryResetPQMode() {
-         Log.d(TAG, "FactoryResetPQMode isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryResetPQMode();
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryResetPQMode:" + e);
+             }
+         }
          return -1;
      }
 
@@ -1862,7 +2073,13 @@ public class SystemControlManager {
      * @Return: 0 success, -1 fail
      */
     public int FactoryResetColorTemp() {
-         Log.d(TAG, "FactoryResetColorTemp isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryResetColorTemp();
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryResetPQMode:" + e);
+             }
+         }
          return -1;
     }
 
@@ -1873,7 +2090,13 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactorySetParamsDefault() {
-        Log.d(TAG, "FactorySetParamsDefault isn't ready for jni");
+        synchronized (mLock) {
+            try {
+                return native_FactorySetParamsDefault();
+            } catch (Exception e) {
+                Log.e(TAG, "FactoryResetPQMode:" + e);
+            }
+        }
         return -1;
      }
 
@@ -1912,8 +2135,15 @@ public class SystemControlManager {
       * @Return: 0 success, -1 fail
       */
      public int FactorySetNolineParams(NOLINE_PARAMS_TYPE noline_params_type, SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt, noline_params_t params) {
-        Log.d(TAG, "FactorySetNolineParams isn't ready for jni");
-        return -1;
+          synchronized (mLock) {
+              try {
+                  return native_FactorySetNolineParams(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), noline_params_type.toInt(), params.osd0,
+                                                        params.osd25, params.osd50, params.osd75, params.osd100);
+              } catch (Exception e) {
+                  Log.e(TAG, "FactorySetNolineParams:" + e);
+              }
+          }
+          return -1;
      }
 
      /**
@@ -1924,7 +2154,13 @@ public class SystemControlManager {
       */
      public noline_params_t FactoryGetNolineParams(NOLINE_PARAMS_TYPE noline_params_type, SourceInput source_input, SignalFmt sig_fmt, TransFmt trans_fmt) {
          noline_params_t noline_params = new noline_params_t();
-         Log.d(TAG, "FactoryGetNolineParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 noline_params = native_FactoryGetNolineParams(source_input.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), noline_params_type.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetNolineParams:" + e);
+             }
+         }
          return noline_params;
      }
 
@@ -2256,7 +2492,14 @@ public class SystemControlManager {
       */
      public int FactorySetOverscanParams(SourceInput source_input, SignalFmt fmt,
                                                   TransFmt trans_fmt, tvin_cutwin_t cutwin_t) {
-         Log.d(TAG, "FactorySetOverscanParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetOverscan(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(),
+                                                  cutwin_t.he, cutwin_t.hs, cutwin_t.ve, cutwin_t.vs);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetOverscanParams:" + e);
+             }
+         }
          return -1;
      }
 
@@ -2269,7 +2512,13 @@ public class SystemControlManager {
       */
      public tvin_cutwin_t FactoryGetOverscanParams(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt) {
          tvin_cutwin_t cutwin_t = new tvin_cutwin_t();
-         Log.d(TAG, "FactoryGetOverscanParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 cutwin_t = native_FactoryGetOverscan(source_input.toInt(), fmt.toInt(), trans_fmt.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetOverscanParams:" + e);
+             }
+         }
          return cutwin_t;
      }
 
@@ -2279,72 +2528,156 @@ public class SystemControlManager {
       * @ Return value: the red gain value
       * */
      public int FactoryWhiteBalanceSetRedGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
-         Log.d(TAG, "FactoryWhiteBalanceSetRedGain isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SetwhiteBalanceGainRed(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceSetRedGain:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceSetGreenGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
-         Log.d(TAG, "FactoryWhiteBalanceSetRedGain isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SetwhiteBalanceGainGreen(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceSetGreenGain:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceSetBlueGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
-         Log.d(TAG, "FactoryWhiteBalanceSetBlueGain isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SetwhiteBalanceGainBlue(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceSetGreenGain:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceGetRedGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
-         Log.d(TAG, "FactoryWhiteBalanceGetRedGain isn't ready for jni");
+           synchronized (mLock) {
+             try {
+                 return native_GetwhiteBalanceGainRed(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetRedGain:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceGetGreenGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
-         Log.d(TAG, "FactoryWhiteBalanceGetGreenGain isn't ready for jni");
+           synchronized (mLock) {
+             try {
+                 return native_GetwhiteBalanceGainGreen(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetGreenGain:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceGetBlueGain(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
-         Log.d(TAG, "FactoryWhiteBalanceGetBlueGain isn't ready for jni");
+           synchronized (mLock) {
+             try {
+                 return native_GetwhiteBalanceGainBlue(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetBlueGain:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceSetRedOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
-         Log.d(TAG, "FactoryWhiteBalanceSetRedOffset isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SetwhiteBalanceOffsetRed(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (Exception e) {
+                   Log.e(TAG, "FactoryWhiteBalanceSetRedOffset:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceSetGreenOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
-         Log.d(TAG, "FactoryWhiteBalanceSetGreenOffset isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SetwhiteBalanceOffsetGreen(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (Exception e) {
+                   Log.e(TAG, "FactoryWhiteBalanceSetGreenOffset:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceSetBlueOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int value) {
-         Log.d(TAG, "FactoryWhiteBalanceSetBlueOffset isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SetwhiteBalanceOffsetBlue(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), value);
+             } catch (Exception e) {
+                   Log.e(TAG, "FactoryWhiteBalanceSetBlueOffset:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceGetRedOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
-         Log.d(TAG, "FactoryWhiteBalanceGetRedOffset isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_GetwhiteBalanceOffsetRed(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (Exception e) {
+                   Log.e(TAG, "FactoryWhiteBalanceGetRedOffset:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceGetGreenOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
-         Log.d(TAG, "FactoryWhiteBalanceGetGreenOffset isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_GetwhiteBalanceOffsetGreen(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (Exception e) {
+                   Log.e(TAG, "FactoryWhiteBalanceGetGreenOffset:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceGetBlueOffset(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode) {
-         Log.d(TAG, "FactoryWhiteBalanceGetBlueOffset isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_GetwhiteBalanceOffsetBlue(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt());
+             } catch (Exception e) {
+                   Log.e(TAG, "FactoryWhiteBalanceGetBlueOffset:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceSetColorTemperature(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int is_save) {
-         Log.d(TAG, "FactoryWhiteBalanceSetColorTemperature isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SetColorTemperature(colorTemp_mode.toInt(), is_save);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceSetColorTemperature:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryWhiteBalanceGetColorTemperature(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt) {
-         Log.d(TAG, "FactoryWhiteBalanceGetColorTemperature isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_GetColorTemperature();
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetColorTemperature:" + e);
+             }
+         }
          return -1;
      }
 
@@ -2355,7 +2688,13 @@ public class SystemControlManager {
       *
       * */
      public int FactoryWhiteBalanceSaveParameters(SourceInput source_input, SignalFmt fmt, TransFmt trans_fmt, color_temperature colorTemp_mode, int r_gain, int g_gain, int b_gain, int r_offset, int g_offset, int b_offset) {
-         Log.d(TAG, "FactoryWhiteBalanceSaveParameters isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SaveWhiteBalancePara(source_input.toInt(), fmt.toInt(), trans_fmt.toInt(), colorTemp_mode.toInt(), r_gain, g_gain, b_gain,r_offset, g_offset, b_offset);
+             } catch (Exception e) {
+                   Log.e(TAG, "FactoryWhiteBalanceSaveParameters:" + e);
+             }
+         }
          return -1;
      }
 
@@ -2370,29 +2709,54 @@ public class SystemControlManager {
 
      public WhiteBalanceParams FactoryWhiteBalanceGetAllParams(int colorTemp_mode) {
          WhiteBalanceParams params = new WhiteBalanceParams();
-         Log.d(TAG, "FactoryWhiteBalanceGetAllParams isn't ready for jni");
-         params.r_gain = 0;
-         params.g_gain = 0;
-         params.b_gain = 0;
-         params.r_offset = 0;
-         params.g_offset = 0;
-         params.b_offset = 0;
-
+         synchronized (mLock) {
+             try {
+                 int ret = native_FactoryfactoryGetColorTemperatureParams(colorTemp_mode);
+                 if (ret == 0) {
+                     params.r_gain = 0;
+                     params.g_gain = 0;
+                     params.b_gain = 0;
+                     params.r_offset = 0;
+                     params.g_offset = 0;
+                     params.b_offset = 0;
+                 }
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryWhiteBalanceGetAllParams:" + e);
+             }
+         }
          return params;
      }
 
    public int FactorySSMRestore() {
-         Log.d(TAG, "FactorySSMRestore isn't ready for jni");
+           synchronized (mLock) {
+             try {
+                 return native_FactorySSMRestore();
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySSMRestore:" + e);
+             }
+         }
          return -1;
    }
 
    public int FactoryResetNonlinear() {
-       Log.d(TAG, "FactoryResetNonlinear isn't ready for jni");
+         synchronized (mLock) {
+           try {
+               return native_FactoryResetNonlinear();
+           } catch (Exception e) {
+               Log.e(TAG, "FactoryResetNonlinear:" + e);
+           }
+       }
        return -1;
     }
 
    public int FactorySetGamma(int gamma_r, int gamma_g, int gamma_b) {
-       Log.d(TAG, "FactorySetGamma isn't ready for jni");
+       synchronized (mLock) {
+           try {
+               return native_FactorySetGamma(gamma_r, gamma_g, gamma_b);
+           } catch (Exception e) {
+               Log.e(TAG, "FactorySetGamma:" + e);
+           }
+       }
        return -1;
     }
 
@@ -2422,7 +2786,6 @@ public class SystemControlManager {
 
     public int GetActualAddr(int id) {
           synchronized (mLock) {
-          //Mutable<Integer> resultVal = new Mutable<>();
             try {
                 return native_GetActualAddr(id);
             } catch (Exception e) {
@@ -2492,11 +2855,10 @@ public class SystemControlManager {
      }
 
      public int[] GetCurrentSourceInfo() {
-           int CurrentSourceInfo[] = {0, 0, 0};
+           int[] CurrentSourceInfo = {10, 1034, 0};//default MPEG 1920*1080p source
            synchronized (mLock) {
                try {
-                 native_GetCurrentSourceInfo(CurrentSourceInfo[0], CurrentSourceInfo[1], CurrentSourceInfo[2]);
-                 return CurrentSourceInfo;
+                 return native_GetCurrentSourceInfo();
              } catch (Exception e) {
                  Log.e(TAG, "GetCurrentSourceInfo:" + e);
              }
@@ -2510,7 +2872,13 @@ public class SystemControlManager {
       * @Return: rgb(0xrrggbb)
       */
      public int FactoryGetRGBScreen() {
-         Log.d(TAG, "FactoryGetRGBScreen isn't ready for jni");
+           synchronized (mLock) {
+             try {
+                 return native_GetRGBPattern();
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetRGBScreen:" + e);
+             }
+         }
          return -1;
      }
 
@@ -2521,7 +2889,13 @@ public class SystemControlManager {
      * @Return: -1 failed, otherwise success
      */
     public int FactorySetRGBScreen(int r, int g, int b) {
-         Log.d(TAG, "FactorySetRGBScreen isn't ready for jni");
+           synchronized (mLock) {
+             try {
+                 return native_SetRGBPattern(r, g, b);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetRGBScreen:" + e);
+             }
+         }
          return -1;
     }
 
@@ -2532,7 +2906,13 @@ public class SystemControlManager {
      * @Return: 0 success, -1 fail
      */
     public int FactorySetDDRSSC(int step) {
-        Log.d(TAG, "FactorySetDDRSSC isn't ready for jni");
+          synchronized (mLock) {
+            try {
+                return native_FactorySetDDRSSC(step);
+            } catch (Exception e) {
+                Log.e(TAG, "FactorySetDDRSSC:" + e);
+            }
+        }
         return -1;
     }
 
@@ -2543,7 +2923,13 @@ public class SystemControlManager {
      * @Return: ddr ssc level
      */
     public int FactoryGetDDRSSC() {
-        Log.d(TAG, "FactoryGetDDRSSC isn't ready for jni");
+          synchronized (mLock) {
+            try {
+                return native_FactoryGetDDRSSC();
+            } catch (Exception e) {
+                Log.e(TAG, "FactoryGetDDRSSC:" + e);
+            }
+        }
         return -1;
     }
 
@@ -2554,7 +2940,13 @@ public class SystemControlManager {
      * @Return: 0 success, -1 fail
      */
     public int FactorySetLVDSSSC(int step) {
-        Log.d(TAG, "FactorySetLVDSSSC isn't ready for jni");
+          synchronized (mLock) {
+            try {
+                return native_FactorySetLVDSSSC(step);
+            } catch (Exception e) {
+                Log.e(TAG, "FactorySetLVDSSSC:" + e);
+            }
+        }
         return -1;
     }
 
@@ -2565,117 +2957,266 @@ public class SystemControlManager {
      * @Return: lvds ssc level
      */
     public int FactoryGetLVDSSSC() {
-        Log.d(TAG, "FactoryGetLVDSSSC isn't ready for jni");
+          synchronized (mLock) {
+            try {
+                return native_FactoryGetLVDSSSC();
+            } catch (Exception e) {
+                Log.e(TAG, "FactoryGetLVDSSSC:" + e);
+            }
+        }
         return -1;
     }
 
     public int FactoryWhiteBalanceOpenGrayPattern() {
-        Log.d(TAG, "FactoryWhiteBalanceOpenGrayPattern isn't ready for jni");
+          synchronized (mLock) {
+            try {
+                return native_whiteBalanceGrayPatternOpen();
+            } catch (Exception e) {
+                Log.e(TAG, "FactoryWhiteBalanceOpenGrayPattern:" + e);
+            }
+        }
         return -1;
     }
 
     public int FactoryWhiteBalanceCloseGrayPattern() {
-        Log.d(TAG, "FactoryWhiteBalanceOpenGrayPattern isn't ready for jni");
+          synchronized (mLock) {
+            try {
+                return native_WhiteBalanceGrayPatternClose();
+            } catch (Exception e) {
+                Log.e(TAG, "FactoryWhiteBalanceCloseGrayPattern:" + e);
+            }
+        }
         return -1;
     }
 
     public int FactoryWhiteBalanceSetGrayPattern(int value) {
-        Log.d(TAG, "FactoryWhiteBalanceSetGrayPattern isn't ready for jni");
+          synchronized (mLock) {
+            try {
+                return native_WhiteBalanceGrayPatternSet(value);
+            } catch (Exception e) {
+                Log.e(TAG, "FactoryWhiteBalanceSetGrayPattern:" + e);
+            }
+        }
         return -1;
     }
 
     public int FactoryWhiteBalanceGetGrayPattern() {
-        Log.d(TAG, "FactoryWhiteBalanceGetGrayPattern isn't ready for jni");
+          synchronized (mLock) {
+            try {
+                return native_WhiteBalanceGrayPatternGet();
+            } catch (Exception e) {
+                Log.e(TAG, "FactoryWhiteBalanceGetGrayPattern:" + e);
+            }
+        }
         return -1;
     }
 
      public int FactorySetHdrIsEnable(int mode) {
-        Log.d(TAG, "FactorySetHdrIsEnable isn't ready for jni");
+        synchronized (mLock) {
+            try {
+                return native_FactorySetHdrMode(mode);
+            } catch (Exception e) {
+                Log.e(TAG, "FactorySetHdrIsEnable:" + e);
+            }
+        }
         return -1;
      }
 
      public int FactoryGetHdrIsEnable() {
-         Log.d(TAG, "FactoryGetHdrIsEnable isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetHdrMode();
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetHdrIsEnable:" + e);
+             }
+         }
          return -1;
      }
 
      public int setDNLPCurveParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int level) {
-         Log.d(TAG, "setDNLPCurveParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_SetDnlpParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), level);
+             } catch (Exception e) {
+                 Log.e(TAG, "setDNLPCurveParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int getDNLPCurveParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt) {
-         Log.d(TAG, "getDNLPCurveParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_GetDnlpParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "getDNLPCurveParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactorySetDNLPCurveParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int level, int final_gain) {
-         Log.d(TAG, "getDNLPCurveParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetDnlpParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), level, final_gain);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetDNLPCurveParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryGetDNLPCurveParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int level) {
-         Log.d(TAG, "FactoryGetDNLPCurveParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetDnlpParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), level);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetDNLPCurveParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactorysetBlackExtRegParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int val) {
-         Log.d(TAG, "FactorysetBlackExtRegParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetBlackExtRegParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), val);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorysetBlackExtRegParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactorygetBlackExtRegParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt) {
-         Log.d(TAG, "FactorygetBlackExtRegParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetBlackExtRegParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt());
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorygetBlackExtRegParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactorySetColorParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int color_type, int color_param, int val) {
-         Log.d(TAG, "FactorySetColorParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetColorParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), color_type, color_param, val);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetColorParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryGetColorParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int color_type, int color_param) {
-         Log.d(TAG, "FactoryGetColorParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetColorParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), color_type, color_param);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetColorParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactorySetNoiseReductionParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, Noise_Reduction_Mode mode, int param_type, int val) {
-         Log.d(TAG, "FactorySetNoiseReductionParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetNoiseReductionParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), mode.toInt(), param_type, val);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetNoiseReductionParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryGetNoiseReductionParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, Noise_Reduction_Mode mode, int param_type) {
-         Log.d(TAG, "FactoryGetNoiseReductionParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetNoiseReductionParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), mode.toInt(), param_type);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetNoiseReductionParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactorySetCTIParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int param_type, int val) {
-         Log.d(TAG, "FactorySetCTIParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetCTIParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), param_type, val);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetCTIParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryGetCTIParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int param_type) {
-         Log.d(TAG, "FactoryGetCTIParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetCTIParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), param_type);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetCTIParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactorySetDecodeLumaParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int param_type, int val) {
-         Log.d(TAG, "FactorySetDecodeLumaParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetDecodeLumaParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), param_type, val);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetDecodeLumaParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryGetDecodeLumaParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int param_type) {
-         Log.d(TAG, "FactoryGetDecodeLumaParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetDecodeLumaParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), param_type);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetDecodeLumaParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactorySetSharpnessHDParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int isHD, int param_type, int val) {
-         Log.d(TAG, "FactorySetSharpnessHDParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactorySetSharpnessParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), isHD, param_type, val);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactorySetSharpnessHDParams:" + e);
+             }
+         }
          return -1;
      }
 
      public int FactoryGetSharpnessHDParams(SourceInput source, SignalFmt sig_fmt, TransFmt trans_fmt, int isHD, int param_type) {
-         Log.d(TAG, "FactoryGetSharpnessHDParams isn't ready for jni");
+         synchronized (mLock) {
+             try {
+                 return native_FactoryGetSharpnessParams(source.toInt(), sig_fmt.toInt(), trans_fmt.toInt(), isHD, param_type);
+             } catch (Exception e) {
+                 Log.e(TAG, "FactoryGetSharpnessHDParams:" + e);
+             }
+         }
+         return -1;
+     }
+
+     public int SetDtvKitSourceEnable(int isEnable) {
+         synchronized (mLock) {
+             try {
+                 return native_SetDtvKitSourceEnable(isEnable);
+             } catch (Exception e) {
+                 Log.e(TAG, "SetDtvKitSourceEnable:" + e);
+             }
+         }
          return -1;
      }
 
@@ -2694,6 +3235,11 @@ public class SystemControlManager {
          }
      }
 
+    public class PQDatabaseInfo {
+        public String ToolVersion;
+        public String ProjectVersion;
+        public String GenerateTime;
+    }
      /**
       * @Function: GetPQDatabaseInfo
       * @Description: Get database toolversion projectversion and generateTime
@@ -2703,8 +3249,12 @@ public class SystemControlManager {
      public String[] GetPQDatabaseInfo(DataBase_Name databaseName) {
          String[] dataBaseInfo = {" ", " ", " "};
          synchronized (mLock) {
+            PQDatabaseInfo info = new PQDatabaseInfo();
              try {
-                 native_GetPQDatabaseInfo(databaseName.toInt(), dataBaseInfo[0], dataBaseInfo[1], dataBaseInfo[2]);
+                 info = native_GetPQDatabaseInfo(databaseName.toInt());
+                 dataBaseInfo[0] = info.ToolVersion;
+                 dataBaseInfo[1] = info.ProjectVersion;
+                 dataBaseInfo[2] = info.GenerateTime;
                  return dataBaseInfo;
              } catch (Exception e) {
                  Log.e(TAG, "GetPQDatabaseInfo:" + e);
@@ -2730,17 +3280,6 @@ public class SystemControlManager {
          }
          return -1;
     }
-
-	 public int SetDtvKitSourceEnable(int isEnable) {
-		 synchronized (mLock) {
-			 try {
-				 return native_SetDtvKitSourceEnable(isEnable);
-			 } catch (Exception e) {
-				 Log.e(TAG, "SetDtvKitSourceEnable:" + e);
-			 }
-		 }
-		 return -1;
-	}
 
     private static class Mutable<E> {
         public E value;

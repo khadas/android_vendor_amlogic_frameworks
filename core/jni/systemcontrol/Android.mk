@@ -22,6 +22,7 @@ LOCAL_SHARED_LIBRARIES :=  \
     libsystemcontrolclient \
     libcutils \
     libutils \
+    libhidlbase \
     liblog
 
 

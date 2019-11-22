@@ -42,6 +42,17 @@ public class SystemControlEvent implements SystemControlManager.HdmiHotPlugListe
     private Context mContext = null;
     private final AudioManager mAudioManager;
 
+    private FBCUpgradeEventListener mFBCUpgradeEventListener = null;
+    private static SystemControlEvent mInstance;
+
+    public static SystemControlEvent getInstance(Context context) {
+        if (null == mInstance) {
+            mInstance = new SystemControlEvent(context);
+        }
+
+        return mInstance;
+    }
+
     public SystemControlEvent(Context context) {
         mContext = context;
         mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
@@ -64,6 +75,24 @@ public class SystemControlEvent implements SystemControlManager.HdmiHotPlugListe
             intent.putExtra(EVENT_TYPE, event);
         }
         mContext.sendBroadcast(intent);
+    }
+
+    public void notifyFBCUpgradeCallback(int state, int param) {
+        Log.i(TAG, "FBCUpgradeCallback: state: " + state + "param:" + param);
+        if (mFBCUpgradeEventListener != null) {
+            mFBCUpgradeEventListener.HandleFBCUpgradeEvent(state, param);
+        } else {
+            Log.e(TAG, "mFBCUpgradeEventListener is null");
+        }
+    }
+
+    public interface FBCUpgradeEventListener {
+        void HandleFBCUpgradeEvent(int state, int param);
+    }
+
+    public void SetFBCUpgradeEventListener (FBCUpgradeEventListener l) {
+        Log.d(TAG, "SetFBCUpgradeEventListener");
+        mFBCUpgradeEventListener  = l;
     }
 
     private void setWiredDeviceConnectionState(int type, int state, String address, String name) {

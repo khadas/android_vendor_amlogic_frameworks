@@ -19,7 +19,11 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.hdmi.HdmiControlManager;
+import android.hardware.hdmi.HdmiControlManager.HotplugEventListener;
+import android.hardware.hdmi.HdmiHotplugEvent;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.Process;
@@ -37,6 +41,8 @@ import java.util.List;
 import java.util.Scanner;
 import com.droidlogic.app.SystemControlManager;
 
+import com.droidlogic.R;
+
 public class NetflixService extends Service {
     private static final String TAG = "NetflixService";
 
@@ -50,6 +56,8 @@ public class NetflixService extends Service {
     public static final String NETFLIX_STATUS_CHANGE        = "com.netflix.action.STATUS_CHANGE";
     public static final String NETFLIX_DIAL_STOP            = "com.netflix.action.DIAL_STOP";
     private static final String VIDEO_SIZE_DEVICE           = "/sys/class/video/device_resolution";
+    private static final String SYS_AUDIO_CAP               = "/sys/class/amhdmitx/amhdmitx0/aud_cap";
+    private static final String AUDIO_MS12LIB_PATH          = "/vendor/lib/libdolbyms12.so";
     private static final String WAKEUP_REASON_DEVICE        = "/sys/devices/platform/aml_pm/suspend_reason";
     private static final String NRDP_PLATFORM_CAP           = "nrdp_platform_capabilities";
     private static final String NRDP_AUDIO_PLATFORM_CAP     = "nrdp_audio_platform_capabilities";
@@ -58,9 +66,13 @@ public class NetflixService extends Service {
     private static boolean mLaunchDialService               = true;
 
     private boolean mIsNetflixFg = false;
+    private boolean mHasMS12 = false;
+    private boolean mAtomsEnabled = false;
     private Context mContext;
     SystemControlManager mSCM;
+    HdmiControlManager mHdmiControlManager;
     AudioManager mAudioManager;
+
     private BroadcastReceiver mReceiver = new BroadcastReceiver(){
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -77,12 +89,26 @@ public class NetflixService extends Service {
         }
     };
 
+    HotplugEventListener mHPListener = new HotplugEventListener() {
+        @Override
+        public void onReceived(HdmiHotplugEvent event) {
+            if (!event.isConnected())
+                return;
+
+            String audioSinkCap = mSCM.readSysFs(SYS_AUDIO_CAP);
+            boolean atmosSupported = audioSinkCap.contains("Dobly_Digital+/ATMOS");
+            Log.i (TAG, "ATMOS: " + atmosSupported + ", audioSinkCap: " + audioSinkCap);
+            setAtmosEnabled(atmosSupported);
+        }
+    };
+
     @Override
     public void onCreate() {
         super.onCreate();
         mContext = this;
         mSCM = SystemControlManager.getInstance();
         mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+
         IntentFilter filter = new IntentFilter(NETFLIX_DIAL_STOP);
         filter.setPriority (IntentFilter.SYSTEM_HIGH_PRIORITY);
         mContext.registerReceiver (mReceiver, filter);
@@ -94,6 +120,12 @@ public class NetflixService extends Service {
         setNrdpCapabilitesIfNeed(NRDP_AUDIO_PLATFORM_CAP, needUpdate);
         if (needUpdate) {
             SettingsPref.setSavedBuildDate(mContext, buildDate);
+        }
+
+        mHasMS12 = new File(AUDIO_MS12LIB_PATH).exists();
+        if (mHasMS12) {
+            mHdmiControlManager = (HdmiControlManager) getSystemService(Context.HDMI_CONTROL_SERVICE);
+            mHdmiControlManager.addHotplugEventListener(mHPListener);
         }
 
         startNetflixIfNeed();
@@ -237,6 +269,32 @@ public class NetflixService extends Service {
         }
 
         return getValue;
+    }
+
+    private void setAtmosEnabled(boolean enabled) {
+        String audioCap = Settings.Global.getString(getContentResolver(), NRDP_AUDIO_PLATFORM_CAP);
+        if (audioCap == null)
+            return;
+
+        int keyPos, valPos;
+        if ((keyPos = audioCap.indexOf("\"atmos\"")) < 0
+            || (keyPos = audioCap.indexOf("\"enabled\"", keyPos)) < 0)
+            return;
+
+        valPos = audioCap.indexOf("true", keyPos);
+        if (valPos < 0 || (valPos - keyPos) > 16)
+            valPos = audioCap.indexOf("false", keyPos);
+
+        if (valPos > 0 && (valPos - keyPos) <= 16) {
+            boolean isEnabled = (audioCap.charAt(valPos) == 't');
+            if (isEnabled ^ enabled) {
+                Log.i(TAG, "ATMOS enabled -> " + enabled);
+                String newCap = audioCap.substring(0, valPos)
+                        + enabled + audioCap.substring(valPos + String.valueOf(isEnabled).length());
+                Settings.Global.putString(getContentResolver(), NRDP_AUDIO_PLATFORM_CAP, newCap);
+            }
+        }
+        mAtomsEnabled = enabled;
     }
 
     class ObserverThread extends Thread {

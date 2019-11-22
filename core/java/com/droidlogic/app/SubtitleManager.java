@@ -10,6 +10,7 @@
 
 package com.droidlogic.app;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.ContentResolver;
 import android.database.Cursor;
@@ -56,9 +57,16 @@ public class SubtitleManager {
         private int RETRY_MAX = 10;
         private int TV_SUB_MPEG2 = 0;  //close caption mpeg2
         private int TV_SUB_H264 = 2;    //close caption h264
+        private int TV_SUB_SCTE27 = 3;
+        private int TV_SUB_DVB = 4;
         private boolean mOpen = false;
 
         private Context mContext;
+
+        public static SubtitleDataListener mHidlCallback;
+
+        Class<?> objActivityThread = null;
+        Method currentApplication = null;
 
         //IOType, should sync with \vendor\amlogic\apps\SubTitle\jni\subtitle\sub_io.h IOType
         public static final int IO_TYPE_DEV = 0;
@@ -67,6 +75,16 @@ public class SubtitleManager {
         private ArrayList<Integer> mInnerTrackIdx = null;
 
         private Intent intent = null;
+
+        public SubtitleManager () {
+            getContext();
+            mInnerTrackIdx = new ArrayList<Integer>();
+            mDebug = false;
+            checkDebug();
+            if (!disable()) {
+                getService();
+            }
+        }
 
         public SubtitleManager (Context context) {
             mContext = context;
@@ -89,6 +107,33 @@ public class SubtitleManager {
                 getService();
             }
         }
+
+        public void getContext () {
+            Log.i(TAG, "[getContext]");
+            try {
+                objActivityThread = Class.forName("android.app.ActivityThread");
+                currentApplication = objActivityThread.getMethod("currentApplication");
+                mContext = ((Application) (currentApplication.invoke(objActivityThread))).getApplicationContext();
+            }
+            catch (Exception ex) {
+                Log.e(TAG, "getContext failed:" + ex);
+            }
+
+        }
+
+        //for CTC
+        public void showSub(int pos) {
+            LOGI("[showSub]mService:" + mService);
+            try {
+                if (mService != null) {
+                    mService.showSub(pos);
+                }
+            } catch (RemoteException e) {
+                Log.i(TAG, ", getService:");
+                getService();
+            }
+        }
+
 
         public void setMediaPlayer (MediaPlayerExt mp) {
             mMediaPlayer = mp;
@@ -143,6 +188,27 @@ public class SubtitleManager {
         public boolean getInvokeFromMp() {
             return mInvokeFromMp;
         }
+
+        public ISubTitleServiceCallback mCallback = new ISubTitleServiceCallback.Stub() {
+            @Override
+            public void onSubTitleEvent(int event, int id) throws RemoteException {
+                Log.i(TAG, "[onSubTitleEvent]event:" + event + ",id:" + id);
+                if (mHidlCallback != null) {
+                    Log.i(TAG, "[onSubTitleEvent]-1-");
+                    mHidlCallback.onSubTitleEvent(event, id);
+                }
+                //SubtitleServerManager.subTitleIdCallback(event, id);
+            }
+
+            @Override
+            public void onSubTitleAvailable(int available) throws RemoteException {
+                Log.i(TAG, "[onSubTitleAvailable]available:" + available);
+                if (mHidlCallback != null) {
+                    mHidlCallback.onSubTitleAvailable(available);
+                }
+                //SubtitleServerManager.subTitleAvailableCallback(available);
+            }
+        };
 
         public void setSource (Context context, Uri uri) {
             if (context == null) {
@@ -209,7 +275,7 @@ public class SubtitleManager {
             }
         }
 
-        private int open (String path) {
+        public int open (String path) {
             int ret = -1;
             LOGI("[open] path:" + path + ", mService:" + mService);
             if (path.startsWith ("/data/") || path.equals ("") ) {
@@ -292,6 +358,21 @@ public class SubtitleManager {
                 if (mService != null) {
                     mService.close();
                 }
+                /*if (mContext != null && serConn != null) {
+                    mContext.unbindService(serConn);
+                }*/
+            } catch (Exception e) {
+                LOGE("Exception:" + e);
+            }
+        }
+
+        //add for skyworth
+        public void destory() {
+            LOGI("[destory]mService:" + mService);
+            try {
+                if (mService != null) {
+                    mService.destory();
+                }
                 if (mContext != null && serConn != null) {
                     mContext.unbindService(serConn);
                 }
@@ -319,8 +400,11 @@ public class SubtitleManager {
 
         private boolean isTvSubtile() {
             int isTvType = -1;
-            isTvType = SystemProperties.getInt("vendor.sys.subtitleService.tvType", -1);
-            if (isTvType == TV_SUB_H264 || isTvType == TV_SUB_MPEG2) {
+            isTvType = SystemProperties.getInt("vendor.sys.subtitleService.tvType", 3);
+            if (isTvType == TV_SUB_H264 ||
+                isTvType == TV_SUB_MPEG2 ||
+                isTvType == TV_SUB_SCTE27 ||
+                isTvType == TV_SUB_DVB) {
                 return true;
             }
             return false;
@@ -435,6 +519,58 @@ public class SubtitleManager {
             try {
                 if (mService != null) {
                     mService.resetForSeek();
+                }
+            } catch (RemoteException e) {
+                Log.i(TAG, ", getService:");
+                getService();
+            }
+        }
+
+        public void setSubPid(int pid) {
+            LOGI("[setSubPid]mService:" + mService);
+            try {
+                if (mService != null) {
+                    mService.setSubPid(pid);
+                }
+            } catch (RemoteException e) {
+                Log.i(TAG, ", getService:");
+                getService();
+            }
+        }
+
+        public int getSubHeight() {
+            LOGI("[getSubHeight]mService:" + mService);
+            int ret = 0;
+            try {
+                if (mService != null) {
+                    ret = mService.getSubHeight();
+                }
+            } catch (RemoteException e) {
+                Log.i(TAG, ", getService:");
+                getService();
+            }
+            return ret;
+        }
+
+        public int getSubWidth() {
+            LOGI("[getSubWidth]mService:" + mService);
+            int ret = 0;
+            try {
+                if (mService != null) {
+                    ret = mService.getSubWidth();
+                }
+            } catch (RemoteException e) {
+                Log.i(TAG, ", getService:");
+                getService();
+            }
+            return ret;
+        }
+
+        public void setSubType(int type) {
+            LOGI("[setSubType]mService:" + mService);
+            try {
+                if (mService != null) {
+                    mService.setSubType(type);
                 }
             } catch (RemoteException e) {
                 Log.i(TAG, ", getService:");
@@ -628,6 +764,12 @@ public class SubtitleManager {
             public void onServiceConnected(ComponentName name, IBinder service) {
                 mService = ISubTitleService.Stub.asInterface(service);
                 LOGI("SubTitleClient.onServiceConnected()..mService:"+mService);
+                try {
+                    mService.registerCallback(mCallback);
+                    LOGI("SubTitleClient.onServiceConnected()..registerCallback:");
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
         };
 
@@ -771,7 +913,7 @@ public class SubtitleManager {
                 }
             }
 
-        private void setIOType(int type) {
+        public void setIOType(int type) {
             LOGI("[setIOType] type:" + type);
             try {
                 if (mService != null) {
@@ -950,4 +1092,13 @@ public class SubtitleManager {
                 }
             }
         };
+
+        public static void setHidlCallback (SubtitleDataListener cb) {
+            mHidlCallback= cb;
+        }
+
+        public interface SubtitleDataListener {
+            public void onSubTitleEvent(int event, int id);
+            public void onSubTitleAvailable(int available);
+        }
 }

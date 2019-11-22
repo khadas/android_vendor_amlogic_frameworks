@@ -211,6 +211,13 @@ void DisplayMode::init() {
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
         mDisplayType, mSocType, mDefaultUI);
+
+    if ((pSysWrite->getPropertyBoolean(PROP_DOLBY_VISION_FEATURE, false))
+            && (access(DOLBY_VISION_KO_DIR, 0) == 0)) {
+        pSysWrite->setProperty(PROP_SUPPORT_DOLBY_VISION, "true");
+    } else {
+        pSysWrite->setProperty(PROP_SUPPORT_DOLBY_VISION, "false");
+    }
     if (DISPLAY_TYPE_MBOX == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
@@ -623,8 +630,15 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     //updateFreeScaleAxis();
     //updateWindowAxis(outputmode);
 
-    initHdrSdrMode();
-
+    if (!cvbsMode && (pSysWrite->getPropertyBoolean(PROP_SUPPORT_DOLBY_VISION, false) == false)) {
+        if (pSysWrite->getPropertyBoolean(PROP_DOLBY_VISION_FEATURE, false)) {
+            char hdr_policy[MODE_LEN] = {0};
+            getHdrStrategy(hdr_policy);
+            setHdrStrategy(hdr_policy);
+        } else {
+            initHdrSdrMode();
+        }
+    }
     /*if (0 == pSysWrite->getPropertyInt(PROP_BOOTCOMPLETE, 0)) {
         setVideoPlayingAxis();
     }*/
@@ -666,7 +680,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     notifyEvent(EVENT_OUTPUT_MODE_CHANGE);
 #endif
 
-    if (!cvbsMode && pSysWrite->getPropertyBoolean(PROP_DOLBY_VISION_FEATURE, false)
+    if (!cvbsMode && pSysWrite->getPropertyBoolean(PROP_SUPPORT_DOLBY_VISION, false)
             && setDolbyVisionState) {
         initDolbyVision(state);
     }
@@ -1546,13 +1560,8 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
     bool dvStatusChanged = checkDolbyVisionStatusChanged(state);
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, outputmode);
 
-    if (access(DOLBY_VISION_KO_DIR, 0) != 0) {
-        SYS_LOGI("Dolby vision library does not exist !");
-        mDvStatus = 0;
-    } else {
-        mDvStatus = value_state;
-        SYS_LOGI("mDvStatus %d\n", mDvStatus);
-    }
+    mDvStatus = value_state;
+    SYS_LOGI("mDvStatus %d\n", mDvStatus);
 
     if (dvStatusChanged) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
@@ -1661,10 +1670,11 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
                 }
                 setDolbyVisionState = true;
             }
-            pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, DV_POLICY_FOLLOW_SINK);
-            pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY_OLD, DV_HDR10_POLICY);
-            pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FOLLOW_SINK);
-            pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY, DV_HDR10_POLICY);
+            char hdr_policy[MODE_LEN] = {0};
+            getHdrStrategy(hdr_policy);
+            setHdrStrategy(hdr_policy);
+            pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY_OLD, DV_HDR_SINK_PROCESS);
+            pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY, DV_HDR_SINK_PROCESS);
         }
 
         usleep(100000);//100ms
@@ -1685,9 +1695,11 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
         } else {
             pSysWrite->setProperty(PROP_DOLBY_VISION_ENABLE, "false");
         }
-        pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, DV_POLICY_FORCE_MODE);
+        char hdr_policy[MODE_LEN] = {0};
+        getHdrStrategy(hdr_policy);
+        setHdrStrategy(hdr_policy);
+
         pSysWrite->writeSysfs(DOLBY_VISION_MODE_OLD, DV_MODE_BYPASS);
-        pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FORCE_MODE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE, DV_MODE_BYPASS);
         usleep(100000);//100ms
         pSysWrite->readSysfs(DOLBY_VISION_STATUS, dvstatus);
@@ -1731,16 +1743,39 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
 #endif
 }
 
+void DisplayMode::getHdrStrategy(char* value) {
+    char hdr_policy[MODE_LEN] = {0};
+    memset(hdr_policy, 0, MODE_LEN);
+    if (!getBootEnv(UBOOTENV_HDR_POLICY, hdr_policy)) {
+        strcpy(value, HDR_POLICY_SINK);
+    }else if (strstr(hdr_policy, HDR_POLICY_SOURCE)) {
+        strcpy(value, HDR_POLICY_SOURCE);
+    } else if (strstr(hdr_policy, HDR_POLICY_SINK)) {
+        strcpy(value, HDR_POLICY_SINK);
+    } else {
+        strcpy(value, HDR_POLICY_SINK);
+    }
+    SYS_LOGI("getHdrStrategy is [%s]", value);
+}
+
+void DisplayMode::setHdrStrategy(const char* type) {
+    SYS_LOGI("setHdrStrategy is [%s]",type);
+    char dv_mode[MAX_STR_LEN];
+    if (strstr(type, HDR_POLICY_SINK)) {
+        pSysWrite->writeSysfs(HDR_POLICY, HDR_POLICY_SINK);
+        pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, HDR_POLICY_SINK);
+        pSysWrite->writeSysfs(DOLBY_VISION_POLICY, HDR_POLICY_SINK);
+    } else if (strstr(type, HDR_POLICY_SOURCE)) {
+        pSysWrite->writeSysfs(HDR_POLICY, HDR_POLICY_SOURCE);
+        pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, HDR_POLICY_SOURCE);
+        pSysWrite->writeSysfs(DOLBY_VISION_POLICY, HDR_POLICY_SOURCE);
+    }
+    setBootEnv(UBOOTENV_HDR_POLICY, (char *)type);
+}
+
 void DisplayMode::initDolbyVision(output_mode_state state) {
     char dv_mode[MAX_STR_LEN];
     char bestDolbyVision[MODE_LEN] = {0};
-    if (access(DOLBY_VISION_KO_DIR, 0) != 0) {
-        SYS_LOGI("Dolby vision library does not exist, disable dv !!!");
-        if (isDolbyVisionEnable()) {
-            setDolbyVisionEnable(DOLBY_VISION_SET_DISABLE,  state);
-        }
-        return;
-    }
     if (isTvSupportDolbyVision(dv_mode) && (!getBootEnv(UBOOTENV_BESTDOLBYVISION, bestDolbyVision) || strstr(bestDolbyVision, "true") != NULL)) {
         if (strstr(dv_mode, "DV_RGB_444_8BIT") != NULL) {
             if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE,  state)) {

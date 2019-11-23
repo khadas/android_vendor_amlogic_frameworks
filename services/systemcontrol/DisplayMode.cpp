@@ -1720,6 +1720,8 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
         getHdrStrategy(hdr_policy);
         setHdrStrategy(hdr_policy);
 
+        pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, DV_POLICY_FORCE_MODE);
+        pSysWrite->writeSysfs(DOLBY_VISION_POLICY, DV_POLICY_FORCE_MODE);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE_OLD, DV_MODE_BYPASS);
         pSysWrite->writeSysfs(DOLBY_VISION_MODE, DV_MODE_BYPASS);
         usleep(100000);//100ms
@@ -1783,12 +1785,16 @@ void DisplayMode::setHdrStrategy(const char* type) {
     char dv_mode[MAX_STR_LEN];
     if (strstr(type, HDR_POLICY_SINK)) {
         pSysWrite->writeSysfs(HDR_POLICY, HDR_POLICY_SINK);
-        pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, HDR_POLICY_SINK);
-        pSysWrite->writeSysfs(DOLBY_VISION_POLICY, HDR_POLICY_SINK);
+        if (isDolbyVisionEnable()) {
+            pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, HDR_POLICY_SINK);
+            pSysWrite->writeSysfs(DOLBY_VISION_POLICY, HDR_POLICY_SINK);
+        }
     } else if (strstr(type, HDR_POLICY_SOURCE)) {
         pSysWrite->writeSysfs(HDR_POLICY, HDR_POLICY_SOURCE);
-        pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, HDR_POLICY_SOURCE);
-        pSysWrite->writeSysfs(DOLBY_VISION_POLICY, HDR_POLICY_SOURCE);
+        if (isDolbyVisionEnable()) {
+            pSysWrite->writeSysfs(DOLBY_VISION_POLICY_OLD, HDR_POLICY_SOURCE);
+            pSysWrite->writeSysfs(DOLBY_VISION_POLICY, HDR_POLICY_SOURCE);
+        }
     }
     setBootEnv(UBOOTENV_HDR_POLICY, (char *)type);
 }

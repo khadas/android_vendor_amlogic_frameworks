@@ -5570,7 +5570,9 @@ output_type_t CPQControl::CheckOutPutMode(void)
             SYS_LOGD("Read %s failed!\n", SYS_DISPLAY_MODE_PATH);
         } else {
             SYS_LOGD( "%s: current output mode is %s!\n", __FUNCTION__, outputModeBuf);
-            if (strstr(outputModeBuf, "480cvbs")) {
+            if (strstr(outputModeBuf, "null")) {
+                return OUTPUT_TYPE_MAX;
+            } else if (strstr(outputModeBuf, "480cvbs")) {
                 OutPutType = OUTPUT_TYPE_NTSC;
             } else if(strstr(outputModeBuf, "576cvbs")) {
                 OutPutType = OUTPUT_TYPE_PAL;

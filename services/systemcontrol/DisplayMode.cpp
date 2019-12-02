@@ -542,8 +542,8 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     SYS_LOGI("set display-size:%s\n", defaultResolution);
 
     //update free_scale_axis and window_axis
-    updateFreeScaleAxis();
-    updateWindowAxis(outputmode);
+    //updateFreeScaleAxis();
+    //updateWindowAxis(outputmode);
 
     initHdrSdrMode();
 

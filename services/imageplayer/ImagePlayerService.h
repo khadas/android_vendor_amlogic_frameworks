@@ -182,7 +182,7 @@ namespace android {
         bool isSupportFromat(const char *uri, SkBitmap **bitmap);
         bool checkVideoInUse(int retryNum);
         void readSysfs(const std::string& path, std::string& value);
-
+        void covert8to32(SkBitmap& src, SkBitmap *dstBitmap);
         TIFF2RGBA *mTif;
 
         mutable Mutex mLock;

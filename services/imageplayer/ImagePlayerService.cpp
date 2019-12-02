@@ -1000,7 +1000,7 @@ namespace android {
         mSysWrite->setProperty("persist.sys.is.image.player", "1");
         mSysWrite->getProperty("persist.sys.is.image.player",value);
         ALOGI("init, persist.sys.is.image.player:%s",value);
-        mSysWrite->writeSysfs("/sys/class/amvecm/pc_mode", "0");
+        /*mSysWrite->writeSysfs("/sys/class/amvecm/pc_mode", "0");*/
         mSysWrite->writeSysfs("sys/module/di/parameters/nr2_en", "0");
         mSysWrite->writeSysfs("/sys/class/amvecm/lc", "lc disable");
         mSysWrite->writeSysfs("/sys/class/amvecm/pq_user_set", "blk_ext_di");
@@ -1176,7 +1176,7 @@ namespace android {
         }else {
             dstBitmap = rotate(mBitmap, degrees);
             if (dstBitmap != NULL) {
-                if (isAutoCrop && needFillSurface(dstBitmap, 1, 1)) {
+            if (isAutoCrop && needFillSurface(mBitmap, 1, 1)) {
                     SkBitmap *fillBitmap = fillSurface(dstBitmap);
 
                     if (fillBitmap != NULL) {
@@ -1579,7 +1579,7 @@ namespace android {
         mSysWrite->writeSysfs(VIDEO_INUSE, "0");
         mSysWrite->writeSysfs("/sys/module/picdec/parameters/p2p_mode","2");
         mSysWrite->setProperty("persist.sys.is.image.player", "0");
-        mSysWrite->writeSysfs("/sys/class/amvecm/pc_mode", "1");
+        /*mSysWrite->writeSysfs("/sys/class/amvecm/pc_mode", "1");*/
         mSysWrite->writeSysfs("sys/module/di/parameters/nr2_en", "1");
         mSysWrite->writeSysfs("/sys/class/amvecm/lc", "lc enable");
         mSysWrite->writeSysfs("/sys/class/amvecm/pq_user_set", "blk_ext_en");
@@ -1675,8 +1675,8 @@ namespace android {
         SkISize scaledDims = codec->getSampledDimensions(samplesize);
         ALOGI("scale down origin picture %d %d %d\n",samplesize,scaledDims.width(), scaledDims.height());
 
-        SkImageInfo scaledInfo = imageInfo.makeWH(scaledDims.width(), scaledDims.height())
-                .makeColorType(kN32_SkColorType);
+        SkImageInfo scaledInfo = imageInfo.makeWH(scaledDims.width(), scaledDims.height());
+             //   .makeColorType(kN32_SkColorType);
         SkAndroidCodec::AndroidOptions options;
         options.fSampleSize = samplesize;
         SkBitmap *bmp = new SkBitmap();
@@ -1692,7 +1692,16 @@ namespace android {
             }
             return NULL;
         }
-
+        SkBitmap *dest = new SkBitmap();
+        if (kGray_8_SkColorType == bmp->colorType()) {
+            ALOGD("the pic is Gray");
+            covert8to32(*bmp,dest);
+            if (dest != NULL) {
+                ALOGD("swap bmp for gray pic");
+                clearBmp(bmp);
+                bmp = dest;
+            }
+        }
         if (bmp != NULL ) {
             mWidth = bmp->width();
             mHeight = bmp->height();
@@ -1900,13 +1909,29 @@ namespace android {
             //ALOGE("rotate %d %d-",srcBitmap->height(),srcBitmap->width());
             if (dstBitmap != NULL) {
                 if (sx != 1.0 || sy != 1.0) {
-                    if (needFillSurface(dstBitmap,1, 1)) {
-                        SkBitmap * fullBmp = fillSurface(dstBitmap);
-                        if (fullBmp != NULL) {
+                    if (needFillSurface(mBitmap, 1, 1)) {
+                        SkBitmap *fillBitmap = fillSurface(dstBitmap);
+
+                        if (fillBitmap != NULL) {
                             clearBmp(dstBitmap);
-                            dstBitmap = fullBmp;
+                            dstBitmap = fillBitmap;
                         }
                     }
+
+                    ALOGD("totateAndScale After rotate, Width: %d, Height: %d", dstBitmap->width(),
+                          dstBitmap->height());
+
+                    if ((dstBitmap->width() > surfaceWidth)
+                            || (dstBitmap->height() > surfaceHeight)) {
+                        ALOGD("cropAndFillBitmap");
+                        SkBitmap *dstCrop = cropAndFillBitmap(dstBitmap, surfaceWidth, surfaceHeight);
+
+                        if (NULL != dstCrop) {
+                            clearBmp(dstBitmap);
+                            dstBitmap = dstCrop;
+                        }
+                    }
+
                     SkBitmap *scalBitmap = scale(dstBitmap, sx, sy);
                     if (scalBitmap != NULL) {
                         clearBmp(dstBitmap);
@@ -1916,7 +1941,8 @@ namespace android {
             }
         }
         if (dstBitmap != NULL ) {
-            if (needFillSurface(dstBitmap, 1, 1)) {
+            if (dstBitmap->width() > surfaceWidth || dstBitmap->height() > surfaceHeight) {
+                ALOGD("rotateAndScale end and fillSurface");
                 SkBitmap *fillBitmap = fillSurface(dstBitmap);
 
                 if (fillBitmap != NULL) {
@@ -2033,12 +2059,10 @@ namespace android {
                 resetRotateScale();
                 resetTranslate();
                 render(VIDEO_LAYER_FORMAT_RGBA, dstBitmap);
-                clearBmp(dstBitmap);
-                dstBitmap = NULL;
+                clearBmp(mBitmap);
+                mBitmap = dstBitmap;
                 return RET_OK;
             }
-
-
         }
 
         resetRotateScale();
@@ -2116,7 +2140,28 @@ namespace android {
 
         return RET_OK;
     }
-
+    void ImagePlayerService::covert8to32(SkBitmap& src, SkBitmap *dst) {
+         SkImageInfo k32Info = SkImageInfo::Make(src.width(),src.height(),kBGRA_8888_SkColorType,
+                                src.alphaType(),SkColorSpace::MakeSRGB());
+         dst->allocPixels(k32Info);
+         char* dst32 = (char*)dst->getPixels();
+         uint8_t* src8 = (uint8_t*)src.getPixels();
+         const int w = src.width();
+         const int h = src.height();
+         const bool isGRAY = (kGray_8_SkColorType == src.colorType());
+         ALOGD("raw bytes:%d raw pixels is %d-->%d",src.rowBytes(),w,dst->rowBytes());
+         for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                uint8_t s = src8[x];
+                dst32[x*4] = s;
+                dst32[x*4+1] = s;
+                dst32[x*4+2] = s;
+                dst32[x*4+3] = 0xFF;
+            }
+            src8 = (uint8_t*)((uint8_t*)src8+src.rowBytes());
+            dst32 = (char*)((char*)dst32 + dst->rowBytes());
+         }
+    }
     //post to display device
     int ImagePlayerService::post() {
         if (mDisplayFd < 0) {

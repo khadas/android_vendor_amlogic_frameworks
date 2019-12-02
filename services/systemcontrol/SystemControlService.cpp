@@ -866,7 +866,8 @@ int SystemControlService::saveDisplayMode(int source_input, int mode)
 
 int SystemControlService::setBacklight(int value, int isSave)
 {
-    return pCPQControl->SetBacklight(value, isSave);
+//    return pCPQControl->SetBacklight(value, isSave);
+      return 0;
 }
 
 int SystemControlService::getBacklight(void)

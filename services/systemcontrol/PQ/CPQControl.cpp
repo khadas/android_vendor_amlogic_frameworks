@@ -5577,7 +5577,7 @@ output_type_t CPQControl::CheckOutPutMode(void)
             } else if(strstr(outputModeBuf, "576cvbs")) {
                 OutPutType = OUTPUT_TYPE_PAL;
             } else {
-                char inputModeBuf[32] = {0}, tempBuf[8] = {0};
+                char inputModeBuf[32] = {0}, tempBuf[32] = {0};
                 int inputFrameHeight = 1080, outputFrameHeight = 1080;
                 if ((pqReadSys(SYS_VIDEO_FRAME_HEIGHT, inputModeBuf, sizeof(inputModeBuf)) < 0) || (strlen(inputModeBuf) == 0)) {
                     SYS_LOGD("Read %s failed!\n", SYS_VIDEO_FRAME_HEIGHT);

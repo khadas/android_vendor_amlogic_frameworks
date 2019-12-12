@@ -1888,7 +1888,12 @@ void DisplayMode::DetectDolbyVisionOutputMode(output_mode_state state, char* out
             if (resolveResolutionValue(outputmode) > resolveResolutionValue(tvmode)
                     || (strstr(outputmode, "smpte") != NULL)) {
                 memset(outputmode, 0, sizeof(outputmode));
-                strcpy(outputmode, tvmode);
+                if ((strstr(tvmode, MODE_4K2K30HZ) || strstr(tvmode, MODE_4K2K24HZ) || strstr(tvmode, MODE_4K2K25HZ))
+                        && (isBestOutputmode())) {
+                    strcpy(outputmode, "1080p60hz");
+                } else {
+                    strcpy(outputmode, tvmode);
+                }
             }
             char type[MODE_LEN] = {0};
             pSysWrite->getPropertyString(PROP_DOLBY_VISION_TV_TYPE, type, "1");

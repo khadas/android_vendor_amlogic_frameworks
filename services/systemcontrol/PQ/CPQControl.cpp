@@ -5603,13 +5603,13 @@ output_type_t CPQControl::CheckOutPutMode(void)
                 //check outputmode
                 if (inputFrameHeight > 1088) {//inputsource is 4k
                     OutPutType = OUTPUT_TYPE_HDMI_4K;
-                } else if (inputFrameHeight > 720 && inputFrameHeight <= 1088) {//inputsource is 1080
-                    OutPutType = OUTPUT_TYPE_HDMI_NOSCALE;
-                } else {//input source 720 or 480
+                } else {
                     if (inputFrameHeight >= outputFrameHeight) {//input height >= output height
                         OutPutType = OUTPUT_TYPE_HDMI_NOSCALE;
                     } else {//input height < output height
-                        if (inputFrameHeight > 576 && inputFrameHeight < 1088) {//inputsource is 720
+                        if (inputFrameHeight > 720 && inputFrameHeight <= 1088) {//inputsource is 1080
+                            OutPutType = OUTPUT_TYPE_HDMI_NOSCALE;
+                        } else if (inputFrameHeight > 576 && inputFrameHeight <= 720) {//inputsource is 720
                             if (outputFrameHeight == 4096) {
                                 OutPutType = OUTPUT_TYPE_HDMI_HD_4096;
                             } else if (outputFrameHeight >= inputFrameHeight * 2) {
@@ -5620,7 +5620,7 @@ output_type_t CPQControl::CheckOutPutMode(void)
                         } else {//inputsource is 480
                             if (outputFrameHeight == 4096) {
                                 OutPutType = OUTPUT_TYPE_HDMI_SD_4096;
-                            } else if (outputFrameHeight >= inputFrameHeight * 2) {
+                            } else if ((outputFrameHeight * 8) >= (inputFrameHeight * 15)) {
                                 OutPutType = OUTPUT_TYPE_HDMI_SD_UPSCALE;
                             } else {
                                 OutPutType = OUTPUT_TYPE_HDMI_NOSCALE;

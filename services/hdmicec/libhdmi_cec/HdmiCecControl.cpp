@@ -1017,7 +1017,7 @@ int HdmiCecControl::preHandleOfSend(const cec_message_t* message)
             }
             break;
         case CEC_MESSAGE_STANDBY:
-            if (!mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.deviceautopoweroff", true)) {
+            if (!mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.deviceautopoweroff", false)) {
                 ALOGD("[hcc] filter <Standby>.");
                 ret = -1;
             }
@@ -1088,7 +1088,8 @@ void HdmiCecControl::optionInit()
     I just do like this , it is better to do by reading propety which sync with java setting
    */
     setOption(HDMI_CONTROL_AUTO_WAKEUP_ENABLED, mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.autowakeup", true));
-    setOption(HDMI_CONTROL_AUTO_DEVICE_OFF_ENABLED, mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.deviceautopoweroff", true));
+    // The default value of this switch is off
+    setOption(HDMI_CONTROL_AUTO_DEVICE_OFF_ENABLED, mSystemControl->getPropertyBoolean("persist.vendor.sys.cec.deviceautopoweroff", false));
 }
 
 void HdmiCecControl::handleHdmiHpdStatus(int flag)

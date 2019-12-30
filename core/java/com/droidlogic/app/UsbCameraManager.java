@@ -31,6 +31,10 @@ import android.os.UserHandle;
 //import android.os.ServiceManager;
 //import android.os.ServiceSpecificException;
 import android.util.Log;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class UsbCameraManager {
     private static final String TAG             = "UsbCameraManager";
@@ -85,6 +89,8 @@ public class UsbCameraManager {
             for (int i = 0; i < ACTIVITIES.length; i++) {
                 disableComponent(PACKAGES[i], ACTIVITIES[i]);
             }
+        } else {
+            new VideoDevThread(mContext, true).start();
         }
     }
 
@@ -212,6 +218,25 @@ public class UsbCameraManager {
                         Log.i(TAG, "/dev/video* num:" + devNum);
                     }
                 }
+
+                if (devNum == 0) {
+                   try {
+                       FileReader fread = new FileReader("/sys/class/camera/cam_state");
+                       BufferedReader buffer = new BufferedReader(fread);
+                       String str = null;
+                       while ((str = buffer.readLine()) != null) {
+                           if (str.equals("1")) {
+                               devNum++;
+                               break;
+                           }
+                       }
+                       buffer.close();
+                       fread.close();
+                   } catch (IOException e) {
+                       Log.e(TAG, "IO Exception");
+                   }
+                }
+
                 if (mIsAttach &&
                     //device path has been set up by kernel
                     ((devNum > mCamNum) ||

@@ -115,6 +115,14 @@ static const char* DV_MODE_TYPE[] = {
     "LL_RGB_444_12BIT"
 };
 
+
+int32_t isLcdExist() {
+    char value[PROPERTY_VALUE_MAX];
+    property_get("sys.lcd.exist", value, "0");
+    int32_t exist = atoi(value);
+    return exist;
+}
+
 /**
  * strstr - Find the first substring in a %NUL terminated string
  * @s1: The string to be searched
@@ -221,12 +229,12 @@ void DisplayMode::init() {
         pRxAuth = new HDCPRxAuth(pTxAuth);
         setSinkDisplay(true);
     } else if (DISPLAY_TYPE_TABLET == mDisplayType) {
-        #ifdef HWC_DYNAMIC_SWITCH_VIU
-        pTxAuth = new HDCPTxAuth();
-        pTxAuth->setUevntCallback(this);
-        pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
-        dumpCaps();
-        #endif
+        if (isLcdExist() == 1) {
+           pTxAuth = new HDCPTxAuth();
+           pTxAuth->setUevntCallback(this);
+           pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
+           dumpCaps();
+        }
     } else if (DISPLAY_TYPE_REPEATER == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
         pTxAuth->setUevntCallback(this);
@@ -345,6 +353,8 @@ int DisplayMode::parseConfigFile(){
                     SYS_LOGE("%s: Expected keyword, got '%s'.", tokenizer->getLocation(), token);
                     break;
                 }
+                if (isLcdExist() == 0)
+		mDisplayType = DISPLAY_TYPE_MBOX;
             }
 
             tokenizer->nextLine();
@@ -497,28 +507,26 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     if (strstr(mRebootMode, "quiescent") && (strstr(outputmode, MODE_PANEL) == NULL)) {
         SYS_LOGI("reboot_mode is quiescent\n");
-        #ifndef HWC_DYNAMIC_SWITCH_VIU
-        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-        #endif
+        if (isLcdExist() == 0)
+           pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         return;
     }
 
     if (strstr(curMode, outputmode) == NULL) {
         if (cvbsMode && (strstr(outputmode, MODE_PANEL) == NULL)) {
-            #ifndef HWC_DYNAMIC_SWITCH_VIU
-            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-            #endif
+            if (isLcdExist() == 0)
+               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         }
-        #ifdef HWC_DYNAMIC_SWITCH_VIU
-        if (DISPLAY_TYPE_TABLET == mDisplayType &&
-            !strcmp("panel", curDisplayMode)) {
-            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, outputmode);
+        if (isLcdExist() == 1) {
+            if (DISPLAY_TYPE_TABLET == mDisplayType &&
+               !strcmp("panel", curDisplayMode)) {
+               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, outputmode);
+            } else {
+               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
+            }
         } else {
             pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
         }
-        #else
-        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
-        #endif
     } else {
         SYS_LOGI("cur display mode is equals to outputmode, Do not need set it\n");
     }
@@ -542,8 +550,10 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     SYS_LOGI("set display-size:%s\n", defaultResolution);
 
     //update free_scale_axis and window_axis
-    //updateFreeScaleAxis();
-    //updateWindowAxis(outputmode);
+    if (isLcdExist() == 0) {
+       updateFreeScaleAxis();
+       updateWindowAxis(outputmode);
+    }
 
     initHdrSdrMode();
 
@@ -1139,16 +1149,14 @@ void DisplayMode::setAutoSwitchFrameRate(int state) {
 #ifdef DEFAULT_NO_CLK_OFFSET
     if ((state == OUPUT_MODE_STATE_SWITCH_ADAPTER) || pFrameRateAutoAdaption->autoSwitchFlag == true) {
         SYS_LOGI("FrameRate video need set mode to null, and policy to 1 to into adapter policy\n");
-        #ifndef HWC_DYNAMIC_SWITCH_VIU
-        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-        #endif
+        if (isLcdExist() == 0)
+           pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "1");
     } else {
         if (state == OUPUT_MODE_STATE_ADAPTER_END) {
             SYS_LOGI("End Hint FrameRate video need set mode to null to exit adapter policy\n");
-            #ifndef HWC_DYNAMIC_SWITCH_VIU
-            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-            #endif
+            if (isLcdExist() == 0)
+               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         }
         pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "0");
     }
@@ -1213,9 +1221,8 @@ void DisplayMode::updateDeepColor(bool cvbsMode, output_mode_state state, const 
         pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, attr);
         if (strstr(attr, colorAttribute) == NULL) {
             SYS_LOGI("set DeepcolorAttr value is different from attr sysfs value\n");
-            #ifndef HWC_DYNAMIC_SWITCH_VIU
-            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-            #endif
+            if (isLcdExist() == 0)
+                pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
             pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttribute);
         } else {
             SYS_LOGI("cur deepcolor attr value is equals to colorAttribute, Do not need set it\n");
@@ -1516,20 +1523,17 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
                 setDolbyVisionState = false;
                 if (mode_state != OUPUT_MODE_STATE_SWITCH) {
                     if (strstr(tvmode, MODE_4K2K60HZ)) {
-                        #ifndef HWC_DYNAMIC_SWITCH_VIU
-                        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-                        #endif
+                        if (isLcdExist() == 0)
+                            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
                         setSourceOutputMode(MODE_4K2K60HZ);
                     } else if (strstr(tvmode, MODE_1080P) || strstr(tvmode, MODE_4K2K30HZ)){
-		        #ifndef HWC_DYNAMIC_SWITCH_VIU
-                        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-                        #endif
+                        if (isLcdExist() == 0)
+                           pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
 			setSourceOutputMode(MODE_1080P);
                     }
                 } else {
-                    #ifndef HWC_DYNAMIC_SWITCH_VIU
-                    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-                    #endif
+                    if (isLcdExist() == 0)
+                       pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
                     setSourceOutputMode(outputmode);
                 }
                 setBootEnv(UBOOTENV_ISBESTMODE, "false");
@@ -1575,9 +1579,8 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
 
         char mode[MAX_STR_LEN] = {0};
         if (isTvSupportDolbyVision(mode)) {
-            #ifndef HWC_DYNAMIC_SWITCH_VIU
-            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-            #endif
+            if (isLcdExist() == 0)
+                pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
             setSourceOutputMode(outputmode);
         }
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());

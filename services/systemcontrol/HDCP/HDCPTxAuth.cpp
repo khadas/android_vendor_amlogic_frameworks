@@ -171,11 +171,8 @@ void* HDCPTxAuth::authThread(void* data) {
         if (!pThiz->authLoop(hdcp22, hdcp14)) {
             SYS_LOGE("HDCP authenticate fail\n");
         }
-        pThiz->mSysWrite.writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
-        pThiz->mSysWrite.writeSysfs(DISPLAY_FB0_FREESCALE, "0x10001");
-    } else {
-        pThiz->mSysWrite.writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
     }
+    pThiz->mSysWrite.writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_ENABLE);
     return NULL;
 }
 

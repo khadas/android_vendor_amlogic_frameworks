@@ -882,7 +882,10 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
             strcpy(value, tempMode);
         }
     }
-    if (strstr(value, "2160p30") || strstr(value, "2160p24") || strstr(value, "2160p25")) {
+    char disp_cap[MAX_STR_LEN] = {0};
+    pSysWrite->readSysfs(DISPLAY_HDMI_EDID, disp_cap);
+    if ((strstr(value, "2160p30") || strstr(value, "2160p24") || strstr(value, "2160p25"))
+            && (strstr(disp_cap, "1080p60hz") != NULL)) {
         strcpy(value, "1080p60hz");
     }
     strcpy(mode, value);

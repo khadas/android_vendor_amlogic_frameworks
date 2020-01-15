@@ -539,6 +539,7 @@ private:
     void dumpCaps(char *result=NULL);
     void saveHdmiParamToEnv();
     bool checkDolbyVisionStatusChanged(int state);
+    bool checkDolbyVisionDeepColorChanged(int state);
 
 
     const char* pConfigPath;

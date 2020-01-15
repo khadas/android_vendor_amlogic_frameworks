@@ -1802,6 +1802,7 @@ void DisplayMode::setHdrStrategy(const char* type) {
 void DisplayMode::initDolbyVision(output_mode_state state) {
     char dv_mode[MAX_STR_LEN];
     char bestDolbyVision[MODE_LEN] = {0};
+    SYS_LOGI("initDolbyVision %d\n",state);
     if (isTvSupportDolbyVision(dv_mode) && (!getBootEnv(UBOOTENV_BESTDOLBYVISION, bestDolbyVision) || strstr(bestDolbyVision, "true") != NULL)) {
         if (strstr(dv_mode, "LL_YCbCr_422_12BIT") != NULL) {
             if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE_LL_YUV,  state)) {
@@ -1831,13 +1832,31 @@ bool DisplayMode::getCurDolbyVisionState(int state, output_mode_state mode_state
     char dv_type[MODE_LEN] = {0};
     char dv_mode[MAX_STR_LEN] = {0};
     pSysWrite->readSysfs(DOLBY_VISION_LL_POLICY, dv_type);
-    if (mode_state != OUPUT_MODE_STATE_INIT) {
+    if ((mode_state != OUPUT_MODE_STATE_INIT)
+            || checkDolbyVisionStatusChanged(state)
+            || checkDolbyVisionDeepColorChanged(state)) {
         return false;
     }
-    if (!checkDolbyVisionStatusChanged(state)) {
+    return true;
+}
+
+bool DisplayMode::checkDolbyVisionDeepColorChanged(int state) {
+    char colorAttr[MODE_LEN] = {0};
+    char mode[MAX_STR_LEN] = {0};
+    pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, colorAttr);
+    if (isTvSupportDolbyVision(mode) && (state == DOLBY_VISION_SET_ENABLE)
+            && (strstr(colorAttr, "444,8bit") == NULL)) {
+        SYS_LOGI("colorAttr %s is not match with DV STD\n", colorAttr);
         return true;
-    }
-    return false;
+    } else if ((state == DOLBY_VISION_SET_ENABLE_LL_YUV) && (strstr(colorAttr, "422,12bit") == NULL)) {
+        SYS_LOGI("colorAttr %s is not match with DV LL YUV\n", colorAttr);
+        return true;
+    } else if ((state == DOLBY_VISION_SET_ENABLE_LL_RGB) && (strstr(colorAttr, "444,12bit") == NULL)
+                && (strstr(colorAttr, "444,10bit") == NULL)) {
+        SYS_LOGI("colorAttr %s is not match with DV LL RGB\n", colorAttr);
+         return true;
+     }
+     return false;
 }
 
 /* *

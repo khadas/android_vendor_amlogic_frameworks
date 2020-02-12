@@ -1699,8 +1699,7 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
             char hdr_policy[MODE_LEN] = {0};
             getHdrStrategy(hdr_policy);
             setHdrStrategy(hdr_policy);
-            pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY_OLD, DV_HDR_SINK_PROCESS);
-            pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY, DV_HDR_SINK_PROCESS);
+            setDvHdrPolicy(DV_HDR_SINK_PROCESS);
         }
 
         usleep(100000);//100ms
@@ -1806,6 +1805,18 @@ void DisplayMode::setHdrStrategy(const char* type) {
     }
     setBootEnv(UBOOTENV_HDR_POLICY, (char *)type);
 }
+void DisplayMode::setDvHdrPolicy(const char* policy) {
+    char dv_hdr10_policy[MODE_LEN] = {0};
+    int target_dv_hdr10_policy = 0;
+
+    pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY_OLD, policy);
+
+    pSysWrite->readSysfs(DOLBY_VISION_HDR10_POLICY, dv_hdr10_policy);
+    target_dv_hdr10_policy = atoi(dv_hdr10_policy) | atoi(policy);
+    sprintf(dv_hdr10_policy, "%d", target_dv_hdr10_policy);
+    pSysWrite->writeSysfs(DOLBY_VISION_HDR10_POLICY, dv_hdr10_policy);
+}
+
 
 void DisplayMode::initDolbyVision(output_mode_state state) {
     char dv_mode[MAX_STR_LEN];

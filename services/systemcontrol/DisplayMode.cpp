@@ -1752,7 +1752,12 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
         if (isTvSupportDolbyVision(mode)) {
             if (isLcdExist() == 0)
                 pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+            #ifndef HWC_DYNAMIC_SWITCH_VIU
+            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+            #endif
+            setDolbyVisionState = false;
             setSourceOutputMode(outputmode);
+            setDolbyVisionState = true;
         }
         SYS_LOGI("setDolbyVisionEnable Enable [%d]", isDolbyVisionEnable());
     }
@@ -1825,6 +1830,12 @@ void DisplayMode::initDolbyVision(output_mode_state state) {
             return;
         }
         setDolbyVisionEnable(getDolbyVisionType(),  state);
+    } else {
+        if (pSysWrite->getPropertyBoolean(PROP_ALWAYS_DOLBY_VISION, false)) {
+            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE,  state);
+        } else {
+            setDolbyVisionEnable(DOLBY_VISION_SET_DISABLE,  state);
+        }
     }
 }
 

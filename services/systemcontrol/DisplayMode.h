@@ -236,6 +236,7 @@ using namespace android;
 #define PROP_DOLBY_VISION_TV_TYPE       "persist.vendor.sys.tv.dolbyvision.type"
 #define PROP_DOLBY_VISION_CERTIFICATION "persist.vendor.sys.dolbyvision.certification"
 #define PROP_DOLBY_VISION_PRIORITY      "persist.vendor.sys.graphics.priority"
+#define PROP_ALWAYS_DOLBY_VISION        "vendor.system.always.dolbyvision"
 #define PROP_HDR_MODE_STATE             "persist.vendor.sys.hdr.state"
 #define PROP_SDR_MODE_STATE             "persist.vendor.sys.sdr.state"
 #define PROP_DISPLAY_SIZE_CHECK         "vendor.display-size.check"

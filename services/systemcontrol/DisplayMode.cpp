@@ -1795,36 +1795,47 @@ void DisplayMode::setHdrStrategy(const char* type) {
 void DisplayMode::initDolbyVision(output_mode_state state) {
     char dv_mode[MAX_STR_LEN];
     char bestDolbyVision[MODE_LEN] = {0};
+    int var = 0;
     SYS_LOGI("initDolbyVision %d\n",state);
-    if (isTvSupportDolbyVision(dv_mode) && (!getBootEnv(UBOOTENV_BESTDOLBYVISION, bestDolbyVision) || strstr(bestDolbyVision, "true") != NULL)) {
-        if (strstr(dv_mode, "LL_YCbCr_422_12BIT") != NULL) {
-            if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE_LL_YUV,  state)) {
-                return;
+    int type = getDolbyVisionType();
+    bool tv_mode = isTvSupportDolbyVision(dv_mode);
+    if (tv_mode && (((type == DOLBY_VISION_SET_ENABLE) && strstr(dv_mode, "DV_RGB_444_8BIT") == NULL)
+        || ((type == DOLBY_VISION_SET_ENABLE_LL_YUV) && strstr(dv_mode, "LL_YCbCr_422_12BIT") == NULL)
+        || ((type == DOLBY_VISION_SET_ENABLE_LL_RGB) && strstr(dv_mode, "LL_RGB_444_12BIT") == NULL && strstr(dv_mode, "LL_RGB_444_10BIT") == NULL))) {
+        setBootEnv(UBOOTENV_BESTDOLBYVISION, "true");
+    }
+    if (tv_mode && (!getBootEnv(UBOOTENV_BESTDOLBYVISION, bestDolbyVision) || strstr(bestDolbyVision, "true") != NULL)) {
+        if ((strstr(dv_mode, "DV_RGB_444_8BIT") != NULL) || (strstr(dv_mode, "LL_YCbCr_422_12BIT") != NULL)) {
+            if (pSysWrite->getPropertyBoolean(PROP_ALWAYS_DOLBY_VISION, false)) {
+                if (strstr(dv_mode, "DV_RGB_444_8BIT") != NULL) {
+                    var = DOLBY_VISION_SET_ENABLE;
+                } else if (strstr(dv_mode, "LL_YCbCr_422_12BIT") != NULL) {
+                    var = DOLBY_VISION_SET_ENABLE_LL_YUV;
+                }
+            } else {
+                if (strstr(dv_mode, "LL_YCbCr_422_12BIT") != NULL) {
+                    var = DOLBY_VISION_SET_ENABLE_LL_YUV;
+                } else if (strstr(dv_mode, "DV_RGB_444_8BIT") != NULL) {
+                    var = DOLBY_VISION_SET_ENABLE;
+                }
             }
-            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE_LL_YUV,  state);
-        } else if (strstr(dv_mode, "DV_RGB_444_8BIT") != NULL) {
-            if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE,  state)) {
-                return;
-            }
-            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE,  state);
         } else if ((strstr(dv_mode, "LL_RGB_444_12BIT") != NULL) || (strstr(dv_mode, "LL_RGB_444_10BIT") != NULL)) {
-            if (getCurDolbyVisionState(DOLBY_VISION_SET_ENABLE_LL_RGB,  state)) {
-                return;
-            }
-            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE_LL_RGB,  state);
+            var = DOLBY_VISION_SET_ENABLE_LL_RGB;
         }
     } else if (isDolbyVisionEnable()) {
-        if (getCurDolbyVisionState(getDolbyVisionType(),  state)) {
-            return;
-        }
-        setDolbyVisionEnable(getDolbyVisionType(),  state);
+        var = getDolbyVisionType();
     } else {
         if (pSysWrite->getPropertyBoolean(PROP_ALWAYS_DOLBY_VISION, false)) {
-            setDolbyVisionEnable(DOLBY_VISION_SET_ENABLE,  state);
+            var = DOLBY_VISION_SET_ENABLE;
         } else {
-            setDolbyVisionEnable(DOLBY_VISION_SET_DISABLE,  state);
+            var = DOLBY_VISION_SET_DISABLE;
         }
     }
+    if (getCurDolbyVisionState(var,  state)) {
+        SYS_LOGI("Current dolby vision type is same as the set value. return\n");
+        return;
+    }
+    setDolbyVisionEnable(var,  state);
 }
 
 bool DisplayMode::getCurDolbyVisionState(int state, output_mode_state mode_state) {

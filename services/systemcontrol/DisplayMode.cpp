@@ -501,6 +501,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     bool cvbsMode = false;
     char tmpMode[MODE_LEN] = {0};
+    bool phy_enabled_already = false;
     if (!strcmp(outputmode, "auto")) {
         hdmi_data_t data;
 
@@ -548,6 +549,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
             pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1");
             //usleep(100000);//100ms
             pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); /* Turn off TMDS PHY */
+            phy_enabled_already = false;
             usleep(50000);//50ms
         }
     }
@@ -593,6 +595,8 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         #else
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
         #endif
+        /* phy already turned on after write display/mode node */
+        phy_enabled_already = true;
     } else {
         //On a normal TV that supports I system, the screen will go black when the power is cut off and reconnect to the DV TV
         if (isDolbyVisionEnable() && isTvSupportDolbyVision(tmpMode) && strstr(curMode,"i")) {
@@ -648,8 +652,10 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
     //4. turn on phy and clear avmute
     if (OUPUT_MODE_STATE_INIT != state && !cvbsMode) {
-        pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
-        usleep(20000);
+        if (!phy_enabled_already) {
+            pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
+            usleep(20000);
+        }
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "1");
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "0");
         if ((state == OUPUT_MODE_STATE_SWITCH) && isDolbyVisionEnable())

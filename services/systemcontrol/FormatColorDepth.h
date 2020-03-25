@@ -47,7 +47,12 @@
 #define COLOR_RGB_10BIT                  "rgb,10bit"
 #define COLOR_RGB_8BIT                   "rgb,8bit"
 
-#define EDID_SIZE                        513
+/* In HDMI 2.1 CTS, the blocks of EDID data will increase to 4 blocks,
+ * and the binary data size will be 128 x 4 = 512bytes
+ * So cat /sys/class/amhdmitx/amhdmitx0/rawedid will be double
+ * to 1024, plus the '\0' char.
+ */
+#define EDID_SIZE 1025
 
 class FormatColorDepth
 {

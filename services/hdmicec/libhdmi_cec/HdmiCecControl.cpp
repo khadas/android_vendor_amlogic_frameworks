@@ -718,14 +718,6 @@ int HdmiCecControl::addLogicalAddress(cec_logical_address_t address)
         mCecDevice.mAddrBitmap |= (1 << address);
     }
 
-    if (mCecDevice.isPlaybackDeviceType) {
-        /*try to turn on TV when playback wakeup*/
-        CMessage msg;
-        msg.mType = HdmiCecControl::MsgHandler::MSG_TURN_ON_DEVICE;
-        msg.mDelayMs = DELAY_TIMEOUT_MS/7;
-        msg.mpPara[0] = DEV_TYPE_TV;
-        mMsgHandler.sendMsg (msg);
-    }
     ALOGD("[hcc] addr:%x, bitmap:%x\n", mCecDevice.mLogicalAddress, mCecDevice.mAddrBitmap);
     return ioctl(mCecDevice.mFd, CEC_IOC_ADD_LOGICAL_ADDR, address);
 }
@@ -1050,34 +1042,15 @@ int HdmiCecControl::postHandleOfSend(const cec_message_t* message, int result)
 void HdmiCecControl::turnOnDevice(int logicalAddress)
 {
     cec_message_t message;
-    if (mCecDevice.isTvDeviceType) {
-        message.initiator = (cec_logical_address_t)DEV_TYPE_TV;
-    } else if (mCecDevice.isPlaybackDeviceType) {
-       message.initiator = (cec_logical_address_t)DEV_TYPE_PLAYBACK;
-    } else {
-        message.initiator = (cec_logical_address_t)(0xe);
-    }
+    message.initiator = (cec_logical_address_t)mCecDevice.mLogicalAddress;
     message.destination = (cec_logical_address_t)logicalAddress;
     message.body[0] = CEC_MESSAGE_USER_CONTROL_PRESSED;
-    /*
-    message.body[1] = (CEC_KEYCODE_POWER & 0xff);
-    message.length = 2;
-    sendMessage(&message, false);
-    message.body[0] = CEC_MESSAGE_USER_CONTROL_RELEASED;
-    message.length = 1;
-    sendMessage(&message, false);
-    */
     message.body[1] = (CEC_KEYCODE_POWER_ON_FUNCTION & 0xff);
     message.length = 2;
     send(&message);
     message.body[0] = CEC_MESSAGE_USER_CONTROL_RELEASED;
     message.length = 1;
     send(&message);
-    if (mCecDevice.isPlaybackDeviceType) {
-        message.body[0] = CEC_MESSAGE_TEXT_VIEW_ON;
-        message.length = 1;
-        send(&message);
-    }
     ALOGD("[hcc] send wakeUp message.");
 }
 

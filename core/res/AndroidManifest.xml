@@ -105,6 +105,18 @@
                 <action android:name="android.intent.action.GLOBAL_BUTTON" />
             </intent-filter>
         </receiver>
+        <provider
+            android:name="com.droidlogic.database.DataProvider"
+            android:authorities="com.droidlogic.database"
+            android:exported="true">
+            <!--android:writePermission="com.droidlogic.database.WRITE_DATA">-->
+        <grant-uri-permission android:pathPattern="/tv_control_scan" />
+        <grant-uri-permission android:pathPattern="/tv_control_sound" />
+        <grant-uri-permission android:pathPattern="/tv_control_pppoe" />
+        <grant-uri-permission android:pathPattern="/tv_control_others" />
+        <grant-uri-permission android:pathPattern="/prop_table" />
+        <grant-uri-permission android:pathPattern="/string_table" />
+        </provider>
     </application>
 
 </manifest>

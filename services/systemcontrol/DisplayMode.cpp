@@ -541,7 +541,11 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     bool cvbsMode = false;
     char tmpMode[MODE_LEN] = {0};
-    bool phy_enabled_already = false;
+    /* not enable phy in systemcontrol by default
+     * as phy will be enabled in driver when set mode
+     * only enable phy if phy is disabled but not enabled
+     */
+    bool phy_enabled_already = true;
     if (!strcmp(outputmode, "auto")) {
         hdmi_data_t data;
 
@@ -585,7 +589,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     if (OUPUT_MODE_STATE_INIT != state) {
         pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
         if (OUPUT_MODE_STATE_POWER != state) {
-            usleep(50000);//50ms
+            usleep(80000);//80ms
             pSysWrite->writeSysfs(DISPLAY_HDMI_HDCP_MODE, "-1");
             //usleep(100000);//100ms
             pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "0"); /* Turn off TMDS PHY */

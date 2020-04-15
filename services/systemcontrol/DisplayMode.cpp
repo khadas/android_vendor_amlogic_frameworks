@@ -1663,18 +1663,6 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
 			setSourceOutputMode(MODE_1080P);
                     }
                 } else {
-                    if (isLcdExist() == 0)
-                       pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-                    setSourceOutputMode(outputmode);
-                        if (value_state == DOLBY_VISION_SET_ENABLE_LL_RGB) {
-                            setSourceOutputMode(MODE_1080P);
-                        } else {
-                            setSourceOutputMode(MODE_4K2K60HZ);
-                        }
-                    } else if (strstr(tvmode, MODE_1080P) || strstr(tvmode, MODE_4K2K30HZ)){
-                        setSourceOutputMode(MODE_1080P);
-                    }
-                } else {
                     char bestDolbyVision[MODE_LEN] = {0};
                     if (!getBootEnv(UBOOTENV_BESTDOLBYVISION, bestDolbyVision) || strstr(bestDolbyVision, "true") != NULL) {
                         if ((value_state == DOLBY_VISION_SET_ENABLE_LL_RGB)

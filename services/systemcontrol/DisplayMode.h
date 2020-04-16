@@ -243,6 +243,7 @@ using namespace android;
 #define PROP_DISPLAY_SIZE               "vendor.display-size"
 #define PROP_ENABLE_SDR2HDR             "ro.vendor.sdr2hdr.enable"
 #define PROP_DISABLE_SDR2HDR            "ro.vendor.sdr2hdr.disable"
+#define PROP_HDMI_FRAMERATE_PRIORITY    "persist.vendor.sys.framerate.priority"
 
 #define HDR_MODE_OFF                    "0"
 #define HDR_MODE_ON                     "1"
@@ -424,18 +425,6 @@ typedef struct axis_s {
     int h;
 } axis_t;
 
-typedef struct resolution {
-//       resolution       standard frequency deepcolor
-//          2160             p       50hz      420   //2160p50hz420
-//          1080             p       60hz        0   //1080p60hz
-//0x00 0000 0000 0000 0000 | 0 | 0000 0000 | 0 0000 0000 //resolution_num
-    int resolution;
-    char standard;
-    int frequency;
-    int deepcolor;
-    int64_t resolution_num;
-} resolution_t;
-
 // ----------------------------------------------------------------------------
 
 class DisplayMode : public HDCPTxAuth::TxUevntCallbak,
@@ -515,7 +504,6 @@ private:
     void getHighestPriorityMode(char* mode, hdmi_data_t* data);
     void filterHdmiMode(char * mode, hdmi_data_t* data);
     void getHdmiOutputMode(char *mode, hdmi_data_t* data);
-    void resolveResolution(const char *mode, resolution_t* resol_t);
     void setAutoSwitchFrameRate(int state);
     void updateDefaultUI();
     void updateDeepColor(bool cvbsMode, output_mode_state state, const char* outputmode);

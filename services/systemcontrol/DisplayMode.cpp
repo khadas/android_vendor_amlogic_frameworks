@@ -76,6 +76,36 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_PAL_N,
     MODE_NTSC_M,
 };
+static const char* MODE_RESOLUTION_FIRST[] = {
+    MODE_480I,
+    MODE_576I,
+    MODE_480P,
+    MODE_576P,
+    MODE_720P50HZ,
+    MODE_720P,
+    MODE_1080P50HZ,
+    MODE_1080P,
+    MODE_4K2K24HZ,
+    MODE_4K2K25HZ,
+    MODE_4K2K30HZ,
+    MODE_4K2K50HZ,
+    MODE_4K2K60HZ,
+};
+static const char* MODE_FRAMERATE_FIRST[] = {
+    MODE_480I,
+    MODE_576I,
+    MODE_480P,
+    MODE_576P,
+    MODE_720P50HZ,
+    MODE_720P,
+    MODE_4K2K24HZ,
+    MODE_4K2K25HZ,
+    MODE_4K2K30HZ,
+    MODE_1080P50HZ,
+    MODE_1080P,
+    MODE_4K2K50HZ,
+    MODE_4K2K60HZ,
+};
 
 // Sink reference table, sorted by priority, per CDF
 static const char* MODES_SINK[] = {
@@ -888,31 +918,12 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
             strcpy(value, tempMode);
         }
     }
-    char disp_cap[MAX_STR_LEN] = {0};
-    pSysWrite->readSysfs(DISPLAY_HDMI_EDID, disp_cap);
-    if ((strstr(value, "2160p30") || strstr(value, "2160p24") || strstr(value, "2160p25"))
-            && (strstr(disp_cap, "1080p60hz") != NULL)) {
-        strcpy(value, "1080p60hz");
-    }
+
     strcpy(mode, value);
     SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
 }
 
 int64_t DisplayMode::resolveResolutionValue(const char *mode) {
-    resolution_t resol_t;
-    resolveResolution(mode, &resol_t);
-    return resol_t.resolution_num;
-}
-
-/* *
- * @Description: convert resolution into a int binary value.
- *              priority level: resolution-->standard-->frequency-->deepcolor
- *              1080p60hz       1080           p           60          00
- *              2160p60hz420    2160           p           60          420
- *  User can select Highest resolution base this value.
- */
-void DisplayMode::resolveResolution(const char *mode, resolution_t* resol_t) {
-    memset(resol_t, 0, sizeof(resolution_t));
     bool validMode = false;
     if (strlen(mode) != 0) {
         for (int i = 0; i < DISPLAY_MODE_TOTAL; i++) {
@@ -924,23 +935,23 @@ void DisplayMode::resolveResolution(const char *mode, resolution_t* resol_t) {
     }
     if (!validMode) {
         SYS_LOGI("the resolveResolution mode [%s] is not valid\n", mode);
-        return;
+        return -1;
     }
 
-    resol_t->resolution = atoi(mode);
-    resol_t->standard = strstr(mode, "p") == NULL ? 'i' : 'p';
-    char* position = (char *)strstr(mode, resol_t->standard == 'p' ? "p" : "i");
-    resol_t->frequency = atoi(position + 1);
-    position = (char *)strstr(mode, "hz");
-    resol_t->deepcolor = strlen(position + 2) == 0 ? 0 : atoi(position + 2);
-
-    int i = strstr(mode, "p") == NULL ? 0 : 1;
-    //[ 0:15]bit : resolution deepcolor
-    //[16:27]bit : frequency
-    //[28:31]bit : standard 'p' is 1, and 'i' is 0.
-    //[32:63]bit : resolution
-    resol_t->resolution_num = resol_t->deepcolor + (resol_t->frequency<< 16)
-        + (((int64_t)i) << 28) + (((int64_t)resol_t->resolution) << 32);
+    if (pSysWrite->getPropertyBoolean(PROP_HDMI_FRAMERATE_PRIORITY, false)) {
+        for (int64_t index = 0; index < sizeof(MODE_FRAMERATE_FIRST)/sizeof(char *); index++) {
+            if (strcmp(mode, MODE_FRAMERATE_FIRST[index]) == 0) {
+                return index;
+            }
+        }
+    } else {
+        for (int64_t index = 0; index < sizeof(MODE_RESOLUTION_FIRST)/sizeof(char *); index++) {
+            if (strcmp(mode, MODE_RESOLUTION_FIRST[index]) == 0) {
+                return index;
+            }
+        }
+    }
+    return -1;
 }
 
 //get the highest priority mode defined by CDF table

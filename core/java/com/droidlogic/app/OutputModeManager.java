@@ -108,6 +108,7 @@ public class OutputModeManager {
     public static final String PROP_DEEPCOLOR               = "vendor.sys.open.deepcolor";
     public static final String PROP_DTSDRCSCALE             = "persist.vendor.sys.dtsdrcscale";
     public static final String PROP_DTSEDID                 = "persist.vendor.sys.dts.edid";
+    public static final String PROP_HDMI_FRAMERATE_PRIORITY = "persist.vendor.sys.framerate.priority";
 
     public static final String FULL_WIDTH_480               = "720";
     public static final String FULL_HEIGHT_480              = "480";
@@ -313,6 +314,36 @@ public class OutputModeManager {
     public static final int DOLBY_VISION                    = 0;
     public static final int HDR10                           = 1;
 
+    private static final String[] MODE_RESOLUTION_FIRST = {
+        "480i60hz",
+        "576i50hz",
+        "480p60hz",
+        "576p50hz",
+        "720p50hz",
+        "720p60hz",
+        "1080p50hz",
+        "1080p60hz",
+        "2160p24hz",
+        "2160p25hz",
+        "2160p30hz",
+        "2160p50hz",
+        "2160p60hz",
+    };
+    private static final String[] MODE_FRAMERATE_FIRST = {
+        "480i60hz",
+        "576i50hz",
+        "480p60hz",
+        "576p50hz",
+        "720p50hz",
+        "720p60hz",
+        "2160p24hz",
+        "2160p25hz",
+        "2160p30hz",
+        "1080p50hz",
+        "1080p60hz",
+        "2160p50hz",
+        "2160p60hz",
+    };
     private static String currentColorAttribute = null;
     private static String currentOutputmode = null;
     private boolean ifModeSetting = false;
@@ -471,46 +502,21 @@ public class OutputModeManager {
     }
 
     public String getHighestMatchResolution() {
-        final String KEY = "hz";
-        final String FORMAT_P = "p";
-        final String FORMAT_I = "i";
-
-        String[] supportList = null;
         String value = readSupportList(HDMI_SUPPORT_LIST);
-        if (value.indexOf(HDMI_480) >= 0 || value.indexOf(HDMI_576) >= 0
-            || value.indexOf(HDMI_720) >= 0 || value.indexOf(HDMI_1080) >= 0
-            || value.indexOf(HDMI_4K2K) >= 0 || value.indexOf(HDMI_SMPTE) >= 0) {
-            supportList = (value.substring(0, value.length()-1)).split(",");
-        }
-
-        int type = -1;
-        int intMode = -1, higMode = 0, lenMode = 0;
-        String outputMode = null;
-        if (supportList != null) {
-            for (int i = 0; i < supportList.length; i++) {
-                String[] pref = supportList[i].split(KEY);
-                if (pref != null) {
-                    if ((type = supportList[i].indexOf(FORMAT_P)) >= 3) {          //p
-                        intMode = Integer.parseInt(pref[0].replace(FORMAT_P, "1"));
-                    } else if ((type = supportList[i].indexOf(FORMAT_I)) > 0) {    //i
-                        intMode = Integer.parseInt(pref[0].replace(FORMAT_I, "0"));
-                    } else {                                                        //other
-                        continue;
-                    }
-                    if (intMode >= higMode) {
-                        int len = supportList[i].length();
-                        if (intMode == higMode && lenMode >= len) continue;
-                        lenMode = len;
-                        higMode = intMode;
-                        if (supportList[i].contains("*"))
-                            outputMode = supportList[i].substring(0, supportList[i].length()-1);
-                        else
-                            outputMode = supportList[i];
-                    }
+        if (getPropertyBoolean(PROP_HDMI_FRAMERATE_PRIORITY, false)) {
+            for (int i = MODE_FRAMERATE_FIRST.length - 1; i >= 0 ; i--) {
+                if (value.contains(MODE_FRAMERATE_FIRST[i])) {
+                    return MODE_FRAMERATE_FIRST[i];
+                }
+            }
+        } else {
+            for (int i = MODE_RESOLUTION_FIRST.length - 1; i >= 0 ; i--) {
+                if (value.contains(MODE_RESOLUTION_FIRST[i])) {
+                    return MODE_RESOLUTION_FIRST[i];
                 }
             }
         }
-        if (outputMode != null) return outputMode;
+
         return getPropertyString(PROP_BEST_OUTPUT_MODE, DEFAULT_OUTPUT_MODE);
     }
 

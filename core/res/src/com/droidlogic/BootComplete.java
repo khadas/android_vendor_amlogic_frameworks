@@ -22,7 +22,6 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.content.ContentResolver;
 import android.util.Log;
-import android.media.AudioManager;
 import android.provider.Settings;
 
 import android.content.ComponentName;
@@ -31,15 +30,12 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 import com.droidlogic.app.OutputModeManager;
 import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
-import com.droidlogic.app.AudioSettingManager;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
@@ -52,8 +48,6 @@ public class BootComplete extends BroadcastReceiver {
     private SystemControlEvent mSystemControlEvent;
     private boolean mHasTvUiMode;
     private SystemControlManager mSystemControlManager;
-    private AudioManager mAudioManager;
-    private AudioSettingManager mAudioSettingManager;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -65,7 +59,6 @@ public class BootComplete extends BroadcastReceiver {
         }
         SettingsPref.setSavedBootCompletedStatus(context, true);
         mSystemControlManager =  SystemControlManager.getInstance();
-        mAudioSettingManager = new AudioSettingManager(context);
         mHasTvUiMode = mSystemControlManager.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false);
         final ContentResolver resolver = context.getContentResolver();
         //register system control callback
@@ -73,20 +66,11 @@ public class BootComplete extends BroadcastReceiver {
         mSystemControlManager.setHdmiHotPlugListener(mSystemControlEvent);
         final OutputModeManager outputModeManager = new OutputModeManager(context);
 
-        mAudioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
-
-        int currentIndex = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-        setWiredDeviceConnectionState(SystemControlEvent.DEVICE_OUT_AUX_DIGITAL,
-                (outputModeManager.isHDMIPlugged() == true) ? 1 : 0, "", "");
-
         if (SettingsPref.getFirstRun(context)) {
             Log.i(TAG, "first running: " + context.getPackageName());
-            SettingsPref.setFirstRun(context, false);
-            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, currentIndex, 1 << 12);
+            //TODO
         }
 
-        /*setThisValue for dts scale*/
-        outputModeManager.setDtsDrcScaleSysfs();
         //use to check whether disable camera or not
         new UsbCameraManager(context).bootReady();
 
@@ -141,26 +125,6 @@ public class BootComplete extends BroadcastReceiver {
 
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             SettingsPref.setSavedBootCompletedStatus(context, false);
-        }
-    }
-
-    private void setWiredDeviceConnectionState(int type, int state, String address, String name) {
-        try {
-            Class<?> audioManager = Class.forName("android.media.AudioManager");
-            Method setwireState = audioManager.getMethod("setWiredDeviceConnectionState",
-                                    int.class, int.class, String.class, String.class);
-            Log.d(TAG,"setWireDeviceConnectionState "+setwireState);
-            setwireState.invoke(mAudioManager, type, state, address, name);
-        } catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException ex) {
-            ex.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
         }
     }
 

@@ -42,7 +42,8 @@
     <uses-permission android:name="android.permission.SET_TIME" />
     <uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED"/>
 
-    <application android:persistent="true"
+    <application android:name=".DroidlogicApplication"
+                 android:persistent="true"
                  android:hasCode="true"
                  android:label="@string/droidlogic_system_label"
                  android:allowClearUserData="false"

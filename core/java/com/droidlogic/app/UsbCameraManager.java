@@ -39,10 +39,12 @@ public class UsbCameraManager {
 
     private static final String PACKAGES[]      = {
         "com.android.camera2",
+        "com.android.camera2",
     };
 
     private static final String ACTIVITIES[]    = {
         "com.android.camera.CameraLauncher",
+        "com.android.camera.CameraActivity",
     };
 
     private Context mContext;

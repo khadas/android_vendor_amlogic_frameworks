@@ -655,9 +655,8 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     SYS_LOGI("setMboxOutputMode cvbsMode = %d\n", cvbsMode);
     //4. turn on phy and clear avmute
     if (OUPUT_MODE_STATE_INIT != state && !cvbsMode) {
-        /* phy already turn on after write display/mode node */
-        /* pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); */ /* Turn on TMDS PHY */
-        /* usleep(20000); */
+        pSysWrite->writeSysfs(DISPLAY_HDMI_PHY, "1"); /* Turn on TMDS PHY */
+        usleep(20000);
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "1");
         pSysWrite->writeSysfs(DISPLAY_HDMI_AUDIO_MUTE, "0");
         if ((state == OUPUT_MODE_STATE_SWITCH) && isDolbyVisionEnable())

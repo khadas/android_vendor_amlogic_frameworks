@@ -59,10 +59,6 @@ LOCAL_CPPFLAGS += -std=c++14
 LOCAL_CFLAGS += -DANDROID_PLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
 LOCAL_CFLAGS += -Wno-unused-variable -Wno-unused-parameter
 
-ifeq ($(HWC_DYNAMIC_SWITCH_VIU), true)
-LOCAL_CFLAGS += -DHWC_DYNAMIC_SWITCH_VIU
-endif
-
 LOCAL_SRC_FILES:= \
   main_systemcontrol.cpp \
   ubootenv/Ubootenv.cpp \

@@ -146,7 +146,6 @@ static const char* DV_MODE_TYPE[] = {
     "LL_RGB_444_10BIT"
 };
 
-
 int32_t isLcdExist() {
     char value[PROPERTY_VALUE_MAX];
     property_get("sys.lcd.exist", value, "0");
@@ -275,11 +274,11 @@ void DisplayMode::init() {
         setTvRecoveryDisplay();
 #endif
     } else if (DISPLAY_TYPE_TABLET == mDisplayType) {
-        if (isLcdExist() == 1) {
-           pTxAuth = new HDCPTxAuth();
-           pTxAuth->setUevntCallback(this);
-           pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
-           dumpCaps();
+	if (isLcdExist() == 1) {
+               pTxAuth = new HDCPTxAuth();
+               pTxAuth->setUevntCallback(this);
+               pTxAuth->setFRAutoAdpt(new FrameRateAutoAdaption(this));
+               dumpCaps();
         }
     } else if (DISPLAY_TYPE_REPEATER == mDisplayType) {
         pTxAuth = new HDCPTxAuth();
@@ -400,7 +399,7 @@ int DisplayMode::parseConfigFile(){
                     break;
                 }
                 if (isLcdExist() == 0)
-		mDisplayType = DISPLAY_TYPE_MBOX;
+                    mDisplayType = DISPLAY_TYPE_MBOX;
             }
 
             tokenizer->nextLine();
@@ -617,25 +616,25 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
 
     if (strstr(mRebootMode, "quiescent") && (strstr(outputmode, MODE_PANEL) == NULL)) {
         SYS_LOGI("reboot_mode is quiescent\n");
-        if (isLcdExist() == 0)
-           pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+	if (isLcdExist() == 0)
+              pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         return;
     }
     SYS_LOGI("curMode = %s outputmode = %s",curMode,outputmode);
     if (strstr(curMode, outputmode) == NULL) {
         if (cvbsMode && (strstr(outputmode, MODE_PANEL) == NULL)) {
             if (isLcdExist() == 0)
-               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+                pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         }
         if (isLcdExist() == 1) {
-            if (DISPLAY_TYPE_TABLET == mDisplayType &&
+               if (DISPLAY_TYPE_TABLET == mDisplayType &&
                !strcmp("panel", curDisplayMode)) {
-               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, outputmode);
-            } else {
-               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
-            }
+                   pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, outputmode);
+               } else {
+                   pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
+               }
         } else {
-            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
+               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
         }
         /* phy already turned on after write display/mode node */
         phy_enabled_already = true;
@@ -671,6 +670,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
     pSysWrite->getPropertyString(PROP_DISPLAY_SIZE, defaultResolution, "0x0");
     SYS_LOGI("set display-size:%s\n", defaultResolution);
 
+    // no need to update
     // update free_scale_axis and window_axis in recovery mode
 #ifdef RECOVERY_MODE
     updateFreeScaleAxis();
@@ -1272,13 +1272,13 @@ void DisplayMode::setAutoSwitchFrameRate(int state) {
     if ((state == OUPUT_MODE_STATE_SWITCH_ADAPTER) || pFrameRateAutoAdaption->autoSwitchFlag == true) {
         SYS_LOGI("FrameRate video need set mode to null, and policy to 1 to into adapter policy\n");
         if (isLcdExist() == 0)
-           pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "1");
     } else {
         if (state == OUPUT_MODE_STATE_ADAPTER_END) {
             SYS_LOGI("End Hint FrameRate video need set mode to null to exit adapter policy\n");
             if (isLcdExist() == 0)
-               pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
+                pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
         }
         pSysWrite->writeSysfs(HDMI_TX_FRAMRATE_POLICY, "0");
     }
@@ -1666,21 +1666,20 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
                 getBootEnv(UBOOTENV_COLORATTRIBUTE, saveAttr);
                 pSysWrite->readSysfs(DISPLAY_HDMI_COLOR_ATTR, attr);
                 if (strstr(attr, saveAttr) == NULL) {
-                    #ifndef HWC_DYNAMIC_SWITCH_VIU
-                    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-                    #endif
+                    if (isLcdExist() == 0)
+                        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
                 }
 
                 if ((pSysWrite->getPropertyBoolean(PROP_DOLBY_VISION_CERTIFICATION, false))
                         && (mode_state != OUPUT_MODE_STATE_SWITCH)) {
                     if (strstr(tvmode, MODE_4K2K60HZ)) {
-                        if (isLcdExist() == 0)
-                            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-                        setSourceOutputMode(MODE_4K2K60HZ);
+                        if (value_state == DOLBY_VISION_SET_ENABLE_LL_RGB) {
+                            setSourceOutputMode(MODE_1080P);
+                        } else {
+                            setSourceOutputMode(MODE_4K2K60HZ);
+                        }
                     } else if (strstr(tvmode, MODE_1080P) || strstr(tvmode, MODE_4K2K30HZ)){
-                        if (isLcdExist() == 0)
-                           pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-			setSourceOutputMode(MODE_1080P);
+                        setSourceOutputMode(MODE_1080P);
                     }
                 } else {
                     char bestDolbyVision[MODE_LEN] = {0};
@@ -1761,9 +1760,6 @@ void DisplayMode::setDolbyVisionEnable(int state,  output_mode_state mode_state)
         if (isTvSupportDolbyVision(mode)) {
             if (isLcdExist() == 0)
                 pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-            #ifndef HWC_DYNAMIC_SWITCH_VIU
-            pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, "null");
-            #endif
             setDolbyVisionState = false;
             setSourceOutputMode(outputmode);
             setDolbyVisionState = true;

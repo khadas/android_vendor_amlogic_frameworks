@@ -215,7 +215,7 @@ public class UsbCameraManager {
                     String path = DEV_VIDEO_prefix + i;
                     if (new File(path).exists()) {
                         devNum++;
-                        Log.i(TAG, "/dev/video* num:" + devNum);
+                       // Log.i(TAG, "/dev/video* num:" + devNum);
                     }
                 }
 

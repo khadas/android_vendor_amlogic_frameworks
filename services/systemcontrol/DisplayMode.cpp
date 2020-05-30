@@ -20,7 +20,7 @@
  */
 
 #define LOG_TAG "SystemControl"
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 
 #include <stdio.h>
 #include <errno.h>
@@ -629,7 +629,7 @@ void DisplayMode::setSourceOutputMode(const char* outputmode, output_mode_state 
         if (isLcdExist() == 1) {
                if (DISPLAY_TYPE_TABLET == mDisplayType &&
                !strcmp("panel", curDisplayMode)) {
-                   pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, outputmode);
+                   pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE2, "null");
                } else {
                    pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
                }

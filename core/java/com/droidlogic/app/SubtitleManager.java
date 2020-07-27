@@ -765,7 +765,9 @@ public class SubtitleManager {
                 mService = ISubTitleService.Stub.asInterface(service);
                 LOGI("SubTitleClient.onServiceConnected()..mService:"+mService);
                 try {
-                    mService.registerCallback(mCallback);
+                    if (mService != null) {
+                        mService.registerCallback(mCallback);
+                    }
                     LOGI("SubTitleClient.onServiceConnected()..registerCallback:");
                 } catch (RemoteException e) {
                     e.printStackTrace();
@@ -1072,7 +1074,7 @@ public class SubtitleManager {
                                 }
                                 LOGI("[runnable]showSub:" + pos);
                             }
-                            if (!mThreadStop) {
+                            if (!mThreadStop && mService != null) {
                                 mService.showSub (pos);
                             }
                             //mService.showSub (pos);

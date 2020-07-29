@@ -353,6 +353,7 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
             }
             else if (!strcmp(ueventData.switchState, HDMI_TX_SUSPEND)) {
                 pThiz->mSysWrite.writeSysfs(DISPLAY_HDMI_HDCP_POWER, "1");
+		pThiz->mpCallback->onTxEvent(ueventData.switchName, ueventData.switchState, OUPUT_MODE_STATE_POWER);
             }
         }
         else if (!strcmp(ueventData.matchName, HDMI_TX_HDR_UEVENT) && !strcmp(ueventData.switchName, HDMI_UEVENT_HDMI_HDR)) {

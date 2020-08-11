@@ -60,7 +60,6 @@ cc_library_shared {
         "libhidltransport",
     ],
 
-    product_specific: true,
     vendor_available: true,
 
 }

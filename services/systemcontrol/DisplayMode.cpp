@@ -2114,6 +2114,14 @@ void DisplayMode::onTxEvent (char* switchName, char* hpdstate, int outputState) 
         setBootEnv(UBOOTENV_REBOOT_MODE, mRebootMode);
     }
 #endif
+
+    if (hpdstate && hpdstate[0] == '0') {
+        char outputmode[MODE_LEN] = {0};
+        getBootEnv(UBOOTENV_CVBSMODE, outputmode);
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
+        return;
+    }
+
     setSourceDisplay((output_mode_state)outputState);
 }
 

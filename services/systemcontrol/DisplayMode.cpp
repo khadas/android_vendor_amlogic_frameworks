@@ -839,14 +839,12 @@ bool DisplayMode::writeHdcpRXImg(const char *path) {
 
 //get the best hdmi mode by edid
 void DisplayMode::getBestHdmiMode(char* mode, hdmi_data_t* data) {
-    char* pos = strchr(data->edid, '*');
+    char* pos = strchr(data->disp_cap, '*');
     if (pos != NULL) {
         char* findReturn = pos;
-        while (*findReturn != 0x0a && findReturn >= data->edid) {
+        while (*findReturn != 0x0a && findReturn >= data->disp_cap) {
             findReturn--;
         }
-        //*pos = 0;
-        //strcpy(mode, findReturn + 1);
 
         findReturn = findReturn + 1;
         strncpy(mode, findReturn, pos - findReturn);
@@ -856,34 +854,6 @@ void DisplayMode::getBestHdmiMode(char* mode, hdmi_data_t* data) {
     if (strlen(mode) == 0) {
         pSysWrite->getPropertyString(PROP_BEST_OUTPUT_MODE, mode, DEFAULT_OUTPUT_MODE);
     }
-
-  /*
-    char* arrayMode[MAX_STR_LEN] = {0};
-    char* tmp;
-
-    int len = strlen(data->edid);
-    tmp = data->edid;
-    int i = 0;
-
-    do {
-        if (strlen(tmp) == 0)
-            break;
-        char* pos = strchr(tmp, 0x0a);
-        *pos = 0;
-
-        arrayMode[i] = tmp;
-        tmp = pos + 1;
-        i++;
-    } while (tmp <= data->edid + len -1);
-
-    for (int j = 0; j < i; j++) {
-        char* pos = strchr(arrayMode[j], '*');
-        if (pos != NULL) {
-            *pos = 0;
-            strcpy(mode, arrayMode[j]);
-            break;
-        }
-    }*/
 }
 
 //get the highest hdmi mode by edid
@@ -894,7 +864,7 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
     char* startpos;
     char* destpos;
 
-    startpos = data->edid;
+    startpos = data->disp_cap;
     strcpy(value, DEFAULT_OUTPUT_MODE);
 
     while (strlen(startpos) > 0) {
@@ -977,7 +947,7 @@ void DisplayMode::getHighestPriorityMode(char* mode, hdmi_data_t* data) {
     }
 
     for (int i = 0; i < modeSize; i++) {
-        if (strstr(data->edid, pMode[i]) != NULL) {
+        if (strstr(data->disp_cap, pMode[i]) != NULL) {
             strcpy(mode, pMode[i]);
             return;
         }
@@ -988,8 +958,8 @@ void DisplayMode::getHighestPriorityMode(char* mode, hdmi_data_t* data) {
 
 //check if the edid support current hdmi mode
 void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
-    char *pCmp = data->edid;
-    while ((pCmp - data->edid) < (int)strlen(data->edid)) {
+    char *pCmp = data->disp_cap;
+    while ((pCmp - data->disp_cap) < (int)strlen(data->disp_cap)) {
         char *pos = strchr(pCmp, 0x0a);
         if (NULL == pos)
             break;
@@ -1005,6 +975,7 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
         }
         pCmp = pos + step;
     }
+
     if (DISPLAY_TYPE_TV == mDisplayType) {
         #ifdef TEST_UBOOT_MODE
             getBootEnv(UBOOTENV_TESTMODE, mode);
@@ -1012,6 +983,7 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
                return;
         #endif
     }
+
     //old mode is not support in this TV, so switch to best mode.
 #ifdef USE_BEST_MODE
     getBestHdmiMode(mode, data);
@@ -1084,11 +1056,6 @@ void DisplayMode::filterHdmiDispcap(hdmi_data_t* data) {
     SYS_LOGI("after filtered HdmiDispcap: %s\n", data->disp_cap);
 }
 
-bool DisplayMode::frameRateDisplay(bool on) {
-    pFrameRateAutoAdaption->setVideoLayerOn(on);
-    return true;
-}
-
 bool DisplayMode::isHdmiEdidParseOK(void) {
     bool ret = true;
 
@@ -1131,12 +1098,12 @@ void DisplayMode::getHdmiData(hdmi_data_t* data) {
     if (HDMI_SINK_TYPE_NONE != data->sinkType) {
         int count = 0;
         while (true) {
-            pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, data->edid);
-            if (strlen(data->edid) > 0)
+            pSysWrite->readSysfsOriginal(DISPLAY_HDMI_DISP_CAP, data->disp_cap);
+            if (strlen(data->disp_cap) > 0)
                 break;
 
             if (count >= 5) {
-                strcpy(data->edid, "null edid");
+                strcpy(data->disp_cap, "null edid");
                 break;
             }
             count++;
@@ -1145,13 +1112,15 @@ void DisplayMode::getHdmiData(hdmi_data_t* data) {
     }
     pSysWrite->readSysfs(SYSFS_DISPLAY_MODE, data->current_mode);
     getBootEnv(UBOOTENV_HDMIMODE, data->ubootenv_hdmimode);
+    //filter hdmi disp_cap mode for compatibility
+    filterHdmiDispcap(data);
 
     //filter mode defined by CDF, default disable this
     if (!strcmp(edidParsing, "ok") && false) {
         const char *delim = "\n";
         char filterEdid[MAX_STR_LEN] = {0};
 
-        char *ptr = strtok(data->edid, delim);
+        char *ptr = strtok(data->disp_cap, delim);
         while (ptr != NULL) {
             //recommend mode or not
             bool recomMode = false;
@@ -1171,9 +1140,9 @@ void DisplayMode::getHdmiData(hdmi_data_t* data) {
         }
 
         //this is the real support edid filter by CDF
-        strcpy(data->edid, filterEdid);
+        strcpy(data->disp_cap, filterEdid);
 
-        SYS_LOGI("CDF filtered modes: %s\n", data->edid);
+        SYS_LOGI("CDF filtered modes: %s\n", data->disp_cap);
     }
 }
 

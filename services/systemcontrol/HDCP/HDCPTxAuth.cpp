@@ -201,8 +201,6 @@ bool HDCPTxAuth::authInit(bool *pHdcp22, bool *pHdcp14) {
     //stop hdcp_tx
     stopVerAll();
 
-    //char cap[MAX_STR_LEN] = {0};
-    //pSysWrite->readSysfsOriginal(DISPLAY_HDMI_EDID, cap);
     if (REPEATER_RX_VERSION_22 == mRepeaterRxVer) {
         SYS_LOGI("hdcp_tx 2.2 supported for RxSupportHdcp2.2Auth\n");
         useHdcp22 = true;

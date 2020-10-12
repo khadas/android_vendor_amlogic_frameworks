@@ -457,6 +457,17 @@ void DisplayMode::setSourceDisplay(output_mode_state state) {
     hdmi_data_t data;
     char outputmode[MODE_LEN] = {0};
 
+    //hdmi edid parse error
+    if ((isHdmiEdidParseOK() == false) &&
+        (isHdmiHpd() == true)) {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+        pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, COLOR_RGB_8BIT);
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, DEFAULT_OUTPUT_MODE);
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
+        SYS_LOGE("EDID parsing error detected\n");
+        return;
+    }
+
     pSysWrite->writeSysfs(SYS_DISABLE_VIDEO, VIDEO_LAYER_DISABLE);
 
     memset(&data, 0, sizeof(hdmi_data_t));
@@ -1034,6 +1045,73 @@ void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
         }
     }
     //SYS_LOGI("set HDMI mode to %s\n", mode);
+}
+
+void DisplayMode::filterHdmiDispcap(hdmi_data_t* data) {
+    const char *delim = "\n";
+    char filter_dispcap[MAX_STR_LEN] = {0};
+    char supportedColorList[MAX_STR_LEN];
+
+    if (!(pmDeepColor->initColorAttribute(supportedColorList, MAX_STR_LEN))) {
+        SYS_LOGE("initColorAttribute fail\n");
+        return;
+    }
+
+    SYS_LOGI("before filtered HdmiDispcap: %s\n", data->disp_cap);
+
+    char *hdmi_mode = strtok(data->disp_cap, delim);
+    while (hdmi_mode != NULL) {
+        //recommend mode or not
+        bool recomMode = false;
+        int   len = strlen(hdmi_mode);
+        if (hdmi_mode[len - 1] == '*') {
+            hdmi_mode[len - 1] = '\0';
+            recomMode = true;
+        }
+
+        if (pmDeepColor->isSupportHdmiMode(hdmi_mode, supportedColorList)) {
+            strcat(filter_dispcap, hdmi_mode);
+            if (recomMode)
+                strcat(filter_dispcap, "*");
+            strcat(filter_dispcap, delim);
+        }
+
+        hdmi_mode = strtok(NULL, delim);
+    }
+
+    strcpy(data->disp_cap, filter_dispcap);
+
+    SYS_LOGI("after filtered HdmiDispcap: %s\n", data->disp_cap);
+}
+
+bool DisplayMode::frameRateDisplay(bool on) {
+    pFrameRateAutoAdaption->setVideoLayerOn(on);
+    return true;
+}
+
+bool DisplayMode::isHdmiEdidParseOK(void) {
+    bool ret = true;
+
+    char edidParsing[MODE_LEN] = {0};
+    pSysWrite->readSysfs(DISPLAY_EDID_STATUS, edidParsing);
+
+    if (strcmp(edidParsing, "ok")) {
+        ret = false;
+    }
+
+    return ret;
+}
+
+bool DisplayMode::isHdmiHpd(void) {
+    bool ret = true;
+    char hpd_state[MODE_LEN] = {0};
+    pSysWrite->readSysfs(DISPLAY_HPD_STATE, hpd_state);
+
+    if (strstr(hpd_state, "1") == NULL) {
+        ret = false;
+    }
+
+    return ret;
 }
 
 void DisplayMode::getHdmiData(hdmi_data_t* data) {
@@ -2119,6 +2197,16 @@ void DisplayMode::onTxEvent (char* switchName, char* hpdstate, int outputState) 
         char outputmode[MODE_LEN] = {0};
         getBootEnv(UBOOTENV_CVBSMODE, outputmode);
         pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, outputmode);
+        return;
+    }
+
+    //hdmi edid parse error
+    if ((isHdmiEdidParseOK() == false) &&
+        (isHdmiHpd() == true)) {
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "1");
+        pSysWrite->writeSysfs(DISPLAY_HDMI_COLOR_ATTR, COLOR_RGB_8BIT);
+        pSysWrite->writeSysfs(SYSFS_DISPLAY_MODE, DEFAULT_OUTPUT_MODE);
+        pSysWrite->writeSysfs(DISPLAY_HDMI_AVMUTE, "-1");
         return;
     }
 

@@ -468,7 +468,10 @@ public:
 
     void setVideoPlayingAxis();
     void getHdmiData(hdmi_data_t* data);
-
+    bool isHdmiEdidParseOK(void);
+    bool isHdmiHpd(void);
+    bool doblyEnabled();
+    bool doblyFilterEdid(char *edid);
     int readHdcpRX22Key(char *value, int size);
     bool writeHdcpRX22Key(const char *value, const int size);
     int readHdcpRX14Key(char *value, int size);

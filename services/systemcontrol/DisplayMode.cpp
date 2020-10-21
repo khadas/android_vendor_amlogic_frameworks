@@ -2267,7 +2267,28 @@ void DisplayMode::saveHdmiParamToEnv(){
  * @params: store current perf hdmi mode.
  * */
 bool DisplayMode::getPrefHdmiDispMode(char* mode) {
-    bool ret = getBootEnv(UBOOTENV_HDMIMODE, mode);
+    bool ret = true;
+    hdmi_data_t data;
+    char outputmode[MODE_LEN] = {0};
+
+    memset(&data, 0, sizeof(hdmi_data_t));
+    getHdmiData(&data);
+    if (pSysWrite->getPropertyBoolean(PROP_HDMIONLY, true)) {
+        if (HDMI_SINK_TYPE_NONE != data.sinkType) {
+            getHdmiOutputMode(outputmode, &data);
+        } else {
+            ret = getBootEnv(UBOOTENV_CVBSMODE, outputmode);
+        }
+    } else {
+        ret = getBootEnv(UBOOTENV_HDMIMODE, outputmode);
+    }
+
+    if (strlen(outputmode) == 0) {
+        strcpy(outputmode, DEFAULT_OUTPUT_MODE);
+    }
+
+    strcpy(mode, outputmode);
+
     SYS_LOGI("getPrefHdmiDispMode [%s]", mode);
     return ret;
 }

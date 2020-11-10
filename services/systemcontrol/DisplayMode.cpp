@@ -1447,7 +1447,6 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
     char ubootvar[100] = {0};
     int defaultWidth = 0;
     int defaultHeight = 0;
-	SYS_LOGI("jason getPosition enter curMode:%s\n",curMode);
     if (strstr(curMode, MODE_480CVBS)) {
         strcpy(keyValue, MODE_480CVBS);
         defaultWidth = FULL_WIDTH_480;
@@ -1492,92 +1491,74 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
         strcpy(keyValue, MODE_1024x768P_PREFIX);
         defaultWidth = FULL_WIDTH_1024x768;
         defaultHeight = FULL_HEIGHT_1024x768;
-		SYS_LOGI("jason getPosition 1024x768\n");
     } else if (strstr(curMode, MODE_1440x900P_PREFIX)) {
         strcpy(keyValue, MODE_1440x900P_PREFIX);
         defaultWidth = FULL_WIDTH_1440x900;
         defaultHeight = FULL_HEIGHT_1440x900;
-		SYS_LOGI("jason getPosition 1440x900\n");
     } else if (strstr(curMode, MODE_640x480P_PREFIX)) {
         strcpy(keyValue, MODE_640x480P_PREFIX);
         defaultWidth = FULL_WIDTH_640x480;
         defaultHeight = FULL_HEIGHT_640x480;
-		SYS_LOGI("jason getPosition 640x480\n");
     } else if (strstr(curMode, MODE_1280x1024P_PREFIX)) {
         strcpy(keyValue, MODE_1280x1024P_PREFIX);
         defaultWidth = FULL_WIDTH_1280x1024;
         defaultHeight = FULL_HEIGHT_1280x1024;
-		SYS_LOGI("jason getPosition 1280x1024\n");
     }else if (strstr(curMode, MODE_800x600P_PREFIX)) {
         strcpy(keyValue, MODE_800x600P_PREFIX);
         defaultWidth = FULL_WIDTH_800x600;
         defaultHeight = FULL_HEIGHT_800x600;
-		SYS_LOGI("jason getPosition 800x600\n");
     } else if (strstr(curMode, MODE_1680x1050P_PREFIX)) {
         strcpy(keyValue, MODE_1680x1050P_PREFIX);
         defaultWidth = FULL_WIDTH_1680x1050;
         defaultHeight = FULL_HEIGHT_1680x1050;
-		SYS_LOGI("jason getPosition 1680x1050\n");
     } else if (strstr(curMode, MODE_1024x600P_PREFIX)) {
         strcpy(keyValue, MODE_1024x600P_PREFIX);
         defaultWidth = FULL_WIDTH_1024x600;
         defaultHeight = FULL_HEIGHT_1024x600;
-		SYS_LOGI("jason getPosition 1024x600\n");
     } else if (strstr(curMode, MODE_2560x1600P_PREFIX)) {
         strcpy(keyValue, MODE_2560x1600P_PREFIX);
         defaultWidth = FULL_WIDTH_2560x1600;
         defaultHeight = FULL_HEIGHT_2560x1600;
-		SYS_LOGI("jason getPosition 2560x1600\n");
     } else if (strstr(curMode, MODE_2560x1440P_PREFIX)) {
         strcpy(keyValue, MODE_2560x1440P_PREFIX);
         defaultWidth = FULL_WIDTH_2560x1440;
         defaultHeight = FULL_HEIGHT_2560x1440;
-		SYS_LOGI("jason getPosition 2560x1440\n");
     } else if (strstr(curMode, MODE_2560x1080P_PREFIX)) {
         strcpy(keyValue, MODE_2560x1080P_PREFIX);
         defaultWidth = FULL_WIDTH_2560x1080;
         defaultHeight = FULL_HEIGHT_2560x1080;
-		SYS_LOGI("jason getPosition 2560x1080\n");
     } else if (strstr(curMode, MODE_1920x1200P_PREFIX)) {
         strcpy(keyValue, MODE_1920x1200P_PREFIX);
         defaultWidth = FULL_WIDTH_1920x1200;
         defaultHeight = FULL_HEIGHT_1920x1200;
-		SYS_LOGI("jason getPosition 1920x1200\n");
     } else if (strstr(curMode, MODE_1600x1200P_PREFIX)) {
         strcpy(keyValue, MODE_1600x1200P_PREFIX);
         defaultWidth = FULL_WIDTH_1600x1200;
         defaultHeight = FULL_HEIGHT_1600x1200;
-		SYS_LOGI("jason getPosition 1600x1200\n");
     } else if (strstr(curMode, MODE_1600x900P_PREFIX)) {
         strcpy(keyValue, MODE_1600x900P_PREFIX);
         defaultWidth = FULL_WIDTH_1600x900;
         defaultHeight = FULL_HEIGHT_1600x900;
-		SYS_LOGI("jason getPosition 1600x900\n");
     } else if (strstr(curMode, MODE_1360x768P_PREFIX)) {
         strcpy(keyValue, MODE_1360x768P_PREFIX);
         defaultWidth = FULL_WIDTH_1360x768;
         defaultHeight = FULL_HEIGHT_1360x768;
-		SYS_LOGI("jason getPosition 1360x768\n");
     } else if (strstr(curMode, MODE_1280x800P_PREFIX)) {
         strcpy(keyValue, MODE_1280x800P_PREFIX);
         defaultWidth = FULL_WIDTH_1280x800;
         defaultHeight = FULL_HEIGHT_1280x800;
-		SYS_LOGI("jason getPosition 1280x800\n");
     } else if (strstr(curMode, MODE_480x320P_PREFIX)) {
         strcpy(keyValue, MODE_480x320P_PREFIX);
         defaultWidth = FULL_WIDTH_480x320;
         defaultHeight = FULL_HEIGHT_480x320;
-		SYS_LOGI("jason getPosition 480x320\n");
     } else if (strstr(curMode, MODE_800x480P_PREFIX)) {
         strcpy(keyValue, MODE_800x480P_PREFIX);
         defaultWidth = FULL_WIDTH_800x480;
         defaultHeight = FULL_HEIGHT_800x480;
-		SYS_LOGI("jason getPosition 800x480\n");
     } else if (strstr(curMode, MODE_1280x480P_PREFIX)) {
         strcpy(keyValue, MODE_1280x480P_PREFIX);
         defaultWidth = FULL_WIDTH_1280x480;
         defaultHeight = FULL_HEIGHT_1280x480;
-		SYS_LOGI("jason getPosition 1280x480\n");
     }
 
 	else if (strstr(curMode, MODE_1080P_PREFIX)) {

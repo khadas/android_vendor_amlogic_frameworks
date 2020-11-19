@@ -1382,6 +1382,7 @@ void DisplayMode::getBootanimStatus(int *status) {
 void DisplayMode::getPosition(const char* curMode, int *position) {
     char keyValue[20] = {0};
     char ubootvar[100] = {0};
+	char uiMode[20] = {0};
     int defaultWidth = 0;
     int defaultHeight = 0;
     if (strstr(curMode, MODE_480CVBS)) {
@@ -1438,8 +1439,49 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
         defaultHeight = FULL_HEIGHT_4K2KSMPTE;
     } else if (strstr(curMode, MODE_PANEL)) {
         strcpy(keyValue, MODE_PANEL);
-        defaultWidth = FULL_WIDTH_PANEL;
-        defaultHeight = FULL_HEIGHT_PANEL;
+		pSysWrite->getPropertyString("persist.sys.builtin.ui_mode", uiMode,"");
+		
+		if (!strncmp(uiMode, "1280x720", 8)) {
+			defaultWidth  = 1280;
+			defaultHeight = 720;
+		} else if (!strncmp(uiMode, "1920x1080", 9)) {
+			defaultWidth  = 1920;
+			defaultHeight = 1080;
+		}else if (!strncmp(uiMode, "1080x1920", 9)) {
+			defaultWidth  = 1080;
+			defaultHeight = 1920;
+		}else if (!strncmp(uiMode, "720x1280", 8)) {
+			defaultWidth  = 720;
+			defaultHeight = 1280;
+		}else if (!strncmp(uiMode, "1024x768", 8)) {
+			defaultWidth  = 1024;
+			defaultHeight = 768;
+		}else if (!strncmp(uiMode, "768x1024", 8)) {
+			defaultWidth  = 768;
+			defaultHeight = 1024;
+		}else if (!strncmp(uiMode, "1024x600", 8)) {
+			defaultWidth  = 1024;
+			defaultHeight = 600;
+		}else if (!strncmp(uiMode, "600x1024", 8)) {
+			defaultWidth  = 600;
+			defaultHeight = 1024;
+		}else if (!strncmp(uiMode, "1280x800", 8)) {
+			defaultWidth  = 1280;
+			defaultHeight = 800;
+		}else if (!strncmp(uiMode, "800x1280", 8)) {
+			defaultWidth  = 800;
+			defaultHeight = 1280;
+		}
+		else {                
+#ifdef HWC_PRIMARY_FRAMEBUFFER_WIDTH
+			defaultWidth  = HWC_PRIMARY_FRAMEBUFFER_WIDTH;
+			defaultHeight = HWC_PRIMARY_FRAMEBUFFER_HEIGHT;
+#else
+			defaultWidth = FULL_WIDTH_PANEL;
+			defaultHeight = FULL_HEIGHT_PANEL;
+#endif  
+        }
+      
     } else {
         strcpy(keyValue, MODE_1080P_PREFIX);
         defaultWidth = FULL_WIDTH_1080;

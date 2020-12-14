@@ -1681,6 +1681,7 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
         strcpy(keyValue, "4k2ksmpte");
     } else if (strstr(curMode, MODE_PANEL)) {
         strcpy(keyValue, MODE_PANEL);
+		return;
     }
 
     mutex_lock(&mEnvLock);

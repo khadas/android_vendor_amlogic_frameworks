@@ -325,6 +325,14 @@ bool HDCPTxAuth::getSuspendResume(void) {
    return mSuspendResume;
 }
 
+void HDCPTxAuth::setSysCtrlReady(bool status) {
+    if (status == true) {
+        mSysWrite.writeSysfs(DISPLAY_HDMI_SYSCTRL_READY, "1");
+    } else {
+        mSysWrite.writeSysfs(DISPLAY_HDMI_SYSCTRL_READY, "0");
+    }
+}
+
 // HDMI TX uevent prcessed in this loop
 void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
     HDCPTxAuth *pThiz = (HDCPTxAuth*)data;
@@ -345,6 +353,8 @@ void* HDCPTxAuth::TxUenventThreadLoop(void* data) {
 #ifdef FRAME_RATE_AUTO_ADAPTER
     ueventObserver.addMatch(HDMI_TVOUT_FRAME_RATE_UEVENT);
 #endif
+    //systemcontrol ready for driver
+    pThiz->setSysCtrlReady(true);
 
     while (true) {
         ueventObserver.waitForNextEvent(&ueventData);

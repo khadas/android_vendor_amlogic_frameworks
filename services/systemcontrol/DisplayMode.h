@@ -126,6 +126,7 @@ using namespace android;
 #define AUDIO_DSP_DIGITAL_RAW           "/sys/class/audiodsp/digital_raw"
 #define AV_HDMI_CONFIG                  "/sys/class/amhdmitx/amhdmitx0/config"
 #define AV_HDMI_3D_SUPPORT              "/sys/class/amhdmitx/amhdmitx0/support_3d"
+#define DISPLAY_HDMI_SYSCTRL_READY      "/sys/class/amhdmitx/amhdmitx0/sysctrl_enable"
 
 #define HDMI_TX_PLUG_UEVENT             "DEVPATH=/devices/virtual/amhdmitx/amhdmitx0/hdmi"//hdmi hot plug event
 #define HDMI_TX_POWER_UEVENT            "DEVPATH=/devices/virtual/amhdmitx/amhdmitx0/hdmi_power"

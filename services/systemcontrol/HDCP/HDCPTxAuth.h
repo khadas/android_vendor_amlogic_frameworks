@@ -60,6 +60,7 @@ public:
     void isAuthSuccess(int *status);
     void setSuspendResume(bool status);
     bool getSuspendResume(void);
+    void setSysCtrlReady(bool status);
 
     #ifndef RECOVERY_MODE
     void sfRepaintEverything();

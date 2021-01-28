@@ -1451,7 +1451,7 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
         strcpy(keyValue, MODE_480CVBS);
         defaultWidth = FULL_WIDTH_480;
         defaultHeight = FULL_HEIGHT_480;
-    }else if (strstr(curMode, "480")&& !strstr(curMode, "640x480p")) {
+    }else if (strstr(curMode, "480")&& !strstr(curMode, "640x480p") && !strstr(curMode, "800x480p")) {
         strcpy(keyValue, strstr(curMode, MODE_480P_PREFIX) ? MODE_480P_PREFIX : MODE_480I_PREFIX);
         defaultWidth = FULL_WIDTH_480;
         defaultHeight = FULL_HEIGHT_480;

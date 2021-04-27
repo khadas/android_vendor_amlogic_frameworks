@@ -410,7 +410,7 @@ enum {
 #define MODE_480x320P             "480x320phz"
 
 
-#define MODE_800x480P             "800x480phz"
+#define MODE_800x480P             "800x480p60hz"
 #define MODE_1280x480P            "1280x480phz"
 
 

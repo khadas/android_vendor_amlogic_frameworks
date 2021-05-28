@@ -390,28 +390,28 @@ enum {
 #define MODE_PAL_N                      "pal_n"
 #define MODE_NTSC_M                     "ntsc_m"
 //vesa mode
-#define MODE_1024x768P                  "1024x768phz"
-#define MODE_1440x900P                  "1440x900phz"
-#define MODE_640x480P                   "640x480phz"
-#define MODE_1280x1024P                 "1280x1024phz"
-#define MODE_800x600P                   "800x600phz" 
-#define MODE_1680x1050P                 "1680x1050phz"
+#define MODE_1024x768P                  "1024x768p60hz"
+#define MODE_1440x900P                  "1440x900p60hz"
+#define MODE_640x480P                   "640x480p60hz"
+#define MODE_1280x1024P                 "1280x1024p60hz"
+#define MODE_800x600P                   "800x600p60hz"
+#define MODE_1680x1050P                 "1680x1050p60hz"
 
-#define MODE_1024x600P           "1024x600phz"
-#define MODE_2560x1600P          "2560x1600phz"
-#define MODE_2560x1440P         "2560x1440phz"
-#define MODE_2560x1080P          "2560x1080phz"
-#define MODE_1920x1200P          "1920x1200phz"
+#define MODE_1024x600P           "1024x600p60hz"
+#define MODE_2560x1600P          "2560x1600p60hz"
+#define MODE_2560x1440P         "2560x1440p60hz"
+#define MODE_2560x1080P          "2560x1080p60hz"
+#define MODE_1920x1200P          "1920x1200p60hz"
 
-#define MODE_1600x1200P           "1600x1200phz"
-#define MODE_1600x900P            "1600x900phz"
-#define MODE_1360x768P            "1360x768phz"
-#define MODE_1280x800P            "1280x800phz"
-#define MODE_480x320P             "480x320phz"
+#define MODE_1600x1200P           "1600x1200p60hz"
+#define MODE_1600x900P            "1600x900p60hz"
+#define MODE_1360x768P            "1360x768p60hz"
+#define MODE_1280x800P            "1280x800p60hz"
+#define MODE_480x320P             "480x320p60hz"
 
 
 #define MODE_800x480P             "800x480p60hz"
-#define MODE_1280x480P            "1280x480phz"
+#define MODE_1280x480P            "1280x480p60hz"
 
 
 

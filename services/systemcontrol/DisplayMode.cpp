@@ -72,6 +72,9 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
     MODE_4K2KSMPTE60HZ,
     MODE_768P,
     MODE_PANEL,
+    MODE_PAL_M,
+    MODE_PAL_N,
+    MODE_NTSC_M,
     MODE_1024x768P,
     MODE_1440x900P,
     MODE_640x480P,
@@ -90,9 +93,6 @@ static const char* DISPLAY_MODE_LIST[DISPLAY_MODE_TOTAL] = {
 	MODE_480x320P,
 	MODE_800x480P,
 	MODE_1280x480P,
-    MODE_PAL_M,
-    MODE_PAL_N,
-    MODE_NTSC_M,
 };
 static const char* MODE_RESOLUTION_FIRST[] = {
     MODE_480I,
@@ -103,24 +103,6 @@ static const char* MODE_RESOLUTION_FIRST[] = {
     MODE_720P,
     MODE_1080P50HZ,
     MODE_1080P,
-    MODE_1024x768P,
-    MODE_1440x900P,
-    MODE_640x480P,
-    MODE_1280x1024P,
-    MODE_800x600P,
-    MODE_1680x1050P,
-    MODE_1024x600P,
-    MODE_2560x1600P,
-    MODE_2560x1440P,
-    MODE_2560x1080P,
-    MODE_1920x1200P,
-    MODE_1600x1200P,
-    MODE_1600x900P,
-    MODE_1360x768P,
-    MODE_1280x800P,
-    MODE_480x320P,
-    MODE_800x480P,
-    MODE_1280x480P,
     MODE_4K2K24HZ,
     MODE_4K2K25HZ,
     MODE_4K2K30HZ,
@@ -962,6 +944,7 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
     char* startpos;
     char* destpos;
 
+    int resolution_num = 0;
     startpos = data->edid;
     strcpy(value, DEFAULT_OUTPUT_MODE);
 
@@ -973,6 +956,7 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
         memset(tempMode, 0, MODE_LEN);
         strncpy(tempMode, startpos, destpos - startpos);
         startpos = destpos + 1;
+	    resolution_num ++;
         if (!pSysWrite->getPropertyBoolean(PROP_SUPPORT_4K, true)
             &&(strstr(tempMode, "2160") || strstr(tempMode, "smpte"))) {
                 SYS_LOGE("This platform not support : %s\n", tempMode);
@@ -996,6 +980,37 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
     }
 
     strcpy(mode, value);
+    if(resolution_num == 1) {
+    index = modeToIndex(tempMode);
+    switch(index)
+    {
+	   case DISPLAY_MODE_1024x768P:
+	   case DISPLAY_MODE_1440x900P:
+	   case DISPLAY_MODE_640x480P:
+	   case DISPLAY_MODE_1280x1024P:
+	   case DISPLAY_MODE_800x600P:
+	   case DISPLAY_MODE_1680x1050P:
+	   case DISPLAY_MODE_1024x600P:
+	   case DISPLAY_MODE_2560x1600P:
+	   case DISPLAY_MODE_2560x1440P:
+	   case DISPLAY_MODE_2560x1080P:
+	   case DISPLAY_MODE_1920x1200P:
+	   case DISPLAY_MODE_1600x1200P:
+	   case DISPLAY_MODE_1600x900P:
+	   case DISPLAY_MODE_1360x768P:
+	   case DISPLAY_MODE_1280x800P:
+	   case DISPLAY_MODE_480x320P:
+	   case DISPLAY_MODE_800x480P:
+	   case DISPLAY_MODE_1280x480P:
+	   strcpy(mode, tempMode);
+	   SYS_LOGI("set single HDMI mode to highest edid mode: %s\n", mode);
+	   break;
+	   default:
+	   strcpy(mode, value);
+	   break;
+
+	}
+   }
     SYS_LOGI("set HDMI to highest edid mode: %s\n", mode);
 }
 
@@ -1092,7 +1107,6 @@ void DisplayMode::filterHdmiMode(char* mode, hdmi_data_t* data) {
 void DisplayMode::getHdmiOutputMode(char* mode, hdmi_data_t* data) {
     char edidParsing[MODE_LEN] = {0};
     pSysWrite->readSysfs(DISPLAY_EDID_STATUS, edidParsing);
-
     /* Fall back to 480p if EDID can't be parsed */
     if (strcmp(edidParsing, "ok")) {
         strcpy(mode, DEFAULT_OUTPUT_MODE);

@@ -1512,7 +1512,7 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
         strcpy(keyValue, MODE_720P_PREFIX);
         defaultWidth = FULL_WIDTH_720;
         defaultHeight = FULL_HEIGHT_720;
-    } else if (strstr(curMode, MODE_768P_PREFIX)&& !strstr(curMode, "1024x768p")) {
+    } else if (strstr(curMode, MODE_768P_PREFIX)&& !strstr(curMode, "1024x768p")&& !strstr(curMode, "1360x768p")) {
         strcpy(keyValue, MODE_768P_PREFIX);
         defaultWidth = FULL_WIDTH_768;
         defaultHeight = FULL_HEIGHT_768;

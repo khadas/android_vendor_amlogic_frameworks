@@ -945,6 +945,7 @@ void DisplayMode::getHighestHdmiMode(char* mode, hdmi_data_t* data) {
     char* destpos;
 
     int resolution_num = 0;
+    int index = 0;
     startpos = data->edid;
     strcpy(value, DEFAULT_OUTPUT_MODE);
 

@@ -286,7 +286,7 @@ public class HdmiCecManager {
     }
 
     private boolean readValue(String key) {
-        return Settings.Global.getInt(mContext.getContentResolver(), key, ON) == ON;
+        return Settings.Global.getInt(mContext.getContentResolver(), key, OFF) == ON;
     }
 
     private void writeValue(String key, boolean value) {
@@ -295,7 +295,7 @@ public class HdmiCecManager {
 
     public static void reset(ContentResolver contentResolver, SystemControlManager sytemControlManager) {
         Settings.Global.putInt(contentResolver, SETTINGS_HDMI_CONTROL_ENABLED,  ON);
-        Settings.Global.putInt(contentResolver, SETTINGS_ONE_TOUCH_PLAY,  ON);
+        Settings.Global.putInt(contentResolver, SETTINGS_ONE_TOUCH_PLAY,  OFF);
         Settings.Global.putInt(contentResolver, SETTINGS_AUTO_POWER_OFF,  ON);
         Settings.Global.putInt(contentResolver, SETTINGS_AUTO_WAKE_UP,  ON);
         Settings.Global.putInt(contentResolver, SETTINGS_ARC_ENABLED,  ON);

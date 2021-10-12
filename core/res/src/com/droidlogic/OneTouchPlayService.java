@@ -74,7 +74,7 @@ public class OneTouchPlayService extends Service {
 
     private boolean isOneTouchPlayOn() {
         ContentResolver cr = mContext.getContentResolver();
-        return Global.getInt(cr, HdmiCecManager.HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED, 1) == 1;
+        return Global.getInt(cr, HdmiCecManager.HDMI_CONTROL_ONE_TOUCH_PLAY_ENABLED, 0) == 1;
     }
 
     @Override

@@ -36,6 +36,17 @@ import com.droidlogic.app.PlayBackManager;
 import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.UsbCameraManager;
+import android.os.HandlerThread;
+import android.os.SystemProperties;
+import android.media.MediaPlayer;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.io.IOException;
 
 public class BootComplete extends BroadcastReceiver {
     private static final String TAG             = "BootComplete";
@@ -44,10 +55,13 @@ public class BootComplete extends BroadcastReceiver {
     private static final String SYS_NODE_EARC = "/sys/class/extcon/earctx/state";
     private static final String DROID_SETTINGS_PACKAGE = "com.droidlogic.tv.settings";
     private static final String DROID_SETTINGS_ENCRYPTKEEPERFBE = "com.droidlogic.tv.settings.CryptKeeperFBE";
+    private final String SYS_BOOT_COMPLETE = "/sys/class/amhdmitx/amhdmitx0/bootup_complete";
+    private final String AUDIO_FILE = "/vendor/media/audio.wav";
 
     private SystemControlEvent mSystemControlEvent;
     private boolean mHasTvUiMode;
     private SystemControlManager mSystemControlManager;
+    private Handler mHandler = new MyHandler();
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -129,6 +143,51 @@ public class BootComplete extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
             SettingsPref.setSavedBootCompletedStatus(context, false);
         }
+	Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+               try {
+		   MediaPlayer mediaPlayer = new MediaPlayer();
+                   mediaPlayer.reset();
+                   mediaPlayer.setDataSource(AUDIO_FILE);
+                   mediaPlayer.prepare();
+                   mediaPlayer.start();
+                } catch (Exception e) {
+                   Log.e(TAG, "error", e);
+                }
+                mHandler.removeMessages(0x01);
+                mHandler.sendMessageDelayed(mHandler.obtainMessage(0x01), 1000);
+            }
+	});
+	t.start();
+    }
+
+    private void setBootComplete() {
+        File file = new File(SYS_BOOT_COMPLETE);
+        if((file == null) || !file.exists()){
+             return;
+        }
+        try {
+             FileOutputStream fout = new FileOutputStream(file);
+             PrintWriter pWriter = new PrintWriter(fout);
+             pWriter.println("1");
+             pWriter.flush();
+             pWriter.close();
+             fout.close();
+        } catch (IOException e) {
+             Log.e(TAG, "error", e);
+        }
+    }
+
+    class MyHandler extends Handler {
+         @Override
+         public void handleMessage(Message msg) {
+             int what = msg.what;
+             if (what == 0x01) {
+                 setBootComplete();
+             }
+         }
+
     }
 
     private void enableCryptKeeperComponent(Context context) {

@@ -238,6 +238,10 @@ void DisplayMode::init() {
 
     getBootEnv(UBOOTENV_REBOOT_MODE, mRebootMode);
     SYS_LOGI("reboot_mode :%s\n", mRebootMode);
+	setBootEnv(UBOOTENV_HDMIMODE, "1080p60hz");
+	setBootEnv(UBOOTENV_OUTPUTMODE, "1080p60hz");
+	setBootEnv(UBOOTENV_ISBESTMODE, "1080p60hz");
+	SYS_LOGI("hlm-ubootenv.var.outputmode :1080p60hz\n");
 
     SYS_LOGI("display mode init type: %d [0:none 1:tablet 2:mbox 3:tv], soc type:%s, default UI:%s",
         mDisplayType, mSocType, mDefaultUI);

@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -478,7 +479,7 @@ int RGBA2bmp(char *buf, int width, int height, char* filePath) {
         goto _ERR;
     }
 
-    memset(p_bmp_data, 0, bmp_file_header.bf_size);
+    memset((void*)p_bmp_data, 0, bmp_file_header.bf_size);
     memcpy(p_bmp_data, &bmp_file_header, file_header_len);//copy bmp file header
     memcpy(p_bmp_data + file_header_len, &bmp_info_header,
            info_header_len);//copy bmp info header

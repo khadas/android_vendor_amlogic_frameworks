@@ -164,7 +164,11 @@ Return<void> HDCP::decrypt(
             outData.resize(size);
             s = (Status)mHDCPModule->decrypt(inData.data(), size, streamCTR, outInputCTR, outData.data());
         } else {
-            s = (Status)mHDCPModule->decrypt(inData.data(), size, streamCTR, outInputCTR, (void *)outAddr);
+			#ifdef ARM64_BIT
+            s = (Status)mHDCPModule->decrypt(inData.data(), size, streamCTR, outInputCTR, (void *)(long)outAddr);
+			#else
+			s = (Status)mHDCPModule->decrypt(inData.data(), size, streamCTR, outInputCTR, (void *)outAddr);
+			#endif
         }
     }
     _hidl_cb(s, outData);

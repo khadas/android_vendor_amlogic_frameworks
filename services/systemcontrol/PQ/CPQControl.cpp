@@ -128,21 +128,10 @@ void CPQControl::CPQControlInit()
     } else {
         SYS_LOGD("Load PQ success!\n");
     }
-    //set backlight
-    BacklightInit();
     //Vframe size
     mCDevicePollCheckThread.setObserver(this);
     mCDevicePollCheckThread.StartCheck();
     mInitialized = true;
-    //auto backlight
-    if (isFileExist(LDIM_PATH)) {
-        SetDynamicBacklight((Dynamic_backlight_status_t)GetDynamicBacklight(), 1);
-    } else if (isFileExist(BACKLIGHT_PATH)) {//local diming or pwm
-        mDynamicBackLight.setObserver(this);
-        mDynamicBackLight.startDected();
-    } else {
-        SYS_LOGD("No auto backlight moudle!\n");
-    }
 }
 
 void CPQControl::CPQControlUnInit()

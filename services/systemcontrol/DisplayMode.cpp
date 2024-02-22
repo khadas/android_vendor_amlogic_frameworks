@@ -1489,7 +1489,7 @@ void DisplayMode::getPosition(const char* curMode, int *position) {
         strcpy(keyValue, MODE_480CVBS);
         defaultWidth = FULL_WIDTH_480;
         defaultHeight = FULL_HEIGHT_480;
-    } else if (strstr(curMode, "480")&& !strstr(curMode, "640x480p") && !strstr(curMode, "800x480p")) {
+    } else if (strstr(curMode, "480")&& !strstr(curMode, "640x480p") && !strstr(curMode, "800x480p") && !strstr(curMode, "1280x480p")) {
         strcpy(keyValue, strstr(curMode, MODE_480P_PREFIX) ? MODE_480P_PREFIX : MODE_480I_PREFIX);
         defaultWidth = FULL_WIDTH_480;
         defaultHeight = FULL_HEIGHT_480;
@@ -1694,7 +1694,7 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
     char ubootvar[100] = {0};
     if (strstr(curMode, MODE_480CVBS)) {
         strcpy(keyValue, MODE_480CVBS);
-    } else if (strstr(curMode, "480")) {
+    } else if (strstr(curMode, "480")&& !strstr(curMode, "640x480p") && !strstr(curMode, "800x480p") && !strstr(curMode, "1280x480p")) {
         strcpy(keyValue, strstr(curMode, MODE_480P_PREFIX) ? MODE_480P_PREFIX : MODE_480I_PREFIX);
     } else if (strstr(curMode, MODE_576CVBS)) {
         strcpy(keyValue, MODE_576CVBS);
@@ -1708,7 +1708,7 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
 	strcpy(keyValue, MODE_NTSC_M);
     } else if (strstr(curMode, MODE_720P_PREFIX)) {
         strcpy(keyValue, MODE_720P_PREFIX);
-    } else if (strstr(curMode, MODE_768P_PREFIX)) {
+    } else if (strstr(curMode, MODE_768P_PREFIX)&& !strstr(curMode, "1024x768p")&& !strstr(curMode, "1360x768p")) {
         strcpy(keyValue, MODE_768P_PREFIX);
     } else if (strstr(curMode, MODE_1080I_PREFIX)) {
         strcpy(keyValue, MODE_1080I_PREFIX);
@@ -1718,6 +1718,38 @@ void DisplayMode::setPosition(int left, int top, int width, int height) {
         strcpy(keyValue, MODE_4K2K_PREFIX);
     } else if (strstr(curMode, MODE_4K2KSMPTE_PREFIX)) {
         strcpy(keyValue, "4k2ksmpte");
+    } else if (strstr(curMode, MODE_1024x768P_PREFIX)) {
+        strcpy(keyValue, MODE_1024x768P_PREFIX);
+    } else if (strstr(curMode, MODE_1440x900P_PREFIX)) {
+        strcpy(keyValue, MODE_1440x900P_PREFIX);
+    } else if (strstr(curMode, MODE_1280x1024P_PREFIX)) {
+        strcpy(keyValue, MODE_1280x1024P_PREFIX);
+    }else if (strstr(curMode, MODE_800x600P_PREFIX)) {
+        strcpy(keyValue, MODE_800x600P_PREFIX);
+    } else if (strstr(curMode, MODE_1680x1050P_PREFIX)) {
+        strcpy(keyValue, MODE_1680x1050P_PREFIX);
+    } else if (strstr(curMode, MODE_1024x600P_PREFIX)) {
+        strcpy(keyValue, MODE_1024x600P_PREFIX);
+    } else if (strstr(curMode, MODE_2560x1600P_PREFIX)) {
+        strcpy(keyValue, MODE_2560x1600P_PREFIX);
+    } else if (strstr(curMode, MODE_2560x1440P_PREFIX)) {
+        strcpy(keyValue, MODE_2560x1440P_PREFIX);
+    } else if (strstr(curMode, MODE_2560x1080P_PREFIX)) {
+        strcpy(keyValue, MODE_2560x1080P_PREFIX);
+    } else if (strstr(curMode, MODE_1920x1200P_PREFIX)) {
+        strcpy(keyValue, MODE_1920x1200P_PREFIX);
+    } else if (strstr(curMode, MODE_1600x1200P_PREFIX)) {
+        strcpy(keyValue, MODE_1600x1200P_PREFIX);
+    } else if (strstr(curMode, MODE_1600x900P_PREFIX)) {
+        strcpy(keyValue, MODE_1600x900P_PREFIX);
+    } else if (strstr(curMode, MODE_1360x768P_PREFIX)) {
+        strcpy(keyValue, MODE_1360x768P_PREFIX);
+    } else if (strstr(curMode, MODE_1280x800P_PREFIX)) {
+        strcpy(keyValue, MODE_1280x800P_PREFIX);
+    } else if (strstr(curMode, MODE_800x480P_PREFIX)) {
+        strcpy(keyValue, MODE_800x480P_PREFIX);
+    } else if (strstr(curMode, MODE_1280x480P_PREFIX)) {
+        strcpy(keyValue, MODE_1280x480P_PREFIX);
     } else if (strstr(curMode, MODE_PANEL)) {
         strcpy(keyValue, MODE_PANEL);
 		return;

@@ -135,6 +135,54 @@ public class DisplayPositionManager {
         } else if (mode.contains(OutputModeManager.HDMI_SMPTE)) {
             mMaxRight = 4095;
             mMaxBottom = 2159;
+        } else if (mode.contains(OutputModeManager.HDMI_800x480p60hz)) {
+            mMaxRight = 799;
+            mMaxBottom = 479;
+        } else if (mode.contains(OutputModeManager.HDMI_800x600p60hz)) {
+            mMaxRight = 799;
+            mMaxBottom = 599;
+        } else if (mode.contains(OutputModeManager.HDMI_1024x600p60hz)) {
+            mMaxRight = 1023;
+            mMaxBottom = 599;
+        } else if (mode.contains(OutputModeManager.HDMI_1024x768p60hz)) {
+            mMaxRight = 1023;
+            mMaxBottom = 767;
+        } else if (mode.contains(OutputModeManager.HDMI_1280x480p60hz)) {
+            mMaxRight = 1279;
+            mMaxBottom = 479;
+        } else if (mode.contains(OutputModeManager.HDMI_1280x800p60hz)) {
+            mMaxRight = 1279;
+            mMaxBottom = 799;
+        } else if (mode.contains(OutputModeManager.HDMI_1280x1024p60hz)) {
+            mMaxRight = 1279;
+            mMaxBottom = 1023;
+        } else if (mode.contains(OutputModeManager.HDMI_1360x786p60hz)) {
+            mMaxRight = 1359;
+            mMaxBottom = 785;
+        } else if (mode.contains(OutputModeManager.HDMI_1440x900p60hz)) {
+            mMaxRight = 1439;
+            mMaxBottom = 899;
+        } else if (mode.contains(OutputModeManager.HDMI_1600x900p60hz)) {
+            mMaxRight = 1599;
+            mMaxBottom = 899;
+        } else if (mode.contains(OutputModeManager.HDMI_1600x1200p60hz)) {
+            mMaxRight = 1599;
+            mMaxBottom = 1199;
+        } else if (mode.contains(OutputModeManager.HDMI_1680x1050p60hz)) {
+            mMaxRight = 1679;
+            mMaxBottom = 1049;
+        } else if (mode.contains(OutputModeManager.HDMI_1920x1200p60hz)) {
+            mMaxRight = 1919;
+            mMaxBottom = 1199;
+        } else if (mode.contains(OutputModeManager.HDMI_2560x1080p60hz)) {
+            mMaxRight = 2559;
+            mMaxBottom = 1079;
+        } else if (mode.contains(OutputModeManager.HDMI_2560x1440p60hz)) {
+            mMaxRight = 2559;
+            mMaxBottom = 1439;
+        } else if (mode.contains(OutputModeManager.HDMI_2560x1600p60hz)) {
+            mMaxRight = 2559;
+            mMaxBottom = 1599;
         } else {
             mMaxRight = 1919;
             mMaxBottom = 1079;

@@ -300,11 +300,28 @@ public class OutputModeManager {
     public static final String UI_720P                      = "720p";
     public static final String UI_1080P                     = "1080p";
     public static final String UI_2160P                     = "2160p";
+
     public static final String HDMI_480                     = "480";
     public static final String HDMI_576                     = "576";
     public static final String HDMI_720                     = "720p";
     public static final String HDMI_1080                    = "1080";
     public static final String HDMI_4K2K                    = "2160p";
+    public static final String HDMI_800x480p60hz            = "800x480p";
+    public static final String HDMI_800x600p60hz            = "800x600p";
+    public static final String HDMI_1024x600p60hz           = "1024x600p";
+    public static final String HDMI_1024x768p60hz           = "1024x768p";
+    public static final String HDMI_1280x480p60hz           = "1280x480p";
+    public static final String HDMI_1280x800p60hz           = "1280x800p";
+    public static final String HDMI_1280x1024p60hz          = "1280x1024p";
+    public static final String HDMI_1360x786p60hz           = "1360x786p";
+    public static final String HDMI_1440x900p60hz           = "1440x900p";
+    public static final String HDMI_1600x900p60hz           = "1600x900p";
+    public static final String HDMI_1600x1200p60hz          = "1600x1200p";
+    public static final String HDMI_1680x1050p60hz          = "1680x1050p";
+    public static final String HDMI_1920x1200p60hz          = "1920x1200p";
+    public static final String HDMI_2560x1080p60hz          = "2560x1080p";
+    public static final String HDMI_2560x1440p60hz          = "2560x1440p";
+    public static final String HDMI_2560x1600p60hz          = "2560x1600p";
     public static final String HDMI_SMPTE                   = "smpte";
 
     private static final String HDR_POLICY_SOURCE           = "1";
@@ -538,7 +555,23 @@ public class OutputModeManager {
         String value = readSupportList(HDMI_SUPPORT_LIST);
         if (value.indexOf(HDMI_480) >= 0 || value.indexOf(HDMI_576) >= 0
             || value.indexOf(HDMI_720) >= 0 || value.indexOf(HDMI_1080) >= 0
-            || value.indexOf(HDMI_4K2K) >= 0 || value.indexOf(HDMI_SMPTE) >= 0) {
+            || value.indexOf(HDMI_4K2K) >= 0 || value.indexOf(HDMI_SMPTE) >= 0
+            || value.indexOf(HDMI_800x480p60hz) >= 0
+            || value.indexOf(HDMI_800x600p60hz) >= 0
+            || value.indexOf(HDMI_1024x600p60hz) >= 0
+            || value.indexOf(HDMI_1024x768p60hz) >= 0
+            || value.indexOf(HDMI_1280x480p60hz) >= 0
+            || value.indexOf(HDMI_1280x800p60hz) >= 0
+            || value.indexOf(HDMI_1280x1024p60hz) >= 0
+            || value.indexOf(HDMI_1360x786p60hz) >= 0
+            || value.indexOf(HDMI_1440x900p60hz) >= 0
+            || value.indexOf(HDMI_1600x900p60hz) >= 0
+            || value.indexOf(HDMI_1600x1200p60hz) >= 0
+            || value.indexOf(HDMI_1680x1050p60hz) >= 0
+            || value.indexOf(HDMI_1920x1200p60hz) >= 0
+            || value.indexOf(HDMI_2560x1080p60hz) >= 0
+            || value.indexOf(HDMI_2560x1440p60hz) >= 0
+            || value.indexOf(HDMI_2560x1600p60hz) >= 0) {
             supportList = (value.substring(0, value.length()-1)).split(",");
         }
 
@@ -564,7 +597,23 @@ public class OutputModeManager {
 
         if (value.indexOf(HDMI_480) >= 0 || value.indexOf(HDMI_576) >= 0
             || value.indexOf(HDMI_720) >= 0 || value.indexOf(HDMI_1080) >= 0
-            || value.indexOf(HDMI_4K2K) >= 0 || value.indexOf(HDMI_SMPTE) >= 0) {
+            || value.indexOf(HDMI_4K2K) >= 0 || value.indexOf(HDMI_SMPTE) >= 0
+            || value.indexOf(HDMI_800x480p60hz) >= 0
+            || value.indexOf(HDMI_800x600p60hz) >= 0
+            || value.indexOf(HDMI_1024x600p60hz) >= 0
+            || value.indexOf(HDMI_1024x768p60hz) >= 0
+            || value.indexOf(HDMI_1280x480p60hz) >= 0
+            || value.indexOf(HDMI_1280x800p60hz) >= 0
+            || value.indexOf(HDMI_1280x1024p60hz) >= 0
+            || value.indexOf(HDMI_1360x786p60hz) >= 0
+            || value.indexOf(HDMI_1440x900p60hz) >= 0
+            || value.indexOf(HDMI_1600x900p60hz) >= 0
+            || value.indexOf(HDMI_1600x1200p60hz) >= 0
+            || value.indexOf(HDMI_1680x1050p60hz) >= 0
+            || value.indexOf(HDMI_1920x1200p60hz) >= 0
+            || value.indexOf(HDMI_2560x1080p60hz) >= 0
+            || value.indexOf(HDMI_2560x1440p60hz) >= 0
+            || value.indexOf(HDMI_2560x1600p60hz) >= 0) {
             supportList = (value.substring(0, value.length()-1)).split(",");
         }
 
